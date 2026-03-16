@@ -1,22 +1,41 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: BarberPro SaaS API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: barbearias
+    description: Barbershop management
+  - name: profissionais
+    description: Professional management
+  - name: servicos
+    description: Service management
+  - name: clientes
+    description: Client management
+  - name: agendamentos
+    description: Appointment scheduling
+  - name: comandas
+    description: Service orders/checkout
+  - name: produtos
+    description: Product inventory
+  - name: dashboard
+    description: Dashboard metrics
+  - name: relatorios
+    description: Reports
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +43,922 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: registerUser
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterUserInput"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: loginUser
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logoutUser
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserWithBarbearia"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /barbearias:
+    post:
+      operationId: createBarbearia
+      tags: [barbearias]
+      summary: Create a new barbershop (onboarding step 1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBarbeariaInput"
+      responses:
+        "201":
+          description: Barbershop created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Barbearia"
+
+  /barbearias/me:
+    get:
+      operationId: getMyBarbearia
+      tags: [barbearias]
+      summary: Get the current user's barbershop
+      responses:
+        "200":
+          description: Barbershop
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Barbearia"
+
+    put:
+      operationId: updateBarbearia
+      tags: [barbearias]
+      summary: Update barbershop settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBarbeariaInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Barbearia"
+
+  /barbearias/{barbeariaId}/profissionais:
+    get:
+      operationId: listProfissionais
+      tags: [profissionais]
+      summary: List professionals for a barbershop
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of professionals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Profissional"
+
+    post:
+      operationId: createProfissional
+      tags: [profissionais]
+      summary: Create a professional
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProfissionalInput"
+      responses:
+        "201":
+          description: Professional created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profissional"
+
+  /barbearias/{barbeariaId}/profissionais/{profissionalId}:
+    get:
+      operationId: getProfissional
+      tags: [profissionais]
+      summary: Get a professional by ID
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: profissionalId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Professional
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profissional"
+
+    put:
+      operationId: updateProfissional
+      tags: [profissionais]
+      summary: Update a professional
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: profissionalId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfissionalInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profissional"
+
+    delete:
+      operationId: deleteProfissional
+      tags: [profissionais]
+      summary: Delete a professional
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: profissionalId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /barbearias/{barbeariaId}/servicos:
+    get:
+      operationId: listServicos
+      tags: [servicos]
+      summary: List services for a barbershop
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Servico"
+
+    post:
+      operationId: createServico
+      tags: [servicos]
+      summary: Create a service
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateServicoInput"
+      responses:
+        "201":
+          description: Service created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Servico"
+
+  /barbearias/{barbeariaId}/servicos/{servicoId}:
+    put:
+      operationId: updateServico
+      tags: [servicos]
+      summary: Update a service
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: servicoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateServicoInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Servico"
+
+    delete:
+      operationId: deleteServico
+      tags: [servicos]
+      summary: Delete a service
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: servicoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /barbearias/{barbeariaId}/clientes:
+    get:
+      operationId: listClientes
+      tags: [clientes]
+      summary: List clients for a barbershop
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of clients
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Cliente"
+
+    post:
+      operationId: createCliente
+      tags: [clientes]
+      summary: Create a client
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClienteInput"
+      responses:
+        "201":
+          description: Client created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cliente"
+
+  /barbearias/{barbeariaId}/clientes/{clienteId}:
+    get:
+      operationId: getCliente
+      tags: [clientes]
+      summary: Get a client by ID
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: clienteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cliente"
+
+    put:
+      operationId: updateCliente
+      tags: [clientes]
+      summary: Update a client
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: clienteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateClienteInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cliente"
+
+  /barbearias/{barbeariaId}/agendamentos:
+    get:
+      operationId: listAgendamentos
+      tags: [agendamentos]
+      summary: List appointments
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: data
+          in: query
+          schema:
+            type: string
+        - name: profissionalId
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of appointments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Agendamento"
+
+    post:
+      operationId: createAgendamento
+      tags: [agendamentos]
+      summary: Create an appointment
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAgendamentoInput"
+      responses:
+        "201":
+          description: Appointment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agendamento"
+
+  /barbearias/{barbeariaId}/agendamentos/{agendamentoId}:
+    get:
+      operationId: getAgendamento
+      tags: [agendamentos]
+      summary: Get appointment by ID
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: agendamentoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Appointment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agendamento"
+
+    put:
+      operationId: updateAgendamento
+      tags: [agendamentos]
+      summary: Update appointment
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: agendamentoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAgendamentoInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agendamento"
+
+    delete:
+      operationId: deleteAgendamento
+      tags: [agendamentos]
+      summary: Cancel appointment
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: agendamentoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /barbearias/{barbeariaId}/agendamentos/{agendamentoId}/checkout:
+    post:
+      operationId: checkoutAgendamento
+      tags: [agendamentos]
+      summary: Checkout an appointment (create comanda)
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: agendamentoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutInput"
+      responses:
+        "201":
+          description: Comanda created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comanda"
+
+  /barbearias/{barbeariaId}/comandas:
+    get:
+      operationId: listComandas
+      tags: [comandas]
+      summary: List comandas
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: mes
+          in: query
+          schema:
+            type: string
+        - name: profissionalId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of comandas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comanda"
+
+  /barbearias/{barbeariaId}/produtos:
+    get:
+      operationId: listProdutos
+      tags: [produtos]
+      summary: List products
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Produto"
+
+    post:
+      operationId: createProduto
+      tags: [produtos]
+      summary: Create a product
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProdutoInput"
+      responses:
+        "201":
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Produto"
+
+  /barbearias/{barbeariaId}/produtos/{produtoId}:
+    put:
+      operationId: updateProduto
+      tags: [produtos]
+      summary: Update a product
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: produtoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProdutoInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Produto"
+
+    delete:
+      operationId: deleteProduto
+      tags: [produtos]
+      summary: Delete a product
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: produtoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /barbearias/{barbeariaId}/dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get dashboard metrics
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: periodo
+          in: query
+          schema:
+            type: string
+            enum: [hoje, semana, mes, custom]
+        - name: dataInicio
+          in: query
+          schema:
+            type: string
+        - name: dataFim
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Dashboard metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardMetrics"
+
+  /barbearias/{barbeariaId}/relatorios/faturamento:
+    get:
+      operationId: getRelatorioFaturamento
+      tags: [relatorios]
+      summary: Get revenue report
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dataInicio
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: dataFim
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Revenue report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RelatorioFaturamento"
+
+  /barbearias/{barbeariaId}/relatorios/comissoes:
+    get:
+      operationId: getRelatorioComissoes
+      tags: [relatorios]
+      summary: Get commission report
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: mes
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Commission report
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ComissaoProfissional"
+
+  /barbearias/{barbeariaId}/slots-disponiveis:
+    get:
+      operationId: getSlotsDisponiveis
+      tags: [agendamentos]
+      summary: Get available time slots for booking
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: data
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: profissionalId
+          in: query
+          schema:
+            type: integer
+        - name: servicoId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Available slots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SlotDisponivel"
+
+  /public/{slug}:
+    get:
+      operationId: getPublicBarbearia
+      tags: [barbearias]
+      summary: Get public barbershop info by slug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Public barbershop info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicBarbearia"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /public/{slug}/agendar:
+    post:
+      operationId: publicAgendar
+      tags: [agendamentos]
+      summary: Public appointment booking (no auth required)
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicAgendarInput"
+      responses:
+        "201":
+          description: Appointment booked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agendamento"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +969,1017 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+
+    RegisterUserInput:
+      type: object
+      properties:
+        nome:
+          type: string
+        email:
+          type: string
+        senha:
+          type: string
+        telefone:
+          type: string
+      required:
+        - nome
+        - email
+        - senha
+
+    LoginInput:
+      type: object
+      properties:
+        email:
+          type: string
+        senha:
+          type: string
+      required:
+        - email
+        - senha
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - token
+        - user
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        email:
+          type: string
+        telefone:
+          type: string
+        fotoUrl:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [dono, gerente, barbeiro, cliente]
+        createdAt:
+          type: string
+      required:
+        - id
+        - nome
+        - email
+        - role
+
+    UserWithBarbearia:
+      allOf:
+        - $ref: "#/components/schemas/User"
+        - type: object
+          properties:
+            barbearia:
+              $ref: "#/components/schemas/Barbearia"
+              nullable: true
+            barbeariaId:
+              type: integer
+              nullable: true
+            onboardingCompleto:
+              type: boolean
+
+    Barbearia:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        slug:
+          type: string
+        cnpj:
+          type: string
+          nullable: true
+        telefone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        cep:
+          type: string
+          nullable: true
+        logradouro:
+          type: string
+          nullable: true
+        numero:
+          type: string
+          nullable: true
+        bairro:
+          type: string
+          nullable: true
+        cidade:
+          type: string
+          nullable: true
+        uf:
+          type: string
+          nullable: true
+        corPrimaria:
+          type: string
+        logoUrl:
+          type: string
+          nullable: true
+        horarioFuncionamento:
+          type: object
+          nullable: true
+        planoNome:
+          type: string
+        planoStatus:
+          type: string
+        planoVencimento:
+          type: string
+          nullable: true
+        onboardingStep:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - nome
+        - slug
+        - corPrimaria
+        - planoNome
+        - planoStatus
+        - onboardingStep
+
+    CreateBarbeariaInput:
+      type: object
+      properties:
+        nome:
+          type: string
+        telefone:
+          type: string
+        email:
+          type: string
+          nullable: true
+        cnpj:
+          type: string
+          nullable: true
+        cep:
+          type: string
+          nullable: true
+        logradouro:
+          type: string
+          nullable: true
+        numero:
+          type: string
+          nullable: true
+        bairro:
+          type: string
+          nullable: true
+        cidade:
+          type: string
+          nullable: true
+        uf:
+          type: string
+          nullable: true
+        numeroProfissionais:
+          type: string
+          nullable: true
+        possuiOutraUnidade:
+          type: boolean
+          nullable: true
+      required:
+        - nome
+        - telefone
+
+    UpdateBarbeariaInput:
+      type: object
+      properties:
+        nome:
+          type: string
+        telefone:
+          type: string
+        email:
+          type: string
+          nullable: true
+        cnpj:
+          type: string
+          nullable: true
+        cep:
+          type: string
+          nullable: true
+        logradouro:
+          type: string
+          nullable: true
+        numero:
+          type: string
+          nullable: true
+        bairro:
+          type: string
+          nullable: true
+        cidade:
+          type: string
+          nullable: true
+        uf:
+          type: string
+          nullable: true
+        corPrimaria:
+          type: string
+          nullable: true
+        horarioFuncionamento:
+          type: object
+          nullable: true
+
+    Profissional:
+      type: object
+      properties:
+        id:
+          type: integer
+        barbeariaId:
+          type: integer
+        usuarioId:
+          type: integer
+          nullable: true
+        nomeExibicao:
+          type: string
+        fotoUrl:
+          type: string
+          nullable: true
+        comissaoTipo:
+          type: string
+          enum: [percentual, valor_fixo]
+        comissaoValor:
+          type: number
+        ativo:
+          type: boolean
+        ordem:
+          type: integer
+        especialidade:
+          type: string
+          nullable: true
+        horarios:
+          type: object
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - barbeariaId
+        - nomeExibicao
+        - comissaoTipo
+        - comissaoValor
+        - ativo
+        - ordem
+
+    CreateProfissionalInput:
+      type: object
+      properties:
+        nomeExibicao:
+          type: string
+        fotoUrl:
+          type: string
+          nullable: true
+        comissaoTipo:
+          type: string
+          enum: [percentual, valor_fixo]
+        comissaoValor:
+          type: number
+        especialidade:
+          type: string
+          nullable: true
+        horarios:
+          type: object
+          nullable: true
+      required:
+        - nomeExibicao
+        - comissaoTipo
+        - comissaoValor
+
+    UpdateProfissionalInput:
+      type: object
+      properties:
+        nomeExibicao:
+          type: string
+        fotoUrl:
+          type: string
+          nullable: true
+        comissaoTipo:
+          type: string
+          enum: [percentual, valor_fixo]
+        comissaoValor:
+          type: number
+        ativo:
+          type: boolean
+        ordem:
+          type: integer
+        especialidade:
+          type: string
+          nullable: true
+        horarios:
+          type: object
+          nullable: true
+
+    Servico:
+      type: object
+      properties:
+        id:
+          type: integer
+        barbeariaId:
+          type: integer
+        nome:
+          type: string
+        preco:
+          type: number
+        duracaoMinutos:
+          type: integer
+        descricao:
+          type: string
+          nullable: true
+        ativo:
+          type: boolean
+        ordem:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - barbeariaId
+        - nome
+        - preco
+        - duracaoMinutos
+        - ativo
+        - ordem
+
+    CreateServicoInput:
+      type: object
+      properties:
+        nome:
+          type: string
+        preco:
+          type: number
+        duracaoMinutos:
+          type: integer
+        descricao:
+          type: string
+          nullable: true
+      required:
+        - nome
+        - preco
+        - duracaoMinutos
+
+    UpdateServicoInput:
+      type: object
+      properties:
+        nome:
+          type: string
+        preco:
+          type: number
+        duracaoMinutos:
+          type: integer
+        descricao:
+          type: string
+          nullable: true
+        ativo:
+          type: boolean
+        ordem:
+          type: integer
+
+    Cliente:
+      type: object
+      properties:
+        id:
+          type: integer
+        barbeariaId:
+          type: integer
+        nome:
+          type: string
+        telefone:
+          type: string
+        email:
+          type: string
+          nullable: true
+        aniversario:
+          type: string
+          nullable: true
+        observacoes:
+          type: string
+          nullable: true
+        vip:
+          type: boolean
+        pontosFidelidade:
+          type: integer
+        totalGasto:
+          type: number
+        ultimaVisita:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - barbeariaId
+        - nome
+        - telefone
+        - vip
+        - pontosFidelidade
+        - totalGasto
+
+    CreateClienteInput:
+      type: object
+      properties:
+        nome:
+          type: string
+        telefone:
+          type: string
+        email:
+          type: string
+          nullable: true
+        aniversario:
+          type: string
+          nullable: true
+        observacoes:
+          type: string
+          nullable: true
+        vip:
+          type: boolean
+          nullable: true
+      required:
+        - nome
+        - telefone
+
+    UpdateClienteInput:
+      type: object
+      properties:
+        nome:
+          type: string
+        telefone:
+          type: string
+        email:
+          type: string
+          nullable: true
+        aniversario:
+          type: string
+          nullable: true
+        observacoes:
+          type: string
+          nullable: true
+        vip:
+          type: boolean
+
+    Agendamento:
+      type: object
+      properties:
+        id:
+          type: integer
+        barbeariaId:
+          type: integer
+        clienteId:
+          type: integer
+          nullable: true
+        clienteNome:
+          type: string
+        clienteTelefone:
+          type: string
+        profissionalId:
+          type: integer
+        profissionalNome:
+          type: string
+        servicoId:
+          type: integer
+        servicoNome:
+          type: string
+        data:
+          type: string
+        horaInicio:
+          type: string
+        horaFim:
+          type: string
+        status:
+          type: string
+          enum: [confirmado, pago, cancelado, nao_compareceu, bloqueio]
+        valor:
+          type: number
+        pago:
+          type: boolean
+        semPreferencia:
+          type: boolean
+        observacao:
+          type: string
+          nullable: true
+        aniversario:
+          type: boolean
+        vip:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - barbeariaId
+        - clienteNome
+        - clienteTelefone
+        - profissionalId
+        - profissionalNome
+        - servicoId
+        - servicoNome
+        - data
+        - horaInicio
+        - horaFim
+        - status
+        - valor
+        - pago
+        - semPreferencia
+        - aniversario
+        - vip
+
+    CreateAgendamentoInput:
+      type: object
+      properties:
+        clienteId:
+          type: integer
+          nullable: true
+        clienteNome:
+          type: string
+        clienteTelefone:
+          type: string
+        profissionalId:
+          type: integer
+        servicoId:
+          type: integer
+        data:
+          type: string
+        horaInicio:
+          type: string
+        semPreferencia:
+          type: boolean
+          nullable: true
+        observacao:
+          type: string
+          nullable: true
+      required:
+        - clienteNome
+        - clienteTelefone
+        - profissionalId
+        - servicoId
+        - data
+        - horaInicio
+
+    UpdateAgendamentoInput:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [confirmado, pago, cancelado, nao_compareceu, bloqueio]
+        profissionalId:
+          type: integer
+        data:
+          type: string
+        horaInicio:
+          type: string
+        observacao:
+          type: string
+          nullable: true
+        pago:
+          type: boolean
+
+    CheckoutInput:
+      type: object
+      properties:
+        produtosAdicionais:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProdutoCheckout"
+        pagamentos:
+          type: array
+          items:
+            $ref: "#/components/schemas/Pagamento"
+        observacao:
+          type: string
+          nullable: true
+      required:
+        - pagamentos
+
+    ProdutoCheckout:
+      type: object
+      properties:
+        produtoId:
+          type: integer
+        quantidade:
+          type: integer
+        valor:
+          type: number
+      required:
+        - produtoId
+        - quantidade
+        - valor
+
+    Pagamento:
+      type: object
+      properties:
+        metodo:
+          type: string
+          enum: [dinheiro, pix, credito, debito, outros]
+        valor:
+          type: number
+      required:
+        - metodo
+        - valor
+
+    Comanda:
+      type: object
+      properties:
+        id:
+          type: integer
+        barbeariaId:
+          type: integer
+        agendamentoId:
+          type: integer
+        clienteNome:
+          type: string
+        profissionalNome:
+          type: string
+        dataFechamento:
+          type: string
+        servicos:
+          type: array
+          items:
+            type: object
+        produtos:
+          type: array
+          items:
+            type: object
+        pagamentos:
+          type: array
+          items:
+            $ref: "#/components/schemas/Pagamento"
+        valorTotal:
+          type: number
+        comissaoTotal:
+          type: number
+        status:
+          type: string
+      required:
+        - id
+        - barbeariaId
+        - agendamentoId
+        - clienteNome
+        - profissionalNome
+        - dataFechamento
+        - valorTotal
+        - comissaoTotal
+        - status
+
+    Produto:
+      type: object
+      properties:
+        id:
+          type: integer
+        barbeariaId:
+          type: integer
+        nome:
+          type: string
+        preco:
+          type: number
+        custo:
+          type: number
+          nullable: true
+        quantidade:
+          type: integer
+        quantidadeMinima:
+          type: integer
+        ativo:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - barbeariaId
+        - nome
+        - preco
+        - quantidade
+        - quantidadeMinima
+        - ativo
+
+    CreateProdutoInput:
+      type: object
+      properties:
+        nome:
+          type: string
+        preco:
+          type: number
+        custo:
+          type: number
+          nullable: true
+        quantidade:
+          type: integer
+        quantidadeMinima:
+          type: integer
+      required:
+        - nome
+        - preco
+        - quantidade
+        - quantidadeMinima
+
+    UpdateProdutoInput:
+      type: object
+      properties:
+        nome:
+          type: string
+        preco:
+          type: number
+        custo:
+          type: number
+          nullable: true
+        quantidade:
+          type: integer
+        quantidadeMinima:
+          type: integer
+        ativo:
+          type: boolean
+
+    DashboardMetrics:
+      type: object
+      properties:
+        faturamentoTotal:
+          type: number
+        faturamentoVariacao:
+          type: number
+        totalAgendamentos:
+          type: integer
+        totalClientes:
+          type: integer
+        clientesNovos:
+          type: integer
+        taxaOcupacao:
+          type: number
+        ticketMedio:
+          type: number
+        faturamentoPorDia:
+          type: array
+          items:
+            $ref: "#/components/schemas/FaturamentoDia"
+        topServicos:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServicoMetrica"
+        rankingProfissionais:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProfissionalMetrica"
+        alertas:
+          type: array
+          items:
+            $ref: "#/components/schemas/Alerta"
+        proximosAniversariantes:
+          type: array
+          items:
+            $ref: "#/components/schemas/Cliente"
+      required:
+        - faturamentoTotal
+        - faturamentoVariacao
+        - totalAgendamentos
+        - totalClientes
+        - clientesNovos
+        - taxaOcupacao
+        - ticketMedio
+        - faturamentoPorDia
+        - topServicos
+        - rankingProfissionais
+        - alertas
+
+    FaturamentoDia:
+      type: object
+      properties:
+        data:
+          type: string
+        valor:
+          type: number
+        quantidade:
+          type: integer
+      required:
+        - data
+        - valor
+        - quantidade
+
+    ServicoMetrica:
+      type: object
+      properties:
+        servicoId:
+          type: integer
+        nome:
+          type: string
+        quantidade:
+          type: integer
+        valor:
+          type: number
+        percentual:
+          type: number
+      required:
+        - servicoId
+        - nome
+        - quantidade
+        - valor
+        - percentual
+
+    ProfissionalMetrica:
+      type: object
+      properties:
+        profissionalId:
+          type: integer
+        nome:
+          type: string
+        faturamento:
+          type: number
+        comissao:
+          type: number
+        atendimentos:
+          type: integer
+        ocupacao:
+          type: number
+      required:
+        - profissionalId
+        - nome
+        - faturamento
+        - comissao
+        - atendimentos
+        - ocupacao
+
+    Alerta:
+      type: object
+      properties:
+        tipo:
+          type: string
+          enum: [estoque_baixo, aniversario, agendamento_pendente, sem_agendamentos]
+        mensagem:
+          type: string
+        nivel:
+          type: string
+          enum: [info, warning, danger]
+      required:
+        - tipo
+        - mensagem
+        - nivel
+
+    RelatorioFaturamento:
+      type: object
+      properties:
+        totalBruto:
+          type: number
+        totalLiquido:
+          type: number
+        totalComissoes:
+          type: number
+        porDia:
+          type: array
+          items:
+            $ref: "#/components/schemas/FaturamentoDia"
+        porServico:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServicoMetrica"
+        porFormaPagamento:
+          type: array
+          items:
+            type: object
+      required:
+        - totalBruto
+        - totalLiquido
+        - totalComissoes
+        - porDia
+        - porServico
+        - porFormaPagamento
+
+    ComissaoProfissional:
+      type: object
+      properties:
+        profissionalId:
+          type: integer
+        nome:
+          type: string
+        totalAtendimentos:
+          type: integer
+        faturamentoBruto:
+          type: number
+        comissaoTotal:
+          type: number
+        percentualMedio:
+          type: number
+      required:
+        - profissionalId
+        - nome
+        - totalAtendimentos
+        - faturamentoBruto
+        - comissaoTotal
+        - percentualMedio
+
+    SlotDisponivel:
+      type: object
+      properties:
+        horaInicio:
+          type: string
+        horaFim:
+          type: string
+        profissionalId:
+          type: integer
+        profissionalNome:
+          type: string
+        disponivel:
+          type: boolean
+      required:
+        - horaInicio
+        - horaFim
+        - profissionalId
+        - profissionalNome
+        - disponivel
+
+    PublicBarbearia:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        slug:
+          type: string
+        telefone:
+          type: string
+          nullable: true
+        cidade:
+          type: string
+          nullable: true
+        uf:
+          type: string
+          nullable: true
+        corPrimaria:
+          type: string
+        logoUrl:
+          type: string
+          nullable: true
+        servicos:
+          type: array
+          items:
+            $ref: "#/components/schemas/Servico"
+        profissionais:
+          type: array
+          items:
+            $ref: "#/components/schemas/Profissional"
+        horarioFuncionamento:
+          type: object
+          nullable: true
+      required:
+        - id
+        - nome
+        - slug
+        - corPrimaria
+        - servicos
+        - profissionais
+
+    PublicAgendarInput:
+      type: object
+      properties:
+        clienteNome:
+          type: string
+        clienteTelefone:
+          type: string
+        clienteEmail:
+          type: string
+          nullable: true
+        profissionalId:
+          type: integer
+        servicoId:
+          type: integer
+        data:
+          type: string
+        horaInicio:
+          type: string
+        semPreferencia:
+          type: boolean
+          nullable: true
+        observacao:
+          type: string
+          nullable: true
+      required:
+        - clienteNome
+        - clienteTelefone
+        - profissionalId
+        - servicoId
+        - data
+        - horaInicio

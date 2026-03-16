@@ -1,0 +1,17 @@
+packages:
+  "recharts": "For rendering beautiful dashboard charts"
+  "date-fns": "For formatting and manipulating dates in the Agenda"
+  "clsx": "For conditional tailwind class joining"
+  "tailwind-merge": "For merging tailwind classes without conflicts"
+
+images:
+  - path: "artifacts/barberpro/public/images/logo.png"
+    description: "Premium minimal geometric logo mark in gold on dark background for a luxury barbershop"
+    aspect_ratio: "1:1"
+  - path: "artifacts/barberpro/public/images/hero-bg.png"
+    description: "Dark cinematic background with subtle smoke, leather textures, and warm amber light leaks for a premium barbershop landing page"
+    aspect_ratio: "16:9"
+
+notes:
+  - Using generated React Query hooks from @workspace/api-client-react
+  - Assuming standard shadcn/ui components exist in src/components/ui/
