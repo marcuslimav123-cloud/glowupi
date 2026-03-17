@@ -22,7 +22,14 @@ import { Button } from "@/components/ui/button";
 
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Agenda", href: "/agenda", icon: CalendarDays },
+  { 
+    name: "Agenda",
+    icon: CalendarDays,
+    children: [
+      { name: "Agenda", href: "/agenda", icon: CalendarDays },
+      { name: "Horários de Pico", href: "/agenda/picos", icon: BarChart3 },
+    ]
+  },
   { 
     name: "Gestão", 
     icon: Settings,
