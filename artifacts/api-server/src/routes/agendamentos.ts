@@ -130,7 +130,7 @@ router.put("/:agendamentoId", requireAuth, async (req, res) => {
     pago: pago !== undefined ? pago : existing.pago,
     updatedAt: new Date(),
   };
-  if (profissionalId) {
+  if (profissionalId && user.role !== "colaborador") {
     const [prof] = await db.select().from(profissionaisTable).where(eq(profissionaisTable.id, profissionalId)).limit(1);
     if (prof) { updates.profissionalId = profissionalId; updates.profissionalNome = prof.nomeExibicao; }
   }
