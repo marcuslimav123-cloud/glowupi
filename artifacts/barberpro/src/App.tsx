@@ -9,6 +9,8 @@ import Landing from "@/pages/Landing";
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
 import BarbeariaStep from "@/pages/onboarding/BarbeariaStep";
+import CheckoutSuccess from "@/pages/checkout/CheckoutSuccess";
+import CheckoutCancel from "@/pages/checkout/CheckoutCancel";
 import Dashboard from "@/pages/Dashboard";
 import Agenda from "@/pages/Agenda";
 import Profissionais from "@/pages/gestao/Profissionais";
@@ -36,6 +38,8 @@ function Router() {
       <Route path="/cadastro" component={Register} />
 
       <Route path="/onboarding/barbearia" component={BarbeariaStep} />
+      <Route path="/checkout/success" component={CheckoutSuccess} />
+      <Route path="/checkout/cancel" component={CheckoutCancel} />
 
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/agenda" component={Agenda} />

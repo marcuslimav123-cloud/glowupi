@@ -14,6 +14,34 @@ function minutesToTime(m: number): string {
   return `${Math.floor(m / 60).toString().padStart(2, "0")}:${(m % 60).toString().padStart(2, "0")}`;
 }
 
+const DIAS_SEMANA = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"];
+
+function getProfScheduleForDate(prof: any, dateStr: string): { inicio: number; fim: number } | null {
+  const date = new Date(dateStr + "T12:00:00");
+  const diaSemana = DIAS_SEMANA[date.getDay()];
+
+  const horarios = prof.horarios as any;
+  if (!horarios) return { inicio: 8 * 60, fim: 20 * 60 };
+
+  if (horarios.porDia && horarios.porDia[diaSemana]) {
+    const dia = horarios.porDia[diaSemana];
+    if (dia.folga) return null;
+    return {
+      inicio: timeToMinutes(dia.inicio || "08:00"),
+      fim: timeToMinutes(dia.fim || "20:00"),
+    };
+  }
+
+  if (horarios.inicio && horarios.fim) {
+    return {
+      inicio: timeToMinutes(horarios.inicio),
+      fim: timeToMinutes(horarios.fim),
+    };
+  }
+
+  return { inicio: 8 * 60, fim: 20 * 60 };
+}
+
 router.get("/", async (req, res) => {
   const barbeariaId = parseInt(req.params.barbeariaId);
   if (isNaN(barbeariaId)) return res.status(400).json({ error: "ID inválido" });
@@ -39,12 +67,15 @@ router.get("/", async (req, res) => {
   );
 
   const slots: any[] = [];
-  const inicioTrabalho = 8 * 60;
-  const fimTrabalho = 20 * 60;
   const intervalo = 30;
   const duracao = servico.duracaoMinutos;
 
   for (const prof of profissionais) {
+    const schedule = getProfScheduleForDate(prof, data as string);
+    if (!schedule) continue;
+
+    const { inicio: inicioTrabalho, fim: fimTrabalho } = schedule;
+
     for (let t = inicioTrabalho; t + duracao <= fimTrabalho; t += intervalo) {
       const horaInicio = minutesToTime(t);
       const horaFim = minutesToTime(t + duracao);

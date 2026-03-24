@@ -112,13 +112,15 @@ All under `/api`:
 - `/` — Landing/sales page (public, no auth required)
 - `/login`, `/cadastro` — Auth pages
 - `/onboarding/barbearia` — Onboarding step 1 (create salon/studio)
-- `/dashboard` — Main dashboard with charts, metrics, rankings
-- `/agenda` — Visual schedule with appointment management + checkout modal
+- `/checkout/success` — Subscription activation success page
+- `/checkout/cancel` — Payment cancellation page
+- `/dashboard` — Main dashboard with charts, metrics, rankings (trial upgrade banner for free-trial users)
+- `/agenda` — Visual schedule with appointment management + checkout modal (discounts, installments)
 - `/agenda/picos` — Peak hours heatmap analysis
-- `/gestao/profissionais` — Professional management
+- `/gestao/profissionais` — Professional management with per-weekday schedule editor (horários por dia)
 - `/gestao/servicos` — Service management
 - `/gestao/clientes` — Client management with search, VIP, birthday detection
-- `/gestao/produtos` — Product/inventory management
+- `/gestao/produtos` — Product/inventory management with movement history, barcode, expiry tracking
 - `/relatorios` — Revenue & commission reports with charts
 - `/caixa` — Checkout/comanda history
 - `/financeiro` — Financial management (Resumo/A Pagar/A Receber tabs, CRUD contas)
@@ -144,7 +146,9 @@ All under `/api`:
 - Landing/sales page with animated sections, pricing toggle, testimonials, FAQ
 - Stripe subscription billing (4 tiers x 3 periods + single price mode)
 - Commission calculation (percentage or fixed per professional)
-- Checkout with split payment support (pix, dinheiro, crédito, débito)
+- Checkout with split payment support (pix, dinheiro, crédito, débito) + discounts (R$ or %) + installments (credit card)
+- Subscription guard: blocks access for canceled/inactive subscriptions, shows trial upgrade banner
+- Flexible per-professional schedules (per-weekday hours with day-off support)
 - Loyalty points for clients with rewards catalog and redemption
 - Service packages with session tracking
 - Financial management (accounts payable/receivable)
@@ -157,7 +161,10 @@ All under `/api`:
 - ViaCEP integration for address auto-fill in onboarding
 - Public booking portal at `/public/{slug}`
 - Peak hours heatmap analysis
-- Low-stock product alerts with margin calculation
+- Low-stock product alerts with margin calculation, expiry warnings, barcode tracking
+- Inventory movement history (entrada/saída) per product with reason tracking
+- Public page enhanced with fotos, formasPagamento, redesSociais from barbearias
+- Slots API respects per-professional schedules (horarios.porDia with folga support)
 
 ## Important Notes
 

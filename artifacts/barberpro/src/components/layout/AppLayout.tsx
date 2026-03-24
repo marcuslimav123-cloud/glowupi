@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscriptionGuard } from "@/hooks/useSubscriptionGuard";
 import { cn } from "@/lib/utils";
 import { 
   LayoutDashboard, 
@@ -22,7 +23,8 @@ import {
   ClipboardList,
   Star,
   Gift,
-  Boxes
+  Boxes,
+  AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { APP_NAME, getRoleLabel } from "@/lib/utils";
@@ -61,6 +63,7 @@ const NAV_ITEMS = [
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout, isLoading, barbeariaId } = useAuth();
+  const { canAccess, status, shouldShowUpgrade } = useSubscriptionGuard();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -78,6 +81,34 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) return null;
+
+  if (!canAccess && status !== "none") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="h-20 w-20 rounded-full bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center mx-auto">
+            <AlertTriangle className="h-10 w-10 text-red-500" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-display font-bold text-foreground mb-2">
+              Assinatura {status === "cancelado" ? "Cancelada" : "Inativa"}
+            </h1>
+            <p className="text-muted-foreground">
+              {status === "cancelado"
+                ? "Sua assinatura foi cancelada. Renove seu plano para continuar usando a plataforma."
+                : "Sua assinatura está inativa. Atualize seu plano para voltar a usar todas as funcionalidades."}
+            </p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <Link href="/#precos">
+              <Button size="lg" className="w-full">Ver Planos</Button>
+            </Link>
+            <Button size="lg" variant="outline" onClick={logout}>Sair</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
@@ -155,6 +186,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden relative">
+        {shouldShowUpgrade && (
+          <div className="bg-primary/5 border-b border-primary/20 px-4 py-2.5 flex items-center justify-center gap-3 z-20">
+            <Sparkles className="h-4 w-4 text-primary shrink-0" />
+            <span className="text-sm text-foreground">Você está no período de teste gratuito.</span>
+            <Link href="/#precos">
+              <Button size="sm" variant="outline" className="border-primary/30 text-primary text-xs h-7">
+                Escolher Plano
+              </Button>
+            </Link>
+          </div>
+        )}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 z-10">
           {children}
         </div>

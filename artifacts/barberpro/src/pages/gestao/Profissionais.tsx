@@ -11,9 +11,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit2, Trash2, Users, Award, ToggleLeft, ToggleRight } from "lucide-react";
+import { Plus, Edit2, Trash2, Users, Award, ToggleLeft, ToggleRight, Clock, Calendar } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 type Prof = {
@@ -23,7 +24,71 @@ type Prof = {
   comissaoTipo: string;
   comissaoValor: number;
   ativo: boolean;
+  horarios?: any;
 };
+
+const DIAS_SEMANA = [
+  { key: "segunda", label: "Segunda" },
+  { key: "terca", label: "Terça" },
+  { key: "quarta", label: "Quarta" },
+  { key: "quinta", label: "Quinta" },
+  { key: "sexta", label: "Sexta" },
+  { key: "sabado", label: "Sábado" },
+  { key: "domingo", label: "Domingo" },
+];
+
+function ScheduleEditor({ value, onChange }: { value: any; onChange: (v: any) => void }) {
+  const horarios = value?.porDia || {};
+
+  const updateDay = (dia: string, field: string, val: any) => {
+    const current = horarios[dia] || { inicio: "08:00", fim: "18:00", folga: false };
+    const updated = { ...current, [field]: val };
+    onChange({ ...value, porDia: { ...horarios, [dia]: updated } });
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label className="flex items-center gap-2 text-sm font-medium">
+        <Clock className="h-4 w-4 text-primary" />
+        Horários por Dia da Semana
+      </Label>
+      <div className="rounded-xl border border-border overflow-hidden">
+        {DIAS_SEMANA.map((dia, i) => {
+          const config = horarios[dia.key] || { inicio: "08:00", fim: "18:00", folga: false };
+          return (
+            <div key={dia.key} className={`flex items-center gap-3 px-4 py-2.5 ${i > 0 ? "border-t border-border/50" : ""} ${config.folga ? "opacity-50 bg-muted/30" : ""}`}>
+              <span className="w-20 text-sm font-medium text-foreground shrink-0">{dia.label}</span>
+              <div className="flex items-center gap-2 flex-1">
+                <Input
+                  type="time"
+                  value={config.folga ? "" : (config.inicio || "08:00")}
+                  onChange={e => updateDay(dia.key, "inicio", e.target.value)}
+                  disabled={config.folga}
+                  className="h-8 w-28 text-xs bg-background"
+                />
+                <span className="text-xs text-muted-foreground">às</span>
+                <Input
+                  type="time"
+                  value={config.folga ? "" : (config.fim || "18:00")}
+                  onChange={e => updateDay(dia.key, "fim", e.target.value)}
+                  disabled={config.folga}
+                  className="h-8 w-28 text-xs bg-background"
+                />
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs text-muted-foreground">Folga</span>
+                <Switch
+                  checked={config.folga || false}
+                  onCheckedChange={(checked) => updateDay(dia.key, "folga", checked)}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function ProfForm({
   initial, onSave, onCancel, isPending
@@ -37,9 +102,11 @@ function ProfForm({
   const [esp, setEsp] = useState(initial?.especialidade ?? "");
   const [tipo, setTipo] = useState<string>(initial?.comissaoTipo ?? "percentual");
   const [valor, setValor] = useState(String(initial?.comissaoValor ?? ""));
+  const [horarios, setHorarios] = useState<any>(initial?.horarios || { porDia: {} });
+  const [showSchedule, setShowSchedule] = useState(!!initial?.horarios?.porDia && Object.keys(initial.horarios.porDia).length > 0);
 
   return (
-    <form onSubmit={e => { e.preventDefault(); onSave({ nomeExibicao: nome, especialidade: esp || null, comissaoTipo: tipo, comissaoValor: parseFloat(valor) }); }} className="space-y-4 mt-2">
+    <form onSubmit={e => { e.preventDefault(); onSave({ nomeExibicao: nome, especialidade: esp || null, comissaoTipo: tipo, comissaoValor: parseFloat(valor), horarios: showSchedule ? horarios : null }); }} className="space-y-4 mt-2">
       <div className="space-y-2">
         <Label>Nome de Exibição *</Label>
         <Input value={nome} onChange={e => setNome(e.target.value)} required placeholder="Ex: Ana Beatriz" className="bg-background" />
@@ -69,6 +136,21 @@ function ProfForm({
           />
         </div>
       </div>
+
+      <div className="border-t border-border pt-4">
+        <div className="flex items-center justify-between mb-3">
+          <Label className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-primary" />
+            Horário Personalizado
+          </Label>
+          <Switch checked={showSchedule} onCheckedChange={setShowSchedule} />
+        </div>
+        {showSchedule && <ScheduleEditor value={horarios} onChange={setHorarios} />}
+        {!showSchedule && (
+          <p className="text-xs text-muted-foreground">Usando horário padrão (08:00 – 20:00, todos os dias)</p>
+        )}
+      </div>
+
       <div className="flex gap-3 pt-2">
         <Button type="submit" className="flex-1" disabled={isPending}>
           {isPending ? "Salvando..." : "Salvar"}
@@ -134,6 +216,15 @@ export default function Profissionais() {
     }
   };
 
+  const getScheduleSummary = (prof: Prof) => {
+    if (!prof.horarios?.porDia) return null;
+    const days = Object.entries(prof.horarios.porDia) as [string, any][];
+    const workDays = days.filter(([, v]) => !v.folga);
+    const offDays = days.filter(([, v]) => v.folga);
+    if (workDays.length === 0 && offDays.length === 0) return null;
+    return `${workDays.length} dias • ${offDays.length} folga(s)`;
+  };
+
   return (
     <AppLayout>
       <div className="flex items-center justify-between mb-8">
@@ -171,6 +262,12 @@ export default function Profissionais() {
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground mt-0.5">{p.especialidade || "Sem especialidade definida"}</p>
+                {getScheduleSummary(p) && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <Clock className="h-3 w-3 text-primary" />
+                    <span className="text-xs text-primary">{getScheduleSummary(p)}</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
@@ -199,9 +296,8 @@ export default function Profissionais() {
         </div>
       )}
 
-      {/* Create / Edit Dialog */}
       <Dialog open={modalOpen} onOpenChange={v => { setModalOpen(v); if (!v) setEditing(null); }}>
-        <DialogContent className="bg-card border-border sm:max-w-[460px]">
+        <DialogContent className="bg-card border-border sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-display">{editing ? "Editar Profissional" : "Novo Profissional"}</DialogTitle>
           </DialogHeader>
@@ -214,7 +310,6 @@ export default function Profissionais() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
       <Dialog open={!!deleteTarget} onOpenChange={v => { if (!v) setDeleteTarget(null); }}>
         <DialogContent className="bg-card border-border sm:max-w-[380px]">
           <DialogHeader>

@@ -141,7 +141,9 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
   const [agend] = await db.select().from(agendamentosTable).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId))).limit(1);
   if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
   const [profissional] = await db.select().from(profissionaisTable).where(eq(profissionaisTable.id, agend.profissionalId)).limit(1);
-  const { produtosAdicionais = [], pagamentos, observacao } = req.body;
+  const { produtosAdicionais = [], pagamentos, observacao, desconto: rawDesconto = 0, descontoTipo = "valor", parcelas: rawParcelas = 1 } = req.body;
+  const desconto = Math.max(0, Number(rawDesconto) || 0);
+  const parcelas = Math.max(1, Math.floor(Number(rawParcelas) || 1));
   const valorServico = parseFloat(agend.valor as string);
   const comissaoPerc = profissional ? parseFloat(profissional.comissaoValor as string) : 40;
   const comissaoServico = profissional?.comissaoTipo === "valor_fixo" ? comissaoPerc : (valorServico * comissaoPerc) / 100;
@@ -158,7 +160,16 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
       await db.update(produtosTable).set({ quantidade: prod.quantidade - p.quantidade, updatedAt: new Date() }).where(eq(produtosTable.id, prod.id));
     }
   }
-  const valorTotal = valorServico + valorProdutos;
+  let valorTotal = valorServico + valorProdutos;
+  if (desconto > 0) {
+    if (descontoTipo === "percentual") {
+      const clampedPct = Math.min(desconto, 100);
+      valorTotal = valorTotal * (1 - clampedPct / 100);
+    } else {
+      valorTotal = Math.max(0, valorTotal - desconto);
+    }
+  }
+  valorTotal = Math.max(0, valorTotal);
   const comissaoTotal = comissaoServico + comissaoProdutos;
   const now = new Date();
   const mesAno = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -174,6 +185,9 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
     pagamentos: pagamentos || [],
     valorTotal: String(valorTotal),
     comissaoTotal: String(comissaoTotal),
+    desconto: String(desconto),
+    descontoTipo,
+    parcelas,
     status: "paga",
     observacao: observacao || null,
   }).returning();

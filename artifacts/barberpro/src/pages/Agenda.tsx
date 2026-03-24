@@ -74,9 +74,11 @@ export default function Agenda() {
   const [formHora, setFormHora] = useState("");
   const [formObs, setFormObs] = useState("");
 
-  // Checkout state
   const [checkoutMetodo, setCheckoutMetodo] = useState("pix");
   const [checkoutObs, setCheckoutObs] = useState("");
+  const [checkoutDesconto, setCheckoutDesconto] = useState("");
+  const [checkoutDescontoTipo, setCheckoutDescontoTipo] = useState<"valor" | "percentual">("valor");
+  const [checkoutParcelas, setCheckoutParcelas] = useState(1);
 
   const { data: profissionais = [] } = useListProfissionais(barbeariaId!, { query: { enabled: !!barbeariaId } });
   const { data: servicos = [] } = useListServicos(barbeariaId!, { query: { enabled: !!barbeariaId } });
@@ -146,6 +148,18 @@ export default function Agenda() {
     }
   };
 
+  const calcularValorFinal = () => {
+    if (!checkoutAgend) return 0;
+    const valor = checkoutAgend.valor;
+    const desc = parseFloat(checkoutDesconto) || 0;
+    if (desc <= 0) return valor;
+    if (checkoutDescontoTipo === "percentual") return valor * (1 - Math.min(desc, 100) / 100);
+    return Math.max(0, valor - desc);
+  };
+
+  const valorFinal = calcularValorFinal();
+  const valorParcela = checkoutParcelas > 1 ? valorFinal / checkoutParcelas : valorFinal;
+
   const handleCheckout = async () => {
     if (!checkoutAgend) return;
     try {
@@ -153,13 +167,18 @@ export default function Agenda() {
         barbeariaId: barbeariaId!,
         agendamentoId: checkoutAgend.id,
         data: {
-          pagamentos: [{ metodo: checkoutMetodo, valor: checkoutAgend.valor }],
+          pagamentos: [{ metodo: checkoutMetodo, valor: valorFinal }],
           observacao: checkoutObs || undefined,
+          desconto: parseFloat(checkoutDesconto) || 0,
+          descontoTipo: checkoutDescontoTipo,
+          parcelas: checkoutParcelas,
         }
       });
-      toast({ title: "Checkout realizado!", description: `${formatCurrency(checkoutAgend.valor)} via ${PAYMENT_METHODS.find(m => m.value === checkoutMetodo)?.label}` });
+      toast({ title: "Checkout realizado!", description: `${formatCurrency(valorFinal)} via ${PAYMENT_METHODS.find(m => m.value === checkoutMetodo)?.label}` });
       setCheckoutAgend(null);
       setCheckoutObs("");
+      setCheckoutDesconto("");
+      setCheckoutParcelas(1);
       refetch();
       qc.invalidateQueries({ queryKey: ["/api/barbearias", barbeariaId, "dashboard"] });
     } catch (err: any) {
@@ -360,8 +379,8 @@ export default function Agenda() {
       </Dialog>
 
       {/* Checkout Dialog */}
-      <Dialog open={!!checkoutAgend} onOpenChange={v => { if (!v) setCheckoutAgend(null); }}>
-        <DialogContent className="bg-card border-border sm:max-w-[420px]">
+      <Dialog open={!!checkoutAgend} onOpenChange={v => { if (!v) { setCheckoutAgend(null); setCheckoutDesconto(""); setCheckoutParcelas(1); } }}>
+        <DialogContent className="bg-card border-border sm:max-w-[460px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-display flex items-center gap-2">
               <Receipt className="h-5 w-5 text-primary" /> Finalizar Atendimento
@@ -382,9 +401,50 @@ export default function Agenda() {
                   <span className="text-muted-foreground">Profissional</span>
                   <span className="font-medium">{checkoutAgend.profissionalNome}</span>
                 </div>
-                <div className="flex justify-between text-sm font-bold border-t border-border pt-2 mt-2">
+                <div className="flex justify-between text-sm border-t border-border pt-2 mt-2">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="font-medium">{formatCurrency(checkoutAgend.valor)}</span>
+                </div>
+                {parseFloat(checkoutDesconto) > 0 && (
+                  <div className="flex justify-between text-sm text-green-400">
+                    <span>Desconto ({checkoutDescontoTipo === "percentual" ? `${checkoutDesconto}%` : `R$ ${checkoutDesconto}`})</span>
+                    <span>-{formatCurrency(checkoutAgend.valor - valorFinal)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm font-bold border-t border-border pt-2 mt-1">
                   <span>Total</span>
-                  <span className="text-primary text-lg">{formatCurrency(checkoutAgend.valor)}</span>
+                  <span className="text-primary text-lg">{formatCurrency(valorFinal)}</span>
+                </div>
+                {checkoutParcelas > 1 && (
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{checkoutParcelas}x</span>
+                    <span>{formatCurrency(valorParcela)}/parcela</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Desconto <span className="text-muted-foreground text-xs">(opcional)</span></Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number" min="0" step="0.01"
+                    value={checkoutDesconto}
+                    onChange={e => setCheckoutDesconto(e.target.value)}
+                    placeholder="0"
+                    className="bg-background flex-1"
+                  />
+                  <div className="flex rounded-lg border border-border overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setCheckoutDescontoTipo("valor")}
+                      className={`px-3 py-2 text-xs font-medium transition-colors ${checkoutDescontoTipo === "valor" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    >R$</button>
+                    <button
+                      type="button"
+                      onClick={() => setCheckoutDescontoTipo("percentual")}
+                      className={`px-3 py-2 text-xs font-medium transition-colors ${checkoutDescontoTipo === "percentual" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    >%</button>
+                  </div>
                 </div>
               </div>
 
@@ -404,6 +464,22 @@ export default function Agenda() {
                 </div>
               </div>
 
+              {(checkoutMetodo === "credito") && (
+                <div className="space-y-2">
+                  <Label>Parcelas</Label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 6, 12].map(n => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setCheckoutParcelas(n)}
+                        className={`flex-1 py-2 rounded-lg border text-xs font-medium transition-all ${checkoutParcelas === n ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}
+                      >{n}x</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label>Observação <span className="text-muted-foreground text-xs">(opcional)</span></Label>
                 <Input value={checkoutObs} onChange={e => setCheckoutObs(e.target.value)} placeholder="Ex: retorno em 30 dias" className="bg-background" />
@@ -411,7 +487,7 @@ export default function Agenda() {
 
               <Button className="w-full" onClick={handleCheckout} disabled={checkoutMutation.isPending}>
                 <CheckCircle className="h-4 w-4 mr-2" />
-                {checkoutMutation.isPending ? "Finalizando..." : `Confirmar — ${formatCurrency(checkoutAgend.valor)}`}
+                {checkoutMutation.isPending ? "Finalizando..." : `Confirmar — ${formatCurrency(valorFinal)}`}
               </Button>
             </div>
           )}
