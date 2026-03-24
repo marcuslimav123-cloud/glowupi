@@ -106,43 +106,41 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-background">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-amber-100/10 pointer-events-none" />
-      
-      <div className="w-full max-w-md relative z-10">
-        <div className="flex flex-col items-center mb-8">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 mb-4 shadow-lg shadow-primary/15">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-[#fafafa]">
+      <div className="w-full max-w-[380px]">
+        <div className="flex flex-col items-center mb-10">
+          <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center mb-5">
             <Sparkles className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-3xl font-display text-foreground text-center">Criar Conta</h1>
-          <p className="text-primary mt-2 font-medium tracking-wide">30 DIAS GRÁTIS</p>
+          <h1 className="text-[28px] font-bold text-foreground tracking-tight">Criar Conta</h1>
+          <p className="text-primary text-[13px] font-medium mt-1 tracking-wide">30 DIAS GRÁTIS</p>
         </div>
 
-        <div className="bg-card border border-border rounded-2xl p-8 shadow-xl">
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-7 shadow-xl shadow-black/[0.03]">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="nome">Nome Completo</Label>
-              <Input id="nome" required value={formData.nome} onChange={handleChange} />
+            <div className="space-y-1.5">
+              <Label htmlFor="nome" className="text-[13px] text-foreground/60">Nome Completo</Label>
+              <Input id="nome" required value={formData.nome} onChange={handleChange} className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]" />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input id="email" type="email" required value={formData.email} onChange={handleChange} />
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-[13px] text-foreground/60">E-mail</Label>
+              <Input id="email" type="email" required value={formData.email} onChange={handleChange} className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]" />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="telefone">WhatsApp</Label>
-              <Input id="telefone" required value={formData.telefone} onChange={handleChange} />
+            <div className="space-y-1.5">
+              <Label htmlFor="telefone" className="text-[13px] text-foreground/60">WhatsApp</Label>
+              <Input id="telefone" required value={formData.telefone} onChange={handleChange} className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]" />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="senha">Senha</Label>
-              <Input id="senha" type="password" required value={formData.senha} onChange={handleChange} />
+            <div className="space-y-1.5">
+              <Label htmlFor="senha" className="text-[13px] text-foreground/60">Senha</Label>
+              <Input id="senha" type="password" required value={formData.senha} onChange={handleChange} className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]" />
             </div>
 
             <Button 
               type="submit" 
-              className="w-full h-12 text-base font-semibold mt-4 shadow-lg shadow-primary/20"
+              className="w-full h-11 text-[14px] font-medium rounded-xl mt-2"
               disabled={registerMutation.isPending}
             >
               {registerMutation.isPending ? "Criando..." : "Começar Agora"}
@@ -151,22 +149,22 @@ export default function Register() {
 
           {googleClientId && (
             <>
-              <div className="relative my-6">
+              <div className="relative my-5">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border"></div>
+                  <div className="w-full border-t border-black/[0.06]"></div>
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">ou cadastre-se com</span>
+                <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
+                  <span className="bg-white px-3 text-foreground/30">ou cadastre-se com</span>
                 </div>
               </div>
               <div id="google-signup-btn" className="flex justify-center" />
               {googleLoading && (
-                <p className="text-center text-sm text-muted-foreground mt-2">Cadastrando com Google...</p>
+                <p className="text-center text-[13px] text-foreground/40 mt-2">Cadastrando com Google...</p>
               )}
             </>
           )}
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
+          <div className="mt-6 text-center text-[13px] text-foreground/40">
             Já tem uma conta?{" "}
             <Link href="/login" className="text-primary hover:underline font-medium">
               Fazer Login

@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: 'Inter', sans-serif;
-  --font-display: 'DM Serif Display', serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -48,50 +48,50 @@
 }
 
 :root {
-  --background: 40 20% 98%;
-  --foreground: 30 10% 15%;
+  --background: 0 0% 98%;
+  --foreground: 0 0% 9%;
   
   --card: 0 0% 100%;
-  --card-foreground: 30 10% 15%;
-  --card-border: 35 15% 90%;
+  --card-foreground: 0 0% 9%;
+  --card-border: 0 0% 92%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 30 10% 15%;
-  --popover-border: 35 15% 88%;
+  --popover-foreground: 0 0% 9%;
+  --popover-border: 0 0% 90%;
 
-  --primary: 38 45% 58%;
+  --primary: 36 55% 52%;
   --primary-foreground: 0 0% 100%;
-  --primary-border: 38 45% 50%;
+  --primary-border: 36 55% 46%;
 
-  --secondary: 35 12% 95%;
-  --secondary-foreground: 30 10% 30%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 25%;
 
-  --muted: 35 10% 93%;
-  --muted-foreground: 30 8% 48%;
+  --muted: 0 0% 95%;
+  --muted-foreground: 0 0% 45%;
 
-  --accent: 35 15% 94%;
-  --accent-foreground: 30 10% 15%;
+  --accent: 0 0% 96%;
+  --accent-foreground: 0 0% 9%;
 
   --destructive: 0 72% 55%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 35 12% 89%;
-  --input: 35 12% 89%;
-  --ring: 38 45% 58%;
+  --border: 0 0% 91%;
+  --input: 0 0% 91%;
+  --ring: 36 55% 52%;
 
-  --sidebar: 40 15% 97%;
-  --sidebar-foreground: 30 10% 25%;
-  --sidebar-border: 35 12% 90%;
-  --sidebar-primary: 38 45% 58%;
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 0 0% 25%;
+  --sidebar-border: 0 0% 93%;
+  --sidebar-primary: 36 55% 52%;
   --sidebar-primary-foreground: 0 0% 100%;
 
-  --radius: 0.625rem;
+  --radius: 0.75rem;
 
-  --chart-1: 38 45% 58%;
-  --chart-2: 30 30% 72%;
-  --chart-3: 25 35% 45%;
-  --chart-4: 150 20% 50%;
-  --chart-5: 15 40% 55%;
+  --chart-1: 36 55% 52%;
+  --chart-2: 28 30% 65%;
+  --chart-3: 20 40% 45%;
+  --chart-4: 150 25% 50%;
+  --chart-5: 10 45% 55%;
 }
 
 @layer base {
@@ -101,26 +101,32 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    background-image: radial-gradient(circle at 50% 0%, hsl(38 30% 95%) 0%, transparent 50%);
-    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    @apply font-normal tracking-tight;
+    @apply font-semibold tracking-tight;
+    letter-spacing: -0.025em;
+  }
+
+  h1 {
+    letter-spacing: -0.04em;
   }
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted rounded-full;
+  @apply bg-foreground/10 rounded-full;
 }
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-muted-foreground/40;
+  @apply bg-foreground/20;
 }

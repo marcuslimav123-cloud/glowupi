@@ -18,7 +18,7 @@ Multi-tenant SaaS for beauty salon management (salão/estúdio de beleza). Full-
 - **API codegen**: Orval (from OpenAPI spec) — run `pnpm --filter @workspace/api-spec run codegen`
 - **Auth**: Session-based (cookie) with bcryptjs password hashing (in-memory sessions map). Super admin uses separate session cookie ("admin_session"). Google Sign-In supported (requires GOOGLE_CLIENT_ID env var)
 - **Build**: esbuild (CJS bundle)
-- **Fonts**: Inter (body/UI) + DM Serif Display (headings)
+- **Fonts**: Inter (all text — headings and body). Apple-inspired design: clean sans-serif, generous whitespace, subtle borders (border-black/[0.04]), #fafafa backgrounds, pill-shaped buttons, minimal shadows
 
 ## Structure
 

@@ -40,31 +40,31 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="h-16 w-16 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center mx-auto mb-4">
-            <Sparkles className="h-8 w-8 text-primary" />
+    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] p-6">
+      <div className="w-full max-w-[360px]">
+        <div className="text-center mb-10">
+          <div className="h-12 w-12 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto mb-5">
+            <Sparkles className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-3xl font-display text-white mb-1">{APP_NAME}</h1>
-          <p className="text-slate-400 text-sm">Painel Administrativo</p>
+          <h1 className="text-[24px] font-bold text-white tracking-tight">{APP_NAME}</h1>
+          <p className="text-white/30 text-[13px] mt-1">Painel Administrativo</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 space-y-6">
-          <div className="space-y-2">
-            <Label className="text-slate-300">Email</Label>
+        <form onSubmit={handleSubmit} className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.06] rounded-2xl p-7 space-y-5">
+          <div className="space-y-1.5">
+            <Label className="text-white/50 text-[13px]">Email</Label>
             <Input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="admin@glowagenda.com"
               required
-              className="bg-white/10 border-white/20 text-white placeholder:text-slate-500"
+              className="bg-white/[0.06] border-white/[0.08] text-white placeholder:text-white/20 h-11 rounded-xl text-[14px]"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-slate-300">Senha</Label>
+          <div className="space-y-1.5">
+            <Label className="text-white/50 text-[13px]">Senha</Label>
             <div className="relative">
               <Input
                 type={showPassword ? "text" : "password"}
@@ -72,19 +72,19 @@ export default function AdminLogin() {
                 onChange={e => setSenha(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="bg-white/10 border-white/20 text-white placeholder:text-slate-500 pr-10"
+                className="bg-white/[0.06] border-white/[0.08] text-white placeholder:text-white/20 pr-10 h-11 rounded-xl text-[14px]"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full h-11 text-[14px] font-medium rounded-xl" disabled={loading}>
             <LogIn className="mr-2 h-4 w-4" />
             {loading ? "Entrando..." : "Entrar"}
           </Button>

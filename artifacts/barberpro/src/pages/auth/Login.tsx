@@ -105,41 +105,39 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-background">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-amber-100/10 pointer-events-none" />
-      
-      <div className="w-full max-w-md relative z-10">
-        <div className="flex flex-col items-center mb-8">
-          <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 mb-4 shadow-lg shadow-primary/15">
-            <Sparkles className="h-8 w-8 text-primary" />
+    <div className="min-h-screen flex items-center justify-center p-6 bg-[#fafafa]">
+      <div className="w-full max-w-[380px]">
+        <div className="flex flex-col items-center mb-10">
+          <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center mb-5">
+            <Sparkles className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-4xl font-display text-foreground text-center">{APP_NAME}</h1>
-          <p className="text-muted-foreground mt-2">{APP_TAGLINE}</p>
+          <h1 className="text-[28px] font-bold text-foreground tracking-tight">{APP_NAME}</h1>
+          <p className="text-foreground/40 text-[14px] mt-1">{APP_TAGLINE}</p>
         </div>
 
-        <div className="bg-card border border-border rounded-2xl p-8 shadow-xl">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-7 shadow-xl shadow-black/[0.03]">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-[13px] text-foreground/60">E-mail</Label>
               <Input 
                 id="email" 
                 type="email" 
                 placeholder="seu@email.com" 
-                className="h-12"
+                className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="senha">Senha</Label>
-                <a href="#" className="text-sm text-primary hover:underline">Esqueceu a senha?</a>
+                <Label htmlFor="senha" className="text-[13px] text-foreground/60">Senha</Label>
+                <a href="#" className="text-[12px] text-primary hover:underline">Esqueceu?</a>
               </div>
               <Input 
                 id="senha" 
                 type="password" 
-                className="h-12"
+                className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]"
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 required
@@ -148,7 +146,7 @@ export default function Login() {
 
             <Button 
               type="submit" 
-              className="w-full h-12 text-base font-semibold shadow-lg shadow-primary/20"
+              className="w-full h-11 text-[14px] font-medium rounded-xl"
               disabled={loginMutation.isPending}
             >
               {loginMutation.isPending ? "Entrando..." : "Entrar"}
@@ -157,22 +155,22 @@ export default function Login() {
 
           {googleClientId && (
             <>
-              <div className="relative my-6">
+              <div className="relative my-5">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border"></div>
+                  <div className="w-full border-t border-black/[0.06]"></div>
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">ou continue com</span>
+                <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
+                  <span className="bg-white px-3 text-foreground/30">ou continue com</span>
                 </div>
               </div>
               <div id="google-signin-btn" className="flex justify-center" />
               {googleLoading && (
-                <p className="text-center text-sm text-muted-foreground mt-2">Autenticando com Google...</p>
+                <p className="text-center text-[13px] text-foreground/40 mt-2">Autenticando com Google...</p>
               )}
             </>
           )}
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
+          <div className="mt-6 text-center text-[13px] text-foreground/40">
             Ainda não tem conta?{" "}
             <Link href="/cadastro" className="text-primary hover:underline font-medium">
               Teste 30 dias grátis

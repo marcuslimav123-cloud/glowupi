@@ -63,8 +63,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
       </div>
     );
   }
@@ -72,71 +72,71 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   if (!admin) return null;
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-slate-900 text-white">
-      <div className="md:hidden flex items-center justify-between p-4 border-b border-white/10 bg-slate-800">
-        <div className="flex items-center gap-2 text-primary font-display font-bold text-xl">
-          <Shield className="h-5 w-5" /> Admin
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#0a0a0a] text-white">
+      <div className="md:hidden flex items-center justify-between px-5 py-3 border-b border-white/[0.06] bg-[#111]">
+        <div className="flex items-center gap-2 font-semibold text-[15px] text-white tracking-tight">
+          <Shield className="h-4 w-4 text-primary" /> Admin
         </div>
-        <Button variant="ghost" size="icon" className="text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-          {mobileMenuOpen ? <X /> : <Menu />}
+        <Button variant="ghost" size="icon" className="text-white h-8 w-8" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </Button>
       </div>
 
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-slate-800 border-r border-white/10 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 flex flex-col",
+        "fixed inset-y-0 left-0 z-50 w-[220px] bg-[#111] border-r border-white/[0.06] transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 flex flex-col",
         mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="p-6 hidden md:flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center">
-            <Shield className="h-5 w-5 text-primary" />
+        <div className="px-5 py-5 hidden md:flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-xl bg-primary/15 flex items-center justify-center">
+            <Shield className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <div className="text-primary font-display font-bold text-lg">{APP_NAME}</div>
-            <div className="text-xs text-slate-400">Super Admin</div>
+            <div className="text-primary font-semibold text-[14px]">{APP_NAME}</div>
+            <div className="text-[11px] text-white/30">Super Admin</div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+        <div className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5">
           {ADMIN_NAV.map(item => (
             <Link
               key={item.name}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+                "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150",
                 location === item.href
-                  ? "bg-primary text-white shadow-lg shadow-primary/20"
-                  : "text-slate-400 hover:text-white hover:bg-white/5"
+                  ? "bg-primary text-white"
+                  : "text-white/40 hover:text-white hover:bg-white/[0.05]"
               )}
               onClick={() => setMobileMenuOpen(false)}
             >
-              <item.icon className="h-5 w-5" />
+              <item.icon className="h-4 w-4" />
               {item.name}
             </Link>
           ))}
         </div>
 
-        <div className="p-4 border-t border-white/10">
-          <div className="flex items-center gap-3 px-3 py-2 mb-4">
-            <div className="h-10 w-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary font-bold">
+        <div className="p-4 border-t border-white/[0.06]">
+          <div className="flex items-center gap-2.5 px-2 py-2 mb-3">
+            <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center text-primary font-semibold text-[12px]">
               {admin.nome.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{admin.nome}</p>
-              <p className="text-xs text-slate-400 truncate">{admin.email}</p>
+              <p className="text-[13px] font-medium text-white truncate">{admin.nome}</p>
+              <p className="text-[11px] text-white/30 truncate">{admin.email}</p>
             </div>
           </div>
           <Button
-            variant="outline"
-            className="w-full justify-start text-slate-400 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20 border-white/20"
+            variant="ghost"
+            className="w-full justify-start text-white/30 hover:text-red-400 hover:bg-red-500/10 text-[13px] h-8 rounded-lg"
             onClick={handleLogout}
           >
-            <LogOut className="mr-2 h-4 w-4" /> Sair
+            <LogOut className="mr-2 h-3.5 w-3.5" /> Sair
           </Button>
         </div>
       </aside>
 
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+        <div className="flex-1 overflow-y-auto p-5 md:p-8">
           {children}
         </div>
       </main>

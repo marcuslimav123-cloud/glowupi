@@ -102,48 +102,46 @@ Esta política pode ser atualizada a qualquer momento. Recomendamos que consulte
 Última atualização: ${new Date().toLocaleDateString("pt-BR")}`;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card/50 sticky top-0 z-50 backdrop-blur-sm">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-2 text-primary font-display font-bold text-lg">
-            <Sparkles className="h-5 w-5" />
+    <div className="min-h-screen bg-[#fafafa]">
+      <header className="border-b border-black/[0.04] bg-white/80 sticky top-0 z-50 backdrop-blur-xl">
+        <div className="max-w-[740px] mx-auto px-6 py-3 flex items-center gap-4">
+          <Link href="/" className="flex items-center gap-2 font-semibold text-[14px] text-foreground">
+            <Sparkles className="h-4 w-4 text-primary" />
             {APP_NAME}
           </Link>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-12">
-        <Link href="/" className="inline-flex items-center gap-1 text-sm text-primary hover:underline mb-8">
-          <ArrowLeft className="h-4 w-4" />
+      <main className="max-w-[740px] mx-auto px-6 py-14">
+        <Link href="/" className="inline-flex items-center gap-1 text-[13px] text-primary hover:underline mb-8">
+          <ArrowLeft className="h-3.5 w-3.5" />
           Voltar
         </Link>
 
-        <div className="flex items-center gap-3 mb-8">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Shield className="h-6 w-6 text-primary" />
+        <div className="flex items-center gap-3 mb-10">
+          <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center">
+            <Shield className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-display text-foreground">Política de Privacidade</h1>
-            <p className="text-muted-foreground">Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018)</p>
+            <h1 className="text-[24px] font-bold text-foreground">Política de Privacidade</h1>
+            <p className="text-foreground/40 text-[13px]">LGPD - Lei nº 13.709/2018</p>
           </div>
         </div>
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary" />
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
           </div>
         ) : (
-          <div className="prose prose-slate max-w-none">
-            <div className="bg-card border border-border rounded-2xl p-8 sm:p-10 whitespace-pre-wrap text-sm text-muted-foreground leading-relaxed">
-              {content || defaultContent}
-            </div>
+          <div className="bg-white border border-black/[0.04] rounded-2xl p-8 sm:p-10 whitespace-pre-wrap text-[14px] text-foreground/55 leading-relaxed">
+            {content || defaultContent}
           </div>
         )}
       </main>
 
-      <footer className="border-t border-border py-8 px-4 bg-card/50">
-        <div className="max-w-4xl mx-auto text-center text-xs text-muted-foreground">
-          &copy; {new Date().getFullYear()} {APP_NAME}. Todos os direitos reservados.
+      <footer className="border-t border-black/[0.04] py-8 px-6 bg-white">
+        <div className="max-w-[740px] mx-auto text-center text-[12px] text-foreground/30">
+          &copy; {new Date().getFullYear()} {APP_NAME}
         </div>
       </footer>
     </div>

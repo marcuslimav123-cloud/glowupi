@@ -12,7 +12,6 @@ import {
   MessageSquare,
   Star,
   ChevronDown,
-  ChevronRight,
   Check,
   ArrowRight,
   Heart,
@@ -152,266 +151,267 @@ export default function Landing() {
   };
 
   const discountLabel = period === "anual" ? "30% OFF" : period === "semestral" ? "15% OFF" : null;
-  const discountColor = period === "anual" ? "bg-amber-500" : "bg-blue-500";
 
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-primary font-display font-bold text-xl tracking-wide">
-            <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-              <Sparkles className="h-5 w-5 text-primary" />
-            </div>
+    <div className="min-h-screen bg-[#fafafa]">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#fafafa]/80 backdrop-blur-xl border-b border-black/[0.04]">
+        <div className="max-w-[1200px] mx-auto px-6 h-12 flex items-center justify-between">
+          <div className="flex items-center gap-2 font-semibold text-[15px] tracking-tight text-foreground">
+            <Sparkles className="h-[18px] w-[18px] text-primary" />
             {APP_NAME}
           </div>
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Funcionalidades</a>
-            <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Preços</a>
-            <a href="#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Depoimentos</a>
-            <a href="#faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
+          <div className="hidden md:flex items-center gap-7">
+            <a href="#features" className="text-xs text-foreground/60 hover:text-foreground transition-colors">Funcionalidades</a>
+            <a href="#pricing" className="text-xs text-foreground/60 hover:text-foreground transition-colors">Preços</a>
+            <a href="#testimonials" className="text-xs text-foreground/60 hover:text-foreground transition-colors">Depoimentos</a>
+            <a href="#faq" className="text-xs text-foreground/60 hover:text-foreground transition-colors">FAQ</a>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/login">
-              <Button variant="ghost" className="text-sm">Entrar</Button>
+              <Button variant="ghost" size="sm" className="text-xs h-8 px-3 text-foreground/60 hover:text-foreground">
+                Entrar
+              </Button>
             </Link>
             <Link href="/cadastro">
-              <Button className="text-sm shadow-lg shadow-primary/20">
-                Teste Grátis <ArrowRight className="ml-1 h-4 w-4" />
+              <Button size="sm" className="text-xs h-8 px-4 rounded-full">
+                Teste Grátis
               </Button>
             </Link>
           </div>
         </div>
       </nav>
 
-      <section className="pt-32 pb-20 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-amber-100/10 pointer-events-none" />
-        <div className="absolute top-20 left-1/4 w-72 h-72 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-amber-200/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-6">
-            <Sparkles className="h-4 w-4" />
+      <section className="pt-28 pb-24 px-6">
+        <div className="max-w-[680px] mx-auto text-center">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/8 text-primary text-xs font-medium mb-8 border border-primary/10">
+            <Sparkles className="h-3 w-3" />
             30 dias grátis para testar
           </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display text-foreground leading-tight mb-6">
+          <h1 className="text-[44px] sm:text-[56px] lg:text-[64px] font-bold text-foreground leading-[1.05] mb-6">
             A plataforma completa para{" "}
-            <span className="text-primary">profissionais de beleza</span>
+            <span className="bg-gradient-to-r from-primary to-amber-500 bg-clip-text text-transparent">profissionais de beleza</span>
           </h1>
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-            Gerencie sua agenda, clientes, finanças e muito mais em um só lugar.
-            Feito sob medida para salões de beleza, estéticas e profissionais autônomos.
+          <p className="text-[17px] sm:text-[19px] text-foreground/50 leading-relaxed max-w-[520px] mx-auto mb-10">
+            Gerencie sua agenda, clientes, finanças e muito mais em um só lugar. Feito sob medida para salões de beleza e estéticas.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/cadastro">
-              <Button size="lg" className="text-base px-8 h-14 shadow-xl shadow-primary/25 w-full sm:w-auto">
+              <Button size="lg" className="text-sm px-8 h-12 rounded-full shadow-lg shadow-primary/15 font-medium w-full sm:w-auto">
                 Começar Agora — É Grátis
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
             <a href="#features">
-              <Button size="lg" variant="outline" className="text-base px-8 h-14 w-full sm:w-auto">
+              <Button size="lg" variant="outline" className="text-sm px-8 h-12 rounded-full w-full sm:w-auto border-black/10 text-foreground/70 hover:text-foreground">
                 Ver Funcionalidades
               </Button>
             </a>
           </div>
-          <div className="mt-10 flex items-center justify-center gap-6 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1"><Check className="h-4 w-4 text-green-500" /> Sem cartão de crédito</span>
-            <span className="flex items-center gap-1"><Check className="h-4 w-4 text-green-500" /> Cancele quando quiser</span>
-            <span className="flex items-center gap-1"><Shield className="h-4 w-4 text-green-500" /> 100% seguro</span>
+          <div className="mt-10 flex items-center justify-center gap-6 text-[13px] text-foreground/40">
+            <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-green-500" /> Sem cartão de crédito</span>
+            <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-green-500" /> Cancele quando quiser</span>
+            <span className="flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-green-500" /> 100% seguro</span>
           </div>
         </div>
       </section>
 
-      <section id="features" className="py-20 px-4 bg-card/50">
-        <div className="max-w-7xl mx-auto">
+      <section id="features" className="py-24 px-6 bg-white">
+        <div className="max-w-[1100px] mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-display text-foreground mb-4">
+            <p className="text-primary text-sm font-medium mb-3">Funcionalidades</p>
+            <h2 className="text-[32px] sm:text-[40px] font-bold text-foreground leading-tight mb-4">
               Tudo que você precisa em um só lugar
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="text-foreground/50 text-[17px] max-w-[480px] mx-auto">
               Ferramentas poderosas para transformar a gestão do seu salão
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {FEATURES.map((feature, i) => (
               <div
                 key={i}
-                className="group p-6 rounded-2xl bg-card border border-border hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300"
+                className="group p-6 rounded-2xl bg-[#fafafa] hover:bg-white border border-transparent hover:border-black/[0.04] hover:shadow-lg hover:shadow-black/[0.03] transition-all duration-300"
               >
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors">
-                  <feature.icon className="h-6 w-6 text-primary" />
+                <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center mb-4">
+                  <feature.icon className="h-5 w-5 text-primary" />
                 </div>
-                <h3 className="text-lg font-display text-foreground mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground text-sm">{feature.desc}</p>
+                <h3 className="text-[15px] font-semibold text-foreground mb-1.5">{feature.title}</h3>
+                <p className="text-foreground/45 text-[14px] leading-relaxed">{feature.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="pricing" className="py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-display text-foreground mb-4">Preços</h2>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-              Escolha o plano ideal para o tamanho do seu salão
-            </p>
-          </div>
-
-          {pricingMode === "single_price" ? (
-            <div className="max-w-md mx-auto">
-              <div className="rounded-2xl border-2 border-primary bg-card p-8 text-center shadow-xl shadow-primary/10">
-                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold mb-4">
-                  <Zap className="h-3 w-3" /> PLANO ÚNICO
-                </div>
-                <h3 className="font-display text-2xl text-foreground mb-2">Acesso Completo</h3>
-                <p className="text-muted-foreground text-sm mb-6">Todas as funcionalidades, sem limites</p>
-                <div className="mb-6">
-                  <span className="text-sm text-muted-foreground">R$</span>
-                  <span className="text-5xl font-display text-foreground ml-1">97</span>
-                  <span className="text-muted-foreground">,00/mês</span>
-                </div>
-                <ul className="text-left space-y-3 mb-8">
-                  {["Profissionais ilimitados", "Agenda completa", "Controle financeiro", "Pacotes de serviços", "Clube de fidelidade", "Relatórios avançados", "Suporte prioritário"].map(f => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Check className="h-4 w-4 text-primary flex-shrink-0" /> {f}
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  size="lg"
-                  className="w-full h-14 text-base shadow-lg shadow-primary/20"
-                  onClick={() => handleSubscribe("single", "mensal")}
-                  disabled={isLoadingCheckout === "single-mensal"}
-                >
-                  {isLoadingCheckout === "single-mensal" ? "Redirecionando..." : "Assinar Agora"}
-                </Button>
-                <p className="text-xs text-muted-foreground mt-3">Em até 12x sem juros no cartão</p>
-              </div>
+      {pricingMode !== "hidden" && (
+        <section id="pricing" className="py-24 px-6">
+          <div className="max-w-[1100px] mx-auto">
+            <div className="text-center mb-14">
+              <p className="text-primary text-sm font-medium mb-3">Preços</p>
+              <h2 className="text-[32px] sm:text-[40px] font-bold text-foreground leading-tight mb-4">
+                Escolha o plano ideal
+              </h2>
+              <p className="text-foreground/50 text-[17px] max-w-[440px] mx-auto">
+                Planos flexíveis para o tamanho do seu negócio
+              </p>
             </div>
-          ) : (
-            <>
-              <div className="flex justify-center mb-10">
-                <div className="inline-flex rounded-xl bg-card border border-border p-1 shadow-sm">
-                  {(["anual", "semestral", "mensal"] as BillingPeriod[]).map((p) => (
-                    <button
-                      key={p}
-                      className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                        period === p
-                          ? "bg-primary text-primary-foreground shadow-md"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                      onClick={() => setPeriod(p)}
-                    >
-                      <div>{p === "anual" ? "Anual" : p === "semestral" ? "Semestral" : "Mensal"}</div>
-                      {p === "anual" && <div className="text-xs opacity-80">30% de desconto</div>}
-                      {p === "semestral" && <div className="text-xs opacity-80">15% de desconto</div>}
-                    </button>
-                  ))}
+
+            {pricingMode === "single_price" ? (
+              <div className="max-w-sm mx-auto">
+                <div className="rounded-3xl bg-white border border-black/[0.06] p-8 text-center shadow-xl shadow-black/[0.03]">
+                  <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/8 text-primary text-xs font-semibold mb-5">
+                    <Zap className="h-3 w-3" /> PLANO ÚNICO
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-1.5">Acesso Completo</h3>
+                  <p className="text-foreground/45 text-sm mb-6">Todas as funcionalidades, sem limites</p>
+                  <div className="mb-8">
+                    <span className="text-sm text-foreground/40">R$</span>
+                    <span className="text-5xl font-bold text-foreground ml-1 tracking-tight">97</span>
+                    <span className="text-foreground/40">,00/mês</span>
+                  </div>
+                  <ul className="text-left space-y-3 mb-8">
+                    {["Profissionais ilimitados", "Agenda completa", "Controle financeiro", "Pacotes de serviços", "Clube de fidelidade", "Relatórios avançados", "Suporte prioritário"].map(f => (
+                      <li key={f} className="flex items-center gap-2.5 text-sm text-foreground/60">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0" /> {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    size="lg"
+                    className="w-full h-12 text-sm rounded-full font-medium"
+                    onClick={() => handleSubscribe("single", "mensal")}
+                    disabled={isLoadingCheckout === "single-mensal"}
+                  >
+                    {isLoadingCheckout === "single-mensal" ? "Redirecionando..." : "Assinar Agora"}
+                  </Button>
+                  <p className="text-xs text-foreground/35 mt-3">Em até 12x sem juros no cartão</p>
                 </div>
               </div>
-
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-                {TIERS_STATIC.map((tier) => {
-                  const priceValue = tier.prices[period];
-                  const originalPrice = tier.prices.mensal;
-                  const isPopular = tier.popular;
-                  const loadingKey = `${tier.tier}-${period}`;
-
-                  return (
-                    <div
-                      key={tier.tier}
-                      className={`rounded-2xl bg-card p-6 flex flex-col relative transition-all duration-300 hover:shadow-xl ${
-                        isPopular
-                          ? "border-2 border-primary shadow-xl shadow-primary/10 scale-[1.02]"
-                          : "border border-border hover:border-primary/30"
-                      }`}
-                    >
-                      {discountLabel && (
-                        <div className={`absolute -top-3 right-4 ${discountColor} text-white text-xs font-bold px-3 py-1 rounded-full shadow-md`}>
-                          {discountLabel}
-                        </div>
-                      )}
-                      {isPopular && (
-                        <div className="absolute -top-3 left-4 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full shadow-md">
-                          POPULAR
-                        </div>
-                      )}
-
-                      <h3 className="font-display text-lg text-foreground mt-2">{tier.label}</h3>
-
-                      <div className="mt-4 mb-1">
-                        <span className="text-sm text-muted-foreground">R$</span>
-                        <span className="text-4xl font-display text-foreground ml-1">
-                          {formatBRL(priceValue).split(",")[0]}
-                        </span>
-                        <span className="text-muted-foreground">,{formatBRL(priceValue).split(",")[1]}/mês</span>
-                      </div>
-
-                      {period !== "mensal" && (
-                        <p className="text-sm text-muted-foreground line-through mb-1">
-                          R$ {formatBRL(originalPrice)}/mês
-                        </p>
-                      )}
-
-                      {period !== "mensal" && (
-                        <p className="text-sm text-muted-foreground mb-4">
-                          Valor Total: R$ {formatBRL(tier.totals[period as "semestral" | "anual"])}
-                        </p>
-                      )}
-
-                      {period === "mensal" && <div className="mb-4" />}
-
-                      <Button
-                        className={`w-full mt-auto h-12 font-semibold ${
-                          isPopular ? "shadow-lg shadow-primary/20" : ""
+            ) : (
+              <>
+                <div className="flex justify-center mb-10">
+                  <div className="inline-flex rounded-full bg-white border border-black/[0.06] p-1 shadow-sm">
+                    {(["anual", "semestral", "mensal"] as BillingPeriod[]).map((p) => (
+                      <button
+                        key={p}
+                        className={`px-5 py-2 rounded-full text-[13px] font-medium transition-all duration-200 ${
+                          period === p
+                            ? "bg-foreground text-white shadow-md"
+                            : "text-foreground/50 hover:text-foreground"
                         }`}
-                        variant={isPopular ? "default" : "outline"}
-                        onClick={() => handleSubscribe(tier.tier, period)}
-                        disabled={isLoadingCheckout === loadingKey}
+                        onClick={() => setPeriod(p)}
                       >
-                        {isLoadingCheckout === loadingKey ? "Redirecionando..." : "Assinar"}
-                      </Button>
+                        <div>{p === "anual" ? "Anual" : p === "semestral" ? "Semestral" : "Mensal"}</div>
+                        {p === "anual" && <div className="text-[10px] opacity-70 mt-0.5">Economize 30%</div>}
+                        {p === "semestral" && <div className="text-[10px] opacity-70 mt-0.5">Economize 15%</div>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-                      <p className="text-xs text-center text-muted-foreground mt-2">
-                        {period === "anual"
-                          ? "Em até 12x s/ juros no cartão"
-                          : period === "semestral"
-                          ? "Em até 6x s/ juros no cartão"
-                          : "Cobrança mensal"}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
-      </section>
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-[1000px] mx-auto">
+                  {TIERS_STATIC.map((tier) => {
+                    const priceValue = tier.prices[period];
+                    const originalPrice = tier.prices.mensal;
+                    const isPopular = tier.popular;
+                    const loadingKey = `${tier.tier}-${period}`;
 
-      <section id="testimonials" className="py-20 px-4 bg-card/50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-display text-foreground mb-4">
+                    return (
+                      <div
+                        key={tier.tier}
+                        className={`rounded-2xl bg-white p-6 flex flex-col relative transition-all duration-300 ${
+                          isPopular
+                            ? "border-2 border-primary shadow-xl shadow-primary/8 ring-1 ring-primary/5"
+                            : "border border-black/[0.06] hover:border-black/[0.1] hover:shadow-lg hover:shadow-black/[0.03]"
+                        }`}
+                      >
+                        {discountLabel && (
+                          <div className="absolute -top-2.5 right-4 bg-foreground text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                            {discountLabel}
+                          </div>
+                        )}
+                        {isPopular && (
+                          <div className="absolute -top-2.5 left-4 bg-primary text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                            POPULAR
+                          </div>
+                        )}
+
+                        <h3 className="font-semibold text-[15px] text-foreground mt-2">{tier.label}</h3>
+
+                        <div className="mt-4 mb-1">
+                          <span className="text-xs text-foreground/40">R$</span>
+                          <span className="text-[32px] font-bold text-foreground ml-0.5 tracking-tight">
+                            {formatBRL(priceValue).split(",")[0]}
+                          </span>
+                          <span className="text-foreground/40 text-sm">,{formatBRL(priceValue).split(",")[1]}/mês</span>
+                        </div>
+
+                        {period !== "mensal" && (
+                          <p className="text-xs text-foreground/35 line-through mb-0.5">
+                            R$ {formatBRL(originalPrice)}/mês
+                          </p>
+                        )}
+
+                        {period !== "mensal" && (
+                          <p className="text-xs text-foreground/40 mb-4">
+                            Total: R$ {formatBRL(tier.totals[period as "semestral" | "anual"])}
+                          </p>
+                        )}
+
+                        {period === "mensal" && <div className="mb-4" />}
+
+                        <Button
+                          className={`w-full mt-auto h-11 text-[13px] font-medium rounded-full ${
+                            isPopular ? "shadow-md shadow-primary/15" : ""
+                          }`}
+                          variant={isPopular ? "default" : "outline"}
+                          onClick={() => handleSubscribe(tier.tier, period)}
+                          disabled={isLoadingCheckout === loadingKey}
+                        >
+                          {isLoadingCheckout === loadingKey ? "Redirecionando..." : "Assinar"}
+                        </Button>
+
+                        <p className="text-[11px] text-center text-foreground/35 mt-2">
+                          {period === "anual"
+                            ? "Em até 12x s/ juros"
+                            : period === "semestral"
+                            ? "Em até 6x s/ juros"
+                            : "Cobrança mensal"}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+      )}
+
+      <section id="testimonials" className="py-24 px-6 bg-white">
+        <div className="max-w-[1100px] mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-primary text-sm font-medium mb-3">Depoimentos</p>
+            <h2 className="text-[32px] sm:text-[40px] font-bold text-foreground leading-tight">
               O que nossas clientes dizem
             </h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-5">
             {TESTIMONIALS.map((t, i) => (
-              <div key={i} className="rounded-2xl bg-card border border-border p-6">
-                <div className="flex gap-1 mb-4">
+              <div key={i} className="rounded-2xl bg-[#fafafa] border border-transparent p-7">
+                <div className="flex gap-0.5 mb-5">
                   {[1, 2, 3, 4, 5].map((s) => (
                     <Star key={s} className="h-4 w-4 fill-primary text-primary" />
                   ))}
                 </div>
-                <p className="text-muted-foreground text-sm mb-4 italic">"{t.text}"</p>
+                <p className="text-foreground/60 text-[14px] leading-relaxed mb-6">"{t.text}"</p>
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-semibold text-sm">
                     {t.name.charAt(0)}
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">{t.role}</p>
+                    <p className="text-xs text-foreground/40">{t.role}</p>
                   </div>
                 </div>
               </div>
@@ -420,29 +420,30 @@ export default function Landing() {
         </div>
       </section>
 
-      <section id="faq" className="py-20 px-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-display text-foreground mb-4">
+      <section id="faq" className="py-24 px-6">
+        <div className="max-w-[640px] mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-primary text-sm font-medium mb-3">FAQ</p>
+            <h2 className="text-[32px] sm:text-[40px] font-bold text-foreground leading-tight">
               Perguntas Frequentes
             </h2>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {FAQ_ITEMS.map((item, i) => (
-              <div key={i} className="rounded-xl border border-border bg-card overflow-hidden">
+              <div key={i} className="rounded-2xl bg-white border border-black/[0.04] overflow-hidden">
                 <button
-                  className="w-full px-6 py-4 flex items-center justify-between text-left"
+                  className="w-full px-6 py-4.5 flex items-center justify-between text-left"
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                 >
-                  <span className="font-medium text-foreground text-sm">{item.q}</span>
+                  <span className="font-medium text-foreground text-[14px]">{item.q}</span>
                   <ChevronDown
-                    className={`h-5 w-5 text-muted-foreground transition-transform ${
+                    className={`h-4 w-4 text-foreground/30 transition-transform duration-200 ${
                       openFaq === i ? "rotate-180" : ""
                     }`}
                   />
                 </button>
                 {openFaq === i && (
-                  <div className="px-6 pb-4 text-sm text-muted-foreground">{item.a}</div>
+                  <div className="px-6 pb-5 text-[14px] text-foreground/50 leading-relaxed">{item.a}</div>
                 )}
               </div>
             ))}
@@ -450,42 +451,41 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="py-20 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 pointer-events-none" />
-        <div className="max-w-3xl mx-auto text-center relative z-10">
-          <h2 className="text-3xl sm:text-4xl font-display text-foreground mb-4">
+      <section className="py-24 px-6">
+        <div className="max-w-[640px] mx-auto text-center">
+          <h2 className="text-[32px] sm:text-[40px] font-bold text-foreground leading-tight mb-4">
             Pronta para transformar seu salão?
           </h2>
-          <p className="text-lg text-muted-foreground mb-8">
-            Comece agora com 30 dias grátis e descubra como o Glow Agenda pode simplificar sua rotina.
+          <p className="text-[17px] text-foreground/50 mb-10">
+            Comece agora com 30 dias grátis e descubra como o {APP_NAME} pode simplificar sua rotina.
           </p>
           <Link href="/cadastro">
-            <Button size="lg" className="text-base px-10 h-14 shadow-xl shadow-primary/25">
+            <Button size="lg" className="text-sm px-10 h-12 rounded-full shadow-lg shadow-primary/15 font-medium">
               Começar Teste Grátis
-              <ArrowRight className="ml-2 h-5 w-5" />
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
         </div>
       </section>
 
-      <footer className="border-t border-border py-12 px-4 bg-card/50">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2 text-primary font-display font-bold text-lg">
-            <Sparkles className="h-5 w-5" />
+      <footer className="border-t border-black/[0.04] py-10 px-6 bg-white">
+        <div className="max-w-[1100px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-2 font-semibold text-[14px] text-foreground">
+            <Sparkles className="h-4 w-4 text-primary" />
             {APP_NAME}
           </div>
-          <div className="flex gap-6 text-sm text-muted-foreground">
+          <div className="flex gap-6 text-[13px] text-foreground/40">
             <a href="#features" className="hover:text-foreground transition-colors">Funcionalidades</a>
             <a href="#pricing" className="hover:text-foreground transition-colors">Preços</a>
             <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
           </div>
           <div className="flex flex-col md:flex-row items-center gap-4">
-            <div className="flex gap-4 text-xs text-muted-foreground">
+            <div className="flex gap-4 text-[12px] text-foreground/35">
               <Link href="/politica-de-privacidade" className="hover:text-foreground transition-colors">Política de Privacidade</Link>
               <Link href="/termos-de-uso" className="hover:text-foreground transition-colors">Termos de Uso</Link>
             </div>
-            <p className="text-xs text-muted-foreground">
-              &copy; {new Date().getFullYear()} {APP_NAME}. Todos os direitos reservados.
+            <p className="text-[12px] text-foreground/30">
+              &copy; {new Date().getFullYear()} {APP_NAME}
             </p>
           </div>
         </div>

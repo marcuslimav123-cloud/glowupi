@@ -19,13 +19,13 @@ export default function Dashboard() {
     return (
       <AppLayout>
         <div className="space-y-6 animate-pulse">
-          <div className="h-10 w-48 bg-card rounded-lg"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1,2,3,4].map(i => <div key={i} className="h-32 bg-card rounded-2xl"></div>)}
+          <div className="h-8 w-40 bg-black/[0.04] rounded-lg"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[1,2,3,4].map(i => <div key={i} className="h-28 bg-white rounded-2xl border border-black/[0.04]"></div>)}
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="h-96 bg-card rounded-2xl lg:col-span-2"></div>
-            <div className="h-96 bg-card rounded-2xl"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div className="h-80 bg-white rounded-2xl border border-black/[0.04] lg:col-span-2"></div>
+            <div className="h-80 bg-white rounded-2xl border border-black/[0.04]"></div>
           </div>
         </div>
       </AppLayout>
@@ -38,15 +38,15 @@ export default function Dashboard() {
     <AppLayout>
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Visão geral do seu negócio</p>
+          <h1 className="text-[24px] font-bold text-foreground">Dashboard</h1>
+          <p className="text-foreground/40 text-[14px] mt-0.5">Visão geral do seu negócio</p>
         </div>
-        <div className="flex bg-card p-1 rounded-lg border border-border w-fit">
+        <div className="flex bg-white p-1 rounded-full border border-black/[0.06] w-fit">
           {["hoje", "semana", "mes"].map((p) => (
             <button
               key={p}
               onClick={() => setPeriodo(p as any)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${periodo === p ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`px-4 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200 ${periodo === p ? 'bg-foreground text-white' : 'text-foreground/40 hover:text-foreground'}`}
             >
               {p.charAt(0).toUpperCase() + p.slice(1)}
             </button>
@@ -54,7 +54,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard 
           title="Faturamento" 
           value={formatCurrency(data.faturamentoTotal)} 
@@ -78,25 +78,25 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <Card className="lg:col-span-2 border-border/50 shadow-xl bg-card/50 backdrop-blur-sm">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+        <Card className="lg:col-span-2 bg-white border-black/[0.04] shadow-none">
           <CardHeader>
-            <CardTitle className="text-lg">Faturamento ({periodo})</CardTitle>
+            <CardTitle className="text-[15px] font-semibold">Faturamento ({periodo})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px] w-full">
+            <div className="h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.faturamentoPorDia} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <XAxis dataKey="data" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `R$${val}`} />
+                  <XAxis dataKey="data" stroke="hsl(var(--foreground) / 0.25)" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="hsl(var(--foreground) / 0.25)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(val) => `R$${val}`} />
                   <RechartsTooltip 
-                    cursor={{fill: 'hsl(var(--muted)/0.5)'}}
-                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
+                    cursor={{fill: 'hsl(var(--foreground) / 0.03)'}}
+                    contentStyle={{ backgroundColor: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '12px', fontSize: '13px' }}
                     itemStyle={{ color: 'hsl(var(--foreground))' }}
                   />
-                  <Bar dataKey="valor" radius={[4, 4, 0, 0]}>
+                  <Bar dataKey="valor" radius={[6, 6, 0, 0]}>
                     {data.faturamentoPorDia.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={index === data.faturamentoPorDia.length - 1 ? 'hsl(var(--primary))' : 'hsl(var(--primary)/0.4)'} />
+                      <Cell key={`cell-${index}`} fill={index === data.faturamentoPorDia.length - 1 ? 'hsl(var(--primary))' : 'hsl(var(--primary) / 0.3)'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -105,29 +105,29 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/50 shadow-xl bg-card/50 backdrop-blur-sm">
+        <Card className="bg-white border-black/[0.04] shadow-none">
           <CardHeader>
-            <CardTitle className="text-lg">Top Serviços</CardTitle>
+            <CardTitle className="text-[15px] font-semibold">Top Serviços</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center">
-            <div className="h-[220px] w-full">
+            <div className="h-[200px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={data.topServicos} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="valor">
+                  <Pie data={data.topServicos} innerRadius={55} outerRadius={75} paddingAngle={4} dataKey="valor">
                     {data.topServicos.map((entry, index) => (
                       <PieCell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <RechartsTooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }} />
+                  <RechartsTooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '12px', fontSize: '13px' }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="w-full space-y-2 mt-4">
+            <div className="w-full space-y-2 mt-3">
               {data.topServicos.map((servico, idx) => (
-                <div key={idx} className="flex items-center justify-between text-sm">
+                <div key={idx} className="flex items-center justify-between text-[13px]">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
-                    <span className="text-muted-foreground">{servico.nome}</span>
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
+                    <span className="text-foreground/50">{servico.nome}</span>
                   </div>
                   <span className="font-semibold text-foreground">{servico.percentual}%</span>
                 </div>
@@ -137,26 +137,26 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border-border/50 shadow-xl bg-card/50">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="bg-white border-black/[0.04] shadow-none">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2"><Award className="h-5 w-5 text-primary" /> Ranking Profissionais</CardTitle>
+            <CardTitle className="text-[15px] font-semibold flex items-center gap-2"><Award className="h-4 w-4 text-primary" /> Ranking Profissionais</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {data.rankingProfissionais.map((prof, idx) => (
-                <div key={prof.profissionalId} className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-border/50 hover:border-primary/30 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm ${idx === 0 ? 'bg-yellow-500/20 text-yellow-500' : idx === 1 ? 'bg-slate-300/20 text-slate-300' : idx === 2 ? 'bg-amber-700/20 text-amber-700' : 'bg-muted text-muted-foreground'}`}>
+                <div key={prof.profissionalId} className="flex items-center justify-between p-3 rounded-xl bg-[#fafafa] hover:bg-black/[0.02] transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className={`h-7 w-7 rounded-full flex items-center justify-center font-bold text-[11px] ${idx === 0 ? 'bg-amber-100 text-amber-600' : idx === 1 ? 'bg-slate-100 text-slate-500' : idx === 2 ? 'bg-orange-100 text-orange-600' : 'bg-black/[0.04] text-foreground/40'}`}>
                       {idx + 1}
                     </div>
                     <div>
-                      <p className="font-semibold text-foreground">{prof.nome}</p>
-                      <p className="text-xs text-muted-foreground">{prof.atendimentos} atendimentos</p>
+                      <p className="font-medium text-[13px] text-foreground">{prof.nome}</p>
+                      <p className="text-[11px] text-foreground/35">{prof.atendimentos} atendimentos</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-primary">{formatCurrency(prof.faturamento)}</p>
+                    <p className="font-semibold text-[13px] text-primary">{formatCurrency(prof.faturamento)}</p>
                   </div>
                 </div>
               ))}
@@ -164,18 +164,18 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/50 shadow-xl bg-card/50">
+        <Card className="bg-white border-black/[0.04] shadow-none">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2"><AlertCircle className="h-5 w-5 text-destructive" /> Alertas</CardTitle>
+            <CardTitle className="text-[15px] font-semibold flex items-center gap-2"><AlertCircle className="h-4 w-4 text-red-500" /> Alertas</CardTitle>
           </CardHeader>
           <CardContent>
             {data.alertas.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">Nenhum alerta no momento.</div>
+              <div className="text-center py-8 text-foreground/35 text-[14px]">Nenhum alerta no momento.</div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {data.alertas.map((alerta, idx) => (
-                  <div key={idx} className={`p-4 rounded-xl border ${alerta.nivel === 'danger' ? 'bg-destructive/10 border-destructive/30 text-destructive-foreground' : 'bg-amber-500/10 border-amber-500/30 text-amber-500'}`}>
-                    <p className="font-medium text-sm">{alerta.mensagem}</p>
+                  <div key={idx} className={`p-3.5 rounded-xl border ${alerta.nivel === 'danger' ? 'bg-red-50 border-red-100 text-red-600' : 'bg-amber-50 border-amber-100 text-amber-600'}`}>
+                    <p className="font-medium text-[13px]">{alerta.mensagem}</p>
                   </div>
                 ))}
               </div>
@@ -190,19 +190,19 @@ export default function Dashboard() {
 
 function MetricCard({ title, value, icon: Icon, trend }: any) {
   return (
-    <Card className="border-border/50 shadow-xl bg-card/50 backdrop-blur-sm hover:shadow-primary/5 transition-all duration-300">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <div className="p-2 rounded-lg bg-primary/10 text-primary">
-            <Icon className="h-5 w-5" />
+    <Card className="bg-white border-black/[0.04] shadow-none hover:shadow-lg hover:shadow-black/[0.02] transition-all duration-300">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[13px] font-medium text-foreground/40">{title}</p>
+          <div className="p-1.5 rounded-lg bg-primary/8 text-primary">
+            <Icon className="h-4 w-4" />
           </div>
         </div>
-        <div className="flex items-end gap-3">
-          <h3 className="text-3xl font-display font-bold text-foreground">{value}</h3>
+        <div className="flex items-end gap-2">
+          <h3 className="text-[26px] font-bold text-foreground tracking-tight">{value}</h3>
           {trend !== undefined && (
-            <span className={`flex items-center text-sm font-medium mb-1 ${trend >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {trend >= 0 ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <ArrowDownRight className="h-4 w-4 mr-1" />}
+            <span className={`flex items-center text-[12px] font-medium mb-0.5 ${trend >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {trend >= 0 ? <ArrowUpRight className="h-3.5 w-3.5 mr-0.5" /> : <ArrowDownRight className="h-3.5 w-3.5 mr-0.5" />}
               {Math.abs(trend)}%
             </span>
           )}
