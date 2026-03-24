@@ -35,14 +35,21 @@ router.get("/", requireAuth, async (req, res) => {
   const user = (req as any).user;
 
   if (user.role === "colaborador") {
+    if (!user.profissionalId) {
+      return res.json({
+        isColaboradorView: true,
+        meusAgendamentosHoje: [],
+        totalAgendamentosHoje: 0,
+        confirmados: 0,
+        pagos: 0,
+      });
+    }
     const todayStr = new Date().toISOString().slice(0, 10);
     const conditions: any[] = [
       eq(agendamentosTable.barbeariaId, barbeariaId),
       eq(agendamentosTable.data, todayStr),
+      eq(agendamentosTable.profissionalId, user.profissionalId),
     ];
-    if (user.profissionalId) {
-      conditions.push(eq(agendamentosTable.profissionalId, user.profissionalId));
-    }
     const meusAgendamentos = await db.select().from(agendamentosTable).where(and(...conditions));
     return res.json({
       isColaboradorView: true,

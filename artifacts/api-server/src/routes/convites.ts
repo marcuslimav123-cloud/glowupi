@@ -209,6 +209,15 @@ router.patch("/equipe/:id", requireAuth, async (req, res) => {
 
     if (Object.keys(updates).length === 0) return res.status(400).json({ error: "Nenhuma alteração informada" });
 
+    if (role === "colaborador" && !membro.profissionalId) {
+      const [prof] = await db.insert(profissionaisTable).values({
+        barbeariaId: barbearia.id,
+        nomeExibicao: membro.nome,
+        ativo: true,
+      }).returning();
+      updates.profissionalId = prof.id;
+    }
+
     const [updated] = await db.update(usersTable).set(updates).where(eq(usersTable.id, membroId)).returning();
     return res.json({
       id: updated.id,
