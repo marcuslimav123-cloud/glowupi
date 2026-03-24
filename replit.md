@@ -104,6 +104,6 @@ All under `/api`:
 
 - shadcn Select components do NOT bind to native form FormData — always use React state (useState) for Select values
 - DB numeric fields stored as strings in Postgres — parse with parseFloat() in routes
-- Demo login: joao@barberpro.com / 123456, barbeariaId: 1
+- Demo login: joao@barberpro.com / 123456, barbeariaId: 1 (legacy test credentials, not user-facing)
 - `date-fns` v3 is installed; use `date-fns/locale` for ptBR
 - API endpoint names still use "barbearias" for backward compatibility

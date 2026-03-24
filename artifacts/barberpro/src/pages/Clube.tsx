@@ -25,7 +25,7 @@ export default function Clube() {
   return (
     <AppLayout>
       <div className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-foreground">Clube do Assinante</h1>
+        <h1 className="text-3xl font-display font-bold text-foreground">Clube de Fidelidade</h1>
         <p className="text-muted-foreground mt-1">Programa de fidelidade e recompensas</p>
       </div>
 
