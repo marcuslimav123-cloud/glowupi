@@ -19,6 +19,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function apiUrl(path: string): string {
+  const base = import.meta.env.BASE_URL || "/";
+  return `${base}api${path}`.replace(/\/\//g, "/");
+}
+
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',

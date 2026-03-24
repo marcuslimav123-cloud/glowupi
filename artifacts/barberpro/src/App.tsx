@@ -28,6 +28,12 @@ import Avaliacoes from "@/pages/Avaliacoes";
 import Mensagens from "@/pages/Mensagens";
 import Picos from "@/pages/agenda/Picos";
 
+import AdminLogin from "@/pages/admin/AdminLogin";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
+import AdminTenants from "@/pages/admin/AdminTenants";
+import AdminSettings from "@/pages/admin/AdminSettings";
+import AdminRevenue from "@/pages/admin/AdminRevenue";
+
 const queryClient = new QueryClient();
 
 function Router() {
@@ -59,6 +65,12 @@ function Router() {
       <Route path="/mensagens" component={Mensagens} />
       <Route path="/empresa" component={Empresa} />
       <Route path="/clube" component={Clube} />
+
+      <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/assinantes" component={AdminTenants} />
+      <Route path="/admin/configuracoes" component={AdminSettings} />
+      <Route path="/admin/receita" component={AdminRevenue} />
 
       <Route component={NotFound} />
     </Switch>

@@ -16,7 +16,7 @@ Multi-tenant SaaS for beauty salon management (salão/estúdio de beleza). Full-
 - **Payments**: Stripe (via Replit integration) + stripe-replit-sync
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec) — run `pnpm --filter @workspace/api-spec run codegen`
-- **Auth**: Session-based (cookie) with SHA-256 password hashing (in-memory sessions map)
+- **Auth**: Session-based (cookie) with bcryptjs password hashing (in-memory sessions map). Super admin uses separate session cookie ("admin_session")
 - **Build**: esbuild (CJS bundle)
 - **Fonts**: Inter (body/UI) + DM Serif Display (headings)
 
@@ -106,6 +106,14 @@ All under `/api`:
 - `/stripe/webhook` — Stripe webhook (registered before express.json)
 - `/public/{slug}` — Public salon page (no auth required)
 - `/public/{slug}/agendar` — Public appointment booking
+- `/admin/login` — Super admin login (separate auth system)
+- `/admin/logout` — Super admin logout
+- `/admin/me` — Get current super admin profile
+- `/admin/dashboard` — Platform overview stats (studios, subscriptions, churn, plan distribution)
+- `/admin/tenants` — List all salon tenants with owner info
+- `/admin/tenants/:id/toggle` — Activate/deactivate a salon
+- `/admin/config` — GET/PUT platform configuration (pricing_mode, etc.)
+- `/admin/revenue` — Revenue analytics (status/plan/period breakdown, monthly revenue)
 
 ## Frontend Pages
 
@@ -130,6 +138,11 @@ All under `/api`:
 - `/mensagens` — Return messages & promotions (draft/send)
 - `/empresa` — Studio settings with ViaCEP + hours toggle
 - `/clube` — Loyalty program (Ranking/Recompensas/Resgates tabs)
+- `/admin/login` — Super admin login (dark slate theme)
+- `/admin` — Admin dashboard (KPI cards, recent signups, plan distribution)
+- `/admin/assinantes` — Tenant management (search, activate/deactivate)
+- `/admin/configuracoes` — Platform configuration (pricing mode toggle)
+- `/admin/receita` — Revenue analytics (subscription/plan/period breakdown, monthly chart)
 
 ## Design & Theme
 
@@ -165,6 +178,12 @@ All under `/api`:
 - Inventory movement history (entrada/saída) per product with reason tracking
 - Public page enhanced with fotos, formasPagamento, redesSociais from barbearias
 - Slots API respects per-professional schedules (horarios.porDia with folga support)
+- Super Admin Panel at `/admin/*` with dark slate theme (separate from main app)
+  - Login: admin@glowagenda.com / admin123 (seeded via env vars SUPER_ADMIN_EMAIL/SUPER_ADMIN_PASSWORD)
+  - Dashboard: KPI cards, recent signups, plan distribution
+  - Tenant management: search, toggle activate/deactivate
+  - Platform config: pricing_mode toggle (all_plans/featured_only/hidden)
+  - Revenue analytics: subscription status/plan/period breakdown, monthly revenue chart
 
 ## Important Notes
 

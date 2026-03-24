@@ -22,10 +22,12 @@ import resgatesRouter from "./resgates.js";
 import movimentacoesEstoqueRouter from "./movimentacoesEstoque.js";
 import mensagensRouter from "./mensagens.js";
 import checkoutRouter from "./checkout.js";
+import adminRouter from "./admin.js";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use("/admin", adminRouter);
 router.use("/auth", authRouter);
 router.use("/barbearias", barbeariasRouter);
 router.use("/barbearias/:barbeariaId/profissionais", profissionaisRouter);

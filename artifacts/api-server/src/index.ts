@@ -1,5 +1,6 @@
 import { runMigrations } from 'stripe-replit-sync';
 import { getStripeSync } from "./stripeClient.js";
+import { seedSuperAdmins } from "./lib/adminAuth.js";
 import app from "./app.js";
 
 async function initStripe() {
@@ -55,6 +56,7 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 await initStripe();
+await seedSuperAdmins().catch(err => console.error("Error seeding super admins:", err));
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
