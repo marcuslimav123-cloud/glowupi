@@ -20,7 +20,7 @@ import {
   Heart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { APP_NAME } from "@/lib/utils";
+import { APP_NAME, getRoleLabel } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -136,7 +136,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">{user.nome}</p>
-              <p className="text-xs text-muted-foreground truncate capitalize">{user.role === 'dono' ? 'proprietária' : user.role}</p>
+              <p className="text-xs text-muted-foreground truncate capitalize">{getRoleLabel(user.role)}</p>
             </div>
           </div>
           <Button variant="outline" className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/20" onClick={logout}>

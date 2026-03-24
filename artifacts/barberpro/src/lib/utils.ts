@@ -4,6 +4,17 @@ import { twMerge } from "tailwind-merge";
 export const APP_NAME = "Glow Agenda";
 export const APP_TAGLINE = "Organize sua agenda e fidelize suas clientes";
 
+const ROLE_LABELS: Record<string, string> = {
+  dono: "proprietária",
+  gerente: "gerente",
+  barbeiro: "profissional",
+  cliente: "cliente",
+};
+
+export function getRoleLabel(role: string): string {
+  return ROLE_LABELS[role] || role;
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
