@@ -182,8 +182,9 @@ All under `/api`:
   - Login: admin@glowagenda.com / admin123 (seeded via env vars SUPER_ADMIN_EMAIL/SUPER_ADMIN_PASSWORD)
   - Dashboard: KPI cards, recent signups, plan distribution
   - Tenant management: search, toggle activate/deactivate
-  - Platform config: pricing_mode toggle (all_plans/featured_only/hidden)
-  - Revenue analytics: subscription status/plan/period breakdown, monthly revenue chart
+  - Platform config: pricing_mode toggle (all_plans/single_price/hidden)
+  - Revenue analytics: MRR/ARR cards, MRR by plan, subscription/plan/period breakdown, monthly revenue chart
+  - Default credentials should be overridden in production via SUPER_ADMIN_EMAIL/SUPER_ADMIN_PASSWORD env vars
 
 ## Important Notes
 
