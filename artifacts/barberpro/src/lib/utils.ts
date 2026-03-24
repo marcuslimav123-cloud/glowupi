@@ -1,6 +1,9 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+export const APP_NAME = "Glow Agenda";
+export const APP_TAGLINE = "Organize sua agenda e fidelize suas clientes";
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }

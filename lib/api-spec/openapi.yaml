@@ -1043,7 +1043,7 @@ components:
           nullable: true
         role:
           type: string
-          enum: [dono, gerente, profissional, cliente]
+          enum: [dono, gerente, barbeiro, cliente]
         createdAt:
           type: string
       required:

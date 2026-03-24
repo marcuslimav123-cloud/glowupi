@@ -20,6 +20,7 @@ import {
   Heart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { APP_NAME } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -73,7 +74,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
       <div className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card">
         <div className="flex items-center gap-2 text-primary font-display font-bold text-xl">
-          <Sparkles className="h-5 w-5" /> Glow Agenda
+          <Sparkles className="h-5 w-5" /> {APP_NAME}
         </div>
         <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
           {mobileMenuOpen ? <X /> : <Menu />}
@@ -88,7 +89,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
             <Sparkles className="h-5 w-5 text-primary" />
           </div>
-          Glow Agenda
+          {APP_NAME}
         </div>
 
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">

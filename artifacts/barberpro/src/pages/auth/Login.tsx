@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { APP_NAME, APP_TAGLINE } from "@/lib/utils";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -37,8 +38,8 @@ export default function Login() {
           <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 mb-4 shadow-lg shadow-primary/15">
             <Sparkles className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-4xl font-display text-foreground text-center">Glow Agenda</h1>
-          <p className="text-muted-foreground mt-2">Organize sua agenda e fidelize suas clientes</p>
+          <h1 className="text-4xl font-display text-foreground text-center">{APP_NAME}</h1>
+          <p className="text-muted-foreground mt-2">{APP_TAGLINE}</p>
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-8 shadow-xl">
