@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { clienteUsersTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { hashPassword, createClientSession, deleteClientSession, requireClient } from "../lib/auth.js";
+import { OAuth2Client } from "google-auth-library";
 
 const router: IRouter = Router();
 
@@ -90,12 +91,16 @@ router.post("/google", async (req, res) => {
     const { credential } = req.body;
     if (!credential) return res.status(400).json({ error: "Credential é obrigatório" });
 
-    const parts = credential.split(".");
-    if (parts.length !== 3) return res.status(400).json({ error: "Token inválido" });
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) return res.status(500).json({ error: "Login com Google não configurado" });
 
-    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+    const oauth2Client = new OAuth2Client(clientId);
+    const ticket = await oauth2Client.verifyIdToken({ idToken: credential, audience: clientId });
+    const payload = ticket.getPayload();
+    if (!payload) return res.status(400).json({ error: "Token inválido" });
+    if (!payload.email_verified) return res.status(400).json({ error: "E-mail do Google não verificado" });
+
     const { sub: googleId, email, name, picture } = payload;
-
     if (!email) return res.status(400).json({ error: "Email não encontrado no token" });
 
     let [clienteUser] = await db.select().from(clienteUsersTable).where(eq(clienteUsersTable.googleId, googleId)).limit(1);
