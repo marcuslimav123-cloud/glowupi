@@ -7,7 +7,7 @@ import { requireAuth, hashPassword, createSession } from "../lib/auth.js";
 
 const router: IRouter = Router();
 
-const PLANS_WITH_TEAM = ["2_5_pro", "6_15_pro", "15_plus_pro", "single"];
+const PLANS_WITH_TEAM = ["2_5_pro", "6_15_pro", "15_plus_pro"];
 
 router.get("/", requireAuth, async (req, res) => {
   try {
