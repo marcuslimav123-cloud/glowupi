@@ -13,6 +13,7 @@ import Agenda from "@/pages/Agenda";
 import Profissionais from "@/pages/gestao/Profissionais";
 import Servicos from "@/pages/gestao/Servicos";
 import Produtos from "@/pages/gestao/Produtos";
+import Clientes from "@/pages/gestao/Clientes";
 import Relatorios from "@/pages/Relatorios";
 import Caixa from "@/pages/Caixa";
 import Financeiro from "@/pages/Financeiro";
@@ -38,6 +39,7 @@ function Router() {
       <Route path="/gestao/profissionais" component={Profissionais} />
       <Route path="/gestao/servicos" component={Servicos} />
       <Route path="/gestao/produtos" component={Produtos} />
+      <Route path="/gestao/clientes" component={Clientes} />
 
       <Route path="/relatorios" component={Relatorios} />
       <Route path="/caixa" component={Caixa} />
