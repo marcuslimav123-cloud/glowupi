@@ -28,6 +28,8 @@ import ListaEspera from "@/pages/ListaEspera";
 import Avaliacoes from "@/pages/Avaliacoes";
 import Mensagens from "@/pages/Mensagens";
 import Picos from "@/pages/agenda/Picos";
+import PoliticaPrivacidade from "@/pages/PoliticaPrivacidade";
+import TermosDeUso from "@/pages/TermosDeUso";
 
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -66,6 +68,9 @@ function Router() {
       <Route path="/mensagens" component={Mensagens} />
       <Route path="/empresa" component={Empresa} />
       <Route path="/clube" component={Clube} />
+
+      <Route path="/politica-de-privacidade" component={PoliticaPrivacidade} />
+      <Route path="/termos-de-uso" component={TermosDeUso} />
 
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin" component={AdminDashboard} />

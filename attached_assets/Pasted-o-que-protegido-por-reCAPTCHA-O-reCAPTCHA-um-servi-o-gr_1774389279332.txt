@@ -1,0 +1,132 @@
+o que é protegido por reCAPTCHA
+O reCAPTCHA é um serviço gratuito do Google projetado para proteger sites contra spam, abusos e atividades automatizadas maliciosas. Ele atua como uma barreira de segurança que distingue usuários humanos de robôs (bots). 
+Google Help
+Google Help
+ +3
+O que o reCAPTCHA protege especificamente:
+Formulários de Contato e Registro: Evita que bots preencham formulários com mensagens de spam ou criem contas falsas em massa.
+Sistemas de Login: Protege contra ataques de força bruta, onde robôs tentam adivinhar senhas repetidamente.
+Comentários e Avaliações: Impede a publicação automatizada de links maliciosos ou propagandas em seções de comentários.
+Integridade de Dados: Garante que as interações no site (como votações ou pesquisas) sejam feitas por pessoas reais, preservando a precisão das estatísticas.
+Recursos do Servidor: Ao bloquear o tráfego de bots, ele evita a sobrecarga desnecessária nos servidores do site, o que melhora o desempenho para os usuários legítimos.
+Landing Pages: É frequentemente utilizado em páginas de conversão para garantir a qualidade dos leads capturados. 
+Google Cloud
+Google Cloud
+ +5
+Como funciona a proteção
+Existem diferentes versões que oferecem níveis variados de proteção:
+reCAPTCHA v2: Exige que o usuário clique em uma caixa de seleção ("Não sou um robô") ou resolva desafios visuais, como identificar semáforos ou faixas de pedestres.
+reCAPTCHA v3: Funciona de forma "invisível", atribuindo uma pontuação baseada no comportamento do usuário no site para identificar se ele é um humano, sem interromper a navegação. 
+YouTube
+YouTube
+ +4
+Você gostaria de saber como implementar o reCAPTCHA no seu site ou como ele afeta a privacidade dos dados?
+
+
+
+
+
+undefined
+undefined
+undefined
+12 sites
+Como configurar o Google reCAPTCHA
+22 de nov. de 2023 — olá meu nome é Micael Nascimento e eu sou desenvolvedor aqui na RD Station e nesse vídeo vou falar um pouco sobre o Google Recaptu...
+
+
+YouTube
+·
+RD Station
+
+4:08
+Ajuda do reCAPTCHA
+Conteúdo traduzido — O reCAPTCHA é um serviço gratuito do Google que ajuda a proteger sites contra spam e abusos.
+
+Google Help
+
+Por que o reCAPTCHA é necessário em nosso site? - Blip Help
+29 de jul. de 2024 — O reCAPTCHA é uma medida de segurança essencial para proteger nosso site contra atividades maliciosas, como bots automatizados e a...
+
+Blip Help
+Mostrar tudo
+e quanto aqueles temos de proteções de dados
+A proteção de dados no contexto do reCAPTCHA envolve dois lados: a proteção que ele oferece aos seus dados e a privacidade dos dados coletados pelo Google para que o sistema funcione. 
+1. Como ele protege seus dados pessoais
+O reCAPTCHA atua como uma camada de segurança que protege informações sensíveis dos usuários contra criminosos: 
+Prevenção de Invasões (Account Takeover): Dificulta que robôs usem listas de senhas vazadas para tentar acessar sua conta.
+Segurança em Pagamentos: Em páginas de checkout, ele ajuda a garantir que a transação está sendo feita por uma pessoa real, evitando fraudes com cartões de crédito.
+Combate ao Phishing: Protege formulários de contato para que não sejam usados para disparar mensagens falsas ou coletar dados indevidamente. 
+Google Cloud
+Google Cloud
+ +4
+2. Privacidade e Coleta de Dados
+Para decidir se você é um humano ou um robô, o reCAPTCHA coleta e analisa certas informações técnicas do seu navegador e comportamento: 
+Friendly Captcha
+Friendly Captcha
+Cookies: O Google pode utilizar cookies (como o _grecaptcha) armazenados no seu navegador para avaliar seu histórico de interações.
+Dados de Navegação: Informações como endereço IP, tempo de permanência na página, movimentos do mouse e configurações do navegador são processadas para gerar uma "pontuação de risco".
+Conformidade (LGPD/GDPR): O uso do reCAPTCHA exige que o site exiba avisos informando que os Termos de Serviço e a Política de Privacidade do Google se aplicam. Em algumas regiões, como na Europa (GDPR), existem debates sobre a necessidade de consentimento prévio do usuário devido à transferência de dados para servidores nos EUA. 
+Google Cloud Documentation
+Google Cloud Documentation
+ +3
+3. O "Treinamento" de IA
+Historicamente, o reCAPTCHA também utilizou a interação humana para melhorar tecnologias de inteligência artificial do Google, como a digitalização de livros antigos e, mais recentemente, o reconhecimento de objetos em fotos para sistemas de mapas e carros autônomos. 
+Instagram
+Instagram
+ +1
+Você gostaria de saber como configurar as políticas de privacidade do seu site para estar em conformidade com a LGPD ao usar o reCAPTCHA?
+As respostas da IA podem conter erros. Para orientação jurídica, consulte um profissional. Saiba mais
+
+
+
+
+
+undefined
+undefined
+undefined
+11 sites
+O Google reCAPTCHA está em conformidade com o RGPD?
+Todos os dados recolhidos pelo reCAPTCHA são transferidos para os servidores da Google nos EUA. O reCAPTCHA baseia-se em quadros d...
+
+Friendly Captcha
+
+reCAPTCHA: segurança de sites e proteção contra fraudes
+* Proteger contra sequestros de contas on-line e usuários fraudulentos. O reCAPTCHA protege sistemas e aplicativos on-line detecta...
+
+Google Cloud
+
+Perguntas frequentes | reCAPTCHA
+Estou vinculando a política de privacidade de dados do Google nos detalhes do meu cookie ( _grecaptcha). Esse cookie será afetado ...
+
+Google Cloud Documentation
+
+Mostrar tudo
+digo em relação a LGPD
+Em relação à LGPD (Lei Geral de Proteção de Dados), o uso do reCAPTCHA exige um equilíbrio entre a segurança do site e a transparência com o usuário. Como ele coleta dados para funcionar, o site que o utiliza passa a ter responsabilidades legais. 
+Aqui estão os pontos principais sobre o reCAPTCHA e a LGPD:
+Dados Coletados e Tratamento
+Para distinguir humanos de robôs, o reCAPTCHA realiza o "tratamento de dados", que inclui a coleta de informações como: 
+Identificadores Online: Endereço IP e cookies do Google armazenados no navegador.
+Análise Comportamental: Movimentos do mouse, tempo de digitação e interações com a página.
+Informações do Dispositivo: Configurações de hardware e software do usuário. 
+Portal da Transparência do Governo Federal
+Portal da Transparência do Governo Federal
+ +2
+Deveres do Dono do Site (Controlador)
+De acordo com a LGPD, se você utiliza essa ferramenta, você é considerado o controlador dos dados e deve garantir:
+Transparência: É obrigatório informar na sua Política de Privacidade que o reCAPTCHA é utilizado e quais dados ele coleta.
+Base Legal: O uso geralmente é justificado pelo Legítimo Interesse (segurança do site e prevenção de fraudes), mas isso deve estar documentado.
+Aviso Visível: O Google exige que os sites exibam links para os seus Termos de Serviço e Política de Privacidade próximos ao formulário protegido. 
+YouTube
+YouTube
+ +3
+O Desafio do reCAPTCHA v3
+A versão v3 é "invisível" e roda em todas as páginas do site para criar um perfil de risco do usuário. Sob a LGPD, isso pode ser visto como uma coleta excessiva se não houver uma justificativa clara, exigindo um cuidado extra na descrição da finalidade dessa coleta no seu aviso de cookies. 
+YouTube
+YouTube
+ +2
+Transferência Internacional
+Como o reCAPTCHA envia esses dados para os servidores do Google (geralmente nos EUA), isso caracteriza uma transferência internacional de dados, o que requer que o site assegure que o receptor oferece um nível de proteção adequado conforme a lei brasileira. 
+ProAdvanced
+ProAdvanced
+Você gostaria de saber como escrever a cláusula específica para o reCAPTCHA na sua Política de Privacidade?

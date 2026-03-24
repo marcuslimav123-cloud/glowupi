@@ -1,77 +1,68 @@
 import React, { useEffect, useState } from "react";
-import { Shield, X } from "lucide-react";
+import { Cookie, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { apiUrl } from "@/lib/utils";
+import { Link } from "wouter";
 
 const LGPD_CONSENT_KEY = "glow_agenda_lgpd_consent";
+const LGPD_CONSENT_LEVEL_KEY = "glow_agenda_lgpd_level";
 
-export default function LgpdPopup() {
+export default function LgpdBanner() {
   const [visible, setVisible] = useState(false);
-  const [terms, setTerms] = useState("");
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const consent = localStorage.getItem(LGPD_CONSENT_KEY);
-    if (consent) return;
-
-    fetch(apiUrl("/lgpd/terms"))
-      .then(r => r.json())
-      .then(data => {
-        setTerms(data.terms || "");
-        setVisible(true);
-      })
-      .catch(() => setVisible(true))
-      .finally(() => setLoading(false));
+    if (!consent) {
+      const timer = setTimeout(() => setVisible(true), 800);
+      return () => clearTimeout(timer);
+    }
   }, []);
 
-  const handleAccept = () => {
+  const handleAccept = (level: "all" | "essential") => {
     localStorage.setItem(LGPD_CONSENT_KEY, new Date().toISOString());
+    localStorage.setItem(LGPD_CONSENT_LEVEL_KEY, level);
     setVisible(false);
   };
 
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
-        <div className="p-6 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Shield className="h-5 w-5 text-primary" />
+    <div className="fixed bottom-0 left-0 right-0 z-[100] p-4 animate-in slide-in-from-bottom-4 duration-500">
+      <div className="max-w-4xl mx-auto bg-card border border-border rounded-2xl shadow-2xl shadow-black/10 p-4 sm:p-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Cookie className="h-4 w-4 text-primary" />
             </div>
-            <div>
-              <h2 className="text-lg font-display text-foreground">Privacidade e Proteção de Dados</h2>
-              <p className="text-sm text-muted-foreground">Lei Geral de Proteção de Dados (LGPD)</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6 max-h-64 overflow-y-auto">
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-primary"></div>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-              {terms || "Ao usar nosso sistema, você concorda com o tratamento dos seus dados pessoais conforme a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018). Coletamos e processamos dados como nome, e-mail, telefone e informações de agendamento para a prestação dos nossos serviços. Seus dados são armazenados com segurança e não são compartilhados com terceiros sem seu consentimento. Você tem o direito de acessar, corrigir, excluir seus dados ou revogar este consentimento a qualquer momento entrando em contato conosco."}
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Utilizamos cookies e tecnologias semelhantes para melhorar sua experiência.
+              Ao continuar navegando, você concorda com nossa{" "}
+              <Link href="/politica-de-privacidade" className="text-primary hover:underline font-medium">
+                Política de Privacidade
+              </Link>{" "}
+              e nossos{" "}
+              <Link href="/termos-de-uso" className="text-primary hover:underline font-medium">
+                Termos de Uso
+              </Link>
+              , em conformidade com a LGPD (Lei nº 13.709/2018).
             </p>
-          )}
-        </div>
-
-        <div className="p-6 border-t border-border flex flex-col sm:flex-row gap-3">
-          <Button
-            onClick={handleAccept}
-            className="flex-1 h-12 text-base font-semibold shadow-lg shadow-primary/20"
-          >
-            Aceitar e Continuar
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleAccept}
-            className="h-12"
-          >
-            Aceitar apenas necessários
-          </Button>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleAccept("essential")}
+              className="text-xs h-9 flex-1 sm:flex-none"
+            >
+              Apenas essenciais
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => handleAccept("all")}
+              className="text-xs h-9 shadow-md shadow-primary/20 flex-1 sm:flex-none"
+            >
+              Aceitar todos
+            </Button>
+          </div>
         </div>
       </div>
     </div>

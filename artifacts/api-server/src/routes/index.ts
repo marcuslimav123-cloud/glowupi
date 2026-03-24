@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { platformConfigTable } from "@workspace/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import healthRouter from "./health.js";
 import authRouter from "./auth.js";
 import barbeariasRouter from "./barbearias.js";
@@ -56,9 +56,15 @@ router.use("/public", publicRouter);
 
 router.get("/lgpd/terms", async (_req, res) => {
   try {
-    const [config] = await db.select().from(platformConfigTable).where(eq(platformConfigTable.chave, "lgpd_terms")).limit(1);
-    const terms = config?.valor || "Ao usar nosso sistema, você concorda com o tratamento dos seus dados pessoais conforme a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018). Coletamos e processamos dados como nome, e-mail, telefone e informações de agendamento para a prestação dos nossos serviços. Seus dados são armazenados com segurança e não são compartilhados com terceiros sem seu consentimento. Você tem o direito de acessar, corrigir, excluir seus dados ou revogar este consentimento a qualquer momento entrando em contato conosco.";
-    return res.json({ terms });
+    const configs = await db.select().from(platformConfigTable).where(
+      sql`${platformConfigTable.chave} IN ('lgpd_privacy_policy', 'lgpd_terms_of_use')`
+    );
+    const configMap: Record<string, string> = {};
+    for (const c of configs) configMap[c.chave] = c.valor;
+    return res.json({
+      privacyPolicy: configMap["lgpd_privacy_policy"] || "",
+      termsOfUse: configMap["lgpd_terms_of_use"] || "",
+    });
   } catch {
     return res.status(500).json({ error: "Erro ao carregar termos LGPD" });
   }

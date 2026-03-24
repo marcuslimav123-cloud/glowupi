@@ -17,8 +17,11 @@ export default function AdminSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pricingMode, setPricingMode] = useState("all_plans");
-  const [lgpdTerms, setLgpdTerms] = useState("");
-  const [savingLgpd, setSavingLgpd] = useState(false);
+  const [privacyPolicy, setPrivacyPolicy] = useState("");
+  const [termsOfUse, setTermsOfUse] = useState("");
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
+  const [savingTerms, setSavingTerms] = useState(false);
+  const [activeTab, setActiveTab] = useState<"privacy" | "terms">("privacy");
 
   useEffect(() => {
     fetch(apiUrl("/admin/config"), { credentials: "include" })
@@ -26,7 +29,8 @@ export default function AdminSettings() {
       .then(data => {
         setConfig(data);
         setPricingMode(data.pricing_mode || "all_plans");
-        setLgpdTerms(data.lgpd_terms || "");
+        setPrivacyPolicy(data.lgpd_privacy_policy || "");
+        setTermsOfUse(data.lgpd_terms_of_use || "");
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -52,22 +56,22 @@ export default function AdminSettings() {
     }
   };
 
-  const saveLgpdTerms = async () => {
-    setSavingLgpd(true);
+  const saveConfig = async (chave: string, valor: string, setLoading: (v: boolean) => void, label: string) => {
+    setLoading(true);
     try {
       const res = await fetch(apiUrl("/admin/config"), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ chave: "lgpd_terms", valor: lgpdTerms }),
+        body: JSON.stringify({ chave, valor }),
       });
       if (res.ok) {
-        toast({ title: "Termos LGPD salvos", description: "Os termos de privacidade foram atualizados com sucesso" });
+        toast({ title: `${label} salvo(a)`, description: "As alterações já estão visíveis na plataforma" });
       }
     } catch {
-      toast({ title: "Erro", description: "Falha ao salvar termos LGPD", variant: "destructive" });
+      toast({ title: "Erro", description: "Falha ao salvar", variant: "destructive" });
     } finally {
-      setSavingLgpd(false);
+      setLoading(false);
     }
   };
 
@@ -130,33 +134,85 @@ export default function AdminSettings() {
                   <Shield className="h-5 w-5 text-green-400" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-display text-white">Termos LGPD / Política de Privacidade</h2>
-                  <p className="text-sm text-slate-400">Texto exibido no popup de consentimento para todos os usuários</p>
+                  <h2 className="text-lg font-display text-white">LGPD — Documentos Legais</h2>
+                  <p className="text-sm text-slate-400">Edite a Política de Privacidade e os Termos de Uso exibidos na plataforma</p>
                 </div>
               </div>
 
-              <textarea
-                value={lgpdTerms}
-                onChange={(e) => setLgpdTerms(e.target.value)}
-                placeholder="Digite os termos de uso e política de privacidade conforme a LGPD..."
-                rows={10}
-                className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm placeholder-slate-500 resize-y focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30"
-              />
-
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-slate-500">
-                  <FileText className="h-3 w-3 inline mr-1" />
-                  Este texto será exibido no popup de consentimento LGPD para todos os usuários da plataforma
-                </p>
-                <Button
-                  onClick={saveLgpdTerms}
-                  disabled={savingLgpd}
-                  className="gap-2"
+              <div className="flex gap-2 border-b border-white/10 pb-0">
+                <button
+                  onClick={() => setActiveTab("privacy")}
+                  className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${
+                    activeTab === "privacy"
+                      ? "bg-white/10 text-primary border-b-2 border-primary"
+                      : "text-slate-400 hover:text-white"
+                  }`}
                 >
-                  <Save className="h-4 w-4" />
-                  {savingLgpd ? "Salvando..." : "Salvar Termos"}
-                </Button>
+                  <Shield className="h-4 w-4 inline mr-2" />
+                  Política de Privacidade
+                </button>
+                <button
+                  onClick={() => setActiveTab("terms")}
+                  className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${
+                    activeTab === "terms"
+                      ? "bg-white/10 text-primary border-b-2 border-primary"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <FileText className="h-4 w-4 inline mr-2" />
+                  Termos de Uso
+                </button>
               </div>
+
+              {activeTab === "privacy" && (
+                <div className="space-y-4">
+                  <textarea
+                    value={privacyPolicy}
+                    onChange={(e) => setPrivacyPolicy(e.target.value)}
+                    placeholder="Cole ou edite aqui a Política de Privacidade da plataforma. Deixe vazio para usar o texto padrão."
+                    rows={14}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm placeholder-slate-500 resize-y focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 font-mono"
+                  />
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-slate-500">
+                      Visível em /politica-de-privacidade e no banner de cookies
+                    </p>
+                    <Button
+                      onClick={() => saveConfig("lgpd_privacy_policy", privacyPolicy, setSavingPrivacy, "Política de Privacidade")}
+                      disabled={savingPrivacy}
+                      className="gap-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      {savingPrivacy ? "Salvando..." : "Salvar Política"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "terms" && (
+                <div className="space-y-4">
+                  <textarea
+                    value={termsOfUse}
+                    onChange={(e) => setTermsOfUse(e.target.value)}
+                    placeholder="Cole ou edite aqui os Termos de Uso da plataforma. Deixe vazio para usar o texto padrão."
+                    rows={14}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm placeholder-slate-500 resize-y focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 font-mono"
+                  />
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-slate-500">
+                      Visível em /termos-de-uso e no banner de cookies
+                    </p>
+                    <Button
+                      onClick={() => saveConfig("lgpd_terms_of_use", termsOfUse, setSavingTerms, "Termos de Uso")}
+                      disabled={savingTerms}
+                      className="gap-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      {savingTerms ? "Salvando..." : "Salvar Termos"}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
@@ -165,10 +221,10 @@ export default function AdminSettings() {
                 <h2 className="text-lg font-display text-white">Configurações Atuais</h2>
               </div>
               <div className="space-y-2">
-                {Object.entries(config).length === 0 ? (
+                {Object.entries(config).filter(([key]) => !key.startsWith("lgpd_")).length === 0 ? (
                   <p className="text-slate-500 text-sm">Nenhuma configuração salva</p>
                 ) : (
-                  Object.entries(config).filter(([key]) => key !== "lgpd_terms").map(([key, value]) => (
+                  Object.entries(config).filter(([key]) => !key.startsWith("lgpd_")).map(([key, value]) => (
                     <div key={key} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                       <span className="text-sm text-slate-300 font-mono">{key}</span>
                       <span className="text-sm text-slate-400">{value}</span>

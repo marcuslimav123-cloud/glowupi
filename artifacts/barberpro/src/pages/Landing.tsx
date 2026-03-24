@@ -479,9 +479,15 @@ export default function Landing() {
             <a href="#pricing" className="hover:text-foreground transition-colors">Preços</a>
             <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
           </div>
-          <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} {APP_NAME}. Todos os direitos reservados.
-          </p>
+          <div className="flex flex-col md:flex-row items-center gap-4">
+            <div className="flex gap-4 text-xs text-muted-foreground">
+              <Link href="/politica-de-privacidade" className="hover:text-foreground transition-colors">Política de Privacidade</Link>
+              <Link href="/termos-de-uso" className="hover:text-foreground transition-colors">Termos de Uso</Link>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              &copy; {new Date().getFullYear()} {APP_NAME}. Todos os direitos reservados.
+            </p>
+          </div>
         </div>
       </footer>
     </div>
