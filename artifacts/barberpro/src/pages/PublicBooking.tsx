@@ -38,7 +38,7 @@ interface Slot {
   disponivel: boolean;
 }
 
-type Step = "servico" | "profissional" | "data" | "auth" | "horario" | "confirmar" | "sucesso";
+type Step = "servico" | "profissional" | "data" | "horario" | "confirmar" | "sucesso";
 
 export default function PublicBooking() {
   const params = useParams<{ slug: string }>();
@@ -165,20 +165,26 @@ export default function PublicBooking() {
     setStep("data");
   }
 
+  function handleProceedToSlots() {
+    if (!clientUser) {
+      setShowAuthModal(true);
+      return;
+    }
+    setStep("horario");
+  }
+
   function handleSelectSlot(slot: Slot) {
     setSelectedSlot(slot);
-    if (!clientUser) {
-      setStep("auth");
-      setShowAuthModal(true);
-    } else {
-      setStep("confirmar");
-    }
+    setStep("confirmar");
   }
 
   function handleClientAuth(user: ClientUser) {
     setClientUser(user);
     setShowAuthModal(false);
-    setStep("confirmar");
+    if (selectedDate) {
+      fetchSlots(selectedDate);
+      setStep("horario");
+    }
   }
 
   async function handleLogout() {
@@ -222,13 +228,12 @@ export default function PublicBooking() {
   if (!barbearia) return null;
 
   const stepOrder: Step[] = ["servico", "profissional", "data", "horario", "confirmar"];
-  const currentStepIdx = stepOrder.indexOf(step === "auth" ? "horario" : step === "sucesso" ? "confirmar" : step);
+  const currentStepIdx = stepOrder.indexOf(step === "sucesso" ? "confirmar" : step);
 
   function goBack() {
     if (step === "profissional") setStep("servico");
     else if (step === "data") setStep("profissional");
     else if (step === "horario") setStep("data");
-    else if (step === "auth") { setShowAuthModal(false); setStep("horario"); }
     else if (step === "confirmar") setStep("horario");
   }
 
@@ -336,7 +341,7 @@ export default function PublicBooking() {
                 {dates.map((d) => (
                   <button
                     key={d.date}
-                    onClick={() => { handleDateSelect(d.date); setStep("horario"); }}
+                    onClick={() => { handleDateSelect(d.date); handleProceedToSlots(); }}
                     className={`flex flex-col items-center py-3 rounded-xl border transition-all text-center ${
                       selectedDate === d.date
                         ? "border-white/30 bg-white/10"
@@ -486,7 +491,7 @@ export default function PublicBooking() {
 
       <ClientAuthModal
         open={showAuthModal}
-        onClose={() => { setShowAuthModal(false); setStep("horario"); }}
+        onClose={() => setShowAuthModal(false)}
         onAuthenticated={handleClientAuth}
         accentColor={accent}
       />
