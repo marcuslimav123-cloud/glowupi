@@ -31,6 +31,17 @@ export function formatCurrency(value: number): string {
   }).format(value);
 }
 
+export function formatPhone(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 2) return digits.length ? `(${digits}` : "";
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+export function stripPhone(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
 export function generateTimeSlots(start: string = "08:00", end: string = "20:00", interval: number = 30) {
   const slots = [];
   let current = new Date(`2000-01-01T${start}:00`);

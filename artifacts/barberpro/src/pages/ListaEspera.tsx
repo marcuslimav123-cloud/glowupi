@@ -13,12 +13,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getListListaEsperaQueryKey } from "@workspace/api-client-react";
 import { format } from "date-fns";
+import { formatPhone, stripPhone } from "@/lib/utils";
 
 export default function ListaEspera() {
   const { barbeariaId } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [telefoneInput, setTelefoneInput] = useState("");
 
   const { data: itens = [], isLoading } = useListListaEspera(barbeariaId!, { query: { enabled: !!barbeariaId } });
   const addItem = useAddToListaEspera();
@@ -37,13 +39,14 @@ export default function ListaEspera() {
         barbeariaId: barbeariaId!,
         data: {
           clienteNome: fd.get("clienteNome") as string,
-          clienteTelefone: fd.get("clienteTelefone") as string,
+          clienteTelefone: stripPhone(telefoneInput),
           data: fd.get("data") as string || format(new Date(), "yyyy-MM-dd"),
           observacao: fd.get("observacao") as string,
         }
       });
       invalidate();
       setDialogOpen(false);
+      setTelefoneInput("");
       toast({ title: "Adicionado à lista de espera" });
     } catch { toast({ title: "Erro", variant: "destructive" }); }
   }
@@ -80,7 +83,7 @@ export default function ListaEspera() {
             <DialogHeader><DialogTitle>Adicionar à Lista de Espera</DialogTitle></DialogHeader>
             <form onSubmit={handleAdd} className="space-y-4">
               <div><Label>Nome do Cliente</Label><Input name="clienteNome" required /></div>
-              <div><Label>Telefone</Label><Input name="clienteTelefone" placeholder="(11) 99999-9999" /></div>
+              <div><Label>Telefone</Label><Input value={telefoneInput} onChange={e => setTelefoneInput(formatPhone(e.target.value))} placeholder="(99) 99999-9999" /></div>
               <div><Label>Data Desejada</Label><Input name="data" type="date" defaultValue={format(new Date(), "yyyy-MM-dd")} /></div>
               <div><Label>Observação</Label><Input name="observacao" placeholder="Preferência de horário, etc." /></div>
               <Button type="submit" className="w-full" disabled={addItem.isPending}>Adicionar</Button>
@@ -131,7 +134,7 @@ export default function ListaEspera() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{item.clienteNome}</p>
                   <div className="flex items-center gap-3 mt-0.5">
-                    {item.clienteTelefone && <span className="flex items-center gap-1 text-xs text-muted-foreground"><Phone className="h-3 w-3" />{item.clienteTelefone}</span>}
+                    {item.clienteTelefone && <span className="flex items-center gap-1 text-xs text-muted-foreground"><Phone className="h-3 w-3" />{formatPhone(item.clienteTelefone)}</span>}
                     {item.data && <span className="text-xs text-muted-foreground">{item.data}</span>}
                   </div>
                   {item.observacao && <p className="text-xs text-muted-foreground mt-1">{item.observacao}</p>}

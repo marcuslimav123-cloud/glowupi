@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { formatPhone, stripPhone } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Building2, MapPin, Clock, Palette, Save, AlertCircle } from "lucide-react";
 
@@ -40,7 +41,7 @@ export default function Empresa() {
   useEffect(() => {
     if (barbearia) {
       setNome(barbearia.nome || "");
-      setTelefone(barbearia.telefone || "");
+      setTelefone(formatPhone(barbearia.telefone || ""));
       setEmail(barbearia.email || "");
       setCnpj(barbearia.cnpj || "");
       setCep(barbearia.cep || "");
@@ -81,7 +82,7 @@ export default function Empresa() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateMutation.mutateAsync({ data: { nome, telefone, email: email || null, cnpj: cnpj || null, cep: cep || null, logradouro: logradouro || null, numero: numero || null, bairro: bairro || null, cidade: cidade || null, uf: uf || null, corPrimaria, horarioFuncionamento: horarios } });
+      await updateMutation.mutateAsync({ data: { nome, telefone: stripPhone(telefone), email: email || null, cnpj: cnpj || null, cep: cep || null, logradouro: logradouro || null, numero: numero || null, bairro: bairro || null, cidade: cidade || null, uf: uf || null, corPrimaria, horarioFuncionamento: horarios } });
       qc.invalidateQueries();
       toast({ title: "Dados atualizados com sucesso!" });
     } catch { toast({ title: "Erro ao salvar", variant: "destructive" }); }
@@ -122,7 +123,7 @@ export default function Empresa() {
               </div>
               <div className="space-y-2">
                 <Label>Telefone / WhatsApp</Label>
-                <Input value={telefone} onChange={e => setTelefone(e.target.value)} placeholder="(11) 99999-9999" />
+                <Input value={telefone} onChange={e => setTelefone(formatPhone(e.target.value))} placeholder="(99) 99999-9999" />
               </div>
               <div className="space-y-2">
                 <Label>E-mail</Label>

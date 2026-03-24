@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Building2, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { formatPhone, stripPhone } from "@/lib/utils";
 
 export default function BarbeariaStep() {
   const [, setLocation] = useLocation();
@@ -22,7 +23,12 @@ export default function BarbeariaStep() {
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.id]: e.target.value }));
+    const { id, value } = e.target;
+    if (id === "telefone") {
+      setFormData(prev => ({ ...prev, telefone: formatPhone(value) }));
+    } else {
+      setFormData(prev => ({ ...prev, [id]: value }));
+    }
   };
 
   const handleCepBlur = async () => {
@@ -47,7 +53,7 @@ export default function BarbeariaStep() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createMutation.mutateAsync({ data: formData });
+      await createMutation.mutateAsync({ data: { ...formData, telefone: stripPhone(formData.telefone) } });
       window.location.href = "/dashboard";
     } catch (err: any) {
       toast({
@@ -88,7 +94,7 @@ export default function BarbeariaStep() {
               
               <div className="space-y-2">
                 <Label htmlFor="telefone">Telefone / WhatsApp *</Label>
-                <Input id="telefone" required value={formData.telefone} onChange={handleChange} className="h-11" />
+                <Input id="telefone" required value={formData.telefone} onChange={handleChange} placeholder="(99) 99999-9999" className="h-11" />
               </div>
 
               <div className="space-y-2">

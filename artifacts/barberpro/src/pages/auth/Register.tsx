@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiUrl } from "@/lib/utils";
+import { apiUrl, formatPhone, stripPhone } from "@/lib/utils";
 
 export default function Register() {
   const [, setLocation] = useLocation();
@@ -88,13 +88,18 @@ export default function Register() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.id]: e.target.value }));
+    const { id, value } = e.target;
+    if (id === "telefone") {
+      setFormData(prev => ({ ...prev, telefone: formatPhone(value) }));
+    } else {
+      setFormData(prev => ({ ...prev, [id]: value }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await registerMutation.mutateAsync({ data: formData });
+      await registerMutation.mutateAsync({ data: { ...formData, telefone: stripPhone(formData.telefone) } });
       window.location.href = "/onboarding/barbearia";
     } catch (err: any) {
       toast({
@@ -130,7 +135,7 @@ export default function Register() {
 
             <div className="space-y-1.5">
               <Label htmlFor="telefone" className="text-[13px] text-foreground/60">WhatsApp</Label>
-              <Input id="telefone" required value={formData.telefone} onChange={handleChange} className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]" />
+              <Input id="telefone" required value={formData.telefone} onChange={handleChange} placeholder="(99) 99999-9999" className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]" />
             </div>
 
             <div className="space-y-1.5">

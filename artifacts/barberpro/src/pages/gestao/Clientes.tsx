@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { formatPhone, stripPhone } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -40,14 +41,14 @@ function ClienteForm({
   isPending?: boolean;
 }) {
   const [nome, setNome] = useState(initial?.nome ?? "");
-  const [telefone, setTelefone] = useState(initial?.telefone ?? "");
+  const [telefone, setTelefone] = useState(formatPhone(initial?.telefone ?? ""));
   const [email, setEmail] = useState(initial?.email ?? "");
   const [aniversario, setAniversario] = useState(initial?.aniversario ?? "");
   const [observacoes, setObservacoes] = useState(initial?.observacoes ?? "");
   const [vip, setVip] = useState(initial?.vip ?? false);
 
   return (
-    <form onSubmit={e => { e.preventDefault(); onSave({ nome, telefone, email: email || null, aniversario: aniversario || null, observacoes: observacoes || null, vip }); }} className="space-y-4 mt-2">
+    <form onSubmit={e => { e.preventDefault(); onSave({ nome, telefone: stripPhone(telefone), email: email || null, aniversario: aniversario || null, observacoes: observacoes || null, vip }); }} className="space-y-4 mt-2">
       <div className="space-y-2">
         <Label>Nome Completo *</Label>
         <Input value={nome} onChange={e => setNome(e.target.value)} required placeholder="Ex: Mariana Silva" className="bg-background" />
@@ -55,7 +56,7 @@ function ClienteForm({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>WhatsApp *</Label>
-          <Input value={telefone} onChange={e => setTelefone(e.target.value)} required placeholder="(11) 99999-9999" className="bg-background" />
+          <Input value={telefone} onChange={e => setTelefone(formatPhone(e.target.value))} required placeholder="(99) 99999-9999" className="bg-background" />
         </div>
         <div className="space-y-2">
           <Label>E-mail</Label>
