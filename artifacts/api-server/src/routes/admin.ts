@@ -3,6 +3,29 @@ import { db } from "@workspace/db";
 import { superAdminsTable, barbeariasTable, usersTable, platformConfigTable, comandasTable } from "@workspace/db/schema";
 import { eq, sql, desc, count } from "drizzle-orm";
 import { verifyAdminPassword, createAdminSession, deleteAdminSession, requireAdmin } from "../lib/adminAuth.js";
+import { stripeStorage } from "../stripeStorage.js";
+
+const PLAN_MONTHLY_PRICES: Record<string, Record<string, number>> = {
+  "1 Pro": { mensal: 79.90, semestral: 67.80, anual: 55.90 },
+  "2-5 Pro": { mensal: 109.90, semestral: 93.30, anual: 76.90 },
+  "6-15 Pro": { mensal: 164.50, semestral: 139.80, anual: 115.15 },
+  "+15 Pro": { mensal: 219.90, semestral: 186.80, anual: 153.90 },
+  "single": { mensal: 97.00, semestral: 97.00, anual: 97.00 },
+};
+
+function computeMrr(barbearias: any[]): number {
+  let mrr = 0;
+  for (const b of barbearias) {
+    if (b.subscriptionStatus !== "active" && b.subscriptionStatus !== "ativo") continue;
+    const plan = b.subscriptionPlan || "";
+    const period = b.subscriptionPeriod || "mensal";
+    const prices = PLAN_MONTHLY_PRICES[plan];
+    if (prices) {
+      mrr += prices[period] || prices.mensal || 0;
+    }
+  }
+  return Math.round(mrr * 100) / 100;
+}
 
 const router: IRouter = Router();
 
@@ -74,12 +97,17 @@ router.get("/dashboard", requireAdmin, async (_req, res) => {
     planDistribution[plan] = (planDistribution[plan] || 0) + 1;
   }
 
+  const mrr = computeMrr(allBarbearias);
+  const arr = mrr * 12;
+
   return res.json({
     totalStudios,
     activeSubscriptions,
     trialUsers,
     canceledUsers,
     churnRate: parseFloat(churnRate),
+    mrr,
+    arr,
     recentSignups,
     monthlyRevenue,
     planDistribution,
@@ -187,8 +215,25 @@ router.get("/revenue", requireAdmin, async (_req, res) => {
     count: parseInt(c.count),
   }));
 
+  const mrr = computeMrr(barbearias);
+  const arr = mrr * 12;
+
+  const mrrByPlan: Record<string, number> = {};
+  for (const b of barbearias) {
+    if (b.subscriptionStatus !== "active" && b.subscriptionStatus !== "ativo") continue;
+    const plan = b.subscriptionPlan || "unknown";
+    const period = b.subscriptionPeriod || "mensal";
+    const prices = PLAN_MONTHLY_PRICES[plan];
+    if (prices) {
+      mrrByPlan[plan] = (mrrByPlan[plan] || 0) + (prices[period] || prices.mensal || 0);
+    }
+  }
+
   return res.json({
     totalStudios: barbearias.length,
+    mrr,
+    arr,
+    mrrByPlan,
     statusBreakdown,
     planBreakdown,
     periodBreakdown,

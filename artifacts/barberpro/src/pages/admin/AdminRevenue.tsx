@@ -5,6 +5,9 @@ import { TrendingUp, Building2, PieChart, Calendar, DollarSign } from "lucide-re
 
 interface RevenueData {
   totalStudios: number;
+  mrr: number;
+  arr: number;
+  mrrByPlan: Record<string, number>;
   statusBreakdown: Record<string, number>;
   planBreakdown: Record<string, number>;
   periodBreakdown: Record<string, number>;
@@ -61,6 +64,69 @@ export default function AdminRevenue() {
           </div>
         ) : data ? (
           <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-2">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-colors">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm text-slate-400">MRR (Receita Mensal Recorrente)</span>
+                  <div className="h-10 w-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                    <DollarSign className="h-5 w-5" />
+                  </div>
+                </div>
+                <div className="text-3xl font-display font-bold text-white">
+                  R$ {data.mrr.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-colors">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm text-slate-400">ARR (Receita Anual Recorrente)</span>
+                  <div className="h-10 w-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center">
+                    <TrendingUp className="h-5 w-5" />
+                  </div>
+                </div>
+                <div className="text-3xl font-display font-bold text-white">
+                  R$ {data.arr.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-colors">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm text-slate-400">Total de Estúdios</span>
+                  <div className="h-10 w-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                    <Building2 className="h-5 w-5" />
+                  </div>
+                </div>
+                <div className="text-3xl font-display font-bold text-white">{data.totalStudios}</div>
+              </div>
+            </div>
+
+            {Object.keys(data.mrrByPlan).length > 0 && (
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                <h2 className="text-lg font-display text-white mb-4 flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-emerald-400" />
+                  MRR por Plano
+                </h2>
+                <div className="space-y-3">
+                  {Object.entries(data.mrrByPlan).map(([plan, value], i) => {
+                    const maxMrr = Math.max(...Object.values(data.mrrByPlan), 1);
+                    const pct = (value / maxMrr) * 100;
+                    return (
+                      <div key={plan} className="flex items-center gap-4">
+                        <span className="text-sm text-slate-300 w-24 shrink-0">{plan}</span>
+                        <div className="flex-1 h-6 bg-white/5 rounded-lg overflow-hidden">
+                          <div
+                            className={`h-full rounded-lg ${PLAN_COLORS[i % PLAN_COLORS.length]} transition-all duration-500`}
+                            style={{ width: `${Math.max(pct, 2)}%` }}
+                          />
+                        </div>
+                        <span className="text-sm text-white font-medium shrink-0 w-28 text-right">
+                          R$ {value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                 <div className="flex items-center gap-3 mb-4">

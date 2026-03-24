@@ -18,6 +18,8 @@ interface DashboardData {
   trialUsers: number;
   canceledUsers: number;
   churnRate: number;
+  mrr: number;
+  arr: number;
   recentSignups: Array<{
     id: number;
     nome: string;
@@ -93,12 +95,16 @@ export default function AdminDashboard() {
           </div>
         ) : data ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              <StatCard title="Total de Estúdios" value={data.totalStudios} icon={Building2} color="bg-primary/20 text-primary" />
-              <StatCard title="Assinaturas Ativas" value={data.activeSubscriptions} icon={CreditCard} color="bg-emerald-500/20 text-emerald-400" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard title="MRR (Receita Mensal)" value={`R$ ${data.mrr.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={DollarSign} color="bg-emerald-500/20 text-emerald-400" />
+              <StatCard title="ARR (Receita Anual)" value={`R$ ${data.arr.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={TrendingUp} color="bg-primary/20 text-primary" />
+              <StatCard title="Total de Estúdios" value={data.totalStudios} icon={Building2} color="bg-blue-500/20 text-blue-400" />
+              <StatCard title="Assinaturas Ativas" value={data.activeSubscriptions} icon={CreditCard} color="bg-violet-500/20 text-violet-400" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <StatCard title="Em Trial" value={data.trialUsers} icon={Clock} color="bg-amber-500/20 text-amber-400" />
               <StatCard title="Cancelados" value={data.canceledUsers} icon={XCircle} color="bg-red-500/20 text-red-400" />
-              <StatCard title="Churn Rate" value={`${data.churnRate}%`} icon={TrendingDown} color="bg-violet-500/20 text-violet-400" />
+              <StatCard title="Churn Rate" value={`${data.churnRate}%`} icon={TrendingDown} color="bg-red-500/10 text-red-300" />
             </div>
 
             {(() => {
