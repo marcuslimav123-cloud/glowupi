@@ -27,12 +27,14 @@ import mensagensRouter from "./mensagens.js";
 import checkoutRouter from "./checkout.js";
 import adminRouter from "./admin.js";
 import convitesRouter from "./convites.js";
+import clientAuthRouter from "./clientAuth.js";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use("/admin", adminRouter);
 router.use("/auth", authRouter);
+router.use("/client", clientAuthRouter);
 router.use("/barbearias", barbeariasRouter);
 router.use("/barbearias/:barbeariaId/profissionais", profissionaisRouter);
 router.use("/barbearias/:barbeariaId/servicos", servicosRouter);

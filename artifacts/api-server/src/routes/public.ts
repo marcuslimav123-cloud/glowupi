@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable } from "@workspace/db/schema";
+import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
+import { requireClient } from "../lib/auth.js";
 
 const router: IRouter = Router();
 
@@ -9,6 +10,33 @@ function addMinutes(time: string, minutes: number): string {
   const [h, m] = time.split(":").map(Number);
   const total = h * 60 + m + minutes;
   return `${Math.floor(total / 60).toString().padStart(2, "0")}:${(total % 60).toString().padStart(2, "0")}`;
+}
+
+function timeToMinutes(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function minutesToTime(m: number): string {
+  return `${Math.floor(m / 60).toString().padStart(2, "0")}:${(m % 60).toString().padStart(2, "0")}`;
+}
+
+const DIAS_SEMANA = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"];
+
+function getProfScheduleForDate(prof: any, dateStr: string): { inicio: number; fim: number } | null {
+  const date = new Date(dateStr + "T12:00:00");
+  const diaSemana = DIAS_SEMANA[date.getDay()];
+  const horarios = prof.horarios as any;
+  if (!horarios) return { inicio: 8 * 60, fim: 20 * 60 };
+  if (horarios.porDia && horarios.porDia[diaSemana]) {
+    const dia = horarios.porDia[diaSemana];
+    if (dia.folga) return null;
+    return { inicio: timeToMinutes(dia.inicio || "08:00"), fim: timeToMinutes(dia.fim || "20:00") };
+  }
+  if (horarios.inicio && horarios.fim) {
+    return { inicio: timeToMinutes(horarios.inicio), fim: timeToMinutes(horarios.fim) };
+  }
+  return { inicio: 8 * 60, fim: 20 * 60 };
 }
 
 router.get("/:slug", async (req, res) => {
@@ -55,48 +83,117 @@ router.get("/:slug", async (req, res) => {
   });
 });
 
-router.post("/:slug/agendar", async (req, res) => {
-  const { slug } = req.params;
-  const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.slug, slug)).limit(1);
-  if (!barbearia) return res.status(404).json({ error: "Barbearia não encontrada" });
+router.get("/:slug/slots", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.slug, slug)).limit(1);
+    if (!barbearia) return res.status(404).json({ error: "Barbearia não encontrada" });
 
-  const { clienteNome, clienteTelefone, clienteEmail, profissionalId, servicoId, data, horaInicio, semPreferencia, observacao } = req.body;
-  if (!clienteNome || !clienteTelefone || !profissionalId || !servicoId || !data || !horaInicio) {
-    return res.status(400).json({ error: "Dados inválidos" });
+    const { data, profissionalId, servicoId } = req.query;
+    if (!data || !servicoId) return res.status(400).json({ error: "data e servicoId são obrigatórios" });
+
+    const [servico] = await db.select().from(servicosTable).where(and(eq(servicosTable.id, parseInt(servicoId as string)), eq(servicosTable.barbeariaId, barbearia.id))).limit(1);
+    if (!servico) return res.status(404).json({ error: "Serviço não encontrado" });
+
+    let profissionais;
+    if (profissionalId) {
+      profissionais = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, parseInt(profissionalId as string)), eq(profissionaisTable.barbeariaId, barbearia.id), eq(profissionaisTable.ativo, true)));
+    } else {
+      profissionais = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.barbeariaId, barbearia.id), eq(profissionaisTable.ativo, true)));
+    }
+
+    const agendamentos = await db.select().from(agendamentosTable).where(
+      and(eq(agendamentosTable.barbeariaId, barbearia.id), eq(agendamentosTable.data, data as string), eq(agendamentosTable.status, "confirmado"))
+    );
+
+    const slots: any[] = [];
+    const intervalo = 30;
+    const duracao = servico.duracaoMinutos;
+
+    for (const prof of profissionais) {
+      const schedule = getProfScheduleForDate(prof, data as string);
+      if (!schedule) continue;
+      const { inicio: inicioTrabalho, fim: fimTrabalho } = schedule;
+      for (let t = inicioTrabalho; t + duracao <= fimTrabalho; t += intervalo) {
+        const horaInicio = minutesToTime(t);
+        const horaFim = minutesToTime(t + duracao);
+        const ocupado = agendamentos.some(a => {
+          if (a.profissionalId !== prof.id) return false;
+          const ai = timeToMinutes(a.horaInicio);
+          const af = timeToMinutes(a.horaFim);
+          return !(t + duracao <= ai || t >= af);
+        });
+        slots.push({ horaInicio, horaFim, profissionalId: prof.id, profissionalNome: prof.nomeExibicao, disponivel: !ocupado });
+      }
+    }
+    return res.json(slots);
+  } catch (e) {
+    console.error("public slots error:", e);
+    return res.status(500).json({ error: "Erro ao buscar horários" });
   }
+});
 
-  const [servico] = await db.select().from(servicosTable).where(and(eq(servicosTable.id, servicoId), eq(servicosTable.barbeariaId, barbearia.id))).limit(1);
-  if (!servico) return res.status(404).json({ error: "Serviço não encontrado" });
-  const [profissional] = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, profissionalId), eq(profissionaisTable.barbeariaId, barbearia.id))).limit(1);
-  if (!profissional) return res.status(404).json({ error: "Profissional não encontrado" });
+router.post("/:slug/agendar", requireClient, async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const clienteUser = (req as any).clienteUser;
+    const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.slug, slug)).limit(1);
+    if (!barbearia) return res.status(404).json({ error: "Barbearia não encontrada" });
 
-  const horaFim = addMinutes(horaInicio, servico.duracaoMinutos);
-  const [agend] = await db.insert(agendamentosTable).values({
-    barbeariaId: barbearia.id,
-    clienteNome,
-    clienteTelefone,
-    profissionalId,
-    profissionalNome: profissional.nomeExibicao,
-    servicoId,
-    servicoNome: servico.nome,
-    data,
-    horaInicio,
-    horaFim,
-    status: "confirmado",
-    valor: servico.preco,
-    pago: false,
-    semPreferencia: semPreferencia ?? false,
-    observacao: observacao || null,
-    aniversario: false,
-    vip: false,
-  }).returning();
+    const { profissionalId, servicoId, data, horaInicio, semPreferencia, observacao } = req.body;
+    if (!profissionalId || !servicoId || !data || !horaInicio) {
+      return res.status(400).json({ error: "Dados inválidos" });
+    }
 
-  return res.status(201).json({
-    ...agend,
-    valor: parseFloat(agend.valor as string),
-    createdAt: agend.createdAt?.toISOString(),
-    updatedAt: agend.updatedAt?.toISOString(),
-  });
+    const [servico] = await db.select().from(servicosTable).where(and(eq(servicosTable.id, servicoId), eq(servicosTable.barbeariaId, barbearia.id))).limit(1);
+    if (!servico) return res.status(404).json({ error: "Serviço não encontrado" });
+    const [profissional] = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, profissionalId), eq(profissionaisTable.barbeariaId, barbearia.id))).limit(1);
+    if (!profissional) return res.status(404).json({ error: "Profissional não encontrado" });
+
+    let [cliente] = await db.select().from(clientesTable).where(
+      and(eq(clientesTable.barbeariaId, barbearia.id), eq(clientesTable.email, clienteUser.email))
+    ).limit(1);
+    if (!cliente) {
+      [cliente] = await db.insert(clientesTable).values({
+        barbeariaId: barbearia.id,
+        nome: clienteUser.nome,
+        telefone: clienteUser.telefone || "",
+        email: clienteUser.email,
+      }).returning();
+    }
+
+    const horaFim = addMinutes(horaInicio, servico.duracaoMinutos);
+    const [agend] = await db.insert(agendamentosTable).values({
+      barbeariaId: barbearia.id,
+      clienteId: cliente.id,
+      clienteNome: clienteUser.nome,
+      clienteTelefone: clienteUser.telefone || "",
+      profissionalId,
+      profissionalNome: profissional.nomeExibicao,
+      servicoId,
+      servicoNome: servico.nome,
+      data,
+      horaInicio,
+      horaFim,
+      status: "confirmado",
+      valor: servico.preco,
+      pago: false,
+      semPreferencia: semPreferencia ?? false,
+      observacao: observacao || null,
+      aniversario: false,
+      vip: false,
+    }).returning();
+
+    return res.status(201).json({
+      ...agend,
+      valor: parseFloat(agend.valor as string),
+      createdAt: agend.createdAt?.toISOString(),
+      updatedAt: agend.updatedAt?.toISOString(),
+    });
+  } catch (e) {
+    console.error("public agendar error:", e);
+    return res.status(500).json({ error: "Erro ao criar agendamento" });
+  }
 });
 
 export default router;

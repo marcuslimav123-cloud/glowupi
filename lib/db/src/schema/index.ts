@@ -16,3 +16,4 @@ export * from "./mensagens";
 export * from "./platformConfig";
 export * from "./superAdmins";
 export * from "./convites";
+export * from "./clienteUsers";

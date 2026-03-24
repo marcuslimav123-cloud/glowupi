@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
 import { db } from "@workspace/db";
-import { usersTable, barbeariasTable } from "@workspace/db/schema";
+import { usersTable, barbeariasTable, clienteUsersTable } from "@workspace/db/schema";
 import { eq, and, or } from "drizzle-orm";
 
 const SESSIONS: Map<string, { userId: number; expiresAt: Date }> = new Map();
+const CLIENT_SESSIONS: Map<string, { clienteUserId: number; expiresAt: Date }> = new Map();
 
 export function hashPassword(password: string): string {
   return crypto.createHash("sha256").update(password + "barberpro_salt").digest("hex");
@@ -83,6 +84,60 @@ export function requireRole(...roles: string[]) {
     }
     next();
   };
+}
+
+export function createClientSession(clienteUserId: number): string {
+  const token = crypto.randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  CLIENT_SESSIONS.set(token, { clienteUserId, expiresAt });
+  return token;
+}
+
+export function getClientSession(token: string): { clienteUserId: number } | null {
+  const session = CLIENT_SESSIONS.get(token);
+  if (!session) return null;
+  if (session.expiresAt < new Date()) {
+    CLIENT_SESSIONS.delete(token);
+    return null;
+  }
+  return { clienteUserId: session.clienteUserId };
+}
+
+export function deleteClientSession(token: string): void {
+  CLIENT_SESSIONS.delete(token);
+}
+
+export async function requireClient(req: Request, res: Response, next: NextFunction) {
+  const token = req.cookies?.["client_session"] || req.headers.authorization?.replace("Bearer ", "");
+  if (!token) {
+    return res.status(401).json({ error: "Cliente não autenticado" });
+  }
+  const session = getClientSession(token);
+  if (!session) {
+    return res.status(401).json({ error: "Sessão inválida ou expirada" });
+  }
+  const [clienteUser] = await db.select().from(clienteUsersTable).where(eq(clienteUsersTable.id, session.clienteUserId)).limit(1);
+  if (!clienteUser) {
+    return res.status(401).json({ error: "Cliente não encontrado" });
+  }
+  (req as any).clienteUser = clienteUser;
+  (req as any).clientToken = token;
+  next();
+}
+
+export async function optionalClient(req: Request, _res: Response, next: NextFunction) {
+  const token = req.cookies?.["client_session"] || req.headers.authorization?.replace("Bearer ", "");
+  if (token) {
+    const session = getClientSession(token);
+    if (session) {
+      const [clienteUser] = await db.select().from(clienteUsersTable).where(eq(clienteUsersTable.id, session.clienteUserId)).limit(1);
+      if (clienteUser) {
+        (req as any).clienteUser = clienteUser;
+        (req as any).clientToken = token;
+      }
+    }
+  }
+  next();
 }
 
 export async function checkBarbeariaAccess(req: any, res: any, options?: { writeAccess?: boolean }): Promise<number | null> {
