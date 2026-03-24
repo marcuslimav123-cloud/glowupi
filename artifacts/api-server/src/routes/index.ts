@@ -21,6 +21,7 @@ import recompensasRouter from "./recompensas.js";
 import resgatesRouter from "./resgates.js";
 import movimentacoesEstoqueRouter from "./movimentacoesEstoque.js";
 import mensagensRouter from "./mensagens.js";
+import checkoutRouter from "./checkout.js";
 
 const router: IRouter = Router();
 
@@ -45,6 +46,7 @@ router.use("/barbearias/:barbeariaId/recompensas", recompensasRouter);
 router.use("/barbearias/:barbeariaId/resgates", resgatesRouter);
 router.use("/barbearias/:barbeariaId/produtos/:produtoId/movimentacoes", movimentacoesEstoqueRouter);
 router.use("/barbearias/:barbeariaId/mensagens", mensagensRouter);
+router.use("/checkout", checkoutRouter);
 router.use("/public", publicRouter);
 
 export default router;

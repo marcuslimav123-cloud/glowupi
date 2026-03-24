@@ -13,3 +13,5 @@ export * from "./listaEspera";
 export * from "./recompensas";
 export * from "./movimentacoesEstoque";
 export * from "./mensagens";
+export * from "./platformConfig";
+export * from "./superAdmins";
