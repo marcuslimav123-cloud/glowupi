@@ -75,7 +75,11 @@ export default function Register() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Falha no cadastro com Google");
-      window.location.href = "/onboarding/barbearia";
+      if (data.isNew || !data.user?.telefone) {
+        window.location.href = "/completar-perfil";
+      } else {
+        window.location.href = "/onboarding/barbearia";
+      }
     } catch (err: any) {
       toast({
         title: "Erro no cadastro com Google",

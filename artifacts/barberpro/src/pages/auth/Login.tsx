@@ -78,7 +78,11 @@ export default function Login() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Falha no login com Google");
-      window.location.href = "/dashboard";
+      if (data.isNew || !data.user?.telefone) {
+        window.location.href = "/completar-perfil";
+      } else {
+        window.location.href = "/dashboard";
+      }
     } catch (err: any) {
       toast({
         title: "Erro no login com Google",

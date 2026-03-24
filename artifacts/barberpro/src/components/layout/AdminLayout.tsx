@@ -12,6 +12,7 @@ import {
   Menu,
   X,
   Shield,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -125,6 +126,12 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               <p className="text-[11px] text-white/30 truncate">{admin.email}</p>
             </div>
           </div>
+          <Link
+            href="/"
+            className="flex items-center w-full justify-start text-white/30 hover:text-white hover:bg-white/[0.05] text-[13px] h-8 rounded-lg px-3 mb-1 transition-colors"
+          >
+            <ExternalLink className="mr-2 h-3.5 w-3.5" /> Voltar ao Site
+          </Link>
           <Button
             variant="ghost"
             className="w-full justify-start text-white/30 hover:text-red-400 hover:bg-red-500/10 text-[13px] h-8 rounded-lg"

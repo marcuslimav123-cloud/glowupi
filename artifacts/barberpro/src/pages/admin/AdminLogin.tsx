@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useLocation } from "wouter";
-import { Sparkles, LogIn, Eye, EyeOff } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { Sparkles, LogIn, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -89,6 +89,13 @@ export default function AdminLogin() {
             {loading ? "Entrando..." : "Entrar"}
           </Button>
         </form>
+
+        <div className="mt-6 text-center">
+          <Link href="/" className="inline-flex items-center gap-1.5 text-white/30 hover:text-white/60 text-[13px] transition-colors">
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Voltar ao site
+          </Link>
+        </div>
       </div>
     </div>
   );

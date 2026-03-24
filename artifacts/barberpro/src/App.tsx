@@ -9,6 +9,7 @@ import LgpdPopup from "@/components/LgpdPopup";
 import Landing from "@/pages/Landing";
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
+import CompleteProfile from "@/pages/auth/CompleteProfile";
 import BarbeariaStep from "@/pages/onboarding/BarbeariaStep";
 import CheckoutSuccess from "@/pages/checkout/CheckoutSuccess";
 import CheckoutCancel from "@/pages/checkout/CheckoutCancel";
@@ -46,6 +47,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/cadastro" component={Register} />
 
+      <Route path="/completar-perfil" component={CompleteProfile} />
       <Route path="/onboarding/barbearia" component={BarbeariaStep} />
       <Route path="/checkout/success" component={CheckoutSuccess} />
       <Route path="/checkout/cancel" component={CheckoutCancel} />

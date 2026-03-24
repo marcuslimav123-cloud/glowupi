@@ -116,6 +116,22 @@ router.post("/google", async (req, res) => {
   }
 });
 
+router.post("/complete-profile", requireAuth, async (req, res) => {
+  try {
+    const user = (req as any).user;
+    const { telefone } = req.body;
+    if (!telefone) return res.status(400).json({ error: "WhatsApp é obrigatório" });
+    const digits = telefone.replace(/\D/g, "");
+    if (digits.length < 10 || digits.length > 11) return res.status(400).json({ error: "WhatsApp inválido. Use DDD + número." });
+    const [updated] = await db.update(usersTable).set({ telefone }).where(eq(usersTable.id, user.id)).returning();
+    const { senhaHash: _, ...userWithoutPass } = updated;
+    return res.json({ ...userWithoutPass, createdAt: updated.createdAt.toISOString() });
+  } catch (e) {
+    console.error("complete-profile error:", e);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 router.get("/me", requireAuth, async (req, res) => {
   try {
     const user = (req as any).user;
