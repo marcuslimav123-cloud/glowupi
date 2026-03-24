@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { formatCurrency } from "@/lib/utils";
-import { TrendingUp, DollarSign, Scissors, CreditCard, Award } from "lucide-react";
+import { TrendingUp, DollarSign, Heart, CreditCard, Award } from "lucide-react";
 import { format, subDays } from "date-fns";
 
 const COLORS = ["hsl(var(--chart-1))","hsl(var(--chart-2))","hsl(var(--chart-3))","hsl(var(--chart-4))","hsl(var(--chart-5))"];
@@ -128,7 +128,7 @@ export default function Relatorios() {
                       <div key={i}>
                         <div className="flex justify-between text-sm mb-1">
                           <div className="flex items-center gap-2">
-                            <Scissors className="h-4 w-4 text-primary" />
+                            <Heart className="h-4 w-4 text-primary" />
                             <span className="font-medium">{s.nome}</span>
                             <Badge variant="secondary" className="text-xs">{s.quantidade}x</Badge>
                           </div>

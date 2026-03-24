@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: 'Inter', sans-serif;
-  --font-display: 'Outfit', sans-serif;
+  --font-sans: 'Nunito', sans-serif;
+  --font-display: 'Playfair Display', serif;
 
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -48,52 +48,50 @@
 }
 
 :root {
-  /* DARK PREMIUM BARBERSHOP THEME (Default) */
-  --background: 240 10% 3.9%;
-  --foreground: 0 0% 98%;
+  --background: 30 30% 98%;
+  --foreground: 280 20% 18%;
   
-  --card: 240 5% 8%;
-  --card-foreground: 0 0% 98%;
-  --card-border: 240 5% 15%;
+  --card: 0 0% 100%;
+  --card-foreground: 280 20% 18%;
+  --card-border: 320 15% 90%;
 
-  --popover: 240 10% 3.9%;
-  --popover-foreground: 0 0% 98%;
-  --popover-border: 240 3.7% 15.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 280 20% 18%;
+  --popover-border: 320 15% 88%;
 
-  /* Premium Gold/Amber for primary brand color */
-  --primary: 43 74% 49%;
-  --primary-foreground: 24 10% 10%;
-  --primary-border: 43 74% 40%;
+  --primary: 340 45% 62%;
+  --primary-foreground: 0 0% 100%;
+  --primary-border: 340 45% 55%;
 
-  --secondary: 240 3.7% 15.9%;
-  --secondary-foreground: 0 0% 98%;
+  --secondary: 280 10% 95%;
+  --secondary-foreground: 280 20% 30%;
 
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
+  --muted: 280 8% 94%;
+  --muted-foreground: 280 8% 50%;
 
-  --accent: 240 3.7% 15.9%;
-  --accent-foreground: 0 0% 98%;
+  --accent: 280 10% 95%;
+  --accent-foreground: 280 20% 18%;
 
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 98%;
+  --destructive: 0 72% 55%;
+  --destructive-foreground: 0 0% 100%;
 
-  --border: 240 3.7% 15.9%;
-  --input: 240 3.7% 15.9%;
-  --ring: 43 74% 49%;
+  --border: 320 12% 90%;
+  --input: 320 12% 90%;
+  --ring: 340 45% 62%;
 
-  --sidebar: 240 5.2% 6%;
-  --sidebar-foreground: 240 4.8% 95.9%;
-  --sidebar-border: 240 3.7% 15.9%;
-  --sidebar-primary: 43 74% 49%;
+  --sidebar: 330 20% 97%;
+  --sidebar-foreground: 280 20% 25%;
+  --sidebar-border: 320 15% 90%;
+  --sidebar-primary: 340 45% 62%;
   --sidebar-primary-foreground: 0 0% 100%;
 
   --radius: 0.75rem;
 
-  --chart-1: 43 74% 49%;
-  --chart-2: 240 3.7% 15.9%;
-  --chart-3: 0 0% 98%;
-  --chart-4: 210 40% 98%;
-  --chart-5: 220 14% 96%;
+  --chart-1: 340 45% 62%;
+  --chart-2: 280 30% 72%;
+  --chart-3: 30 60% 70%;
+  --chart-4: 200 40% 65%;
+  --chart-5: 160 30% 60%;
 }
 
 @layer base {
@@ -103,8 +101,7 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    /* Subtle textured gradient for deep luxury feel */
-    background-image: radial-gradient(circle at 50% 0%, hsl(240 5% 12%) 0%, transparent 70%);
+    background-image: radial-gradient(circle at 50% 0%, hsl(330 20% 95%) 0%, transparent 60%);
     background-attachment: fixed;
   }
 
@@ -114,10 +111,9 @@
   }
 }
 
-/* Custom Scrollbar for premium feel */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -126,5 +122,5 @@
   @apply bg-muted rounded-full;
 }
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-muted-foreground/50;
+  @apply bg-muted-foreground/40;
 }

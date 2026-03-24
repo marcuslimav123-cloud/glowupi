@@ -40,7 +40,6 @@ export default function BarbeariaStep() {
           }));
         }
       } catch (e) {
-        // ignore
       }
     }
   };
@@ -49,11 +48,11 @@ export default function BarbeariaStep() {
     e.preventDefault();
     try {
       await createMutation.mutateAsync({ data: formData });
-      window.location.href = "/dashboard"; // Skip other steps for brevity in this MVP, straight to dashboard
+      window.location.href = "/dashboard";
     } catch (err: any) {
       toast({
         title: "Erro",
-        description: err.message || "Erro ao configurar barbearia.",
+        description: err.message || "Erro ao configurar seu estúdio.",
         variant: "destructive"
       });
     }
@@ -66,7 +65,7 @@ export default function BarbeariaStep() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">1</div>
-              <span className="font-semibold text-foreground">Sua Barbearia</span>
+              <span className="font-semibold text-foreground">Seu Estúdio</span>
             </div>
             <div className="h-1 flex-1 mx-4 bg-muted rounded-full overflow-hidden">
               <div className="h-full bg-primary w-1/3"></div>
@@ -75,16 +74,16 @@ export default function BarbeariaStep() {
               <div className="h-8 w-8 rounded-full bg-card border border-border flex items-center justify-center font-bold">2</div>
             </div>
           </div>
-          <h1 className="text-3xl font-display text-foreground">Configure sua unidade</h1>
-          <p className="text-muted-foreground mt-1">Insira os dados principais do seu negócio para começarmos.</p>
+          <h1 className="text-3xl font-display text-foreground">Configure seu espaço</h1>
+          <p className="text-muted-foreground mt-1">Insira os dados do seu salão ou estúdio para começarmos.</p>
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-6 md:p-8 shadow-xl">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="nome">Nome da Barbearia *</Label>
-                <Input id="nome" required value={formData.nome} onChange={handleChange} className="h-12 text-lg" placeholder="Ex: Barbearia Premium" />
+                <Label htmlFor="nome">Nome do Salão / Estúdio *</Label>
+                <Input id="nome" required value={formData.nome} onChange={handleChange} className="h-12 text-lg" placeholder="Ex: Studio Glow Beauty" />
               </div>
               
               <div className="space-y-2">

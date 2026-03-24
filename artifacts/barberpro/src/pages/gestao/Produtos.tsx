@@ -39,7 +39,7 @@ function ProdutoForm({ initial, onSave, onCancel }: { initial?: Partial<Produto>
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label>Nome do Produto</Label>
-        <Input value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Pomada Modeladora" required />
+        <Input value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Esmalte em Gel, Creme Hidratante" required />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">

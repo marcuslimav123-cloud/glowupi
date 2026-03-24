@@ -50,7 +50,7 @@ function ClienteForm({
     <form onSubmit={e => { e.preventDefault(); onSave({ nome, telefone, email: email || null, aniversario: aniversario || null, observacoes: observacoes || null, vip }); }} className="space-y-4 mt-2">
       <div className="space-y-2">
         <Label>Nome Completo *</Label>
-        <Input value={nome} onChange={e => setNome(e.target.value)} required placeholder="Ex: Carlos Oliveira" className="bg-background" />
+        <Input value={nome} onChange={e => setNome(e.target.value)} required placeholder="Ex: Mariana Silva" className="bg-background" />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -68,7 +68,7 @@ function ClienteForm({
       </div>
       <div className="space-y-2">
         <Label>Observações</Label>
-        <Textarea value={observacoes} onChange={e => setObservacoes(e.target.value)} className="bg-background resize-none" rows={2} placeholder="Ex: Prefere degradê baixo, alérgico a determinados produtos..." />
+        <Textarea value={observacoes} onChange={e => setObservacoes(e.target.value)} className="bg-background resize-none" rows={2} placeholder="Ex: Alérgica a esmalte, pele sensível..." />
       </div>
       <button
         type="button"

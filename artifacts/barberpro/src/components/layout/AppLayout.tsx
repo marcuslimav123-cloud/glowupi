@@ -12,11 +12,12 @@ import {
   Building2, 
   Award,
   LogOut,
-  Scissors,
+  Sparkles,
   Users,
   Package,
   Menu,
-  X
+  X,
+  Heart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -35,15 +36,16 @@ const NAV_ITEMS = [
     icon: Settings,
     children: [
       { name: "Profissionais", href: "/gestao/profissionais", icon: Users },
-      { name: "Serviços", href: "/gestao/servicos", icon: Scissors },
+      { name: "Serviços", href: "/gestao/servicos", icon: Heart },
       { name: "Produtos", href: "/gestao/produtos", icon: Package },
+      { name: "Clientes", href: "/gestao/clientes", icon: Users },
     ]
   },
   { name: "Relatórios", href: "/relatorios", icon: BarChart3 },
   { name: "Caixa", href: "/caixa", icon: DollarSign },
   { name: "Financeiro", href: "/financeiro", icon: TrendingUp },
-  { name: "Minha Empresa", href: "/empresa", icon: Building2 },
-  { name: "Clube do Assinante", href: "/clube", icon: Award },
+  { name: "Meu Estúdio", href: "/empresa", icon: Building2 },
+  { name: "Clube de Fidelidade", href: "/clube", icon: Award },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -51,7 +53,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, logout, isLoading, barbeariaId } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
-  // Redirect logic
   React.useEffect(() => {
     if (!isLoading) {
       if (!user) {
@@ -70,26 +71,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
-      {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card">
         <div className="flex items-center gap-2 text-primary font-display font-bold text-xl">
-          <Scissors className="h-6 w-6" /> BarberPro
+          <Sparkles className="h-5 w-5" /> Glow Agenda
         </div>
         <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
           {mobileMenuOpen ? <X /> : <Menu />}
         </Button>
       </div>
 
-      {/* Sidebar */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 flex flex-col",
         mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="p-6 hidden md:flex items-center gap-3 text-primary font-display font-bold text-2xl tracking-wider">
+        <div className="p-6 hidden md:flex items-center gap-3 text-primary font-display font-bold text-xl tracking-wide">
           <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-            <Scissors className="h-6 w-6 text-primary" />
+            <Sparkles className="h-5 w-5 text-primary" />
           </div>
-          BARBERPRO
+          Glow Agenda
         </div>
 
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
@@ -131,31 +130,28 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         <div className="p-4 border-t border-sidebar-border">
           <div className="flex items-center gap-3 px-3 py-2 mb-4">
-            <div className="h-10 w-10 rounded-full bg-card border border-border flex items-center justify-center text-primary font-bold">
+            <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold">
               {user.nome.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">{user.nome}</p>
-              <p className="text-xs text-muted-foreground truncate capitalize">{user.role}</p>
+              <p className="text-xs text-muted-foreground truncate capitalize">{user.role === 'dono' ? 'proprietária' : user.role}</p>
             </div>
           </div>
           <Button variant="outline" className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/20" onClick={logout}>
-            <LogOut className="mr-2 h-4 w-4" /> Sair do sistema
+            <LogOut className="mr-2 h-4 w-4" /> Sair
           </Button>
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden relative">
-        <div className="absolute inset-0 bg-[url('/images/hero-bg.png')] bg-cover bg-center opacity-5 pointer-events-none mix-blend-screen" />
         <div className="flex-1 overflow-y-auto p-4 md:p-8 z-10">
           {children}
         </div>
       </main>
       
-      {/* Mobile overlay */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden" onClick={() => setMobileMenuOpen(false)} />
+        <div className="fixed inset-0 bg-background/60 backdrop-blur-sm z-40 md:hidden" onClick={() => setMobileMenuOpen(false)} />
       )}
     </div>
   );

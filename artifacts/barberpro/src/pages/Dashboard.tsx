@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useGetDashboard } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
-import { TrendingUp, Users, Calendar, Scissors, AlertCircle, ArrowUpRight, ArrowDownRight, Award, DollarSign } from "lucide-react";
+import { TrendingUp, Users, Calendar, Sparkles, AlertCircle, ArrowUpRight, ArrowDownRight, Award, DollarSign } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Cell as PieCell } from "recharts";
 
 export default function Dashboard() {

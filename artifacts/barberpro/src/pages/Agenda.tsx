@@ -304,7 +304,7 @@ export default function Agenda() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2 col-span-2">
                 <Label>Nome do Cliente *</Label>
-                <Input value={formNome} onChange={e => setFormNome(e.target.value)} required placeholder="Ex: João Silva" className="bg-background" />
+                <Input value={formNome} onChange={e => setFormNome(e.target.value)} required placeholder="Ex: Mariana Silva" className="bg-background" />
               </div>
               <div className="space-y-2">
                 <Label>WhatsApp *</Label>

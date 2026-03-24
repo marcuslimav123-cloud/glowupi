@@ -1,8 +1,8 @@
-# BarberPro SaaS
+# Glow Agenda — SaaS para Salões de Beleza
 
 ## Overview
 
-Multi-tenant SaaS for barbershop management ("barbearia" in Portuguese). Full-stack monorepo with React frontend and Express backend using PostgreSQL.
+Multi-tenant SaaS for beauty salon management (salão/estúdio de beleza). Full-stack monorepo with React frontend and Express backend using PostgreSQL. Targets manicurists, estheticians, hair stylists, and other beauty professionals.
 
 ## Stack
 
@@ -17,6 +17,7 @@ Multi-tenant SaaS for barbershop management ("barbearia" in Portuguese). Full-st
 - **API codegen**: Orval (from OpenAPI spec)
 - **Auth**: Session-based (cookie) with SHA-256 password hashing (in-memory sessions map)
 - **Build**: esbuild (CJS bundle)
+- **Fonts**: Nunito (body) + Playfair Display (headings)
 
 ## Structure
 
@@ -24,7 +25,7 @@ Multi-tenant SaaS for barbershop management ("barbearia" in Portuguese). Full-st
 artifacts-monorepo/
 ├── artifacts/
 │   ├── api-server/         # Express API server
-│   └── barberpro/          # React + Vite frontend
+│   └── barberpro/          # React + Vite frontend (directory name kept for compatibility)
 ├── lib/                    # Shared libraries
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
@@ -34,11 +35,11 @@ artifacts-monorepo/
 
 ## Database Schema
 
-- `users` — User accounts (dono/gerente/barbeiro/cliente roles)
-- `barbearias` — Barbershop profiles (multi-tenant root)
-- `profissionais` — Professionals per barbershop
-- `servicos` — Services offered
-- `clientes` — Clients per barbershop
+- `users` — User accounts (dono/gerente/profissional/cliente roles)
+- `barbearias` — Salon/studio profiles (multi-tenant root; table name kept for API compatibility)
+- `profissionais` — Professionals per salon
+- `servicos` — Services offered (nails, skincare, hair, etc.)
+- `clientes` — Clients per salon
 - `agendamentos` — Appointments with status (confirmado/pago/cancelado)
 - `comandas` — Checkout records with services, products, payments, commissions
 - `produtos` — Product inventory
@@ -47,7 +48,7 @@ artifacts-monorepo/
 
 All under `/api`:
 - `/auth/register`, `/auth/login`, `/auth/logout`, `/auth/me` — Authentication
-- `/barbearias`, `/barbearias/me` — Barbershop management
+- `/barbearias`, `/barbearias/me` — Salon management (endpoint name kept for compatibility)
 - `/barbearias/{id}/profissionais/**` — Professionals CRUD
 - `/barbearias/{id}/servicos/**` — Services CRUD
 - `/barbearias/{id}/clientes/**` — Clients CRUD
@@ -58,24 +59,36 @@ All under `/api`:
 - `/barbearias/{id}/relatorios/faturamento` — Revenue reports
 - `/barbearias/{id}/relatorios/comissoes` — Commission reports
 - `/barbearias/{id}/slots-disponiveis` — Available time slots
-- `/public/{slug}` — Public barbershop page (no auth required)
+- `/public/{slug}` — Public salon page (no auth required)
 - `/public/{slug}/agendar` — Public appointment booking
 
 ## Frontend Pages
 
 - `/login`, `/cadastro` — Auth pages
-- `/onboarding/barbearia` — Onboarding step 1 (create barbershop)
+- `/onboarding/barbearia` — Onboarding step 1 (create salon/studio)
 - `/dashboard` — Main dashboard with charts, metrics, rankings
 - `/agenda` — Visual schedule with appointment management + checkout modal
+- `/agenda/picos` — Peak hours heatmap analysis
 - `/gestao/profissionais` — Professional management
 - `/gestao/servicos` — Service management
+- `/gestao/clientes` — Client management with search, VIP, birthday detection
 - `/gestao/produtos` — Product/inventory management
-- `/relatorios`, `/caixa`, `/financeiro`, `/empresa`, `/clube` — Various management pages
+- `/relatorios` — Revenue & commission reports with charts
+- `/caixa` — Checkout/comanda history
+- `/financeiro` — Financial overview with area charts
+- `/empresa` — Studio settings with ViaCEP + hours toggle
+- `/clube` — Loyalty program with leaderboard & VIP
+
+## Design & Theme
+
+- **Light feminine design**: rosé, lilás, nude, white with soft gold accents
+- **Fonts**: Nunito (body/UI), Playfair Display (headings/display)
+- **Brand**: "Glow Agenda" with Sparkles icon
+- **Color palette**: Primary rosé (hsl 340 45% 62%), purple accents, warm neutrals
 
 ## Key Features
 
-- Dark premium barbershop design (dark background, gold accents)
-- Multi-tenant: each barbershop is isolated by barbeariaId
+- Multi-tenant: each salon is isolated by barbeariaId
 - 30-day free trial plan
 - Commission calculation (percentage or fixed per professional)
 - Checkout with split payment support (pix, dinheiro, crédito, débito)
@@ -84,3 +97,13 @@ All under `/api`:
 - Responsive sidebar (collapses to mobile menu on small screens)
 - ViaCEP integration for address auto-fill in onboarding
 - Public booking portal at `/public/{slug}`
+- Peak hours heatmap analysis
+- Low-stock product alerts with margin calculation
+
+## Important Notes
+
+- shadcn Select components do NOT bind to native form FormData — always use React state (useState) for Select values
+- DB numeric fields stored as strings in Postgres — parse with parseFloat() in routes
+- Demo login: joao@barberpro.com / 123456, barbeariaId: 1
+- `date-fns` v3 is installed; use `date-fns/locale` for ptBR
+- API endpoint names still use "barbearias" for backward compatibility

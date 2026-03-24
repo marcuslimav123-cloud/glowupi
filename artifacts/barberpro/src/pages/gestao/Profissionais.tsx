@@ -42,11 +42,11 @@ function ProfForm({
     <form onSubmit={e => { e.preventDefault(); onSave({ nomeExibicao: nome, especialidade: esp || null, comissaoTipo: tipo, comissaoValor: parseFloat(valor) }); }} className="space-y-4 mt-2">
       <div className="space-y-2">
         <Label>Nome de Exibição *</Label>
-        <Input value={nome} onChange={e => setNome(e.target.value)} required placeholder="Ex: João Barbeiro" className="bg-background" />
+        <Input value={nome} onChange={e => setNome(e.target.value)} required placeholder="Ex: Ana Beatriz" className="bg-background" />
       </div>
       <div className="space-y-2">
         <Label>Especialidade</Label>
-        <Input value={esp} onChange={e => setEsp(e.target.value)} placeholder="Ex: Especialista em Degradê" className="bg-background" />
+        <Input value={esp} onChange={e => setEsp(e.target.value)} placeholder="Ex: Nail Designer, Esteticista" className="bg-background" />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -139,7 +139,7 @@ export default function Profissionais() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-display font-bold text-foreground">Profissionais</h1>
-          <p className="text-muted-foreground mt-1">Gerencie a equipe da barbearia</p>
+          <p className="text-muted-foreground mt-1">Gerencie a equipe do seu espaço</p>
         </div>
         <Button className="shadow-lg shadow-primary/25" onClick={() => { setEditing(null); setModalOpen(true); }}>
           <Plus className="mr-2 h-4 w-4" /> Adicionar Membro
@@ -152,7 +152,7 @@ export default function Profissionais() {
         <div className="text-center py-20 bg-card rounded-2xl border border-border">
           <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
           <h3 className="text-lg font-medium">Nenhum profissional cadastrado</h3>
-          <p className="text-muted-foreground text-sm mt-1">Adicione barbeiros e profissionais à sua equipe.</p>
+          <p className="text-muted-foreground text-sm mt-1">Adicione profissionais à sua equipe.</p>
           <Button className="mt-4" onClick={() => setModalOpen(true)}>Adicionar primeiro profissional</Button>
         </div>
       ) : (

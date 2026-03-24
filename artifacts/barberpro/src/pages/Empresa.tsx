@@ -83,15 +83,15 @@ export default function Empresa() {
     try {
       await updateMutation.mutateAsync({ data: { nome, telefone, email: email || null, cnpj: cnpj || null, cep: cep || null, logradouro: logradouro || null, numero: numero || null, bairro: bairro || null, cidade: cidade || null, uf: uf || null, corPrimaria, horarioFuncionamento: horarios } });
       qc.invalidateQueries();
-      toast({ title: "Empresa atualizada com sucesso!" });
+      toast({ title: "Dados atualizados com sucesso!" });
     } catch { toast({ title: "Erro ao salvar", variant: "destructive" }); }
   };
 
   return (
     <AppLayout>
       <div className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-foreground">Minha Empresa</h1>
-        <p className="text-muted-foreground mt-1">Configurações da sua barbearia</p>
+        <h1 className="text-3xl font-display font-bold text-foreground">Meu Estúdio</h1>
+        <p className="text-muted-foreground mt-1">Configurações do seu espaço</p>
       </div>
 
       {barbearia && (
@@ -114,10 +114,10 @@ export default function Empresa() {
       ) : (
         <form onSubmit={handleSave} className="space-y-6">
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5 text-primary" /> Dados da Empresa</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5 text-primary" /> Dados do Estúdio</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2 md:col-span-2">
-                <Label>Nome da Barbearia</Label>
+                <Label>Nome do Salão / Estúdio</Label>
                 <Input value={nome} onChange={e => setNome(e.target.value)} required />
               </div>
               <div className="space-y-2">
@@ -126,7 +126,7 @@ export default function Empresa() {
               </div>
               <div className="space-y-2">
                 <Label>E-mail</Label>
-                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="contato@barbearia.com" />
+                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="contato@seusalao.com" />
               </div>
               <div className="space-y-2">
                 <Label>CNPJ</Label>

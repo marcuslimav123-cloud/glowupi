@@ -42,7 +42,7 @@ function ServicoForm({
     <form onSubmit={e => { e.preventDefault(); onSave({ nome, preco: parseFloat(preco), duracaoMinutos: parseInt(duracao), descricao: desc || null }); }} className="space-y-4 mt-2">
       <div className="space-y-2">
         <Label>Nome do Serviço *</Label>
-        <Input value={nome} onChange={e => setNome(e.target.value)} required placeholder="Ex: Corte Degradê" className="bg-background" />
+        <Input value={nome} onChange={e => setNome(e.target.value)} required placeholder="Ex: Unha em Gel, Limpeza de Pele" className="bg-background" />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -138,7 +138,7 @@ export default function Servicos() {
         <div className="text-center py-20 bg-card rounded-2xl border border-border">
           <Settings2 className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
           <h3 className="text-lg font-medium">Nenhum serviço cadastrado</h3>
-          <p className="text-muted-foreground text-sm mt-1">Cadastre cortes, barba e outros serviços.</p>
+          <p className="text-muted-foreground text-sm mt-1">Cadastre seus procedimentos e serviços.</p>
           <Button className="mt-4" onClick={() => setModalOpen(true)}>Criar primeiro serviço</Button>
         </div>
       ) : (
