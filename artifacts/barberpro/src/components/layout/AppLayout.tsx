@@ -39,7 +39,7 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["dono", "gerente"] },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { 
     name: "Agenda",
     icon: CalendarDays,

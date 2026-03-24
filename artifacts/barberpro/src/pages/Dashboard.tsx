@@ -8,7 +8,7 @@ import { TrendingUp, Users, Calendar, Sparkles, AlertCircle, ArrowUpRight, Arrow
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Cell as PieCell } from "recharts";
 
 export default function Dashboard() {
-  const { barbeariaId } = useAuth();
+  const { barbeariaId, isColaborador } = useAuth();
   const [periodo, setPeriodo] = useState<"hoje"|"semana"|"mes">("semana");
 
   const { data, isLoading } = useGetDashboard(barbeariaId!, { periodo }, {
@@ -28,6 +28,52 @@ export default function Dashboard() {
             <div className="h-80 bg-white rounded-2xl border border-black/[0.04]"></div>
           </div>
         </div>
+      </AppLayout>
+    );
+  }
+
+  if (isColaborador || (data as any).isColaboradorView) {
+    const colabData = data as any;
+    return (
+      <AppLayout>
+        <div className="mb-8">
+          <h1 className="text-[24px] font-bold text-foreground">Meu Painel</h1>
+          <p className="text-foreground/40 text-[14px] mt-0.5">Seus agendamentos de hoje</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          <MetricCard title="Agendamentos Hoje" value={colabData.totalAgendamentosHoje ?? 0} icon={Calendar} />
+          <MetricCard title="Confirmados" value={colabData.confirmados ?? 0} icon={Sparkles} />
+          <MetricCard title="Pagos" value={colabData.pagos ?? 0} icon={DollarSignIcon} />
+        </div>
+
+        <Card className="bg-white border-black/[0.04] shadow-none">
+          <CardHeader>
+            <CardTitle className="text-[15px] font-semibold">Agenda do Dia</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(!colabData.meusAgendamentosHoje || colabData.meusAgendamentosHoje.length === 0) ? (
+              <div className="text-center py-8 text-foreground/35 text-[14px]">Nenhum agendamento para hoje.</div>
+            ) : (
+              <div className="space-y-2">
+                {colabData.meusAgendamentosHoje.map((ag: any) => (
+                  <div key={ag.id} className="flex items-center justify-between p-3.5 rounded-xl bg-[#fafafa] hover:bg-black/[0.02] transition-colors">
+                    <div>
+                      <p className="font-medium text-[13px] text-foreground">{ag.horario} — {ag.clienteNome || "Cliente"}</p>
+                      <p className="text-[11px] text-foreground/35">{ag.servicoNome || "Serviço"}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`text-[12px] px-2 py-0.5 rounded-full font-medium ${ag.status === "confirmado" ? "bg-green-50 text-green-600" : ag.status === "cancelado" ? "bg-red-50 text-red-500" : "bg-amber-50 text-amber-600"}`}>
+                        {ag.status}
+                      </span>
+                      {ag.valor > 0 && <p className="text-[12px] text-foreground/50 mt-1">{formatCurrency(ag.valor)}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </AppLayout>
     );
   }

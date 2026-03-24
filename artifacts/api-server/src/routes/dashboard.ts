@@ -29,9 +29,35 @@ function getDateRange(periodo: string, dataInicio?: string, dataFim?: string) {
   return { inicio: d.toISOString().slice(0, 10), fim: todayStr };
 }
 
-router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+router.get("/", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const user = (req as any).user;
+
+  if (user.role === "colaborador") {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const conditions: any[] = [
+      eq(agendamentosTable.barbeariaId, barbeariaId),
+      eq(agendamentosTable.data, todayStr),
+    ];
+    if (user.profissionalId) {
+      conditions.push(eq(agendamentosTable.profissionalId, user.profissionalId));
+    }
+    const meusAgendamentos = await db.select().from(agendamentosTable).where(and(...conditions));
+    return res.json({
+      isColaboradorView: true,
+      meusAgendamentosHoje: meusAgendamentos.map(a => ({
+        ...a,
+        valor: parseFloat(a.valor as string),
+        createdAt: a.createdAt?.toISOString?.(),
+        updatedAt: a.updatedAt?.toISOString?.(),
+      })),
+      totalAgendamentosHoje: meusAgendamentos.length,
+      confirmados: meusAgendamentos.filter(a => a.status === "confirmado").length,
+      pagos: meusAgendamentos.filter(a => a.pago).length,
+    });
+  }
+
   const { periodo = "semana", dataInicio, dataFim } = req.query;
   const { inicio, fim } = getDateRange(periodo as string, dataInicio as string, dataFim as string);
 
