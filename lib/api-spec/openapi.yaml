@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
-  title: Api
+  title: Glow Agenda API
   version: 0.1.0
-  description: BarberPro SaaS API
+  description: Glow Agenda — SaaS para salões de beleza
 servers:
   - url: /api
     description: Base API path
@@ -12,7 +12,7 @@ tags:
   - name: auth
     description: Authentication
   - name: barbearias
-    description: Barbershop management
+    description: Salon/studio management
   - name: profissionais
     description: Professional management
   - name: servicos
@@ -130,7 +130,7 @@ paths:
     post:
       operationId: createBarbearia
       tags: [barbearias]
-      summary: Create a new barbershop (onboarding step 1)
+      summary: Create a new salon/studio (onboarding step 1)
       requestBody:
         required: true
         content:
@@ -139,7 +139,7 @@ paths:
               $ref: "#/components/schemas/CreateBarbeariaInput"
       responses:
         "201":
-          description: Barbershop created
+          description: Salon created
           content:
             application/json:
               schema:
@@ -149,10 +149,10 @@ paths:
     get:
       operationId: getMyBarbearia
       tags: [barbearias]
-      summary: Get the current user's barbershop
+      summary: Get the current user's salon
       responses:
         "200":
-          description: Barbershop
+          description: Salon
           content:
             application/json:
               schema:
@@ -161,7 +161,7 @@ paths:
     put:
       operationId: updateBarbearia
       tags: [barbearias]
-      summary: Update barbershop settings
+      summary: Update salon settings
       requestBody:
         required: true
         content:
@@ -180,7 +180,7 @@ paths:
     get:
       operationId: listProfissionais
       tags: [profissionais]
-      summary: List professionals for a barbershop
+      summary: List professionals for a salon
       parameters:
         - name: barbeariaId
           in: path
@@ -301,7 +301,7 @@ paths:
     get:
       operationId: listServicos
       tags: [servicos]
-      summary: List services for a barbershop
+      summary: List services for a salon
       parameters:
         - name: barbeariaId
           in: path
@@ -399,7 +399,7 @@ paths:
     get:
       operationId: listClientes
       tags: [clientes]
-      summary: List clients for a barbershop
+      summary: List clients for a salon
       parameters:
         - name: barbeariaId
           in: path
@@ -913,7 +913,7 @@ paths:
     get:
       operationId: getPublicBarbearia
       tags: [barbearias]
-      summary: Get public barbershop info by slug
+      summary: Get public salon info by slug
       parameters:
         - name: slug
           in: path
@@ -922,7 +922,7 @@ paths:
             type: string
       responses:
         "200":
-          description: Public barbershop info
+          description: Public salon info
           content:
             application/json:
               schema:
@@ -1043,7 +1043,7 @@ components:
           nullable: true
         role:
           type: string
-          enum: [dono, gerente, barbeiro, cliente]
+          enum: [dono, gerente, profissional, cliente]
         createdAt:
           type: string
       required:
