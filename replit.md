@@ -16,7 +16,7 @@ Multi-tenant SaaS for beauty salon management (salão/estúdio de beleza). Full-
 - **Payments**: Stripe (via Replit integration) + stripe-replit-sync
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec) — run `pnpm --filter @workspace/api-spec run codegen`
-- **Auth**: Session-based (cookie) with bcryptjs password hashing (in-memory sessions map). Super admin uses separate session cookie ("admin_session")
+- **Auth**: Session-based (cookie) with bcryptjs password hashing (in-memory sessions map). Super admin uses separate session cookie ("admin_session"). Google Sign-In supported (requires GOOGLE_CLIENT_ID env var)
 - **Build**: esbuild (CJS bundle)
 - **Fonts**: Inter (body/UI) + DM Serif Display (headings)
 
@@ -37,7 +37,7 @@ artifacts-monorepo/
 
 ## Database Schema
 
-- `users` — User accounts (dono/gerente/profissional/cliente roles)
+- `users` — User accounts (dono/gerente/profissional/cliente roles; optional googleId for Google Sign-In)
 - `barbearias` — Salon/studio profiles (multi-tenant root; table name kept for API compatibility). Includes Stripe fields: stripe_customer_id, stripe_subscription_id, subscription_status, subscription_plan, subscription_period
 - `profissionais` — Professionals per salon
 - `servicos` — Services offered (nails, skincare, hair, etc.)
@@ -54,7 +54,7 @@ artifacts-monorepo/
 - `resgates` — Loyalty redemption history
 - `movimentacoesEstoque` — Inventory movement history
 - `mensagens` — Messages (retorno/promocao) with draft/sent status
-- `platform_config` — Global platform settings (pricing_mode, etc.)
+- `platform_config` — Global platform settings (pricing_mode, lgpd_terms, etc.)
 - `super_admins` — Super admin accounts for platform owners
 - `stripe.*` — Auto-managed by stripe-replit-sync (products, prices, customers, subscriptions)
 
@@ -78,7 +78,9 @@ artifacts-monorepo/
 ## API Endpoints
 
 All under `/api`:
-- `/auth/register`, `/auth/login`, `/auth/logout`, `/auth/me` — Authentication
+- `/auth/register`, `/auth/login`, `/auth/logout`, `/auth/me`, `/auth/google` — Authentication (incl. Google Sign-In)
+- `/lgpd/terms` — Public LGPD terms endpoint
+- `/lgpd/google-client-id` — Public Google Client ID endpoint
 - `/barbearias`, `/barbearias/me` — Salon management (endpoint name kept for compatibility)
 - `/barbearias/{id}/profissionais/**` — Professionals CRUD
 - `/barbearias/{id}/servicos/**` — Services CRUD
@@ -179,12 +181,14 @@ All under `/api`:
 - Public page enhanced with fotos, formasPagamento, redesSociais from barbearias
 - Slots API respects per-professional schedules (horarios.porDia with folga support)
 - Super Admin Panel at `/admin/*` with dark slate theme (separate from main app)
-  - Login: admin@glowagenda.com / admin123 (seeded via env vars SUPER_ADMIN_EMAIL/SUPER_ADMIN_PASSWORD)
+  - Login: marcus@admin.com / MaGu1409 (override via SUPER_ADMIN_EMAIL/SUPER_ADMIN_PASSWORD env vars)
+  - Second account: gustavo@admin.com / GuMa1409 (override via SUPER_ADMIN2_EMAIL/SUPER_ADMIN2_PASSWORD env vars)
   - Dashboard: KPI cards, recent signups, plan distribution
   - Tenant management: search, toggle activate/deactivate
-  - Platform config: pricing_mode toggle (all_plans/single_price/hidden)
+  - Platform config: pricing_mode toggle (all_plans/single_price/hidden) + LGPD terms editor
   - Revenue analytics: MRR/ARR cards, MRR by plan, subscription/plan/period breakdown, monthly revenue chart
-  - Default credentials should be overridden in production via SUPER_ADMIN_EMAIL/SUPER_ADMIN_PASSWORD env vars
+- LGPD consent popup: shows on all pages until accepted (localStorage). Terms editable from admin panel (platform_config lgpd_terms key)
+- Google Sign-In: Login/Register pages show Google button when GOOGLE_CLIENT_ID env var is set. Backend verifies ID token via google-auth-library
 
 ## Important Notes
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRegisterUser } from "@workspace/api-client-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { apiUrl } from "@/lib/utils";
 
 export default function Register() {
   const [, setLocation] = useLocation();
@@ -17,6 +18,74 @@ export default function Register() {
     senha: "",
     telefone: ""
   });
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleClientId, setGoogleClientId] = useState("");
+
+  useEffect(() => {
+    fetch(apiUrl("/lgpd/google-client-id"))
+      .then(r => r.json())
+      .then(data => {
+        if (data.clientId) {
+          setGoogleClientId(data.clientId);
+          loadGoogleScript(data.clientId);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const loadGoogleScript = (clientId: string) => {
+    if (document.getElementById("google-gsi-script")) return;
+    const script = document.createElement("script");
+    script.id = "google-gsi-script";
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => initGoogleButton(clientId);
+    document.head.appendChild(script);
+  };
+
+  const initGoogleButton = (clientId: string) => {
+    if (!(window as any).google) return;
+    (window as any).google.accounts.id.initialize({
+      client_id: clientId,
+      callback: handleGoogleResponse,
+    });
+    const container = document.getElementById("google-signup-btn");
+    if (container) {
+      (window as any).google.accounts.id.renderButton(container, {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        width: "100%",
+        text: "signup_with",
+        shape: "pill",
+        locale: "pt-BR",
+      });
+    }
+  };
+
+  const handleGoogleResponse = async (response: any) => {
+    setGoogleLoading(true);
+    try {
+      const res = await fetch(apiUrl("/auth/google"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ credential: response.credential }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Falha no cadastro com Google");
+      window.location.href = "/onboarding/barbearia";
+    } catch (err: any) {
+      toast({
+        title: "Erro no cadastro com Google",
+        description: err.message || "Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, [e.target.id]: e.target.value }));
@@ -79,6 +148,23 @@ export default function Register() {
               {registerMutation.isPending ? "Criando..." : "Começar Agora"}
             </Button>
           </form>
+
+          {googleClientId && (
+            <>
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">ou cadastre-se com</span>
+                </div>
+              </div>
+              <div id="google-signup-btn" className="flex justify-center" />
+              {googleLoading && (
+                <p className="text-center text-sm text-muted-foreground mt-2">Cadastrando com Google...</p>
+              )}
+            </>
+          )}
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
             Já tem uma conta?{" "}

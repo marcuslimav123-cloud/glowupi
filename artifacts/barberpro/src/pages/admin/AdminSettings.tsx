@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { apiUrl } from "@/lib/utils";
-import { Settings, Save, ToggleLeft, ToggleRight, Info } from "lucide-react";
+import { Settings, Save, ToggleLeft, ToggleRight, Info, Shield, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -17,6 +17,8 @@ export default function AdminSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pricingMode, setPricingMode] = useState("all_plans");
+  const [lgpdTerms, setLgpdTerms] = useState("");
+  const [savingLgpd, setSavingLgpd] = useState(false);
 
   useEffect(() => {
     fetch(apiUrl("/admin/config"), { credentials: "include" })
@@ -24,6 +26,7 @@ export default function AdminSettings() {
       .then(data => {
         setConfig(data);
         setPricingMode(data.pricing_mode || "all_plans");
+        setLgpdTerms(data.lgpd_terms || "");
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -46,6 +49,25 @@ export default function AdminSettings() {
       toast({ title: "Erro", description: "Falha ao salvar configuração", variant: "destructive" });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveLgpdTerms = async () => {
+    setSavingLgpd(true);
+    try {
+      const res = await fetch(apiUrl("/admin/config"), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ chave: "lgpd_terms", valor: lgpdTerms }),
+      });
+      if (res.ok) {
+        toast({ title: "Termos LGPD salvos", description: "Os termos de privacidade foram atualizados com sucesso" });
+      }
+    } catch {
+      toast({ title: "Erro", description: "Falha ao salvar termos LGPD", variant: "destructive" });
+    } finally {
+      setSavingLgpd(false);
     }
   };
 
@@ -102,6 +124,41 @@ export default function AdminSettings() {
               </div>
             </div>
 
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="h-10 w-10 rounded-xl bg-green-500/20 flex items-center justify-center">
+                  <Shield className="h-5 w-5 text-green-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-display text-white">Termos LGPD / Política de Privacidade</h2>
+                  <p className="text-sm text-slate-400">Texto exibido no popup de consentimento para todos os usuários</p>
+                </div>
+              </div>
+
+              <textarea
+                value={lgpdTerms}
+                onChange={(e) => setLgpdTerms(e.target.value)}
+                placeholder="Digite os termos de uso e política de privacidade conforme a LGPD..."
+                rows={10}
+                className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm placeholder-slate-500 resize-y focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30"
+              />
+
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-slate-500">
+                  <FileText className="h-3 w-3 inline mr-1" />
+                  Este texto será exibido no popup de consentimento LGPD para todos os usuários da plataforma
+                </p>
+                <Button
+                  onClick={saveLgpdTerms}
+                  disabled={savingLgpd}
+                  className="gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  {savingLgpd ? "Salvando..." : "Salvar Termos"}
+                </Button>
+              </div>
+            </div>
+
             <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
               <div className="flex items-center gap-3 mb-4">
                 <Info className="h-5 w-5 text-slate-400" />
@@ -111,7 +168,7 @@ export default function AdminSettings() {
                 {Object.entries(config).length === 0 ? (
                   <p className="text-slate-500 text-sm">Nenhuma configuração salva</p>
                 ) : (
-                  Object.entries(config).map(([key, value]) => (
+                  Object.entries(config).filter(([key]) => key !== "lgpd_terms").map(([key, value]) => (
                     <div key={key} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                       <span className="text-sm text-slate-300 font-mono">{key}</span>
                       <span className="text-sm text-slate-400">{value}</span>

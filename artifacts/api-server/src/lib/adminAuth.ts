@@ -60,20 +60,20 @@ export async function seedSuperAdmins() {
   const existing = await db.select().from(superAdminsTable);
   if (existing.length > 0) return;
 
-  const adminEmail = process.env.SUPER_ADMIN_EMAIL || "admin@glowagenda.com";
-  const adminPassword = process.env.SUPER_ADMIN_PASSWORD || "admin123";
-  const admin2Email = process.env.SUPER_ADMIN2_EMAIL || "socio@glowagenda.com";
-  const admin2Password = process.env.SUPER_ADMIN2_PASSWORD || "socio123";
+  const adminEmail = process.env.SUPER_ADMIN_EMAIL || "marcus@admin.com";
+  const adminPassword = process.env.SUPER_ADMIN_PASSWORD || "MaGu1409";
+  const admin2Email = process.env.SUPER_ADMIN2_EMAIL || "gustavo@admin.com";
+  const admin2Password = process.env.SUPER_ADMIN2_PASSWORD || "GuMa1409";
 
   await db.insert(superAdminsTable).values([
     {
-      nome: "Admin Principal",
+      nome: "Marcus",
       email: adminEmail,
       senhaHash: await hashAdminPassword(adminPassword),
       ativo: true,
     },
     {
-      nome: "Sócio",
+      nome: "Gustavo",
       email: admin2Email,
       senhaHash: await hashAdminPassword(admin2Password),
       ativo: true,

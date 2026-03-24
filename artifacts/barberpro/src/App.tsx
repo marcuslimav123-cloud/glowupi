@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import NotFound from "@/pages/not-found";
+import LgpdPopup from "@/components/LgpdPopup";
 
 import Landing from "@/pages/Landing";
 import Login from "@/pages/auth/Login";
@@ -87,6 +88,7 @@ function App() {
           </AuthProvider>
         </WouterRouter>
         <Toaster />
+        <LgpdPopup />
       </TooltipProvider>
     </QueryClientProvider>
   );
