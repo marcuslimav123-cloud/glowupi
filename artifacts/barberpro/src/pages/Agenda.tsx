@@ -264,7 +264,7 @@ export default function Agenda() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1">
                             {agend.aniversario && <PartyPopper className="h-3 w-3 text-yellow-400 shrink-0" />}
-                            {agend.vip && <Star className="h-3 w-3 text-purple-400 shrink-0" />}
+                            {agend.vip && <Star className="h-3 w-3 text-amber-500 shrink-0" />}
                             <span className="font-semibold truncate">{agend.clienteNome}</span>
                           </div>
                           <p className="truncate opacity-80 mt-0.5">{agend.servicoNome}</p>

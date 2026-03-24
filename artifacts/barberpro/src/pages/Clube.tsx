@@ -43,10 +43,10 @@ export default function Clube() {
         <Card>
           <CardContent className="p-5">
             <div className="flex items-center gap-3 mb-2">
-              <div className="h-9 w-9 rounded-lg bg-purple-500/10 flex items-center justify-center"><Crown className="h-5 w-5 text-purple-400" /></div>
+              <div className="h-9 w-9 rounded-lg bg-amber-500/10 flex items-center justify-center"><Crown className="h-5 w-5 text-amber-500" /></div>
               <span className="text-sm text-muted-foreground">Clientes VIP</span>
             </div>
-            <p className="text-3xl font-bold text-purple-400">{vips.length}</p>
+            <p className="text-3xl font-bold text-amber-500">{vips.length}</p>
             <p className="text-xs text-muted-foreground mt-1">de {(clientes as any[]).length} total</p>
           </CardContent>
         </Card>
@@ -84,7 +84,7 @@ export default function Clube() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <p className="font-semibold text-sm">{c.nome}</p>
-                          {c.vip && <Badge className="text-xs bg-purple-500/10 text-purple-400 border-purple-500/20"><Crown className="h-2.5 w-2.5 mr-1" />VIP</Badge>}
+                          {c.vip && <Badge className="text-xs bg-amber-500/10 text-amber-500 border-amber-500/20"><Crown className="h-2.5 w-2.5 mr-1" />VIP</Badge>}
                         </div>
                         <p className="text-xs text-muted-foreground">{c.telefone}</p>
                       </div>
@@ -131,8 +131,8 @@ export default function Clube() {
               ) : (
                 <div className="space-y-2">
                   {vips.slice(0, 5).map((c: any) => (
-                    <div key={c.id} className="flex items-center gap-3 p-2 rounded-lg bg-purple-500/5 border border-purple-500/15">
-                      <div className="h-8 w-8 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 font-bold text-sm border border-purple-500/20">
+                    <div key={c.id} className="flex items-center gap-3 p-2 rounded-lg bg-amber-500/5 border border-amber-500/15">
+                      <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 font-bold text-sm border border-amber-500/20">
                         {c.nome.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">

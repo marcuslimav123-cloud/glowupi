@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: 'Nunito', sans-serif;
-  --font-display: 'Playfair Display', serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'DM Serif Display', serif;
 
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -48,50 +48,50 @@
 }
 
 :root {
-  --background: 30 30% 98%;
-  --foreground: 280 20% 18%;
+  --background: 40 20% 98%;
+  --foreground: 30 10% 15%;
   
   --card: 0 0% 100%;
-  --card-foreground: 280 20% 18%;
-  --card-border: 320 15% 90%;
+  --card-foreground: 30 10% 15%;
+  --card-border: 35 15% 90%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 280 20% 18%;
-  --popover-border: 320 15% 88%;
+  --popover-foreground: 30 10% 15%;
+  --popover-border: 35 15% 88%;
 
-  --primary: 340 45% 62%;
+  --primary: 38 45% 58%;
   --primary-foreground: 0 0% 100%;
-  --primary-border: 340 45% 55%;
+  --primary-border: 38 45% 50%;
 
-  --secondary: 280 10% 95%;
-  --secondary-foreground: 280 20% 30%;
+  --secondary: 35 12% 95%;
+  --secondary-foreground: 30 10% 30%;
 
-  --muted: 280 8% 94%;
-  --muted-foreground: 280 8% 50%;
+  --muted: 35 10% 93%;
+  --muted-foreground: 30 8% 48%;
 
-  --accent: 280 10% 95%;
-  --accent-foreground: 280 20% 18%;
+  --accent: 35 15% 94%;
+  --accent-foreground: 30 10% 15%;
 
   --destructive: 0 72% 55%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 320 12% 90%;
-  --input: 320 12% 90%;
-  --ring: 340 45% 62%;
+  --border: 35 12% 89%;
+  --input: 35 12% 89%;
+  --ring: 38 45% 58%;
 
-  --sidebar: 330 20% 97%;
-  --sidebar-foreground: 280 20% 25%;
-  --sidebar-border: 320 15% 90%;
-  --sidebar-primary: 340 45% 62%;
+  --sidebar: 40 15% 97%;
+  --sidebar-foreground: 30 10% 25%;
+  --sidebar-border: 35 12% 90%;
+  --sidebar-primary: 38 45% 58%;
   --sidebar-primary-foreground: 0 0% 100%;
 
-  --radius: 0.75rem;
+  --radius: 0.625rem;
 
-  --chart-1: 340 45% 62%;
-  --chart-2: 280 30% 72%;
-  --chart-3: 30 60% 70%;
-  --chart-4: 200 40% 65%;
-  --chart-5: 160 30% 60%;
+  --chart-1: 38 45% 58%;
+  --chart-2: 30 30% 72%;
+  --chart-3: 25 35% 45%;
+  --chart-4: 150 20% 50%;
+  --chart-5: 15 40% 55%;
 }
 
 @layer base {
@@ -101,13 +101,13 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    background-image: radial-gradient(circle at 50% 0%, hsl(330 20% 95%) 0%, transparent 60%);
+    background-image: radial-gradient(circle at 50% 0%, hsl(38 30% 95%) 0%, transparent 50%);
     background-attachment: fixed;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    @apply font-bold tracking-tight;
+    @apply font-normal tracking-tight;
   }
 }
 

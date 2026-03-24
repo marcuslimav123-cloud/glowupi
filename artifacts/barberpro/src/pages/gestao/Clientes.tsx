@@ -73,7 +73,7 @@ function ClienteForm({
       <button
         type="button"
         onClick={() => setVip(!vip)}
-        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${vip ? "bg-purple-500/10 border-purple-500/40 text-purple-400" : "border-border text-muted-foreground hover:border-primary/30"}`}
+        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${vip ? "bg-amber-500/10 border-amber-500/40 text-amber-500" : "border-border text-muted-foreground hover:border-primary/30"}`}
       >
         <Crown className="h-4 w-4" />
         <span className="font-medium text-sm">{vip ? "Cliente VIP ativado" : "Marcar como VIP"}</span>
@@ -150,7 +150,7 @@ export default function Clientes() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
           { label: "Total", value: (clientes as Cliente[]).length, icon: UserRound, color: "text-primary" },
-          { label: "VIPs", value: (clientes as Cliente[]).filter(c => c.vip).length, icon: Crown, color: "text-purple-400" },
+          { label: "VIPs", value: (clientes as Cliente[]).filter(c => c.vip).length, icon: Crown, color: "text-amber-500" },
           { label: "Aniversariantes", value: (clientes as Cliente[]).filter(c => c.aniversario?.slice(5) === today).length, icon: Cake, color: "text-yellow-400" },
           { label: "Gasto Total", value: formatCurrency((clientes as Cliente[]).reduce((s, c) => s + c.totalGasto, 0)), icon: TrendingUp, color: "text-green-400" },
         ].map(({ label, value, icon: Icon, color }) => (
@@ -189,14 +189,14 @@ export default function Clientes() {
             const isAniversario = c.aniversario?.slice(5) === today;
             return (
               <div key={c.id} className={`flex items-center gap-4 p-4 hover:bg-muted/20 transition-colors ${i !== 0 ? "border-t border-border" : ""}`}>
-                <div className={`h-11 w-11 rounded-full flex items-center justify-center font-bold text-lg border shrink-0 ${c.vip ? "bg-purple-500/10 text-purple-400 border-purple-500/25" : "bg-primary/10 text-primary border-primary/20"}`}>
+                <div className={`h-11 w-11 rounded-full flex items-center justify-center font-bold text-lg border shrink-0 ${c.vip ? "bg-amber-500/10 text-amber-500 border-amber-500/25" : "bg-primary/10 text-primary border-primary/20"}`}>
                   {c.nome.charAt(0).toUpperCase()}
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-semibold text-sm">{c.nome}</p>
-                    {c.vip && <Badge className="text-xs bg-purple-500/10 text-purple-400 border-purple-500/20"><Crown className="h-2.5 w-2.5 mr-1" />VIP</Badge>}
+                    {c.vip && <Badge className="text-xs bg-amber-500/10 text-amber-500 border-amber-500/20"><Crown className="h-2.5 w-2.5 mr-1" />VIP</Badge>}
                     {isAniversario && <Badge className="text-xs bg-yellow-500/10 text-yellow-400 border-yellow-500/20"><Cake className="h-2.5 w-2.5 mr-1" />Aniversário!</Badge>}
                   </div>
                   <div className="flex items-center gap-3 mt-0.5 flex-wrap">
@@ -215,7 +215,7 @@ export default function Clientes() {
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
-                  <Button variant="ghost" size="icon" className={`h-8 w-8 ${c.vip ? "text-purple-400" : "text-muted-foreground hover:text-purple-400"}`} title={c.vip ? "Remover VIP" : "Marcar VIP"} onClick={() => handleToggleVip(c)}>
+                  <Button variant="ghost" size="icon" className={`h-8 w-8 ${c.vip ? "text-amber-500" : "text-muted-foreground hover:text-amber-500"}`} title={c.vip ? "Remover VIP" : "Marcar VIP"} onClick={() => handleToggleVip(c)}>
                     <Crown className="h-4 w-4" />
                   </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => { setEditing(c); setModalOpen(true); }}>

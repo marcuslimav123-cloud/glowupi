@@ -17,7 +17,7 @@ Multi-tenant SaaS for beauty salon management (salão/estúdio de beleza). Full-
 - **API codegen**: Orval (from OpenAPI spec)
 - **Auth**: Session-based (cookie) with SHA-256 password hashing (in-memory sessions map)
 - **Build**: esbuild (CJS bundle)
-- **Fonts**: Nunito (body) + Playfair Display (headings)
+- **Fonts**: Inter (body/UI) + DM Serif Display (headings)
 
 ## Structure
 
@@ -81,10 +81,11 @@ All under `/api`:
 
 ## Design & Theme
 
-- **Light feminine design**: rosé, lilás, nude, white with soft gold accents
-- **Fonts**: Nunito (body/UI), Playfair Display (headings/display)
+- **Luxury clinic aesthetic**: white marble, warm gold, cream, off-white — inspired by high-end beauty clinics
+- **Fonts**: Inter (body/UI), DM Serif Display (headings/display)
 - **Brand**: "Glow Agenda" with Sparkles icon
-- **Color palette**: Primary rosé (hsl 340 45% 62%), purple accents, warm neutrals
+- **Color palette**: Primary warm gold (hsl 38 45% 58%), amber accents for VIP, warm neutral backgrounds (hsl 40 20% 98%), warm beige borders/muted tones
+- **Chart colors**: gold, warm beige, terracotta, sage green, burnt sienna
 
 ## Key Features
 
