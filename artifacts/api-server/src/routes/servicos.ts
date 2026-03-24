@@ -2,17 +2,9 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { servicosTable, barbeariasTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
-import { requireAuth } from "../lib/auth.js";
+import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
-
-async function checkAccess(req: any, res: any): Promise<number | null> {
-  const barbeariaId = parseInt(req.params.barbeariaId);
-  if (isNaN(barbeariaId)) { res.status(400).json({ error: "ID inválido" }); return null; }
-  const [b] = await db.select().from(barbeariasTable).where(and(eq(barbeariasTable.id, barbeariaId), eq(barbeariasTable.donoId, req.user.id))).limit(1);
-  if (!b) { res.status(403).json({ error: "Acesso negado" }); return null; }
-  return barbeariaId;
-}
 
 function formatServico(s: any) {
   return { ...s, preco: parseFloat(s.preco), createdAt: s.createdAt?.toISOString?.() ?? s.createdAt, updatedAt: s.updatedAt?.toISOString?.() ?? s.updatedAt };

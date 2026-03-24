@@ -26,6 +26,7 @@ import movimentacoesEstoqueRouter from "./movimentacoesEstoque.js";
 import mensagensRouter from "./mensagens.js";
 import checkoutRouter from "./checkout.js";
 import adminRouter from "./admin.js";
+import convitesRouter from "./convites.js";
 
 const router: IRouter = Router();
 
@@ -53,6 +54,7 @@ router.use("/barbearias/:barbeariaId/produtos/:produtoId/movimentacoes", movimen
 router.use("/barbearias/:barbeariaId/mensagens", mensagensRouter);
 router.use("/checkout", checkoutRouter);
 router.use("/public", publicRouter);
+router.use("/convites", convitesRouter);
 
 router.get("/lgpd/terms", async (_req, res) => {
   try {

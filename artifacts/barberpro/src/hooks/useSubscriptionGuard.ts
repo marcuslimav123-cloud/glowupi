@@ -3,10 +3,14 @@ import { useAuth } from "@/contexts/AuthContext";
 export type SubscriptionStatus = "trial" | "ativo" | "inadimplente" | "cancelado" | "none";
 
 export function useSubscriptionGuard() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isDono } = useAuth();
 
   if (!isAuthenticated || !user) {
     return { canAccess: false, status: "none" as SubscriptionStatus, shouldShowUpgrade: false };
+  }
+
+  if (!isDono) {
+    return { canAccess: true, status: "ativo" as SubscriptionStatus, shouldShowUpgrade: false };
   }
 
   const barbearia = (user as any).barbearia;

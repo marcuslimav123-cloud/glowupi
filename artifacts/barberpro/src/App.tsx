@@ -28,7 +28,9 @@ import Pacotes from "@/pages/Pacotes";
 import ListaEspera from "@/pages/ListaEspera";
 import Avaliacoes from "@/pages/Avaliacoes";
 import Mensagens from "@/pages/Mensagens";
+import Equipe from "@/pages/Equipe";
 import Picos from "@/pages/agenda/Picos";
+import AcceptInvite from "@/pages/auth/AcceptInvite";
 import PoliticaPrivacidade from "@/pages/PoliticaPrivacidade";
 import TermosDeUso from "@/pages/TermosDeUso";
 
@@ -68,6 +70,8 @@ function Router() {
       <Route path="/lista-espera" component={ListaEspera} />
       <Route path="/avaliacoes" component={Avaliacoes} />
       <Route path="/mensagens" component={Mensagens} />
+      <Route path="/equipe" component={Equipe} />
+      <Route path="/convite/:token" component={AcceptInvite} />
       <Route path="/empresa" component={Empresa} />
       <Route path="/clube" component={Clube} />
 

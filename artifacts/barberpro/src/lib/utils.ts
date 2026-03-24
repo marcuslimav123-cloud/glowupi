@@ -7,6 +7,7 @@ export const APP_TAGLINE = "Organize sua agenda e fidelize suas clientes";
 const ROLE_LABELS: Record<string, string> = {
   dono: "proprietária",
   gerente: "gerente",
+  colaborador: "colaboradora",
   barbeiro: "profissional",
   cliente: "cliente",
 };

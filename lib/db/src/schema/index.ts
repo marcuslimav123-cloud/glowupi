@@ -15,3 +15,4 @@ export * from "./movimentacoesEstoque";
 export * from "./mensagens";
 export * from "./platformConfig";
 export * from "./superAdmins";
+export * from "./convites";

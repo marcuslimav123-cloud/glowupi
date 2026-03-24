@@ -136,7 +136,14 @@ router.get("/me", requireAuth, async (req, res) => {
   try {
     const user = (req as any).user;
     const { senhaHash: _, ...userWithoutPass } = user;
-    const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
+    let barbearia = null;
+    if (user.role === "dono") {
+      const [b] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
+      barbearia = b || null;
+    } else if (user.barbeariaId) {
+      const [b] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, user.barbeariaId)).limit(1);
+      barbearia = b || null;
+    }
     return res.json({
       ...userWithoutPass,
       createdAt: user.createdAt.toISOString(),

@@ -16,7 +16,7 @@ Multi-tenant SaaS for beauty salon management (salão/estúdio de beleza). Full-
 - **Payments**: Stripe (via Replit integration) + stripe-replit-sync
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec) — run `pnpm --filter @workspace/api-spec run codegen`
-- **Auth**: Session-based (cookie) with bcryptjs password hashing (in-memory sessions map). Super admin uses separate session cookie ("admin_session"). Google Sign-In supported (requires GOOGLE_CLIENT_ID env var)
+- **Auth**: Session-based (cookie) with SHA-256 password hashing (in-memory sessions map). Super admin uses separate session cookie ("admin_session"). Google Sign-In supported (requires GOOGLE_CLIENT_ID env var). Multi-level access: dono (full), gerente (read-only dashboard/agenda/clientes/relatorios), colaborador (own agenda only). Staff invited via convites system with token-based accept flow.
 - **Build**: esbuild (CJS bundle)
 - **Fonts**: Inter (all text — headings and body). Apple-inspired design: clean sans-serif, generous whitespace, subtle borders (border-black/[0.04]), #fafafa backgrounds, pill-shaped buttons, minimal shadows
 
@@ -37,7 +37,7 @@ artifacts-monorepo/
 
 ## Database Schema
 
-- `users` — User accounts (dono/gerente/profissional/cliente roles; optional googleId for Google Sign-In)
+- `users` — User accounts (dono/gerente/colaborador/cliente roles; optional googleId for Google Sign-In; barbeariaId+profissionalId for staff members)
 - `barbearias` — Salon/studio profiles (multi-tenant root; table name kept for API compatibility). Includes Stripe fields: stripe_customer_id, stripe_subscription_id, subscription_status, subscription_plan, subscription_period
 - `profissionais` — Professionals per salon
 - `servicos` — Services offered (nails, skincare, hair, etc.)
@@ -54,6 +54,7 @@ artifacts-monorepo/
 - `resgates` — Loyalty redemption history
 - `movimentacoesEstoque` — Inventory movement history
 - `mensagens` — Messages (retorno/promocao) with draft/sent status
+- `convites` — Team invite tokens (email, role, token, status pendente/aceito, expiresAt)
 - `platform_config` — Global platform settings (pricing_mode, lgpd_terms, etc.)
 - `super_admins` — Super admin accounts for platform owners
 - `stripe.*` — Auto-managed by stripe-replit-sync (products, prices, customers, subscriptions)

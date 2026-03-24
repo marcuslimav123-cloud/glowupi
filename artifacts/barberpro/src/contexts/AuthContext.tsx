@@ -8,6 +8,10 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   barbeariaId: number | null;
+  role: string;
+  isDono: boolean;
+  isGerente: boolean;
+  isColaborador: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,11 +36,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const userRole = user?.role || "dono";
   const value = {
     user: user || null,
     isLoading,
     isAuthenticated: !!user && !error,
     barbeariaId: user?.barbeariaId || null,
+    role: userRole,
+    isDono: userRole === "dono",
+    isGerente: userRole === "gerente",
+    isColaborador: userRole === "colaborador",
     logout,
   };
 

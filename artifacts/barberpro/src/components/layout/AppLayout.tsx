@@ -15,6 +15,7 @@ import {
   LogOut,
   Sparkles,
   Users,
+  UsersRound,
   Package,
   Menu,
   X,
@@ -29,19 +30,28 @@ import {
 import { Button } from "@/components/ui/button";
 import { APP_NAME, getRoleLabel } from "@/lib/utils";
 
-const NAV_ITEMS = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+type NavItem = {
+  name: string;
+  href?: string;
+  icon: any;
+  roles?: string[];
+  children?: NavItem[];
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["dono", "gerente"] },
   { 
     name: "Agenda",
     icon: CalendarDays,
     children: [
       { name: "Agenda", href: "/agenda", icon: CalendarDays },
-      { name: "Horários de Pico", href: "/agenda/picos", icon: BarChart3 },
+      { name: "Horários de Pico", href: "/agenda/picos", icon: BarChart3, roles: ["dono", "gerente"] },
     ]
   },
   { 
     name: "Gestão", 
     icon: Settings,
+    roles: ["dono", "gerente"],
     children: [
       { name: "Profissionais", href: "/gestao/profissionais", icon: Users },
       { name: "Serviços", href: "/gestao/servicos", icon: Heart },
@@ -49,20 +59,38 @@ const NAV_ITEMS = [
       { name: "Clientes", href: "/gestao/clientes", icon: Users },
     ]
   },
-  { name: "Relatórios", href: "/relatorios", icon: BarChart3 },
-  { name: "Caixa", href: "/caixa", icon: DollarSign },
-  { name: "Financeiro", href: "/financeiro", icon: TrendingUp },
-  { name: "Pacotes", href: "/pacotes", icon: Boxes },
+  { name: "Relatórios", href: "/relatorios", icon: BarChart3, roles: ["dono", "gerente"] },
+  { name: "Caixa", href: "/caixa", icon: DollarSign, roles: ["dono", "gerente"] },
+  { name: "Financeiro", href: "/financeiro", icon: TrendingUp, roles: ["dono"] },
+  { name: "Pacotes", href: "/pacotes", icon: Boxes, roles: ["dono", "gerente"] },
   { name: "Lista de Espera", href: "/lista-espera", icon: ClipboardList },
-  { name: "Avaliações", href: "/avaliacoes", icon: Star },
+  { name: "Avaliações", href: "/avaliacoes", icon: Star, roles: ["dono", "gerente"] },
   { name: "Mensagens", href: "/mensagens", icon: MessageSquare },
-  { name: "Meu Estúdio", href: "/empresa", icon: Building2 },
-  { name: "Clube de Fidelidade", href: "/clube", icon: Award },
+  { name: "Meu Estúdio", href: "/empresa", icon: Building2, roles: ["dono"] },
+  { name: "Equipe", href: "/equipe", icon: UsersRound, roles: ["dono"] },
+  { name: "Clube de Fidelidade", href: "/clube", icon: Award, roles: ["dono", "gerente"] },
 ];
+
+function filterNavByRole(items: NavItem[], role: string): NavItem[] {
+  return items.reduce<NavItem[]>((acc, item) => {
+    if (item.roles && !item.roles.includes(role)) return acc;
+    if (item.children) {
+      const filteredChildren = item.children.filter(
+        child => !child.roles || child.roles.includes(role)
+      );
+      if (filteredChildren.length > 0) {
+        acc.push({ ...item, children: filteredChildren });
+      }
+    } else {
+      acc.push(item);
+    }
+    return acc;
+  }, []);
+}
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { user, logout, isLoading, barbeariaId } = useAuth();
+  const { user, logout, isLoading, barbeariaId, role } = useAuth();
   const { canAccess, status, shouldShowUpgrade } = useSubscriptionGuard();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
@@ -70,11 +98,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     if (!isLoading) {
       if (!user) {
         window.location.href = "/login";
-      } else if (!barbeariaId && !location.startsWith("/onboarding")) {
+      } else if (role === "dono" && !barbeariaId && !location.startsWith("/onboarding")) {
         window.location.href = "/onboarding/barbearia";
       }
     }
-  }, [user, isLoading, barbeariaId, location]);
+  }, [user, isLoading, barbeariaId, location, role]);
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-[#fafafa]"><div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div></div>;
@@ -133,7 +161,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5">
-          {NAV_ITEMS.map((item) => (
+          {filterNavByRole(NAV_ITEMS, role).map((item) => (
             <div key={item.name}>
               {item.href ? (
                 <Link href={item.href} className={cn(

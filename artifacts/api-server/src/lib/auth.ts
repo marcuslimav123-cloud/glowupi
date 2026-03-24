@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
 import { db } from "@workspace/db";
 import { usersTable, barbeariasTable } from "@workspace/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 
 const SESSIONS: Map<string, { userId: number; expiresAt: Date }> = new Map();
 
@@ -51,14 +51,84 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
 export async function requireBarbearia(req: Request, res: Response, next: NextFunction) {
   const user = (req as any).user;
-  const [barbearia] = await db
-    .select()
-    .from(barbeariasTable)
-    .where(eq(barbeariasTable.donoId, user.id))
-    .limit(1);
+  let barbearia;
+  if (user.role === "dono") {
+    [barbearia] = await db
+      .select()
+      .from(barbeariasTable)
+      .where(eq(barbeariasTable.donoId, user.id))
+      .limit(1);
+  } else if (user.barbeariaId) {
+    [barbearia] = await db
+      .select()
+      .from(barbeariasTable)
+      .where(eq(barbeariasTable.id, user.barbeariaId))
+      .limit(1);
+  }
   if (!barbearia) {
     return res.status(403).json({ error: "Barbearia não encontrada" });
   }
   (req as any).barbearia = barbearia;
   next();
+}
+
+export function requireRole(...roles: string[]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const user = (req as any).user;
+    if (!user) {
+      return res.status(401).json({ error: "Não autenticado" });
+    }
+    if (!roles.includes(user.role)) {
+      return res.status(403).json({ error: "Sem permissão para este recurso" });
+    }
+    next();
+  };
+}
+
+export async function checkBarbeariaAccess(req: any, res: any, options?: { writeAccess?: boolean }): Promise<number | null> {
+  const barbeariaId = parseInt(req.params.barbeariaId);
+  if (isNaN(barbeariaId)) {
+    res.status(400).json({ error: "ID inválido" });
+    return null;
+  }
+  const user = req.user;
+  if (user.role === "dono") {
+    const [b] = await db.select().from(barbeariasTable).where(
+      and(eq(barbeariasTable.id, barbeariaId), eq(barbeariasTable.donoId, user.id))
+    ).limit(1);
+    if (!b) {
+      res.status(403).json({ error: "Acesso negado" });
+      return null;
+    }
+  } else if (user.role === "gerente" || user.role === "colaborador") {
+    if (user.barbeariaId !== barbeariaId) {
+      res.status(403).json({ error: "Acesso negado" });
+      return null;
+    }
+  } else {
+    res.status(403).json({ error: "Acesso negado" });
+    return null;
+  }
+  return barbeariaId;
+}
+
+export async function checkBarbeariaAccessDono(req: any, res: any): Promise<number | null> {
+  const barbeariaId = parseInt(req.params.barbeariaId);
+  if (isNaN(barbeariaId)) {
+    res.status(400).json({ error: "ID inválido" });
+    return null;
+  }
+  const user = req.user;
+  if (user.role !== "dono") {
+    res.status(403).json({ error: "Apenas o proprietário pode acessar este recurso" });
+    return null;
+  }
+  const [b] = await db.select().from(barbeariasTable).where(
+    and(eq(barbeariasTable.id, barbeariaId), eq(barbeariasTable.donoId, user.id))
+  ).limit(1);
+  if (!b) {
+    res.status(403).json({ error: "Acesso negado" });
+    return null;
+  }
+  return barbeariaId;
 }
