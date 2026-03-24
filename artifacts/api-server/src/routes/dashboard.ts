@@ -5,7 +5,7 @@ import {
   profissionaisTable, produtosTable, barbeariasTable
 } from "@workspace/db/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
-import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
+import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -29,7 +29,7 @@ function getDateRange(periodo: string, dataInicio?: string, dataFim?: string) {
   return { inicio: d.toISOString().slice(0, 10), fim: todayStr };
 }
 
-router.get("/", requireAuth, async (req, res) => {
+router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const { periodo = "semana", dataInicio, dataFim } = req.query;

@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { clientesTable, barbeariasTable } from "@workspace/db/schema";
 import { eq, and, ilike, or } from "drizzle-orm";
-import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
+import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -10,7 +10,7 @@ function formatCliente(c: any) {
   return { ...c, totalGasto: parseFloat(c.totalGasto), createdAt: c.createdAt?.toISOString?.() ?? c.createdAt, updatedAt: c.updatedAt?.toISOString?.() ?? c.updatedAt };
 }
 
-router.get("/", requireAuth, async (req, res) => {
+router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const search = req.query.search as string;
@@ -23,7 +23,7 @@ router.get("/", requireAuth, async (req, res) => {
   return res.json(clientes.map(formatCliente));
 });
 
-router.post("/", requireAuth, async (req, res) => {
+router.post("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const { nome, telefone, email, aniversario, observacoes, vip } = req.body;
@@ -40,7 +40,7 @@ router.post("/", requireAuth, async (req, res) => {
   return res.status(201).json(formatCliente(cliente));
 });
 
-router.get("/:clienteId", requireAuth, async (req, res) => {
+router.get("/:clienteId", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const id = parseInt(req.params.clienteId);
@@ -49,7 +49,7 @@ router.get("/:clienteId", requireAuth, async (req, res) => {
   return res.json(formatCliente(cliente));
 });
 
-router.put("/:clienteId", requireAuth, async (req, res) => {
+router.put("/:clienteId", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const id = parseInt(req.params.clienteId);

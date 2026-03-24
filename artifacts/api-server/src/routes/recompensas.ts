@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { recompensasTable, resgatesTable, clientesTable, barbeariasTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
-import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
+import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -10,14 +10,14 @@ function formatRecompensa(r: any) {
   return { ...r, createdAt: r.createdAt?.toISOString?.() ?? r.createdAt };
 }
 
-router.get("/", requireAuth, async (req: any, res) => {
+router.get("/", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const recompensas = await db.select().from(recompensasTable).where(eq(recompensasTable.barbeariaId, barbeariaId));
   res.json(recompensas.map(formatRecompensa));
 });
 
-router.post("/", requireAuth, async (req: any, res) => {
+router.post("/", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const { nome, descricao, pontosNecessarios, tipo, ativo } = req.body;
@@ -27,7 +27,7 @@ router.post("/", requireAuth, async (req: any, res) => {
   res.status(201).json(formatRecompensa(recompensa));
 });
 
-router.put("/:recompensaId", requireAuth, async (req: any, res) => {
+router.put("/:recompensaId", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const recompensaId = parseInt(req.params.recompensaId);

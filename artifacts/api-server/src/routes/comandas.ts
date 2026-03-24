@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { comandasTable, barbeariasTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
-import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
+import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -16,7 +16,7 @@ function formatComanda(c: any) {
   };
 }
 
-router.get("/", requireAuth, async (req, res) => {
+router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const { mes, profissionalId } = req.query;

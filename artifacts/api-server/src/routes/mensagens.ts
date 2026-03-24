@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { mensagensTable, barbeariasTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
-import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
+import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -10,14 +10,14 @@ function formatMsg(m: any) {
   return { ...m, dataEnvio: m.dataEnvio?.toISOString?.() ?? m.dataEnvio, createdAt: m.createdAt?.toISOString?.() ?? m.createdAt };
 }
 
-router.get("/", requireAuth, async (req: any, res) => {
+router.get("/", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const msgs = await db.select().from(mensagensTable).where(eq(mensagensTable.barbeariaId, barbeariaId));
   res.json(msgs.map(formatMsg));
 });
 
-router.post("/", requireAuth, async (req: any, res) => {
+router.post("/", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const { tipo, titulo, conteudo, destinatarios, status } = req.body;
@@ -28,7 +28,7 @@ router.post("/", requireAuth, async (req: any, res) => {
   res.status(201).json(formatMsg(msg));
 });
 
-router.delete("/:mensagemId", requireAuth, async (req: any, res) => {
+router.delete("/:mensagemId", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const msgId = parseInt(req.params.mensagemId);

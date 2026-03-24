@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { barbeariasTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
-import { requireAuth } from "../lib/auth.js";
+import { requireAuth, requireRole } from "../lib/auth.js";
 import { slugify } from "../lib/slugify.js";
 
 const router: IRouter = Router();
@@ -16,7 +16,7 @@ function formatBarbearia(b: any) {
   };
 }
 
-router.post("/", requireAuth, async (req, res) => {
+router.post("/", requireAuth, requireRole("dono"), async (req, res) => {
   try {
     const user = (req as any).user;
     const existing = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id));
@@ -68,7 +68,7 @@ router.get("/me", requireAuth, async (req, res) => {
   }
 });
 
-router.put("/me", requireAuth, async (req, res) => {
+router.put("/me", requireAuth, requireRole("dono"), async (req, res) => {
   try {
     const user = (req as any).user;
     const [existing] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);

@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { pacotesClienteTable, pacotesTable, barbeariasTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
-import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
+import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -10,7 +10,7 @@ function formatPC(pc: any, pacoteNome?: string) {
   return { ...pc, dataCompra: pc.dataCompra?.toISOString?.() ?? pc.dataCompra, dataValidade: pc.dataValidade?.toISOString?.() ?? pc.dataValidade, createdAt: pc.createdAt?.toISOString?.() ?? pc.createdAt, pacoteNome: pacoteNome || "" };
 }
 
-router.get("/", requireAuth, async (req: any, res) => {
+router.get("/", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const items = await db.select().from(pacotesClienteTable).where(eq(pacotesClienteTable.barbeariaId, barbeariaId));
@@ -19,7 +19,7 @@ router.get("/", requireAuth, async (req: any, res) => {
   res.json(items.map(pc => formatPC(pc, pacoteMap[pc.pacoteId])));
 });
 
-router.post("/", requireAuth, async (req: any, res) => {
+router.post("/", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const { pacoteId, clienteId, clienteNome } = req.body;
@@ -32,7 +32,7 @@ router.post("/", requireAuth, async (req: any, res) => {
   res.status(201).json(formatPC(pc, pacote.nome));
 });
 
-router.post("/:pacoteClienteId/usar", requireAuth, async (req: any, res) => {
+router.post("/:pacoteClienteId/usar", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const pcId = parseInt(req.params.pacoteClienteId);

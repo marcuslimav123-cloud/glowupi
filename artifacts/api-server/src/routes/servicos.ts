@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { servicosTable, barbeariasTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
-import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
+import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -17,7 +17,7 @@ router.get("/", async (req, res) => {
   return res.json(servicos.map(formatServico));
 });
 
-router.post("/", requireAuth, async (req, res) => {
+router.post("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const { nome, preco, duracaoMinutos, descricao } = req.body;
@@ -32,7 +32,7 @@ router.post("/", requireAuth, async (req, res) => {
   return res.status(201).json(formatServico(servico));
 });
 
-router.put("/:servicoId", requireAuth, async (req, res) => {
+router.put("/:servicoId", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const id = parseInt(req.params.servicoId);
@@ -51,7 +51,7 @@ router.put("/:servicoId", requireAuth, async (req, res) => {
   return res.json(formatServico(updated));
 });
 
-router.delete("/:servicoId", requireAuth, async (req, res) => {
+router.delete("/:servicoId", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const id = parseInt(req.params.servicoId);

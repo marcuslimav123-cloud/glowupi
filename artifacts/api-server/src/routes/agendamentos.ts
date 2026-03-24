@@ -5,7 +5,7 @@ import {
   servicosTable, clientesTable, comandasTable, produtosTable
 } from "@workspace/db/schema";
 import { eq, and, sql } from "drizzle-orm";
-import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
+import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -29,13 +29,16 @@ function addMinutesToTime(time: string, minutes: number): string {
 router.get("/", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const user = (req as any).user;
   const { data, profissionalId, status } = req.query;
-  let query = db.select().from(agendamentosTable).where(eq(agendamentosTable.barbeariaId, barbeariaId));
+  const scopedProfId = user.role === "colaborador" && user.profissionalId
+    ? user.profissionalId
+    : (profissionalId ? parseInt(profissionalId as string) : undefined);
   const agendamentos = await db.select().from(agendamentosTable).where(
     and(
       eq(agendamentosTable.barbeariaId, barbeariaId),
       data ? eq(agendamentosTable.data, data as string) : undefined,
-      profissionalId ? eq(agendamentosTable.profissionalId, parseInt(profissionalId as string)) : undefined,
+      scopedProfId ? eq(agendamentosTable.profissionalId, scopedProfId) : undefined,
       status ? eq(agendamentosTable.status, status as string) : undefined,
     )
   );
@@ -45,9 +48,13 @@ router.get("/", requireAuth, async (req, res) => {
 router.post("/", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const user = (req as any).user;
   const { clienteId, clienteNome, clienteTelefone, profissionalId, servicoId, data, horaInicio, semPreferencia, observacao } = req.body;
   if (!clienteNome || !clienteTelefone || !profissionalId || !servicoId || !data || !horaInicio) {
     return res.status(400).json({ error: "Dados inválidos" });
+  }
+  if (user.role === "colaborador" && user.profissionalId && profissionalId !== user.profissionalId) {
+    return res.status(403).json({ error: "Você só pode criar agendamentos para si mesma" });
   }
   const [servico] = await db.select().from(servicosTable).where(and(eq(servicosTable.id, servicoId), eq(servicosTable.barbeariaId, barbeariaId))).limit(1);
   if (!servico) return res.status(404).json({ error: "Serviço não encontrado" });
@@ -89,19 +96,27 @@ router.post("/", requireAuth, async (req, res) => {
 router.get("/:agendamentoId", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const user = (req as any).user;
   const id = parseInt(req.params.agendamentoId);
   const [agend] = await db.select().from(agendamentosTable).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId))).limit(1);
   if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
+  if (user.role === "colaborador" && user.profissionalId && agend.profissionalId !== user.profissionalId) {
+    return res.status(403).json({ error: "Acesso negado" });
+  }
   return res.json(formatAgend(agend));
 });
 
 router.put("/:agendamentoId", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const user = (req as any).user;
   const id = parseInt(req.params.agendamentoId);
   const { status, profissionalId, data, horaInicio, observacao, pago } = req.body;
   const [existing] = await db.select().from(agendamentosTable).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId))).limit(1);
   if (!existing) return res.status(404).json({ error: "Agendamento não encontrado" });
+  if (user.role === "colaborador" && user.profissionalId && existing.profissionalId !== user.profissionalId) {
+    return res.status(403).json({ error: "Acesso negado" });
+  }
   const updates: any = {
     status: status ?? existing.status,
     observacao: observacao ?? existing.observacao,
@@ -121,12 +136,19 @@ router.put("/:agendamentoId", requireAuth, async (req, res) => {
 router.delete("/:agendamentoId", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const user = (req as any).user;
   const id = parseInt(req.params.agendamentoId);
+  if (user.role === "colaborador" && user.profissionalId) {
+    const [agend] = await db.select().from(agendamentosTable).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId))).limit(1);
+    if (agend && agend.profissionalId !== user.profissionalId) {
+      return res.status(403).json({ error: "Acesso negado" });
+    }
+  }
   await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId)));
   return res.json({ success: true, message: "Agendamento cancelado" });
 });
 
-router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
+router.post("/:agendamentoId/checkout", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const id = parseInt(req.params.agendamentoId);

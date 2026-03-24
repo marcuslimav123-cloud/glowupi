@@ -2,11 +2,11 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { comandasTable, profissionaisTable, barbeariasTable } from "@workspace/db/schema";
 import { eq, and, sql } from "drizzle-orm";
-import { requireAuth, checkBarbeariaAccessDono as checkAccess } from "../lib/auth.js";
+import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
-router.get("/faturamento", requireAuth, async (req, res) => {
+router.get("/faturamento", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const { dataInicio, dataFim } = req.query;
@@ -61,7 +61,7 @@ router.get("/faturamento", requireAuth, async (req, res) => {
   });
 });
 
-router.get("/comissoes", requireAuth, async (req, res) => {
+router.get("/comissoes", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const { mes } = req.query;

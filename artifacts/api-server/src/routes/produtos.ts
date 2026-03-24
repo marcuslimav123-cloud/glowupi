@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { produtosTable, barbeariasTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
-import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
+import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -10,14 +10,14 @@ function formatProduto(p: any) {
   return { ...p, preco: parseFloat(p.preco), custo: p.custo ? parseFloat(p.custo) : null, createdAt: p.createdAt?.toISOString?.() ?? p.createdAt, updatedAt: p.updatedAt?.toISOString?.() ?? p.updatedAt };
 }
 
-router.get("/", requireAuth, async (req, res) => {
+router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const produtos = await db.select().from(produtosTable).where(eq(produtosTable.barbeariaId, barbeariaId));
   return res.json(produtos.map(formatProduto));
 });
 
-router.post("/", requireAuth, async (req, res) => {
+router.post("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const { nome, preco, custo, quantidade, quantidadeMinima, codigoBarras, validade } = req.body;
@@ -35,7 +35,7 @@ router.post("/", requireAuth, async (req, res) => {
   return res.status(201).json(formatProduto(produto));
 });
 
-router.put("/:produtoId", requireAuth, async (req, res) => {
+router.put("/:produtoId", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const id = parseInt(req.params.produtoId);
@@ -56,7 +56,7 @@ router.put("/:produtoId", requireAuth, async (req, res) => {
   return res.json(formatProduto(updated));
 });
 
-router.delete("/:produtoId", requireAuth, async (req, res) => {
+router.delete("/:produtoId", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const id = parseInt(req.params.produtoId);

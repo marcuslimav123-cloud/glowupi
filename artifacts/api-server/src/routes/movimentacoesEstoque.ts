@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { movimentacoesEstoqueTable, produtosTable, barbeariasTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
-import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
+import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -10,7 +10,7 @@ function formatMov(m: any) {
   return { ...m, createdAt: m.createdAt?.toISOString?.() ?? m.createdAt };
 }
 
-router.get("/", requireAuth, async (req: any, res) => {
+router.get("/", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const produtoId = parseInt(req.params.produtoId);
@@ -18,7 +18,7 @@ router.get("/", requireAuth, async (req: any, res) => {
   res.json(movs.map(formatMov));
 });
 
-router.post("/", requireAuth, async (req: any, res) => {
+router.post("/", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const produtoId = parseInt(req.params.produtoId);

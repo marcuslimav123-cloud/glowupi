@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { profissionaisTable, barbeariasTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
-import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
+import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -10,14 +10,14 @@ function formatProf(p: any) {
   return { ...p, comissaoValor: parseFloat(p.comissaoValor), createdAt: p.createdAt?.toISOString?.() ?? p.createdAt, updatedAt: p.updatedAt?.toISOString?.() ?? p.updatedAt };
 }
 
-router.get("/", requireAuth, async (req, res) => {
+router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const profs = await db.select().from(profissionaisTable).where(eq(profissionaisTable.barbeariaId, barbeariaId));
   return res.json(profs.map(formatProf));
 });
 
-router.post("/", requireAuth, async (req, res) => {
+router.post("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const { nomeExibicao, fotoUrl, comissaoTipo, comissaoValor, especialidade, horarios } = req.body;
@@ -34,7 +34,7 @@ router.post("/", requireAuth, async (req, res) => {
   return res.status(201).json(formatProf(prof));
 });
 
-router.get("/:profissionalId", requireAuth, async (req, res) => {
+router.get("/:profissionalId", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const id = parseInt(req.params.profissionalId);
@@ -43,7 +43,7 @@ router.get("/:profissionalId", requireAuth, async (req, res) => {
   return res.json(formatProf(prof));
 });
 
-router.put("/:profissionalId", requireAuth, async (req, res) => {
+router.put("/:profissionalId", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const id = parseInt(req.params.profissionalId);
@@ -64,7 +64,7 @@ router.put("/:profissionalId", requireAuth, async (req, res) => {
   return res.json(formatProf(updated));
 });
 
-router.delete("/:profissionalId", requireAuth, async (req, res) => {
+router.delete("/:profissionalId", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const id = parseInt(req.params.profissionalId);
