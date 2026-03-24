@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
 const PRICING_MODES = [
-  { value: "all_plans", label: "Todos os Planos", description: "Exibe todos os 4 planos na página de preços" },
-  { value: "featured_only", label: "Plano Destaque", description: "Exibe apenas o plano marcado como destaque" },
+  { value: "all_plans", label: "Todos os Planos", description: "Exibe todos os 4 planos com toggle mensal/semestral/anual" },
+  { value: "single_price", label: "Preço Único", description: "Exibe apenas o plano único R$97/mês na landing page" },
   { value: "hidden", label: "Oculto", description: "Esconde a seção de preços da landing page" },
 ];
 

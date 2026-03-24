@@ -46,9 +46,16 @@ router.get("/pricing-config", async (_req, res) => {
 
     const publishableKey = await getStripePublishableKey();
 
+    let filteredProducts = Array.from(productsMap.values());
+    if (pricingMode === "single_price") {
+      filteredProducts = filteredProducts.filter((p: any) => p.metadata?.tier === "single");
+    } else if (pricingMode === "hidden") {
+      filteredProducts = [];
+    }
+
     res.json({
       pricingMode,
-      products: Array.from(productsMap.values()),
+      products: filteredProducts,
       publishableKey,
     });
   } catch (error: any) {
@@ -68,6 +75,22 @@ router.post("/create-checkout-session", requireAuth, requireBarbearia, async (re
 
     if (!priceId) {
       return res.status(400).json({ error: "priceId is required" });
+    }
+
+    const configs = await db.select().from(platformConfigTable);
+    const pricingMode = configs.find(c => c.chave === "pricing_mode")?.valor || "all_plans";
+    if (pricingMode === "hidden") {
+      return res.status(403).json({ error: "Assinaturas estão desativadas no momento" });
+    }
+
+    if (pricingMode === "single_price") {
+      const allProducts = await stripeStorage.listProductsWithPrices(true, 50, 0);
+      const allowedPriceIds = allProducts
+        .filter((r: any) => r.product_metadata?.tier === "single")
+        .map((r: any) => r.price_id);
+      if (!allowedPriceIds.includes(priceId)) {
+        return res.status(400).json({ error: "Este plano não está disponível no momento" });
+      }
     }
 
     let customerId = barbearia.stripeCustomerId;

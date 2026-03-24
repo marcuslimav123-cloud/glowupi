@@ -8,6 +8,8 @@ import {
   XCircle,
   TrendingDown,
   Users,
+  TrendingUp,
+  DollarSign,
 } from "lucide-react";
 
 interface DashboardData {
@@ -23,6 +25,7 @@ interface DashboardData {
     subscriptionPlan: string | null;
     createdAt: string;
   }>;
+  monthlyRevenue: Record<string, number>;
   planDistribution: Record<string, number>;
 }
 
@@ -97,6 +100,38 @@ export default function AdminDashboard() {
               <StatCard title="Cancelados" value={data.canceledUsers} icon={XCircle} color="bg-red-500/20 text-red-400" />
               <StatCard title="Churn Rate" value={`${data.churnRate}%`} icon={TrendingDown} color="bg-violet-500/20 text-violet-400" />
             </div>
+
+            {(() => {
+              const entries = Object.entries(data.monthlyRevenue).sort(([a], [b]) => a.localeCompare(b)).slice(-6);
+              const maxRev = Math.max(...entries.map(([, v]) => v), 1);
+              return entries.length > 0 ? (
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                  <h2 className="text-lg font-display text-white mb-4 flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    Faturamento Mensal (Comandas)
+                  </h2>
+                  <div className="space-y-3">
+                    {entries.map(([mesAno, total]) => {
+                      const pct = (total / maxRev) * 100;
+                      return (
+                        <div key={mesAno} className="flex items-center gap-4">
+                          <span className="text-sm text-slate-400 w-20 shrink-0">{mesAno}</span>
+                          <div className="flex-1 h-8 bg-white/5 rounded-lg overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-primary/80 to-primary rounded-lg transition-all duration-500"
+                              style={{ width: `${Math.max(pct, 2)}%` }}
+                            />
+                          </div>
+                          <span className="text-sm text-white font-medium shrink-0 w-28 text-right">
+                            R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null;
+            })()}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
