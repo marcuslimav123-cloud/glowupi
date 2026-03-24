@@ -11,6 +11,8 @@ export const produtosTable = pgTable("produtos", {
   custo: numeric("custo", { precision: 10, scale: 2 }),
   quantidade: integer("quantidade").notNull().default(0),
   quantidadeMinima: integer("quantidade_minima").notNull().default(5),
+  codigoBarras: text("codigo_barras"),
+  validade: text("validade"),
   ativo: boolean("ativo").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

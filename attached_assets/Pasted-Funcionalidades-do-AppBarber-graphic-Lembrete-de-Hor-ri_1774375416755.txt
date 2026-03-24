@@ -1,0 +1,131 @@
+Funcionalidades do AppBarber
+graphic
+Lembrete de Horários
+Diminua o risco de esquecimentos/ausências dos seus clientes através dos Lembretes de Horários do AppBarber.
+
+Seu cliente, ao agendar horários, receberá automaticamente uma notificação (via Push Notification) no aplicativo e um e-mail, no horário configurado para lembrá-lo.
+
+O Profissional pode configurar lembretes também, para serem enviados via Notificação, E-mail e/ou SMS.
+
+Flexibilização da Agenda dos Profissionais
+Jornada por dia da semana e Jornada por Período
+
+Cada profissional pode ter sua própria jornada de trabalho por dia da semana. Sendo assim, o sistema fará o controle automático para não deixar ocorrer agendamentos fora da jornada de trabalho.
+
+Vai atender alguém fora do Horário? Irá fazer uma jornada estendida em um dia ou período específico? Não tem problema, você pode criar encaixes ou configurar jornadas específicas para o período desejado.
+
+graphic
+graphic
+Envio de Notícias e Promoções
+Precisa enviar para todos os seus clientes que sua Barbearia irá promover um evento em alguma data?
+
+Com o AppBarber, você consegue enviar para todos ou um grupo de clientes, um evento ou promoção para eles receberem no Aplicativo ou via SMS e ainda saber quem recebeu (e quando) e quem leu (e quando), facilitando assim a comunicação entre Barbearia x Cliente.
+
+Gestão Financeira
+Ter o controle do seu estabelecimento é primordial para o sucesso do seu negócio.
+
+Com o AppBarber, é possível controlar o caixa, contas a pagar e a receber, controlar o processo de fluxo de caixa, taxas de cartões, etc. E assim, você tem os resultados financeiros sempre atualizados. Números ao seu favor!
+
+graphic
+graphic
+Controle automatizado da Agenda
+Ter a agenda on-line e disponível para seus clientes e/ou profissionais agendarem tem grandes vantagens.
+
+A sua agenda vai se moldando conforme os usuários vão cadastrando os agendamentos de acordo com os horários disponíveis. Isso sem, na maioria das vezes, precisar atuar nesse processo.
+
+Relatórios Gerenciais
+Nos dias de hoje, transformar dados e informações em CONHECIMENTO é um grande diferencial para tomadas de decisões.
+
+No AppBarber, você consegue tirar relatórios de agendamentos por dia da semana, por horário, por plataforma, por mês, etc. Sabendo que, por exemplo, nas terças-feiras o número de agendamentos é menor, você pode enviar uma promoção (linkar para o Envio de Notícias) com 20% de desconto nesse dia da semana e assim, aumentar seu movimento nesse dia. Afinal, horário vazio ninguém quer né!
+
+graphic
+graphic
+Pacotes de Serviços e Produtos
+Pacotes de serviços e produtos são uma boa forma da Barbearia fidelizar clientes e antecipar receitas.
+
+E para o cliente, também uma forma de ganhar aquele desconto. No AppBarber é possível montar pacotes de serviços e/ou produtos e controlar a quantidade de sessões utilizadas x compradas. Sendo assim você obtém maior gestão dos seus pacotes e maior transparência com seu cliente.
+
+Gestão de Estoque
+Barbearias possuem um volume considerável de produtos de Bar, além é claro, de produtos na linha dos cosméticos, tanto para uso quanto para venda.
+
+Fazer o controle desse estoque é primordial para evitar prejuízos com perda ou vencimento de produtos. Com o AppBarber você consegue:
+
+Saber o saldo de cada produto no estoque;
+Histórico de movimentações de Entrada e Saída;
+Saber o custo por produto;
+Lucro por produto;
+Receber avisos/alertas de produtos com quantidades baixas no estoque;
+Controlar a validade dos produtos;
+Controlar o valor em estoque (inventário).
+graphic
+graphic
+Comandas e Controle de Consumo
+Controlar o que seu cliente consome é muito importante para não causar erros que possam prejudicar o próprio cliente ou o estabelecimento.
+
+Com o AppBarber, todo agendamento já gera uma Comanda, onde pode ser adicionado outros serviços e/ou produtos. Caso o cliente venha a consumir apenas produtos, pode ser aberta uma comanda e adicionado(s) o(s) produto(s) nessa comanda. E o estabelecimento tem total flexibilidade e liberdade para aplicar descontos, parcelar, escolher a forma de pagamento, entre outras funcionalidades.
+
+On-line 24 horas por dia, 7 dias por Semana
+Ter a sua Barbearia on-line traz muitas vantagens.
+
+Imagine que em um domingo de manhã, o cliente queira marcar, da comodidade da casa dele e na palma da mão, um horário durante a semana. Ele não conseguiria se a sua Barbearia não estivesse on-line, pois provavelmente ela estaria fechada, correto? Ou então, você tira uma semana de férias e quer acompanhar como está o andamento do seu negócio, seja lá aonde você estiver. Com o conceito “nuvem” sua Barbearia está ao alcance dos seus clientes e dos seus profissionais, com a segurança e disponibilidade.
+
+graphic
+graphic
+Lista de Espera
+Sua agenda está lotada em determinado dia e você não tem tempo para ficar retornando aos clientes se vagar horários?
+
+Deixa que o AppBarber faz isso por você. Com a Lista de Espera, o cliente pode se adicionar na lista do dia e ser avisado, automaticamente, quando vagar algum horário. Assim você não perde horários, seu cliente consegue agendar pelo aplicativo e você muita das vezes nem fica sabendo que ocorreu esse processo pois estará realizando seus serviços sem ser interrompido.
+
+Mensagens de Retorno Automáticas
+Aumentar a frequência/fidelização do seu cliente é um fator primordial para o andamento do seu negócio.
+
+Estudos mostram que manter o cliente pode ser até 5 vezes mais barato do que conquistar um novo. Com o AppBarber, você pode configurar mensagens automáticas de retorno para que seu cliente receba no dia configurado de retorno de determinado serviço.
+
+graphic
+graphic
+Pesquisa de Satisfação
+Medir a satisfação dos atendimentos realizados é uma forma de manter a qualidade dos serviços, a satisfação do cliente e a sua fidelização.
+
+E para isso, você pode habilitar a pesquisa de satisfação do AppBarber. Sendo assim, sempre que um Serviço for realizado, o cliente poderá responder como foi o atendimento realizado pelo profissional e você acompanhar as respostas e analisar, caso a caso, para uma tomada de decisão.
+
+Clube de Clientes
+Você pode criar um clube de vantagens/descontos para determinados clientes e assim eles ganharem descontos em serviços da casa. Sendo assim, o desconto é aplicado automaticamente no agendamento desse cliente e sua Barbearia ganha mais clientes fiéis.
+
+graphic
+graphic
+Site do Estabelecimento
+Ter um site é um fator muito importante para divulgação do seu negócio.
+
+Com o AppBarber, sua Barbearia já ganha um site onde você pode personalizar com informações de horário de funcionamento, formas de pagamento, imagens da Barbearia, localização, serviços e profissionais entre outras informações. Seus clientes (ou novos) podem encontrar seu negócio por sites de busca e inclusive podem agendar horários por lá.
+
+Agendar pelo Site ou Facebook
+Já tem um site e/ou uma Página do Facebook do seu negócio?
+
+Você pode colocar o Agendamento On-line do AppBarber em ambas as plataformas. Com apenas algumas configurações simples e intuitivas, você tem mais essa opção do AppBarber.
+
+graphic
+graphic
+Aniversariantes
+Quem aqui não gosta de ser lembrado em uma data tão especial quanto o seu aniversário?
+
+O AppBarber avisa os clientes aniversariantes para que você envie uma mensagem para ele, faça uma promoção especial de aniversário, entre outras opções.
+
+Pagamento On-line
+Estudos dizem que o consumo on-line aumenta cerca de 90% todo ano.
+
+O pagamento de serviços e compra de produtos on-line tiveram um grande aumento nos últimos anos e o comportamento do consumidor está mudando rapidamente. Dar a opção de pagamento on-line para seu cliente, via Aplicativo, garante o recebimento do valor (em caso de cancelamento ou ausência), ajuda a diminuir o número de ausência (afinal, o cliente que já pagou vai fazer uma forcinha pra não se esquecer do agendamento), dá maior comodidade ao seu cliente e claro, seu negócio estará usando uma tecnologia segura e uma tendência mundial.
+
+graphic
+graphic
+Rede Social
+Registrar o antes e depois de um serviço, eventos da Barbearia ou o seu cliente fazer aquela selfie e ainda compartilhar no Facebook e marcar a sua Barbearia é muito bom para divulgação do seu negócio. Com o AppBarber, você tem uma Rede Social exclusiva entre Barbearia e Clientes, integrada com a maior rede social do mundo.
+
+Programa de Fidelidade
+Fidelização do cliente é o que todo negócio procura.
+
+Uma das formas que o AppBarber proporciona a fidelização é o Programa de Fidelidade que funciona semelhante aos programas de pontos/milhas de cartões. Você pode configurar uma quantidade de pontos que seu cliente irá acumular ao utilizar serviços e/ou consumir produtos no seu estabelecimento para trocar por outros serviços e/ou produtos a sua escolha. Ele pode acompanhar seu extrato pelo aplicativo e fazer a solicitação de resgate por lá também.
+
+graphic
+graphic
+Comissões, vales e Comandas de Consumo de Profissionais
+Com o AppBarber é possível configurar comissões por Serviço realizado e/ou produto vendido, além do lançamento de vales/adiantamentos e também comandas de consumo dos Profissionais. Sendo assim, você consegue extrair poderosos relatórios de comissões para ter as informações necessárias para pagamento do seus profissionais de uma forma clara e transparente.

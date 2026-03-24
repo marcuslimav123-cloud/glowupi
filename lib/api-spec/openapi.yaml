@@ -29,6 +29,20 @@ tags:
     description: Dashboard metrics
   - name: relatorios
     description: Reports
+  - name: financeiro
+    description: Financial accounts management
+  - name: pacotes
+    description: Service packages
+  - name: avaliacoes
+    description: Satisfaction surveys
+  - name: listaEspera
+    description: Waitlist management
+  - name: recompensas
+    description: Loyalty rewards
+  - name: movimentacoesEstoque
+    description: Inventory movements
+  - name: mensagens
+    description: Messages and promotions
 
 paths:
   /healthz:
@@ -958,6 +972,635 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Agendamento"
+
+  /barbearias/{barbeariaId}/financeiro:
+    get:
+      operationId: listContasFinanceiras
+      tags: [financeiro]
+      summary: List financial accounts
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: tipo
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Financial accounts list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContaFinanceira"
+    post:
+      operationId: createContaFinanceira
+      tags: [financeiro]
+      summary: Create financial account
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContaFinanceiraInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContaFinanceira"
+
+  /barbearias/{barbeariaId}/financeiro/{contaId}:
+    put:
+      operationId: updateContaFinanceira
+      tags: [financeiro]
+      summary: Update financial account
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: contaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContaFinanceiraInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContaFinanceira"
+    delete:
+      operationId: deleteContaFinanceira
+      tags: [financeiro]
+      summary: Delete financial account
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: contaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  /barbearias/{barbeariaId}/pacotes:
+    get:
+      operationId: listPacotes
+      tags: [pacotes]
+      summary: List service packages
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Packages list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Pacote"
+    post:
+      operationId: createPacote
+      tags: [pacotes]
+      summary: Create service package
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PacoteInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pacote"
+
+  /barbearias/{barbeariaId}/pacotes/{pacoteId}:
+    put:
+      operationId: updatePacote
+      tags: [pacotes]
+      summary: Update service package
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: pacoteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PacoteInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pacote"
+
+  /barbearias/{barbeariaId}/pacotes-cliente:
+    get:
+      operationId: listPacotesCliente
+      tags: [pacotes]
+      summary: List client packages
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: clienteId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Client packages list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PacoteCliente"
+    post:
+      operationId: vendaPacoteCliente
+      tags: [pacotes]
+      summary: Sell package to client
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VendaPacoteInput"
+      responses:
+        "201":
+          description: Sold
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PacoteCliente"
+
+  /barbearias/{barbeariaId}/pacotes-cliente/{pacoteClienteId}/usar:
+    post:
+      operationId: usarSessaoPacote
+      tags: [pacotes]
+      summary: Use a package session
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: pacoteClienteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Session used
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PacoteCliente"
+
+  /barbearias/{barbeariaId}/avaliacoes:
+    get:
+      operationId: listAvaliacoes
+      tags: [avaliacoes]
+      summary: List satisfaction surveys
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: profissionalId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Evaluations list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Avaliacao"
+    post:
+      operationId: createAvaliacao
+      tags: [avaliacoes]
+      summary: Create satisfaction survey
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvaliacaoInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Avaliacao"
+
+  /barbearias/{barbeariaId}/lista-espera:
+    get:
+      operationId: listListaEspera
+      tags: [listaEspera]
+      summary: List waitlist entries
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: data
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Waitlist entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ListaEspera"
+    post:
+      operationId: addToListaEspera
+      tags: [listaEspera]
+      summary: Add to waitlist
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ListaEsperaInput"
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListaEspera"
+
+  /barbearias/{barbeariaId}/lista-espera/{itemId}:
+    put:
+      operationId: updateListaEspera
+      tags: [listaEspera]
+      summary: Update waitlist entry
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListaEspera"
+    delete:
+      operationId: removeFromListaEspera
+      tags: [listaEspera]
+      summary: Remove from waitlist
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Removed
+
+  /barbearias/{barbeariaId}/recompensas:
+    get:
+      operationId: listRecompensas
+      tags: [recompensas]
+      summary: List loyalty rewards
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Rewards list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Recompensa"
+    post:
+      operationId: createRecompensa
+      tags: [recompensas]
+      summary: Create loyalty reward
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecompensaInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Recompensa"
+
+  /barbearias/{barbeariaId}/recompensas/{recompensaId}:
+    put:
+      operationId: updateRecompensa
+      tags: [recompensas]
+      summary: Update loyalty reward
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: recompensaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecompensaInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Recompensa"
+
+  /barbearias/{barbeariaId}/resgates:
+    get:
+      operationId: listResgates
+      tags: [recompensas]
+      summary: List reward redemptions
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Redemptions list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Resgate"
+    post:
+      operationId: createResgate
+      tags: [recompensas]
+      summary: Redeem loyalty reward
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResgateInput"
+      responses:
+        "201":
+          description: Redeemed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Resgate"
+
+  /barbearias/{barbeariaId}/produtos/{produtoId}/movimentacoes:
+    get:
+      operationId: listMovimentacoesEstoque
+      tags: [movimentacoesEstoque]
+      summary: List inventory movements for a product
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: produtoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Movements list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MovimentacaoEstoque"
+    post:
+      operationId: createMovimentacaoEstoque
+      tags: [movimentacoesEstoque]
+      summary: Create inventory movement
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: produtoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MovimentacaoEstoqueInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MovimentacaoEstoque"
+
+  /barbearias/{barbeariaId}/mensagens:
+    get:
+      operationId: listMensagens
+      tags: [mensagens]
+      summary: List messages/promotions
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Messages list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Mensagem"
+    post:
+      operationId: createMensagem
+      tags: [mensagens]
+      summary: Create message/promotion
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MensagemInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Mensagem"
+
+  /barbearias/{barbeariaId}/mensagens/{mensagemId}:
+    delete:
+      operationId: deleteMensagem
+      tags: [mensagens]
+      summary: Delete message
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: mensagemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
 
 components:
   schemas:
@@ -1983,3 +2626,383 @@ components:
         - servicoId
         - data
         - horaInicio
+
+    ContaFinanceira:
+      type: object
+      properties:
+        id:
+          type: integer
+        barbeariaId:
+          type: integer
+        tipo:
+          type: string
+        categoria:
+          type: string
+        descricao:
+          type: string
+        valor:
+          type: number
+        dataVencimento:
+          type: string
+        dataPagamento:
+          type: string
+          nullable: true
+        status:
+          type: string
+        recorrente:
+          type: boolean
+        observacao:
+          type: string
+          nullable: true
+      required: [id, tipo, categoria, descricao, valor, dataVencimento, status]
+
+    ContaFinanceiraInput:
+      type: object
+      properties:
+        tipo:
+          type: string
+        categoria:
+          type: string
+        descricao:
+          type: string
+        valor:
+          type: number
+        dataVencimento:
+          type: string
+        dataPagamento:
+          type: string
+          nullable: true
+        status:
+          type: string
+        recorrente:
+          type: boolean
+        observacao:
+          type: string
+          nullable: true
+      required: [tipo, categoria, descricao, valor, dataVencimento]
+
+    Pacote:
+      type: object
+      properties:
+        id:
+          type: integer
+        barbeariaId:
+          type: integer
+        nome:
+          type: string
+        descricao:
+          type: string
+          nullable: true
+        itens:
+          type: array
+          items:
+            type: object
+        preco:
+          type: number
+        sessoesTotal:
+          type: integer
+        validadeDias:
+          type: integer
+          nullable: true
+        ativo:
+          type: boolean
+      required: [id, nome, preco, sessoesTotal]
+
+    PacoteInput:
+      type: object
+      properties:
+        nome:
+          type: string
+        descricao:
+          type: string
+          nullable: true
+        itens:
+          type: array
+          items:
+            type: object
+        preco:
+          type: number
+        sessoesTotal:
+          type: integer
+        validadeDias:
+          type: integer
+          nullable: true
+        ativo:
+          type: boolean
+      required: [nome, preco, sessoesTotal]
+
+    PacoteCliente:
+      type: object
+      properties:
+        id:
+          type: integer
+        pacoteId:
+          type: integer
+        clienteId:
+          type: integer
+        clienteNome:
+          type: string
+        sessoesUsadas:
+          type: integer
+        sessoesTotal:
+          type: integer
+        status:
+          type: string
+        dataCompra:
+          type: string
+        dataValidade:
+          type: string
+          nullable: true
+        pacoteNome:
+          type: string
+      required: [id, pacoteId, clienteId, clienteNome, sessoesUsadas, sessoesTotal, status]
+
+    VendaPacoteInput:
+      type: object
+      properties:
+        pacoteId:
+          type: integer
+        clienteId:
+          type: integer
+        clienteNome:
+          type: string
+      required: [pacoteId, clienteNome]
+
+    Avaliacao:
+      type: object
+      properties:
+        id:
+          type: integer
+        barbeariaId:
+          type: integer
+        agendamentoId:
+          type: integer
+        clienteNome:
+          type: string
+        profissionalId:
+          type: integer
+        profissionalNome:
+          type: string
+        nota:
+          type: integer
+        comentario:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required: [id, agendamentoId, clienteNome, profissionalId, profissionalNome, nota]
+
+    AvaliacaoInput:
+      type: object
+      properties:
+        agendamentoId:
+          type: integer
+        clienteNome:
+          type: string
+        profissionalId:
+          type: integer
+        profissionalNome:
+          type: string
+        nota:
+          type: integer
+        comentario:
+          type: string
+          nullable: true
+      required: [agendamentoId, clienteNome, profissionalId, profissionalNome, nota]
+
+    ListaEspera:
+      type: object
+      properties:
+        id:
+          type: integer
+        barbeariaId:
+          type: integer
+        clienteNome:
+          type: string
+        clienteTelefone:
+          type: string
+        data:
+          type: string
+        servicoId:
+          type: integer
+          nullable: true
+        profissionalId:
+          type: integer
+          nullable: true
+        status:
+          type: string
+        observacao:
+          type: string
+          nullable: true
+      required: [id, clienteNome, clienteTelefone, data, status]
+
+    ListaEsperaInput:
+      type: object
+      properties:
+        clienteNome:
+          type: string
+        clienteTelefone:
+          type: string
+        data:
+          type: string
+        servicoId:
+          type: integer
+          nullable: true
+        profissionalId:
+          type: integer
+          nullable: true
+        observacao:
+          type: string
+          nullable: true
+      required: [clienteNome, clienteTelefone, data]
+
+    Recompensa:
+      type: object
+      properties:
+        id:
+          type: integer
+        barbeariaId:
+          type: integer
+        nome:
+          type: string
+        descricao:
+          type: string
+          nullable: true
+        pontosNecessarios:
+          type: integer
+        tipo:
+          type: string
+        ativo:
+          type: boolean
+      required: [id, nome, pontosNecessarios, tipo]
+
+    RecompensaInput:
+      type: object
+      properties:
+        nome:
+          type: string
+        descricao:
+          type: string
+          nullable: true
+        pontosNecessarios:
+          type: integer
+        tipo:
+          type: string
+        ativo:
+          type: boolean
+      required: [nome, pontosNecessarios, tipo]
+
+    Resgate:
+      type: object
+      properties:
+        id:
+          type: integer
+        barbeariaId:
+          type: integer
+        clienteId:
+          type: integer
+        clienteNome:
+          type: string
+        recompensaId:
+          type: integer
+        recompensaNome:
+          type: string
+        pontosUsados:
+          type: integer
+        status:
+          type: string
+        createdAt:
+          type: string
+      required: [id, clienteId, clienteNome, recompensaId, recompensaNome, pontosUsados, status]
+
+    ResgateInput:
+      type: object
+      properties:
+        clienteId:
+          type: integer
+        clienteNome:
+          type: string
+        recompensaId:
+          type: integer
+        recompensaNome:
+          type: string
+        pontosUsados:
+          type: integer
+      required: [clienteId, clienteNome, recompensaId, recompensaNome, pontosUsados]
+
+    MovimentacaoEstoque:
+      type: object
+      properties:
+        id:
+          type: integer
+        barbeariaId:
+          type: integer
+        produtoId:
+          type: integer
+        tipo:
+          type: string
+        quantidade:
+          type: integer
+        motivo:
+          type: string
+        observacao:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required: [id, produtoId, tipo, quantidade, motivo]
+
+    MovimentacaoEstoqueInput:
+      type: object
+      properties:
+        tipo:
+          type: string
+        quantidade:
+          type: integer
+        motivo:
+          type: string
+        observacao:
+          type: string
+          nullable: true
+      required: [tipo, quantidade, motivo]
+
+    Mensagem:
+      type: object
+      properties:
+        id:
+          type: integer
+        barbeariaId:
+          type: integer
+        tipo:
+          type: string
+        titulo:
+          type: string
+        conteudo:
+          type: string
+        destinatarios:
+          type: array
+          items:
+            type: object
+        dataEnvio:
+          type: string
+          nullable: true
+        status:
+          type: string
+      required: [id, tipo, titulo, conteudo, status]
+
+    MensagemInput:
+      type: object
+      properties:
+        tipo:
+          type: string
+        titulo:
+          type: string
+        conteudo:
+          type: string
+        destinatarios:
+          type: array
+          items:
+            type: object
+        status:
+          type: string
+      required: [tipo, titulo, conteudo]

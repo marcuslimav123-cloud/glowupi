@@ -19,6 +19,10 @@ import Caixa from "@/pages/Caixa";
 import Financeiro from "@/pages/Financeiro";
 import Empresa from "@/pages/Empresa";
 import Clube from "@/pages/Clube";
+import Pacotes from "@/pages/Pacotes";
+import ListaEspera from "@/pages/ListaEspera";
+import Avaliacoes from "@/pages/Avaliacoes";
+import Mensagens from "@/pages/Mensagens";
 import Picos from "@/pages/agenda/Picos";
 
 const queryClient = new QueryClient();
@@ -44,6 +48,10 @@ function Router() {
       <Route path="/relatorios" component={Relatorios} />
       <Route path="/caixa" component={Caixa} />
       <Route path="/financeiro" component={Financeiro} />
+      <Route path="/pacotes" component={Pacotes} />
+      <Route path="/lista-espera" component={ListaEspera} />
+      <Route path="/avaliacoes" component={Avaliacoes} />
+      <Route path="/mensagens" component={Mensagens} />
       <Route path="/empresa" component={Empresa} />
       <Route path="/clube" component={Clube} />
 

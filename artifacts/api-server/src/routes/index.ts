@@ -12,6 +12,15 @@ import dashboardRouter from "./dashboard.js";
 import relatoriosRouter from "./relatorios.js";
 import slotsRouter from "./slots.js";
 import publicRouter from "./public.js";
+import financeiroRouter from "./financeiro.js";
+import pacotesRouter from "./pacotes.js";
+import pacotesClienteRouter from "./pacotesCliente.js";
+import avaliacoesRouter from "./avaliacoes.js";
+import listaEsperaRouter from "./listaEspera.js";
+import recompensasRouter from "./recompensas.js";
+import resgatesRouter from "./resgates.js";
+import movimentacoesEstoqueRouter from "./movimentacoesEstoque.js";
+import mensagensRouter from "./mensagens.js";
 
 const router: IRouter = Router();
 
@@ -27,6 +36,15 @@ router.use("/barbearias/:barbeariaId/produtos", produtosRouter);
 router.use("/barbearias/:barbeariaId/dashboard", dashboardRouter);
 router.use("/barbearias/:barbeariaId/relatorios", relatoriosRouter);
 router.use("/barbearias/:barbeariaId/slots-disponiveis", slotsRouter);
+router.use("/barbearias/:barbeariaId/financeiro", financeiroRouter);
+router.use("/barbearias/:barbeariaId/pacotes", pacotesRouter);
+router.use("/barbearias/:barbeariaId/pacotes-cliente", pacotesClienteRouter);
+router.use("/barbearias/:barbeariaId/avaliacoes", avaliacoesRouter);
+router.use("/barbearias/:barbeariaId/lista-espera", listaEsperaRouter);
+router.use("/barbearias/:barbeariaId/recompensas", recompensasRouter);
+router.use("/barbearias/:barbeariaId/resgates", resgatesRouter);
+router.use("/barbearias/:barbeariaId/produtos/:produtoId/movimentacoes", movimentacoesEstoqueRouter);
+router.use("/barbearias/:barbeariaId/mensagens", mensagensRouter);
 router.use("/public", publicRouter);
 
 export default router;

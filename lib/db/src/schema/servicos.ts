@@ -10,6 +10,7 @@ export const servicosTable = pgTable("servicos", {
   preco: numeric("preco", { precision: 10, scale: 2 }).notNull(),
   duracaoMinutos: integer("duracao_minutos").notNull().default(30),
   descricao: text("descricao"),
+  diasRetorno: integer("dias_retorno"),
   ativo: boolean("ativo").notNull().default(true),
   ordem: integer("ordem").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),

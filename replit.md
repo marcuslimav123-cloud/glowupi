@@ -14,7 +14,7 @@ Multi-tenant SaaS for beauty salon management (salão/estúdio de beleza). Full-
 - **API framework**: Express 5
 - **Database**: PostgreSQL + Drizzle ORM
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
+- **API codegen**: Orval (from OpenAPI spec) — run `pnpm --filter @workspace/api-spec run codegen`
 - **Auth**: Session-based (cookie) with SHA-256 password hashing (in-memory sessions map)
 - **Build**: esbuild (CJS bundle)
 - **Fonts**: Inter (body/UI) + DM Serif Display (headings)
@@ -41,8 +41,17 @@ artifacts-monorepo/
 - `servicos` — Services offered (nails, skincare, hair, etc.)
 - `clientes` — Clients per salon
 - `agendamentos` — Appointments with status (confirmado/pago/cancelado)
-- `comandas` — Checkout records with services, products, payments, commissions
-- `produtos` — Product inventory
+- `comandas` — Checkout records with services, products, payments, commissions (desconto, descontoTipo, parcelas)
+- `produtos` — Product inventory (codigoBarras, validade)
+- `contasFinanceiras` — Financial accounts payable/receivable
+- `pacotes` — Service packages (nome, preco, sessoesTotal, validade)
+- `pacotesCliente` — Client package purchases with session tracking
+- `avaliacoes` — Satisfaction surveys (nota 1-5, comentario)
+- `listaEspera` — Waitlist management
+- `recompensas` — Loyalty rewards catalog
+- `resgates` — Loyalty redemption history
+- `movimentacoesEstoque` — Inventory movement history
+- `mensagens` — Messages (retorno/promocao) with draft/sent status
 
 ## API Endpoints
 
@@ -59,6 +68,15 @@ All under `/api`:
 - `/barbearias/{id}/relatorios/faturamento` — Revenue reports
 - `/barbearias/{id}/relatorios/comissoes` — Commission reports
 - `/barbearias/{id}/slots-disponiveis` — Available time slots
+- `/barbearias/{id}/financeiro/**` — Financial accounts CRUD
+- `/barbearias/{id}/pacotes/**` — Service packages CRUD
+- `/barbearias/{id}/pacotes-cliente/**` — Client packages + session usage
+- `/barbearias/{id}/avaliacoes/**` — Satisfaction surveys
+- `/barbearias/{id}/lista-espera/**` — Waitlist CRUD
+- `/barbearias/{id}/recompensas/**` — Loyalty rewards CRUD
+- `/barbearias/{id}/resgates/**` — Loyalty redemptions
+- `/barbearias/{id}/produtos/{produtoId}/movimentacoes/**` — Inventory movements
+- `/barbearias/{id}/mensagens/**` — Messages CRUD
 - `/public/{slug}` — Public salon page (no auth required)
 - `/public/{slug}/agendar` — Public appointment booking
 
@@ -75,9 +93,13 @@ All under `/api`:
 - `/gestao/produtos` — Product/inventory management
 - `/relatorios` — Revenue & commission reports with charts
 - `/caixa` — Checkout/comanda history
-- `/financeiro` — Financial overview with area charts
+- `/financeiro` — Financial management (Resumo/A Pagar/A Receber tabs, CRUD contas)
+- `/pacotes` — Service packages management + client package sales & session tracking
+- `/lista-espera` — Waitlist management with status tracking
+- `/avaliacoes` — Satisfaction surveys dashboard with ratings distribution
+- `/mensagens` — Return messages & promotions (draft/send)
 - `/empresa` — Studio settings with ViaCEP + hours toggle
-- `/clube` — Loyalty program with leaderboard & VIP
+- `/clube` — Loyalty program (Ranking/Recompensas/Resgates tabs)
 
 ## Design & Theme
 
@@ -93,7 +115,13 @@ All under `/api`:
 - 30-day free trial plan
 - Commission calculation (percentage or fixed per professional)
 - Checkout with split payment support (pix, dinheiro, crédito, débito)
-- Loyalty points for clients
+- Loyalty points for clients with rewards catalog and redemption
+- Service packages with session tracking
+- Financial management (accounts payable/receivable)
+- Waitlist management
+- Client satisfaction surveys with professional rankings
+- Messages system (return reminders & promotions)
+- Inventory movements with stock tracking
 - Dashboard with Recharts charts (bar + donut)
 - Responsive sidebar (collapses to mobile menu on small screens)
 - ViaCEP integration for address auto-fill in onboarding
@@ -108,3 +136,5 @@ All under `/api`:
 - Demo login: joao@barberpro.com / 123456, barbeariaId: 1 (legacy test credentials, not user-facing)
 - `date-fns` v3 is installed; use `date-fns/locale` for ptBR
 - API endpoint names still use "barbearias" for backward compatibility
+- Query invalidation: always use generated `getList*QueryKey()` functions from api-client-react, NOT manual string keys
+- Role enum "barbeiro" kept in DB/API for backward compatibility; `getRoleLabel()` maps to "profissional" in UI

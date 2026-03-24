@@ -17,7 +17,12 @@ import {
   Package,
   Menu,
   X,
-  Heart
+  Heart,
+  MessageSquare,
+  ClipboardList,
+  Star,
+  Gift,
+  Boxes
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { APP_NAME, getRoleLabel } from "@/lib/utils";
@@ -45,6 +50,10 @@ const NAV_ITEMS = [
   { name: "Relatórios", href: "/relatorios", icon: BarChart3 },
   { name: "Caixa", href: "/caixa", icon: DollarSign },
   { name: "Financeiro", href: "/financeiro", icon: TrendingUp },
+  { name: "Pacotes", href: "/pacotes", icon: Boxes },
+  { name: "Lista de Espera", href: "/lista-espera", icon: ClipboardList },
+  { name: "Avaliações", href: "/avaliacoes", icon: Star },
+  { name: "Mensagens", href: "/mensagens", icon: MessageSquare },
   { name: "Meu Estúdio", href: "/empresa", icon: Building2 },
   { name: "Clube de Fidelidade", href: "/clube", icon: Award },
 ];
