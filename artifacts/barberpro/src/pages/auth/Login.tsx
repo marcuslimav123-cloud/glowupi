@@ -96,9 +96,18 @@ export default function Login() {
       await loginMutation.mutateAsync({ data: { email, senha } });
       window.location.href = "/dashboard";
     } catch (err: any) {
+      const errorData = err?.response?.data || err?.data;
+      if (errorData?.isAdmin) {
+        toast({
+          title: "Login de Administrador",
+          description: "Redirecionando para o painel admin...",
+        });
+        setTimeout(() => setLocation("/admin/login"), 1500);
+        return;
+      }
       toast({
         title: "Erro no login",
-        description: err.message || "Verifique suas credenciais e tente novamente.",
+        description: errorData?.error || err.message || "Verifique suas credenciais e tente novamente.",
         variant: "destructive"
       });
     }

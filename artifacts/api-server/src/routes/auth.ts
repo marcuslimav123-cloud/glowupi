@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { usersTable, barbeariasTable } from "@workspace/db/schema";
+import { usersTable, barbeariasTable, superAdminsTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { hashPassword, createSession, deleteSession, requireAuth } from "../lib/auth.js";
 import { OAuth2Client } from "google-auth-library";
@@ -42,7 +42,14 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Email e senha são obrigatórios" });
     }
     const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
-    if (!user || user.senhaHash !== hashPassword(senha)) {
+    if (!user) {
+      const [adminUser] = await db.select().from(superAdminsTable).where(eq(superAdminsTable.email, email)).limit(1);
+      if (adminUser) {
+        return res.status(403).json({ error: "Este é um login de administrador. Acesse /admin/login para entrar no painel administrativo.", isAdmin: true });
+      }
+      return res.status(401).json({ error: "Email ou senha incorretos" });
+    }
+    if (user.senhaHash !== hashPassword(senha)) {
       return res.status(401).json({ error: "Email ou senha incorretos" });
     }
     const token = createSession(user.id);
