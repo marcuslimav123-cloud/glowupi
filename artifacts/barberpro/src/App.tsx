@@ -50,6 +50,7 @@ import RankingsReport from "@/pages/relatorios/RankingsReport";
 import PerfilCliente from "@/pages/relatorios/PerfilCliente";
 import EstoqueReport from "@/pages/relatorios/EstoqueReport";
 import PacotesReport from "@/pages/relatorios/PacotesReport";
+import ComandasItensReport from "@/pages/relatorios/ComandasItensReport";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminTenants from "@/pages/admin/AdminTenants";
@@ -88,6 +89,7 @@ function Router() {
       <Route path="/relatorios/perfil-cliente" component={PerfilCliente} />
       <Route path="/relatorios/estoque" component={EstoqueReport} />
       <Route path="/relatorios/pacotes" component={PacotesReport} />
+      <Route path="/relatorios/comandas-itens" component={ComandasItensReport} />
       <Route path="/relatorios" component={Relatorios} />
       <Route path="/caixa" component={Caixa} />
       <Route path="/financeiro" component={Financeiro} />

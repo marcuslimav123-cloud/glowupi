@@ -277,6 +277,39 @@ router.get("/perfil-cliente", requireAuth, requireRole("dono", "gerente"), async
   })));
 });
 
+router.get("/comandas-itens", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const { dataInicio, dataFim } = req.query;
+  if (!dataInicio || !dataFim) return res.status(400).json({ error: "dataInicio e dataFim são obrigatórios" });
+
+  const comandas = await db.select().from(comandasTable).where(
+    and(
+      eq(comandasTable.barbeariaId, barbeariaId),
+      sql`DATE(${comandasTable.dataFechamento}) >= ${dataInicio}`,
+      sql`DATE(${comandasTable.dataFechamento}) <= ${dataFim}`
+    )
+  );
+
+  const items: { id: string; comandaId: number; clienteNome: string; servicoNome: string; profissionalNome: string; valor: number; data: string }[] = [];
+  comandas.forEach(c => {
+    const servs = Array.isArray(c.servicos) ? c.servicos : [];
+    servs.forEach((s: Record<string, unknown>, idx: number) => {
+      items.push({
+        id: `${c.id}-${idx}`,
+        comandaId: c.id,
+        clienteNome: c.clienteNome || "—",
+        servicoNome: (s.nome as string) || "—",
+        profissionalNome: (s.profissionalNome as string) || "—",
+        valor: Number(s.valor) || 0,
+        data: c.dataFechamento?.toISOString().slice(0, 10) || "",
+      });
+    });
+  });
+
+  return res.json(items);
+});
+
 router.get("/estoque", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
