@@ -212,11 +212,103 @@ function filterNavByRole(items: NavItem[], role: string, perfilPermissoes?: stri
   }, []);
 }
 
+function isGroupActive(item: NavItem, location: string): boolean {
+  if (item.children?.some(c => c.href && (location === c.href || location.startsWith(c.href + '/')))) return true;
+  if (item.subgroups?.some(sg => sg.items.some(s => s.href && (location === s.href || location.startsWith(s.href + '/'))))) return true;
+  return false;
+}
+
+function CollapsibleGroup({ item, location, onNavigate, mainRef }: { item: NavItem; location: string; onNavigate: () => void; mainRef: React.RefObject<HTMLDivElement | null> }) {
+  const active = isGroupActive(item, location);
+  const [open, setOpen] = React.useState(active);
+
+  React.useEffect(() => {
+    if (active) setOpen(true);
+  }, [active]);
+
+  const handleLinkClick = () => {
+    onNavigate();
+    if (mainRef.current) {
+      mainRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const allItems: NavItem[] = [
+    ...(item.children || []),
+  ];
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className={cn(
+          "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150",
+          active
+            ? "text-primary bg-primary/[0.06]"
+            : "text-foreground/50 hover:text-foreground hover:bg-black/[0.03]"
+        )}
+      >
+        <item.icon className="h-[16px] w-[16px]" />
+        <span className="flex-1 text-left">{item.name}</span>
+        <ChevronDown className={cn(
+          "h-3.5 w-3.5 transition-transform duration-200",
+          open ? "rotate-0" : "-rotate-90"
+        )} />
+      </button>
+
+      <div className={cn(
+        "overflow-hidden transition-all duration-200",
+        open ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
+      )}>
+        <div className="ml-2 pl-3 border-l border-black/[0.06] mt-0.5 space-y-0.5">
+          {allItems.map(child => (
+            <Link key={child.name} href={child.href!} className={cn(
+              "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150",
+              location === child.href
+                ? "bg-foreground text-white"
+                : "text-foreground/45 hover:text-foreground hover:bg-black/[0.03]"
+            )} onClick={handleLinkClick}>
+              <child.icon className="h-[14px] w-[14px]" />
+              {child.name}
+            </Link>
+          ))}
+
+          {item.subgroups?.map(sg => (
+            <div key={sg.label} className="mt-1.5">
+              <div className="px-3 py-1 text-[10px] font-semibold text-foreground/25 uppercase tracking-wider">
+                {sg.label}
+              </div>
+              {sg.items.map(sub => (
+                <Link key={sub.name} href={sub.href!} className={cn(
+                  "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150",
+                  location === sub.href
+                    ? "bg-foreground text-white"
+                    : "text-foreground/45 hover:text-foreground hover:bg-black/[0.03]"
+                )} onClick={handleLinkClick}>
+                  <sub.icon className="h-[14px] w-[14px]" />
+                  {sub.name}
+                </Link>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout, isLoading, barbeariaId, role, perfilPermissoes } = useAuth();
   const { canAccess, status, shouldShowUpgrade } = useSubscriptionGuard();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const mainContentRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [location]);
 
   React.useEffect(() => {
     if (!isLoading) {
@@ -268,6 +360,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const handleNavClick = () => {
+    setMobileMenuOpen(false);
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const filteredNav = filterNavByRole(NAV_ITEMS, role, perfilPermissoes);
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[#fafafa]">
       <div className="md:hidden flex items-center justify-between px-4 py-2.5 border-b border-black/[0.04] bg-white">
@@ -286,69 +387,39 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         "fixed inset-y-0 left-0 z-50 w-[240px] bg-white border-r border-black/[0.04] transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 flex flex-col",
         mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="px-5 py-5 hidden md:flex items-center gap-2.5 font-semibold text-[15px] text-foreground tracking-tight">
+        <div className="px-5 py-5 hidden md:flex items-center gap-2.5 font-semibold text-[15px] text-foreground tracking-tight shrink-0">
           <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center">
             <Sparkles className="h-4 w-4 text-primary" />
           </div>
           {APP_NAME}
         </div>
 
-        <div className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5">
-          {filterNavByRole(NAV_ITEMS, role, perfilPermissoes).map((item) => (
+        <div className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5 sidebar-scroll">
+          {filteredNav.map((item) => (
             <div key={item.name}>
-              {item.href ? (
-                <Link href={item.href} className={cn(
+              {item.children ? (
+                <CollapsibleGroup
+                  item={item}
+                  location={location}
+                  onNavigate={handleNavClick}
+                  mainRef={mainContentRef}
+                />
+              ) : (
+                <Link href={item.href!} className={cn(
                   "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150",
                   location === item.href || location.startsWith(item.href + '/')
                     ? "bg-foreground text-white" 
                     : "text-foreground/50 hover:text-foreground hover:bg-black/[0.03]"
-                )} onClick={() => setMobileMenuOpen(false)}>
+                )} onClick={handleNavClick}>
                   <item.icon className="h-[16px] w-[16px]" />
                   {item.name}
                 </Link>
-              ) : (
-                <div className="mt-5 mb-1">
-                  <div className="px-3 py-1.5 text-[11px] font-semibold text-foreground/30 uppercase tracking-wider">
-                    {item.name}
-                  </div>
-                  <div className="space-y-0.5 mt-1">
-                    {item.children?.map(child => (
-                      <Link key={child.name} href={child.href} className={cn(
-                        "flex items-center gap-2.5 px-3 py-2 ml-1 rounded-lg text-[13px] font-medium transition-all duration-150",
-                        location === child.href 
-                          ? "bg-primary/8 text-primary" 
-                          : "text-foreground/50 hover:text-foreground hover:bg-black/[0.03]"
-                      )} onClick={() => setMobileMenuOpen(false)}>
-                        <child.icon className="h-[15px] w-[15px]" />
-                        {child.name}
-                      </Link>
-                    ))}
-                    {item.subgroups?.map(sg => (
-                      <div key={sg.label} className="mt-2">
-                        <div className="px-4 py-1 text-[10px] font-semibold text-foreground/20 uppercase tracking-wider">
-                          {sg.label}
-                        </div>
-                        {sg.items.map(sub => (
-                          <Link key={sub.name} href={sub.href!} className={cn(
-                            "flex items-center gap-2.5 px-3 py-2 ml-3 rounded-lg text-[13px] font-medium transition-all duration-150",
-                            location === sub.href
-                              ? "bg-primary/8 text-primary"
-                              : "text-foreground/50 hover:text-foreground hover:bg-black/[0.03]"
-                          )} onClick={() => setMobileMenuOpen(false)}>
-                            <sub.icon className="h-[15px] w-[15px]" />
-                            {sub.name}
-                          </Link>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </div>
               )}
             </div>
           ))}
         </div>
 
-        <div className="p-4 border-t border-black/[0.04]">
+        <div className="p-4 border-t border-black/[0.04] shrink-0">
           <div className="flex items-center gap-2.5 px-2 py-2 mb-3">
             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-semibold text-[12px]">
               {user.nome.charAt(0).toUpperCase()}
@@ -373,7 +444,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <HeaderBar />
         </div>
         {shouldShowUpgrade && (
-          <div className="bg-primary/5 border-b border-primary/10 px-4 py-2 flex items-center justify-center gap-3 z-20">
+          <div className="bg-primary/5 border-b border-primary/10 px-4 py-2 flex items-center justify-center gap-3 z-20 shrink-0">
             <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
             <span className="text-[13px] text-foreground/60">Período de teste gratuito ativo.</span>
             <Link href="/#precos">
@@ -383,7 +454,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
         )}
-        <div className="flex-1 overflow-y-auto p-5 md:p-8 z-10">
+        <div ref={mainContentRef} className="flex-1 overflow-y-auto p-5 md:p-8 z-10 main-scroll">
           {children}
         </div>
       </main>
