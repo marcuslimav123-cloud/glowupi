@@ -1,28 +1,35 @@
-import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect, useRef } from "react";
+import { Link } from "wouter";
 import { Sparkles, CheckCircle2, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiUrl } from "@/lib/utils";
 
 export default function Register() {
-  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [googleClientId, setGoogleClientId] = useState("");
   const [googleReady, setGoogleReady] = useState(false);
+  const [googleFailed, setGoogleFailed] = useState(false);
+  const googleInitRef = useRef(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!googleInitRef.current) setGoogleFailed(true);
+    }, 4000);
+
     fetch(apiUrl("/lgpd/google-client-id"))
       .then(r => r.json())
       .then(data => {
         if (data.clientId) {
-          setGoogleClientId(data.clientId);
           loadGoogleScript(data.clientId);
+        } else {
+          setGoogleFailed(true);
         }
       })
-      .catch(() => {});
+      .catch(() => setGoogleFailed(true));
+
+    return () => clearTimeout(timeout);
   }, []);
 
   const loadGoogleScript = (clientId: string) => {
@@ -36,11 +43,12 @@ export default function Register() {
     script.async = true;
     script.defer = true;
     script.onload = () => initGoogleButton(clientId);
+    script.onerror = () => setGoogleFailed(true);
     document.head.appendChild(script);
   };
 
   const initGoogleButton = (clientId: string) => {
-    if (!(window as any).google) return;
+    if (!(window as any).google) { setGoogleFailed(true); return; }
     (window as any).google.accounts.id.initialize({
       client_id: clientId,
       callback: handleGoogleResponse,
@@ -56,6 +64,7 @@ export default function Register() {
         shape: "pill",
         locale: "pt-BR",
       });
+      googleInitRef.current = true;
       setGoogleReady(true);
     }
   };
@@ -133,9 +142,9 @@ export default function Register() {
             </p>
           </div>
 
-          {googleClientId ? (
+          {!googleFailed ? (
             <div className="flex flex-col items-center gap-3">
-              <div id="google-signup-btn" className="flex justify-center" />
+              <div id="google-signup-btn" className="flex justify-center min-h-[44px]" />
               {googleLoading && (
                 <div className="flex items-center gap-2 text-[13px] text-foreground/40">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -145,14 +154,18 @@ export default function Register() {
               {!googleReady && !googleLoading && (
                 <div className="flex items-center gap-2 text-[13px] text-foreground/40">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Carregando...
+                  Preparando...
                 </div>
               )}
             </div>
           ) : (
-            <div className="text-center py-4">
-              <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-foreground/30" />
-              <p className="text-[13px] text-foreground/40">Preparando autenticação...</p>
+            <div className="text-center py-3">
+              <p className="text-[13px] text-foreground/50 mb-3">
+                Para se cadastrar, abra esta página em uma nova aba do navegador.
+              </p>
+              <p className="text-[12px] text-foreground/30">
+                O login com Google não funciona dentro do preview. Clique no ícone de "abrir em nova aba" no canto superior.
+              </p>
             </div>
           )}
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLoginUser } from "@workspace/api-client-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -22,20 +22,27 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [googleClientId, setGoogleClientId] = useState("");
   const [googleReady, setGoogleReady] = useState(false);
-  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [googleFailed, setGoogleFailed] = useState(false);
+  const googleInitRef = useRef(false);
 
   useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!googleInitRef.current) setGoogleFailed(true);
+    }, 4000);
+
     fetch(apiUrl("/lgpd/google-client-id"))
       .then(r => r.json())
       .then(data => {
         if (data.clientId) {
-          setGoogleClientId(data.clientId);
           loadGoogleScript(data.clientId);
+        } else {
+          setGoogleFailed(true);
         }
       })
-      .catch(() => {});
+      .catch(() => setGoogleFailed(true));
+
+    return () => clearTimeout(timeout);
   }, []);
 
   const loadGoogleScript = (clientId: string) => {
@@ -49,11 +56,12 @@ export default function Login() {
     script.async = true;
     script.defer = true;
     script.onload = () => initGoogleButton(clientId);
+    script.onerror = () => setGoogleFailed(true);
     document.head.appendChild(script);
   };
 
   const initGoogleButton = (clientId: string) => {
-    if (!window.google) return;
+    if (!window.google) { setGoogleFailed(true); return; }
     window.google.accounts.id.initialize({
       client_id: clientId,
       callback: handleGoogleResponse,
@@ -69,6 +77,7 @@ export default function Login() {
         shape: "pill",
         locale: "pt-BR",
       });
+      googleInitRef.current = true;
       setGoogleReady(true);
     }
   };
@@ -135,83 +144,63 @@ export default function Login() {
         </div>
 
         <div className="bg-white border border-black/[0.06] rounded-2xl p-7 shadow-xl shadow-black/[0.03]">
-          {googleClientId ? (
+          {!googleFailed && (
             <div className="flex flex-col items-center gap-3 mb-5">
-              <div id="google-signin-btn" className="flex justify-center" />
+              <div id="google-signin-btn" className="flex justify-center min-h-[44px]" />
               {googleLoading && (
                 <div className="flex items-center gap-2 text-[13px] text-foreground/40">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Autenticando com Google...
                 </div>
               )}
-              {!googleReady && !googleLoading && (
-                <div className="flex items-center gap-2 text-[13px] text-foreground/40">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Carregando...
-                </div>
-              )}
             </div>
-          ) : null}
-
-          {!showEmailForm ? (
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => setShowEmailForm(true)}
-                className="text-[12px] text-foreground/30 hover:text-foreground/50 transition-colors underline"
-              >
-                Entrar com e-mail e senha
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="relative my-5">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-black/[0.06]"></div>
-                </div>
-                <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
-                  <span className="bg-white px-3 text-foreground/30">ou com e-mail</span>
-                </div>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-[13px] text-foreground/60">E-mail</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="senha" className="text-[13px] text-foreground/60">Senha</Label>
-                    <a href="#" className="text-[12px] text-primary hover:underline">Esqueceu?</a>
-                  </div>
-                  <Input
-                    id="senha"
-                    type="password"
-                    className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]"
-                    value={senha}
-                    onChange={(e) => setSenha(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full h-11 text-[14px] font-medium rounded-xl"
-                  disabled={loginMutation.isPending}
-                >
-                  {loginMutation.isPending ? "Entrando..." : "Entrar"}
-                </Button>
-              </form>
-            </>
           )}
+
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-black/[0.06]"></div>
+            </div>
+            <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
+              <span className="bg-white px-3 text-foreground/30">ou com e-mail</span>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-[13px] text-foreground/60">E-mail</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="senha" className="text-[13px] text-foreground/60">Senha</Label>
+                <a href="#" className="text-[12px] text-primary hover:underline">Esqueceu?</a>
+              </div>
+              <Input
+                id="senha"
+                type="password"
+                className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                required
+              />
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full h-11 text-[14px] font-medium rounded-xl"
+              disabled={loginMutation.isPending}
+            >
+              {loginMutation.isPending ? "Entrando..." : "Entrar"}
+            </Button>
+          </form>
 
           <div className="mt-6 text-center text-[13px] text-foreground/40">
             Ainda não tem conta?{" "}
