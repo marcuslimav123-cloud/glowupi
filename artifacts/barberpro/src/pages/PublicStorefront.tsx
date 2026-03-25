@@ -671,7 +671,7 @@ export default function PublicStorefront() {
             {bookingStep === "profissional" && (() => {
               const hasAnyLinks = barbearia.profissionais.some((p: any) => p.servicoIds && p.servicoIds.length > 0);
               const filtered = hasAnyLinks && selectedServico
-                ? barbearia.profissionais.filter((p: any) => !p.servicoIds || p.servicoIds.length === 0 || p.servicoIds.includes(selectedServico.id))
+                ? barbearia.profissionais.filter((p: any) => p.servicoIds && p.servicoIds.includes(selectedServico.id))
                 : barbearia.profissionais;
               return (
               <div>

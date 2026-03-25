@@ -227,7 +227,7 @@ function ProfForm({
             </div>
             <p className="text-xs text-muted-foreground mt-1.5">
               {selectedServicoIds.length} de {activeServicos.length} selecionado(s)
-              {selectedServicoIds.length === 0 && " — profissional aparecerá em todos os serviços"}
+              {selectedServicoIds.length === 0 && " — vincule serviços para o profissional aparecer no agendamento"}
             </p>
           </>
         )}

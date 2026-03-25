@@ -148,8 +148,7 @@ router.get("/:slug/slots", async (req, res) => {
       const hasAnyLinks = allLinks.length > 0;
       if (hasAnyLinks) {
         const profIdsForService = new Set(allLinks.filter(l => l.servicoId === sId).map(l => l.profissionalId));
-        const profsWithLinks = new Set(allLinks.map(l => l.profissionalId));
-        profissionais = profissionais.filter(p => profIdsForService.has(p.id) || !profsWithLinks.has(p.id));
+        profissionais = profissionais.filter(p => profIdsForService.has(p.id));
       }
     }
 
