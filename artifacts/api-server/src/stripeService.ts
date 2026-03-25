@@ -16,19 +16,30 @@ export class StripeService {
     priceId: string,
     successUrl: string,
     cancelUrl: string,
-    barbeariaId: number
+    barbeariaId: number,
+    billingPeriod?: string
   ) {
     const stripe = await getUncachableStripeClient();
-    return await stripe.checkout.sessions.create({
+
+    const sessionParams: any = {
       customer: customerId,
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
       success_url: successUrl,
       cancel_url: cancelUrl,
-      metadata: { barbeariaId: String(barbeariaId) },
+      metadata: { barbeariaId: String(barbeariaId), billingPeriod: billingPeriod || 'mensal' },
       locale: 'pt-BR' as any,
-    });
+    };
+
+    if (billingPeriod === 'mensal') {
+      sessionParams.subscription_data = {
+        trial_period_days: 1,
+        metadata: { barbeariaId: String(barbeariaId), billingPeriod: 'mensal' },
+      };
+    }
+
+    return await stripe.checkout.sessions.create(sessionParams);
   }
 
   async createCustomerPortalSession(customerId: string, returnUrl: string) {

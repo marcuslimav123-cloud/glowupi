@@ -70,7 +70,7 @@ router.get("/pricing-config", async (_req, res) => {
 
 router.post("/create-checkout-session", requireAuth, requireBarbearia, async (req: any, res) => {
   try {
-    const { priceId } = req.body;
+    const { priceId, billingPeriod } = req.body;
     const barbearia = req.barbearia;
 
     if (!priceId) {
@@ -106,6 +106,13 @@ router.post("/create-checkout-session", requireAuth, requireBarbearia, async (re
         .where(eq(barbeariasTable.id, barbearia.id));
     }
 
+    let resolvedPeriod = billingPeriod || 'mensal';
+    const allProducts = await stripeStorage.listProductsWithPrices(true, 50, 0);
+    const priceRow = allProducts.find((r: any) => r.price_id === priceId);
+    if (priceRow?.price_metadata?.period) {
+      resolvedPeriod = priceRow.price_metadata.period;
+    }
+
     const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
 
     const session = await stripeService.createCheckoutSession(
@@ -113,7 +120,8 @@ router.post("/create-checkout-session", requireAuth, requireBarbearia, async (re
       priceId,
       `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       `${baseUrl}/checkout/cancel`,
-      barbearia.id
+      barbearia.id,
+      resolvedPeriod
     );
 
     res.json({ url: session.url });

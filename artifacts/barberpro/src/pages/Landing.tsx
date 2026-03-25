@@ -248,7 +248,7 @@ export default function Landing() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ priceId: price.id }),
+        body: JSON.stringify({ priceId: price.id, billingPeriod }),
       });
       const data = await res.json();
       if (data.url) {
@@ -619,7 +619,7 @@ export default function Landing() {
                               ? "Em até 12x s/ juros"
                               : period === "semestral"
                               ? "Em até 6x s/ juros"
-                              : "Cobrança mensal"}
+                              : "Renovação automática mensal • Cancele quando quiser"}
                           </p>
                         </div>
                       </AnimatedSection>

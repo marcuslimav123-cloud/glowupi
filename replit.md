@@ -22,7 +22,7 @@ The design follows a "luxury clinic aesthetic" with a color palette of warm gold
 
 **Feature Specifications:**
 - **Multi-tenancy:** Each salon operates in an isolated environment.
-- **Subscription Management:** Includes a 30-day free trial, various subscription plans, and a subscription guard to control access.
+- **Subscription Management:** Includes a 30-day free trial with countdown banner (urgency colors at <=10 and <=5 days), trial expiration lockout (frontend paywall + backend middleware `requireActiveSubscription` on all `/barbearias/:id/*` routes), professional limits per plan tier (`1_pro`=1, `2_5_pro`=5, `6_15_pro`=15, `15_plus_pro`/`single`/`trial`=unlimited), and monthly recurring vs semestral/anual checkout differentiation (monthly uses `trial_period_days: 1` for next-day charge, semestral/anual charge immediately). Billing period resolved server-side from Stripe price metadata to prevent client manipulation.
 - **Appointment & Schedule Management:** Visual agenda, professional schedules with per-weekday configuration, and peak hours analysis.
 - **Client & Product Management:** Detailed client profiles, product inventory with barcode/expiry tracking, and movement history.
 - **Financial & Reporting:** Commission calculations, checkout with split payments and discounts, financial accounts (payable/receivable), and various analytical reports.

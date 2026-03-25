@@ -285,8 +285,17 @@ export default function Profissionais() {
       invalidate();
       setModalOpen(false);
       setEditing(null);
-    } catch {
-      toast({ title: "Erro ao salvar", variant: "destructive" });
+    } catch (err: any) {
+      const errorBody = err?.response?.data || err?.body;
+      if (errorBody?.error === "professional_limit_reached") {
+        toast({
+          title: "Limite de profissionais atingido",
+          description: errorBody.message || "Faça upgrade do seu plano para adicionar mais profissionais.",
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Erro ao salvar", variant: "destructive" });
+      }
     }
   };
 

@@ -73,6 +73,46 @@ export async function requireBarbearia(req: Request, res: Response, next: NextFu
   next();
 }
 
+export async function requireActiveSubscription(req: Request, res: Response, next: NextFunction) {
+  const barbearia = (req as any).barbearia;
+  if (!barbearia) {
+    return res.status(403).json({ error: "Barbearia não encontrada" });
+  }
+
+  const status = barbearia.subscriptionStatus || "trial";
+
+  if (status === "ativo") {
+    return next();
+  }
+
+  if (status === "trial") {
+    if (barbearia.planoVencimento) {
+      const vencimento = new Date(barbearia.planoVencimento);
+      if (vencimento < new Date()) {
+        return res.status(403).json({
+          error: "trial_expired",
+          message: "Seu período de teste expirou. Assine um plano para continuar.",
+        });
+      }
+    }
+    return next();
+  }
+
+  return res.status(403).json({
+    error: "subscription_inactive",
+    message: "Sua assinatura está inativa. Renove seu plano para continuar.",
+  });
+}
+
+export const PLAN_PROFESSIONAL_LIMITS: Record<string, number> = {
+  "1_pro": 1,
+  "2_5_pro": 5,
+  "6_15_pro": 15,
+  "15_plus_pro": 999,
+  "single": 999,
+  "trial": 999,
+};
+
 export function requireRole(...roles: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     const user = (req as any).user;

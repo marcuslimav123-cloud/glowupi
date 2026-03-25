@@ -464,16 +464,17 @@ export default function BarbeariaStep() {
 
                   <div className="space-y-2">
                     <Label htmlFor="uf">Estado *</Label>
-                    <Select value={locationData.uf} onValueChange={v => setLocationData(p => ({ ...p, uf: v }))}>
-                      <SelectTrigger className="h-11">
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ESTADOS_BR.map(uf => (
-                          <SelectItem key={uf} value={uf}>{uf}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <select
+                      id="uf"
+                      value={locationData.uf}
+                      onChange={e => setLocationData(p => ({ ...p, uf: e.target.value }))}
+                      className="flex h-11 w-full items-center rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="">Selecione</option>
+                      {ESTADOS_BR.map(uf => (
+                        <option key={uf} value={uf}>{uf}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 

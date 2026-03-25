@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { platformConfigTable } from "@workspace/db/schema";
+import { barbeariasTable, platformConfigTable } from "@workspace/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { requireAuth, requireActiveSubscription } from "../lib/auth.js";
 import healthRouter from "./health.js";
 import authRouter from "./auth.js";
 import barbeariasRouter from "./barbearias.js";
@@ -42,11 +43,31 @@ import storageRouter from "./storage.js";
 
 const router: IRouter = Router();
 
+async function subscriptionGuardMiddleware(req: any, res: any, next: any) {
+  const barbeariaId = parseInt(req.params.barbeariaId);
+  if (isNaN(barbeariaId)) return next();
+
+  const user = req.user;
+  if (!user) return next();
+
+  let barbearia;
+  if (user.role === "dono") {
+    [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
+  } else if (user.barbeariaId) {
+    [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, user.barbeariaId)).limit(1);
+  }
+  if (!barbearia) return next();
+
+  req.barbearia = barbearia;
+  return requireActiveSubscription(req, res, next);
+}
+
 router.use(healthRouter);
 router.use("/admin", adminRouter);
 router.use("/auth", authRouter);
 router.use("/client", clientAuthRouter);
 router.use("/barbearias", barbeariasRouter);
+router.use("/barbearias/:barbeariaId", requireAuth, subscriptionGuardMiddleware);
 router.use("/barbearias/:barbeariaId/profissionais", profissionaisRouter);
 router.use("/barbearias/:barbeariaId/servicos", servicosRouter);
 router.use("/barbearias/:barbeariaId/clientes", clientesRouter);

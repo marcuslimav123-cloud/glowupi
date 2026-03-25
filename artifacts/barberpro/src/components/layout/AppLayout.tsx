@@ -300,7 +300,7 @@ function CollapsibleGroup({ item, location, onNavigate, mainRef }: { item: NavIt
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout, isLoading, barbeariaId, role, perfilPermissoes } = useAuth();
-  const { canAccess, status, shouldShowUpgrade } = useSubscriptionGuard();
+  const { canAccess, status, shouldShowUpgrade, trialDaysLeft } = useSubscriptionGuard();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const mainContentRef = React.useRef<HTMLDivElement>(null);
 
@@ -333,25 +333,38 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   if (!user) return null;
 
   if (!canAccess && status !== "none") {
+    const isTrialExpired = status === "trial_expired";
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fafafa] p-6">
         <div className="max-w-sm w-full text-center space-y-6">
-          <div className="h-16 w-16 rounded-2xl bg-red-500/8 flex items-center justify-center mx-auto">
-            <AlertTriangle className="h-8 w-8 text-red-500" />
+          <div className={`h-16 w-16 rounded-2xl flex items-center justify-center mx-auto ${isTrialExpired ? "bg-primary/10" : "bg-red-500/8"}`}>
+            {isTrialExpired ? (
+              <Crown className="h-8 w-8 text-primary" />
+            ) : (
+              <AlertTriangle className="h-8 w-8 text-red-500" />
+            )}
           </div>
           <div>
             <h1 className="text-[22px] font-bold text-foreground mb-2">
-              Assinatura {status === "cancelado" ? "Cancelada" : "Inativa"}
+              {isTrialExpired
+                ? "Período de Teste Encerrado"
+                : status === "cancelado"
+                ? "Assinatura Cancelada"
+                : "Assinatura Inativa"}
             </h1>
             <p className="text-foreground/45 text-[14px] leading-relaxed">
-              {status === "cancelado"
+              {isTrialExpired
+                ? "Seus 30 dias de teste gratuito acabaram. Escolha um plano para continuar usando o Glow Up e não perder seus dados."
+                : status === "cancelado"
                 ? "Sua assinatura foi cancelada. Renove seu plano para continuar usando a plataforma."
                 : "Sua assinatura está inativa. Atualize seu plano para voltar a usar todas as funcionalidades."}
             </p>
           </div>
           <div className="flex flex-col gap-3">
             <Link href="/#precos">
-              <Button size="lg" className="w-full rounded-xl h-11 text-[14px] font-medium">Ver Planos</Button>
+              <Button size="lg" className="w-full rounded-xl h-11 text-[14px] font-medium">
+                {isTrialExpired ? "Escolher Plano" : "Ver Planos"}
+              </Button>
             </Link>
             <Button size="lg" variant="outline" onClick={logout} className="rounded-xl h-11 text-[14px]">Sair</Button>
           </div>
@@ -444,11 +457,29 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <HeaderBar />
         </div>
         {shouldShowUpgrade && (
-          <div className="bg-primary/5 border-b border-primary/10 px-4 py-2 flex items-center justify-center gap-3 z-20 shrink-0">
-            <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
-            <span className="text-[13px] text-foreground/60">Período de teste gratuito ativo.</span>
+          <div className={`border-b px-4 py-2 flex items-center justify-center gap-3 z-20 shrink-0 ${
+            trialDaysLeft >= 0 && trialDaysLeft <= 5
+              ? "bg-red-50 border-red-100"
+              : trialDaysLeft >= 0 && trialDaysLeft <= 10
+              ? "bg-amber-50 border-amber-100"
+              : "bg-primary/5 border-primary/10"
+          }`}>
+            {trialDaysLeft >= 0 && trialDaysLeft <= 5 ? (
+              <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+            )}
+            <span className={`text-[13px] ${trialDaysLeft >= 0 && trialDaysLeft <= 5 ? "text-red-600 font-medium" : trialDaysLeft >= 0 && trialDaysLeft <= 10 ? "text-amber-700" : "text-foreground/60"}`}>
+              {trialDaysLeft > 0
+                ? `${trialDaysLeft} dia${trialDaysLeft !== 1 ? "s" : ""} restante${trialDaysLeft !== 1 ? "s" : ""} de teste grátis`
+                : "Período de teste gratuito ativo"}
+            </span>
             <Link href="/#precos">
-              <Button size="sm" variant="outline" className="border-primary/20 text-primary text-[11px] h-6 px-2.5 rounded-full">
+              <Button size="sm" variant="outline" className={`text-[11px] h-6 px-2.5 rounded-full ${
+                trialDaysLeft >= 0 && trialDaysLeft <= 5
+                  ? "border-red-300 text-red-600 hover:bg-red-50"
+                  : "border-primary/20 text-primary"
+              }`}>
                 Escolher Plano
               </Button>
             </Link>

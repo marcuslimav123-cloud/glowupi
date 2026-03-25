@@ -1,8 +1,8 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { profissionaisTable, profissionalServicosTable, servicosTable } from "@workspace/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
-import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
+import { profissionaisTable, profissionalServicosTable, servicosTable, barbeariasTable } from "@workspace/db/schema";
+import { eq, and, inArray, sql } from "drizzle-orm";
+import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole, PLAN_PROFESSIONAL_LIMITS } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -30,6 +30,22 @@ router.post("/", requireAuth, requireRole("dono", "gerente"), async (req, res) =
   if (!barbeariaId) return;
   const { nomeExibicao, fotoUrl, comissaoTipo, comissaoValor, especialidade, horarios, celular, servicoIds } = req.body;
   if (!nomeExibicao || comissaoValor === undefined) return res.status(400).json({ error: "Dados inválidos" });
+
+  const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
+  if (barbearia) {
+    const plan = barbearia.subscriptionPlan || "trial";
+    const maxProfs = PLAN_PROFESSIONAL_LIMITS[plan] ?? 999;
+    const [countResult] = await db.select({ count: sql<number>`count(*)::int` }).from(profissionaisTable).where(eq(profissionaisTable.barbeariaId, barbeariaId));
+    const currentCount = countResult?.count ?? 0;
+    if (currentCount >= maxProfs) {
+      return res.status(403).json({
+        error: "professional_limit_reached",
+        message: `Seu plano permite no máximo ${maxProfs} profissional(is). Faça upgrade para adicionar mais.`,
+        currentCount,
+        maxAllowed: maxProfs,
+      });
+    }
+  }
   const [prof] = await db.insert(profissionaisTable).values({
     barbeariaId,
     nomeExibicao,
