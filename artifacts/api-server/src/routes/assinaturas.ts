@@ -93,4 +93,12 @@ router.put("/assinantes/:assinanteId", requireAuth, requireRole("dono", "gerente
   res.json(fmtAssinante(row));
 });
 
+router.delete("/assinantes/:assinanteId", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const assinanteId = parseInt(req.params.assinanteId);
+  await db.delete(assinantesTable).where(and(eq(assinantesTable.id, assinanteId), eq(assinantesTable.barbeariaId, barbeariaId)));
+  res.json({ success: true });
+});
+
 export default router;

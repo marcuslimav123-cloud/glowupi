@@ -44,7 +44,9 @@ export default function Mensagens() {
   const gruposPath = `/barbearias/${barbeariaId}/noticias/grupos`;
   const { data: grupos = [], isLoading: loadingGrupos } = useApiList("grupos-clientes", gruposPath, !!barbeariaId);
   const createGrupo = useApiCreate("grupos-clientes", gruposPath);
+  const updateGrupo = useApiUpdate("grupos-clientes", gruposPath);
   const deleteGrupo = useApiDelete("grupos-clientes", gruposPath);
+  const [editingGrupo, setEditingGrupo] = useState<any>(null);
 
   function invalidate() {
     qc.invalidateQueries({ queryKey: getListMensagensQueryKey(barbeariaId!) });
@@ -116,13 +118,20 @@ export default function Mensagens() {
   async function handleGrupoSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    const data = {
+      nome: fd.get("nome") as string,
+      filtroJson: { tipo: fd.get("filtroTipo") as string || "todos" },
+    };
     try {
-      await createGrupo.mutateAsync({
-        nome: fd.get("nome") as string,
-        filtroJson: { tipo: fd.get("filtroTipo") as string || "todos" },
-      });
-      toast({ title: "Grupo criado" });
+      if (editingGrupo) {
+        await updateGrupo.mutateAsync({ id: editingGrupo.id, ...data });
+        toast({ title: "Grupo atualizado" });
+      } else {
+        await createGrupo.mutateAsync(data);
+        toast({ title: "Grupo criado" });
+      }
       setGrupoDialogOpen(false);
+      setEditingGrupo(null);
     } catch { toast({ title: "Erro", variant: "destructive" }); }
   }
 
@@ -164,7 +173,7 @@ export default function Mensagens() {
             <Plus className="h-4 w-4 mr-2" /> Nova Notícia
           </Button>
         ) : (
-          <Button onClick={() => setGrupoDialogOpen(true)}>
+          <Button onClick={() => { setEditingGrupo(null); setGrupoDialogOpen(true); }}>
             <Plus className="h-4 w-4 mr-2" /> Novo Grupo
           </Button>
         )}
@@ -295,6 +304,9 @@ export default function Mensagens() {
                     Filtro: {g.filtroJson?.tipo === "vip" ? "Clientes VIP" : g.filtroJson?.tipo === "inativos" ? "Clientes Inativos" : g.filtroJson?.tipo === "aniversariantes" ? "Aniversariantes do mês" : "Todos os clientes"}
                   </p>
                 </div>
+                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setEditingGrupo(g); setGrupoDialogOpen(true); }}>
+                  <Edit2 className="h-4 w-4" />
+                </Button>
                 <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400" onClick={() => deleteGrupo.mutateAsync(g.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -304,21 +316,23 @@ export default function Mensagens() {
         </>
       )}
 
-      <Dialog open={grupoDialogOpen} onOpenChange={setGrupoDialogOpen}>
+      <Dialog open={grupoDialogOpen} onOpenChange={(v) => { setGrupoDialogOpen(v); if (!v) setEditingGrupo(null); }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Novo Grupo de Clientes</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingGrupo ? "Editar Grupo" : "Novo Grupo de Clientes"}</DialogTitle></DialogHeader>
           <form onSubmit={handleGrupoSubmit} className="space-y-4">
-            <div><Label>Nome do Grupo</Label><Input name="nome" required placeholder="Ex: Clientes VIP, Aniversariantes..." /></div>
+            <div><Label>Nome do Grupo</Label><Input name="nome" required placeholder="Ex: Clientes VIP, Aniversariantes..." defaultValue={editingGrupo?.nome || ""} /></div>
             <div>
               <Label>Segmentação</Label>
-              <select name="filtroTipo" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
+              <select name="filtroTipo" defaultValue={editingGrupo?.filtroJson?.tipo || "todos"} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
                 <option value="todos">Todos os clientes</option>
                 <option value="vip">Clientes VIP</option>
                 <option value="inativos">Clientes Inativos (+30 dias)</option>
                 <option value="aniversariantes">Aniversariantes do mês</option>
               </select>
             </div>
-            <Button type="submit" className="w-full" disabled={createGrupo.isPending}>Criar Grupo</Button>
+            <Button type="submit" className="w-full" disabled={createGrupo.isPending || updateGrupo.isPending}>
+              {editingGrupo ? "Salvar" : "Criar Grupo"}
+            </Button>
           </form>
         </DialogContent>
       </Dialog>

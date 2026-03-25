@@ -41,6 +41,7 @@ export default function Clubes() {
   const { data: assinantes = [], isLoading: loadingAssinantes } = useApiList("assinaturas-assinantes", assinantesPath, !!barbeariaId);
   const createAssinante = useApiCreate("assinaturas-assinantes", assinantesPath);
   const updateAssinante = useApiUpdate("assinaturas-assinantes", assinantesPath);
+  const deleteAssinante = useApiDelete("assinaturas-assinantes", assinantesPath);
 
   const planosArr = planos as any[];
   const assinantesArr = assinantes as any[];
@@ -200,6 +201,9 @@ export default function Clubes() {
                 {a.status === "ativo" && (
                   <Button size="sm" variant="outline" className="text-red-500 border-red-200" onClick={() => handleCancelar(a)}>Cancelar</Button>
                 )}
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400" onClick={() => { if (confirm("Remover assinante?")) deleteAssinante.mutateAsync(a.id); }}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             ))}
           </div>

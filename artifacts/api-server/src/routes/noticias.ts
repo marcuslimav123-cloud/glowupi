@@ -74,6 +74,19 @@ router.post("/grupos", requireAuth, requireRole("dono", "gerente"), async (req: 
   res.status(201).json({ ...row, createdAt: row.createdAt?.toISOString?.() ?? row.createdAt });
 });
 
+router.put("/grupos/:grupoId", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const grupoId = parseInt(req.params.grupoId);
+  const { nome, filtroJson } = req.body;
+  const updates: any = {};
+  if (nome !== undefined) updates.nome = nome;
+  if (filtroJson !== undefined) updates.filtroJson = filtroJson;
+  const [row] = await db.update(gruposClientesTable).set(updates).where(and(eq(gruposClientesTable.id, grupoId), eq(gruposClientesTable.barbeariaId, barbeariaId))).returning();
+  if (!row) return res.status(404).json({ error: "Grupo não encontrado" });
+  res.json({ ...row, createdAt: row.createdAt?.toISOString?.() ?? row.createdAt });
+});
+
 router.delete("/grupos/:grupoId", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
