@@ -133,8 +133,19 @@ router.get("/:slug/slots", async (req, res) => {
       and(eq(agendamentosTable.barbeariaId, barbearia.id), eq(agendamentosTable.data, data as string), eq(agendamentosTable.status, "confirmado"))
     );
 
+    const { getParametros } = await import("../lib/parametros.js");
+    const params = await getParametros(barbearia.id);
+
+    const slotSizeParam = params["agenda_tamanho_slots"] || "30min";
+    const intervalo = slotSizeParam === "1h" ? 60 : (parseInt(slotSizeParam) || 30);
+    const agendaInicio = params["agenda_horario_inicio"] || "08:00";
+    const agendaFim = params["agenda_horario_fim"] || "20:00";
+    const globalInicio = timeToMinutes(agendaInicio);
+    const globalFim = timeToMinutes(agendaFim);
+    const limiteAntecedencia = parseInt(params["agenda_limite_antecedencia"] || "2");
+    const limiteFuturoDias = parseInt(params["agenda_limite_futuro_dias"] || "30");
+
     const slots: any[] = [];
-    const intervalo = 30;
     const duracao = servico.duracaoMinutos;
 
     const now = new Date();
@@ -142,12 +153,21 @@ router.get("/:slug/slots", async (req, res) => {
     const isToday = data === todayStr;
     const currentMinutes = isToday ? now.getHours() * 60 + now.getMinutes() : 0;
 
+    const dataReq = new Date((data as string) + "T12:00:00");
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const diffDias = Math.ceil((dataReq.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDias > limiteFuturoDias) {
+      return res.json([]);
+    }
+
     for (const prof of profissionais) {
       const schedule = getProfScheduleForDate(prof, data as string);
       if (!schedule) continue;
-      const { inicio: inicioTrabalho, fim: fimTrabalho } = schedule;
+      const inicioTrabalho = Math.max(schedule.inicio, globalInicio);
+      const fimTrabalho = Math.min(schedule.fim, globalFim);
       for (let t = inicioTrabalho; t + duracao <= fimTrabalho; t += intervalo) {
-        if (isToday && t <= currentMinutes) continue;
+        if (isToday && t <= currentMinutes + limiteAntecedencia * 60) continue;
         const horaInicio = minutesToTime(t);
         const horaFim = minutesToTime(t + duracao);
         const ocupado = agendamentos.some(a => {
@@ -178,10 +198,33 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       return res.status(400).json({ error: "Dados inválidos" });
     }
 
+    const { getParametros } = await import("../lib/parametros.js");
+    const params = await getParametros(barbearia.id);
+
+    const limiteFuturoDias = parseInt(params["agenda_limite_futuro_dias"] || "30");
+    const dataAgend = new Date(data + "T12:00:00");
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const diffDias = Math.ceil((dataAgend.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDias > limiteFuturoDias) {
+      return res.status(400).json({ error: `Agendamento limitado a ${limiteFuturoDias} dias no futuro` });
+    }
+
+    const limiteAntecedencia = parseInt(params["agenda_limite_antecedencia"] || "2");
+    const agendDataObj = new Date(data + "T" + horaInicio + ":00");
+    const diffMs = agendDataObj.getTime() - new Date().getTime();
+    const diffHoras = diffMs / (1000 * 60 * 60);
+    if (diffHoras < limiteAntecedencia && diffHoras >= 0) {
+      return res.status(400).json({ error: `Agendamento requer no mínimo ${limiteAntecedencia} hora(s) de antecedência` });
+    }
+
     const [servico] = await db.select().from(servicosTable).where(and(eq(servicosTable.id, servicoId), eq(servicosTable.barbeariaId, barbearia.id))).limit(1);
     if (!servico) return res.status(404).json({ error: "Serviço não encontrado" });
     const [profissional] = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, profissionalId), eq(profissionaisTable.barbeariaId, barbearia.id))).limit(1);
     if (!profissional) return res.status(404).json({ error: "Profissional não encontrado" });
+
+    const tempoPadraoStr = params["agenda_tempo_padrao"] || "30min";
+    const tempoPadrao = tempoPadraoStr === "1h" ? 60 : (parseInt(tempoPadraoStr) || 30);
 
     let [cliente] = await db.select().from(clientesTable).where(
       and(eq(clientesTable.barbeariaId, barbearia.id), eq(clientesTable.email, clienteUser.email))
@@ -195,7 +238,8 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       }).returning();
     }
 
-    const horaFim = addMinutes(horaInicio, servico.duracaoMinutos);
+    const duracaoFinal = servico.duracaoMinutos || tempoPadrao;
+    const horaFim = addMinutes(horaInicio, duracaoFinal);
     const [agend] = await db.insert(agendamentosTable).values({
       barbeariaId: barbearia.id,
       clienteId: cliente.id,

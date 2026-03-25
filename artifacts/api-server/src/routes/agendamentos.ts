@@ -121,7 +121,11 @@ router.post("/", requireAuth, async (req, res) => {
   if (!servico) return res.status(404).json({ error: "Serviço não encontrado" });
   const [profissional] = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, profissionalId), eq(profissionaisTable.barbeariaId, barbeariaId))).limit(1);
   if (!profissional) return res.status(404).json({ error: "Profissional não encontrado" });
-  const horaFim = addMinutesToTime(horaInicio, servico.duracaoMinutos);
+
+  const tempoPadraoStr = params["agenda_tempo_padrao"] || "30min";
+  const tempoPadrao = tempoPadraoStr === "1h" ? 60 : (parseInt(tempoPadraoStr) || 30);
+  const duracaoFinal = servico.duracaoMinutos || tempoPadrao;
+  const horaFim = addMinutesToTime(horaInicio, duracaoFinal);
   if (!encaixe) {
     const bloqueios = await db.select().from(bloqueiosHorarioTable).where(
       and(
@@ -287,7 +291,14 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
   const parcelas = Math.max(1, Math.floor(Number(rawParcelas) || 1));
   const valorServico = parseFloat(agend.valor as string);
   const comissaoPerc = profissional ? parseFloat(profissional.comissaoValor as string) : 40;
-  const comissaoServico = profissional?.comissaoTipo === "valor_fixo" ? comissaoPerc : (valorServico * comissaoPerc) / 100;
+  let comissaoServico = profissional?.comissaoTipo === "valor_fixo" ? comissaoPerc : (valorServico * comissaoPerc) / 100;
+
+  const comissaoEditavel = params["comanda_edicao_comissoes"] || "Liberar";
+  if (comissaoEditavel === "Bloquear" && req.body.comissaoCustom !== undefined) {
+    comissaoServico = profissional?.comissaoTipo === "valor_fixo" ? comissaoPerc : (valorServico * comissaoPerc) / 100;
+  } else if (comissaoEditavel === "Liberar" && req.body.comissaoCustom !== undefined) {
+    comissaoServico = Math.max(0, Number(req.body.comissaoCustom) || comissaoServico);
+  }
   let valorProdutos = 0;
   let comissaoProdutos = 0;
   const prodItems: any[] = [];
