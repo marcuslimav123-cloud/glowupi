@@ -208,7 +208,7 @@ export default function Caixa() {
     doc.setFontSize(16);
     doc.text("Comandas", 14, 18);
     doc.setFontSize(10);
-    doc.text(`Período: ${dataInicio} a ${dataFim}`, 14, 26);
+    doc.text(`Período: ${searchDataInicio} a ${searchDataFim}`, 14, 26);
     const tableData = getTableData();
     const columns = Object.keys(tableData[0] || {});
     const rows = tableData.map(r => Object.values(r));
@@ -291,7 +291,7 @@ export default function Caixa() {
         p { font-size: 12px; color: #666; }
       </style></head><body>
       <h1>Comandas</h1>
-      <p>Período: ${escapeHtml(dataInicio)} a ${escapeHtml(dataFim)} | Total: ${tableData.length} registros</p>
+      <p>Período: ${escapeHtml(searchDataInicio)} a ${escapeHtml(searchDataFim)} | Total: ${tableData.length} registros</p>
       <table>
         <thead><tr>${columns.map(c => `<th>${escapeHtml(c)}</th>`).join("")}</tr></thead>
         <tbody>${tableData.map(r => `<tr>${Object.values(r).map(v => `<td>${escapeHtml(String(v))}</td>`).join("")}</tr>`).join("")}</tbody>
