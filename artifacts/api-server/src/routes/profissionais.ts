@@ -20,7 +20,7 @@ router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) =>
 router.post("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
-  const { nomeExibicao, fotoUrl, comissaoTipo, comissaoValor, especialidade, horarios } = req.body;
+  const { nomeExibicao, fotoUrl, comissaoTipo, comissaoValor, especialidade, horarios, celular } = req.body;
   if (!nomeExibicao || comissaoValor === undefined) return res.status(400).json({ error: "Dados inválidos" });
   const [prof] = await db.insert(profissionaisTable).values({
     barbeariaId,
@@ -28,6 +28,7 @@ router.post("/", requireAuth, requireRole("dono", "gerente"), async (req, res) =
     fotoUrl: fotoUrl || null,
     comissaoTipo: comissaoTipo || "percentual",
     comissaoValor: String(comissaoValor),
+    celular: celular || null,
     especialidade: especialidade || null,
     horarios: horarios || null,
   }).returning();
@@ -47,7 +48,7 @@ router.put("/:profissionalId", requireAuth, requireRole("dono", "gerente"), asyn
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const id = parseInt(req.params.profissionalId);
-  const { nomeExibicao, fotoUrl, comissaoTipo, comissaoValor, ativo, ordem, especialidade, horarios } = req.body;
+  const { nomeExibicao, fotoUrl, comissaoTipo, comissaoValor, ativo, ordem, especialidade, horarios, celular } = req.body;
   const [existing] = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, id), eq(profissionaisTable.barbeariaId, barbeariaId))).limit(1);
   if (!existing) return res.status(404).json({ error: "Profissional não encontrado" });
   const [updated] = await db.update(profissionaisTable).set({
@@ -55,6 +56,7 @@ router.put("/:profissionalId", requireAuth, requireRole("dono", "gerente"), asyn
     fotoUrl: fotoUrl ?? existing.fotoUrl,
     comissaoTipo: comissaoTipo ?? existing.comissaoTipo,
     comissaoValor: comissaoValor !== undefined ? String(comissaoValor) : existing.comissaoValor,
+    celular: celular !== undefined ? celular : existing.celular,
     ativo: ativo !== undefined ? ativo : existing.ativo,
     ordem: ordem !== undefined ? ordem : existing.ordem,
     especialidade: especialidade ?? existing.especialidade,

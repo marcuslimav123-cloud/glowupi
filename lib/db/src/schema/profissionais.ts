@@ -12,6 +12,7 @@ export const profissionaisTable = pgTable("profissionais", {
   fotoUrl: text("foto_url"),
   comissaoTipo: text("comissao_tipo").notNull().default("percentual"),
   comissaoValor: numeric("comissao_valor", { precision: 10, scale: 2 }).notNull().default("40"),
+  celular: text("celular"),
   especialidade: text("especialidade"),
   horarios: jsonb("horarios"),
   ativo: boolean("ativo").notNull().default(true),

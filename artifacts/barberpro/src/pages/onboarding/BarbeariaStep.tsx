@@ -130,16 +130,32 @@ export default function BarbeariaStep() {
     }
     setLoading(true);
     try {
-      const result = await createMutation.mutateAsync({
-        data: {
-          ...locationData,
-          telefone: stripPhone(locationData.telefone)
+      if (barbeariaId) {
+        const res = await fetch(apiUrl("/barbearias/me"), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            ...locationData,
+            telefone: stripPhone(locationData.telefone)
+          })
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || "Erro ao atualizar estabelecimento.");
         }
-      });
-      setBarbeariaId(result.id);
+      } else {
+        const result = await createMutation.mutateAsync({
+          data: {
+            ...locationData,
+            telefone: stripPhone(locationData.telefone)
+          }
+        });
+        setBarbeariaId(result.id);
+      }
       setCurrentStep(2);
     } catch (err: any) {
-      toast({ title: "Erro", description: err.message || "Erro ao criar estabelecimento.", variant: "destructive" });
+      toast({ title: "Erro", description: err.message || "Erro ao salvar estabelecimento.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -220,7 +236,7 @@ export default function BarbeariaStep() {
     setServices(prev => prev.filter((_, i) => i !== index));
   };
 
-  const createProfessionalOnServer = async (name: string): Promise<number | null> => {
+  const createProfessionalOnServer = async (name: string, celular?: string): Promise<number | null> => {
     if (!barbeariaId) return null;
     const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/profissionais`), {
       method: "POST",
@@ -228,7 +244,8 @@ export default function BarbeariaStep() {
       credentials: "include",
       body: JSON.stringify({
         nomeExibicao: name,
-        comissaoValor: 0
+        comissaoValor: 0,
+        celular: celular || null
       })
     });
     if (!res.ok) {
@@ -247,7 +264,7 @@ export default function BarbeariaStep() {
     if (!barbeariaId) return;
     setLoading(true);
     try {
-      const profId = await createProfessionalOnServer(profForm.nomeExibicao);
+      const profId = await createProfessionalOnServer(profForm.nomeExibicao, profForm.celular);
       setProfessionals(prev => [...prev, { id: profId || undefined, ...profForm }]);
       setProfForm({ nomeExibicao: "", celular: "" });
     } catch (err: any) {
@@ -273,9 +290,16 @@ export default function BarbeariaStep() {
   const handleFinalize = async () => {
     setLoading(true);
     try {
-      if (ownerAutoAdded && professionals.length > 0 && barbeariaId) {
+      if (ownerAutoAdded && professionals.length > 0 && !professionals[0].id && barbeariaId) {
         try {
-          await createProfessionalOnServer(professionals[0].nomeExibicao);
+          const profId = await createProfessionalOnServer(professionals[0].nomeExibicao, professionals[0].celular);
+          if (profId) {
+            setProfessionals(prev => {
+              const copy = [...prev];
+              copy[0] = { ...copy[0], id: profId };
+              return copy;
+            });
+          }
         } catch (e) {}
       }
       const res = await fetch(apiUrl("/barbearias/me"), {
