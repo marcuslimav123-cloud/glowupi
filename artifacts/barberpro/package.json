@@ -1,7 +1,7 @@
 {
   "name": "@workspace/barberpro",
   "version": "0.0.0",
-  "description": "Glow Agenda — SaaS para salões de beleza",
+  "description": "Glow Up — SaaS para salões de beleza",
   "private": true,
   "type": "module",
   "scripts": {

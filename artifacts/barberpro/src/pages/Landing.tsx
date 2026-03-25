@@ -82,7 +82,7 @@ const FEATURES = [
 
 const FAQ_ITEMS = [
   { q: "Posso testar antes de assinar?", a: "Sim! Oferecemos 30 dias grátis para você conhecer todas as funcionalidades sem compromisso." },
-  { q: "Preciso instalar algum software?", a: "Não! O Glow Agenda funciona 100% online, direto no navegador do computador, tablet ou celular." },
+  { q: "Preciso instalar algum software?", a: "Não! O Glow Up funciona 100% online, direto no navegador do computador, tablet ou celular." },
   { q: "Como funciona o pagamento?", a: "O pagamento é feito via cartão de crédito, processado de forma segura pelo Stripe. Você pode cancelar a qualquer momento." },
   { q: "Posso trocar de plano depois?", a: "Claro! Você pode fazer upgrade ou downgrade do seu plano a qualquer momento, e o valor é ajustado proporcionalmente." },
   { q: "Meus dados estão seguros?", a: "Sim! Utilizamos criptografia de ponta e servidores seguros para proteger todas as informações do seu salão e clientes." },
@@ -90,7 +90,7 @@ const FAQ_ITEMS = [
 ];
 
 const TESTIMONIALS = [
-  { name: "Ana Carolina", role: "Esteticista", text: "Desde que comecei a usar o Glow Agenda, minha agenda nunca mais ficou bagunçada. Minhas clientes adoram a facilidade!" },
+  { name: "Ana Carolina", role: "Esteticista", text: "Desde que comecei a usar o Glow Up, minha agenda nunca mais ficou bagunçada. Minhas clientes adoram a facilidade!" },
   { name: "Fernanda Silva", role: "Cabeleireira", text: "O controle financeiro me ajudou a entender onde eu estava perdendo dinheiro. Hoje meu salão é muito mais lucrativo." },
   { name: "Patricia Mendes", role: "Proprietária de Salão", text: "Com o clube de fidelidade, minhas clientes voltam muito mais. A taxa de retorno aumentou 40% em 3 meses!" },
 ];
@@ -170,7 +170,7 @@ function DashboardMockup() {
           <div className="h-2.5 w-2.5 rounded-full bg-red-400/60" />
           <div className="h-2.5 w-2.5 rounded-full bg-yellow-400/60" />
           <div className="h-2.5 w-2.5 rounded-full bg-green-400/60" />
-          <span className="ml-3 text-[10px] text-foreground/30 font-medium">Glow Agenda — Dashboard</span>
+          <span className="ml-3 text-[10px] text-foreground/30 font-medium">Glow Up — Dashboard</span>
         </div>
         <div className="p-4 space-y-3">
           <div className="grid grid-cols-3 gap-2.5">

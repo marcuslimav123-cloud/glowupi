@@ -3,8 +3,8 @@ import { Cookie } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 
-const LGPD_CONSENT_KEY = "glow_agenda_lgpd_consent";
-const LGPD_CONSENT_LEVEL_KEY = "glow_agenda_lgpd_level";
+const LGPD_CONSENT_KEY = "glow_up_lgpd_consent";
+const LGPD_CONSENT_LEVEL_KEY = "glow_up_lgpd_level";
 
 export default function LgpdBanner() {
   const [visible, setVisible] = useState(false);

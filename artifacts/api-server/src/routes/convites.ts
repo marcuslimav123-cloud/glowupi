@@ -98,7 +98,7 @@ router.post("/", requireAuth, async (req, res) => {
         };
 
         const htmlContent = template ? renderTemplate(template.corpo, vars) : `<p>Você foi convidado(a) para ${barbearia.nome}. <a href="${link}">Aceitar Convite</a></p>`;
-        const subject = template ? renderTemplate(template.assunto, vars) : `Convite para ${barbearia.nome} — Glow Agenda`;
+        const subject = template ? renderTemplate(template.assunto, vars) : `Convite para ${barbearia.nome} — Glow Up`;
 
         const result = await sendEmail({
           to: [{ email, name: nomeConvidado || undefined }],
@@ -173,7 +173,7 @@ router.post("/:id/resend", requireAuth, async (req, res) => {
       };
 
       const htmlContent = template ? renderTemplate(template.corpo, vars) : `<p>Você foi convidado(a) para ${barbearia.nome}. <a href="${link}">Aceitar Convite</a></p>`;
-      const subject = template ? renderTemplate(template.assunto, vars) + " (Lembrete)" : `Lembrete: Convite para ${barbearia.nome} — Glow Agenda`;
+      const subject = template ? renderTemplate(template.assunto, vars) + " (Lembrete)" : `Lembrete: Convite para ${barbearia.nome} — Glow Up`;
 
       const result = await sendEmail({
         to: [{ email: convite.email, name: convite.nomeConvidado || undefined }],

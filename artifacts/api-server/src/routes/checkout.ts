@@ -96,7 +96,7 @@ router.post("/create-checkout-session", requireAuth, requireBarbearia, async (re
     let customerId = barbearia.stripeCustomerId;
     if (!customerId) {
       const customer = await stripeService.createCustomer(
-        barbearia.email || `salon-${barbearia.id}@glowagenda.com`,
+        barbearia.email || `salon-${barbearia.id}@glowup.com.br`,
         barbearia.nome,
         barbearia.id
       );

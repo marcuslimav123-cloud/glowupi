@@ -66,7 +66,7 @@ export function SereneSpa() {
           <div className="p-2 bg-[#f0f4f1] rounded-full text-[#7c9a8a]">
             <Sparkles size={20} strokeWidth={1.5} />
           </div>
-          <span className="font-['Playfair_Display'] font-semibold text-xl tracking-wide text-[#334038]">Glow Agenda</span>
+          <span className="font-['Playfair_Display'] font-semibold text-xl tracking-wide text-[#334038]">Glow Up</span>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-8">

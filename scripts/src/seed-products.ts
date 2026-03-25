@@ -2,7 +2,7 @@ import { getUncachableStripeClient } from './stripeClient';
 
 const PLANS = [
   {
-    name: 'Glow Agenda - 1 Profissional',
+    name: 'Glow Up - 1 Profissional',
     description: 'Plano para salões com 1 profissional',
     metadata: { tier: '1_pro', professionals: '1' },
     prices: {
@@ -12,7 +12,7 @@ const PLANS = [
     }
   },
   {
-    name: 'Glow Agenda - 2 a 5 Profissionais',
+    name: 'Glow Up - 2 a 5 Profissionais',
     description: 'Plano para salões com 2 a 5 profissionais',
     metadata: { tier: '2_5_pro', professionals: '2-5' },
     prices: {
@@ -22,7 +22,7 @@ const PLANS = [
     }
   },
   {
-    name: 'Glow Agenda - 6 a 15 Profissionais',
+    name: 'Glow Up - 6 a 15 Profissionais',
     description: 'Plano para salões com 6 a 15 profissionais',
     metadata: { tier: '6_15_pro', professionals: '6-15' },
     prices: {
@@ -32,7 +32,7 @@ const PLANS = [
     }
   },
   {
-    name: 'Glow Agenda - +15 Profissionais',
+    name: 'Glow Up - +15 Profissionais',
     description: 'Plano para salões com mais de 15 profissionais',
     metadata: { tier: '15_plus_pro', professionals: '+15' },
     prices: {
@@ -44,7 +44,7 @@ const PLANS = [
 ];
 
 const SINGLE_PRICE_PLAN = {
-  name: 'Glow Agenda - Plano Único',
+  name: 'Glow Up - Plano Único',
   description: 'Plano único com todas as funcionalidades',
   metadata: { tier: 'single', professionals: 'unlimited' },
   price: 9700,
@@ -53,7 +53,7 @@ const SINGLE_PRICE_PLAN = {
 async function createProducts() {
   try {
     const stripe = await getUncachableStripeClient();
-    console.log('Creating Glow Agenda products and prices in Stripe...\n');
+    console.log('Creating Glow Up products and prices in Stripe...\n');
 
     for (const plan of PLANS) {
       const existing = await stripe.products.search({

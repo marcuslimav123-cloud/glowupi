@@ -57,7 +57,7 @@ export default function AdminLogin() {
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="admin@glowagenda.com"
+              placeholder="admin@glowup.com"
               required
               className="bg-white/[0.06] border-white/[0.08] text-white placeholder:text-white/20 h-11 rounded-xl text-[14px]"
             />

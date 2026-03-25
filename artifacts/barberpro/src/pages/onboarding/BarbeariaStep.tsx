@@ -536,7 +536,7 @@ export default function BarbeariaStep() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Como Soube do Glow Agenda?</Label>
+                  <Label>Como Soube do Glow Up?</Label>
                   <Select value={segmentData.comoSoube} onValueChange={v => setSegmentData(p => ({ ...p, comoSoube: v }))}>
                     <SelectTrigger className="h-11">
                       <SelectValue placeholder="Selecione (opcional)" />

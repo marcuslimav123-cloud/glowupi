@@ -1,7 +1,7 @@
-# Glow Agenda
+# Glow Up
 
 ## Overview
-Glow Agenda is a multi-tenant SaaS platform designed for beauty salon and studio management. It aims to provide a comprehensive solution for beauty professionals, including manicurists, estheticians, and hair stylists, to manage their businesses efficiently. The platform includes features for appointment scheduling, client management, financial tracking, marketing, and loyalty programs. The business vision is to become the leading management tool for beauty industry professionals, enhancing their operational efficiency and client engagement.
+Glow Up is a multi-tenant SaaS platform designed for beauty salon and studio management. It aims to provide a comprehensive solution for beauty professionals, including manicurists, estheticians, and hair stylists, to manage their businesses efficiently. The platform includes features for appointment scheduling, client management, financial tracking, marketing, and loyalty programs. The business vision is to become the leading management tool for beauty industry professionals, enhancing their operational efficiency and client engagement.
 
 ## User Preferences
 I prefer clear and concise communication. When making changes, prioritize iterative development and ask for confirmation before implementing major architectural shifts or complex features. I value detailed explanations for significant code modifications or new feature implementations.
