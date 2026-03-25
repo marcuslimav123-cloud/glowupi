@@ -153,7 +153,7 @@ type Profissional = {
   nomeExibicao: string;
 };
 
-const ITEMS_PER_PAGE = 10;
+const PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
 
 export default function PerfisAcesso() {
   const { barbeariaId, role } = useAuth();
@@ -173,6 +173,7 @@ export default function PerfisAcesso() {
   const [activeTab, setActiveTab] = useState<"web" | "app">("web");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     if (barbeariaId) {
@@ -197,10 +198,10 @@ export default function PerfisAcesso() {
     return filtered;
   }, [perfis, activeTab, searchQuery]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredPerfis.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(filteredPerfis.length / pageSize));
   const paginatedPerfis = filteredPerfis.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
   );
 
   async function loadPerfis() {
@@ -385,7 +386,7 @@ export default function PerfisAcesso() {
                       : "text-foreground/50 hover:text-foreground hover:bg-black/[0.02]"
                   )}
                 >
-                  App
+                  App Profissionais
                 </button>
               </div>
 
@@ -529,6 +530,7 @@ export default function PerfisAcesso() {
 
             <div className="space-y-3">
               <Label className="text-[13px] font-semibold">Vincular Profissionais</Label>
+              <p className="text-[12px] text-foreground/40">Gestores (gerentes) não estarão na lista abaixo, pois já possuem acesso completo pelo cargo.</p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {profissionais.map(prof => (
                   <div
@@ -679,11 +681,27 @@ export default function PerfisAcesso() {
                   </table>
                 </div>
 
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div className="flex items-center gap-3">
                     <p className="text-[12px] text-foreground/35">
-                      {filteredPerfis.length} perfil(is) · Página {currentPage} de {totalPages}
+                      {filteredPerfis.length} perfil(is)
+                      {totalPages > 1 && <> · Página {currentPage} de {totalPages}</>}
                     </p>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[12px] text-foreground/35">Exibir</span>
+                      <select
+                        value={pageSize}
+                        onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+                        className="h-7 px-2 rounded-lg border border-black/[0.08] bg-white text-[12px] text-foreground/60"
+                      >
+                        {PAGE_SIZE_OPTIONS.map(n => (
+                          <option key={n} value={n}>{n}</option>
+                        ))}
+                      </select>
+                      <span className="text-[12px] text-foreground/35">por página</span>
+                    </div>
+                  </div>
+                  {totalPages > 1 && (
                     <div className="flex gap-1">
                       <Button
                         variant="outline"
@@ -704,8 +722,8 @@ export default function PerfisAcesso() {
                         <ChevronRight className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </>
             )}
           </>
