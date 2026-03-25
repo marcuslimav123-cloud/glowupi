@@ -77,7 +77,7 @@ router.get("/", async (req, res) => {
   const params = await getParametros(barbeariaId);
 
   const slotSizeParam = params["agenda_tamanho_slots"] || "30min";
-  const intervalo = parseInt(slotSizeParam) || 30;
+  const intervalo = slotSizeParam === "1h" ? 60 : (parseInt(slotSizeParam) || 30);
 
   const agendaInicio = params["agenda_horario_inicio"] || "08:00";
   const agendaFim = params["agenda_horario_fim"] || "20:00";

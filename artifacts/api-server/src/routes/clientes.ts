@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { clientesTable, barbeariasTable } from "@workspace/db/schema";
 import { eq, and, ilike, or } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
+import { getParametros } from "../lib/parametros.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -23,11 +24,28 @@ router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) =>
   return res.json(clientes.map(formatCliente));
 });
 
-router.post("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const user = (req as any).user;
+  const params = await getParametros(barbeariaId);
+
+  if (user.role === "colaborador" && params["cliente_cadastro_nao_gestor"] !== "Sim") {
+    return res.status(403).json({ error: "Cadastro de cliente não permitido para seu perfil" });
+  }
+
   const { nome, telefone, email, aniversario, observacoes, vip } = req.body;
   if (!nome || !telefone) return res.status(400).json({ error: "Nome e telefone são obrigatórios" });
+
+  if (params["cliente_controle_celular"] === "Sim") {
+    const existente = await db.select().from(clientesTable).where(
+      and(eq(clientesTable.barbeariaId, barbeariaId), eq(clientesTable.telefone, telefone))
+    );
+    if (existente.length > 0) {
+      return res.status(409).json({ error: "Já existe um cliente cadastrado com este número de celular" });
+    }
+  }
+
   const [cliente] = await db.insert(clientesTable).values({
     barbeariaId,
     nome,

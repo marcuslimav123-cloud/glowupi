@@ -75,9 +75,7 @@ router.post("/", requireAuth, async (req, res) => {
   }
 
   if (user.role === "colaborador") {
-    const bloqEdicao = params["cancel_bloquear_edicao_profissional"] || "Não";
-    const bloqSemCliente = params["cliente_agendar_sem_cliente"] || "Não";
-    if (bloqSemCliente === "Sim" && !clienteId) {
+    if (params["cliente_agendar_sem_cliente"] === "Sim" && !clienteId) {
       return res.status(400).json({ error: "Seleção de cliente é obrigatória" });
     }
   }
@@ -181,6 +179,10 @@ router.put("/:agendamentoId", requireAuth, async (req, res) => {
     if (!user.profissionalId || existing.profissionalId !== user.profissionalId) {
       return res.status(403).json({ error: "Acesso negado" });
     }
+    const params = await getParametros(barbeariaId);
+    if (params["cancel_bloquear_edicao_profissional"] === "Sim") {
+      return res.status(403).json({ error: "Edição de agendamento bloqueada para profissionais não-gestores" });
+    }
   }
   const updates: any = {
     status: status ?? existing.status,
@@ -221,14 +223,38 @@ router.delete("/:agendamentoId", requireAuth, async (req, res) => {
   return res.json({ success: true, message: "Agendamento cancelado" });
 });
 
-router.post("/:agendamentoId/checkout", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const user = (req as any).user;
   const id = parseInt(req.params.agendamentoId);
+
+  const params = await getParametros(barbeariaId);
+
+  if (user.role === "colaborador") {
+    if (params["comanda_fechamento_nao_gestor"] !== "Sim") {
+      return res.status(403).json({ error: "Fechamento de comanda não permitido para seu perfil" });
+    }
+  }
+
+  if (params["comanda_abertura_nao_gestor"] === "Sim" && user.role === "colaborador") {
+    return res.status(403).json({ error: "Abertura de comanda bloqueada para profissionais não gestores" });
+  }
+
   const [agend] = await db.select().from(agendamentosTable).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId))).limit(1);
   if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
   const [profissional] = await db.select().from(profissionaisTable).where(eq(profissionaisTable.id, agend.profissionalId)).limit(1);
   const { produtosAdicionais = [], pagamentos, observacao, desconto: rawDesconto = 0, descontoTipo = "valor", parcelas: rawParcelas = 1 } = req.body;
+
+  if (params["comanda_obrigatoriedade_bandeira"] === "Sim") {
+    if (Array.isArray(pagamentos) && pagamentos.length > 0) {
+      const semBandeira = pagamentos.some((p: any) => p.forma === "cartao" && !p.bandeira);
+      if (semBandeira) {
+        return res.status(400).json({ error: "Seleção de bandeira é obrigatória para pagamentos em cartão" });
+      }
+    }
+  }
+
   const desconto = Math.max(0, Number(rawDesconto) || 0);
   const parcelas = Math.max(1, Math.floor(Number(rawParcelas) || 1));
   const valorServico = parseFloat(agend.valor as string);
