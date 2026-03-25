@@ -131,13 +131,14 @@ export function HeaderBar() {
         <CalendarDays className={iconCls} />
       </Link>
 
-      <Link href="/caixa" className={iconBtn} title="Financeiro">
+      <Link href="/financeiro" className={iconBtn} title="Financeiro">
         <DollarSign className={iconCls} />
       </Link>
 
       <Link href="/caixa" className={iconBtn} title="Comandas">
         <FileText className={iconCls} />
       </Link>
+
 
       <div className="relative">
         <button onClick={() => toggle("aniversarios")} className={iconBtn} title="Aniversários">
@@ -263,6 +264,9 @@ export function HeaderBar() {
               ) : (
                 <p className="text-[13px] text-foreground/40">Nenhuma solicitação pendente.</p>
               )}
+              <Link href="/gestao/clientes" className="block mt-3 text-[12px] text-primary font-medium hover:underline" onClick={() => setActivePopup(null)}>
+                Ver Histórico →
+              </Link>
             </div>
           </Popup>
         </div>
