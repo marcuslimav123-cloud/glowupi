@@ -92,11 +92,12 @@ export default function Mensagens() {
   async function handleNoticiaSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const data = {
+    const data: any = {
       titulo: fd.get("titulo") as string,
       conteudo: fd.get("conteudo") as string,
       imagemUrl: (fd.get("imagemUrl") as string) || null,
       publicadoEm: new Date().toISOString(),
+      grupoId: noticiaGrupoId && noticiaGrupoId !== "todos" ? parseInt(noticiaGrupoId) : null,
     };
     try {
       if (editingNoticia) {
@@ -108,6 +109,7 @@ export default function Mensagens() {
       }
       setNoticiaDialogOpen(false);
       setEditingNoticia(null);
+      setNoticiaGrupoId("");
     } catch { toast({ title: "Erro", variant: "destructive" }); }
   }
 
@@ -264,7 +266,7 @@ export default function Mensagens() {
                   </div>
                 )}
                 <div className="flex gap-1 shrink-0">
-                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setEditingNoticia(n); setNoticiaDialogOpen(true); }}>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setEditingNoticia(n); setNoticiaGrupoId(n.grupoId ? String(n.grupoId) : ""); setNoticiaDialogOpen(true); }}>
                     <Edit2 className="h-4 w-4" />
                   </Button>
                   <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400" onClick={() => deleteNoticia.mutateAsync(n.id)}>

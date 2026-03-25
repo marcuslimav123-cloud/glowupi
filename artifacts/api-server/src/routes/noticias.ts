@@ -24,9 +24,10 @@ router.get("/", requireAuth, requireRole("dono", "gerente"), async (req: any, re
 router.post("/", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
-  const { titulo, conteudo, imagemUrl, publicadoEm, ativo } = req.body;
+  const { titulo, conteudo, imagemUrl, publicadoEm, ativo, grupoId } = req.body;
   const [row] = await db.insert(noticiasTable).values({
     barbeariaId, titulo, conteudo, imagemUrl,
+    grupoId: grupoId ? parseInt(grupoId) : null,
     publicadoEm: publicadoEm ? new Date(publicadoEm) : null,
     ativo,
   }).returning();
@@ -37,13 +38,14 @@ router.put("/:noticiaId", requireAuth, requireRole("dono", "gerente"), async (re
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const noticiaId = parseInt(req.params.noticiaId);
-  const { titulo, conteudo, imagemUrl, publicadoEm, ativo } = req.body;
+  const { titulo, conteudo, imagemUrl, publicadoEm, ativo, grupoId } = req.body;
   const updates: any = {};
   if (titulo !== undefined) updates.titulo = titulo;
   if (conteudo !== undefined) updates.conteudo = conteudo;
   if (imagemUrl !== undefined) updates.imagemUrl = imagemUrl;
   if (publicadoEm !== undefined) updates.publicadoEm = publicadoEm ? new Date(publicadoEm) : null;
   if (ativo !== undefined) updates.ativo = ativo;
+  if (grupoId !== undefined) updates.grupoId = grupoId ? parseInt(grupoId) : null;
   const [row] = await db.update(noticiasTable).set(updates).where(and(eq(noticiasTable.id, noticiaId), eq(noticiasTable.barbeariaId, barbeariaId))).returning();
   if (!row) return res.status(404).json({ error: "Notícia não encontrada" });
   res.json(fmt(row));

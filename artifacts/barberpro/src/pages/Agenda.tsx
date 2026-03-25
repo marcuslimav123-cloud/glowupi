@@ -6,6 +6,7 @@ import {
   useListAgendamentos, useListProfissionais, useListServicos,
   useCreateAgendamento, useUpdateAgendamento, useCheckoutAgendamento
 } from "@workspace/api-client-react";
+import { useApiList } from "@/hooks/useCrudApi";
 import { generateTimeSlots, formatCurrency, apiUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -170,6 +171,11 @@ export default function Agenda() {
 
   const { data: profissionais = [] } = useListProfissionais(barbeariaId!, { query: { enabled: !!barbeariaId } });
   const { data: servicos = [] } = useListServicos(barbeariaId!, { query: { enabled: !!barbeariaId } });
+
+  const tiposPath = `/barbearias/${barbeariaId}/tipos`;
+  const { data: tipos = [] } = useApiList("tipos", tiposPath, !!barbeariaId);
+  const formasPagamentoCustom = (tipos as any[]).filter(t => t.ativo && t.categoria === "forma_pagamento").map(t => ({ value: t.nome.toLowerCase().replace(/\s+/g, "_"), label: t.nome }));
+  const paymentMethodsToUse = formasPagamentoCustom.length > 0 ? formasPagamentoCustom : PAYMENT_METHODS;
   const { data: agendamentos = [], refetch } = useListAgendamentos(barbeariaId!, dateRangeParams, { query: { enabled: !!barbeariaId } });
 
   const createMutation = useCreateAgendamento();
@@ -369,7 +375,7 @@ export default function Agenda() {
       if (cupomAplicado) {
         try { await fetch(apiUrl(`/barbearias/${barbeariaId}/cupons/${cupomAplicado.id}/usar`), { method: "POST", credentials: "include" }); } catch {}
       }
-      toast({ title: "Checkout realizado!", description: `${formatCurrency(valorFinal)} via ${PAYMENT_METHODS.find(m => m.value === checkoutMetodo)?.label}` });
+      toast({ title: "Checkout realizado!", description: `${formatCurrency(valorFinal)} via ${paymentMethodsToUse.find(m => m.value === checkoutMetodo)?.label || checkoutMetodo}` });
       setCheckoutAgend(null);
       setCheckoutObs("");
       setCheckoutDesconto("");
@@ -1006,7 +1012,7 @@ export default function Agenda() {
               <div className="space-y-1.5">
                 <Label className="text-xs">Forma de Pagamento</Label>
                 <div className="grid grid-cols-2 gap-1.5">
-                  {PAYMENT_METHODS.map(m => (
+                  {paymentMethodsToUse.map(m => (
                     <button key={m.value} type="button" onClick={() => setCheckoutMetodo(m.value)}
                       className={`px-3 py-2.5 rounded-xl border text-xs font-medium transition-all ${checkoutMetodo === m.value ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}
                     >{m.label}</button>

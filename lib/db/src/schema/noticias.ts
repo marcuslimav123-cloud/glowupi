@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { barbeariasTable } from "./barbearias";
@@ -9,6 +9,7 @@ export const noticiasTable = pgTable("noticias", {
   titulo: text("titulo").notNull(),
   conteudo: text("conteudo").notNull(),
   imagemUrl: text("imagem_url"),
+  grupoId: integer("grupo_id"),
   publicadoEm: timestamp("publicado_em"),
   ativo: boolean("ativo").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -18,7 +19,7 @@ export const gruposClientesTable = pgTable("grupos_clientes", {
   id: serial("id").primaryKey(),
   barbeariaId: integer("barbearia_id").notNull().references(() => barbeariasTable.id),
   nome: text("nome").notNull(),
-  filtroJson: text("filtro_json"),
+  filtroJson: jsonb("filtro_json"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
