@@ -8,14 +8,20 @@ const router: IRouter = Router({ mergeParams: true });
 
 const VALID_TIPOS = ["web", "app"];
 const VALID_PERMISSIONS = [
-  "dashboard", "agenda", "agenda_picos",
+  "dashboard", "agenda", "agenda_picos", "comandas",
   "clientes", "profissionais", "servicos", "produtos",
   "tipos", "cupons", "mensagens", "lembretes", "avaliacoes",
   "clube", "clubes_assinatura",
   "pacotes", "venda_pacotes",
   "relatorios",
-  "caixa", "financeiro",
+  "caixa", "financeiro", "comissoes",
   "lista_espera", "configuracoes", "empresa", "equipe",
+  "dados_usuario", "senha_acesso",
+  "app_dashboard", "app_agenda", "app_comandas",
+  "app_clientes", "app_servicos", "app_produtos",
+  "app_caixa", "app_comissoes",
+  "app_rede_social", "app_divulgacao",
+  "app_ajuda", "app_videos_tutoriais", "app_documentos", "app_tap_to_pay",
 ];
 
 function validatePermissoes(perms: unknown): string[] | null {

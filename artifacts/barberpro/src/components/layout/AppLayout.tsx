@@ -175,6 +175,7 @@ const HREF_TO_PERMISSION: Record<string, string> = {
   "/configuracoes/alertas": "configuracoes",
   "/empresa": "empresa",
   "/equipe": "equipe",
+  "/comandas": "comandas",
 };
 
 function hasPermission(href: string | undefined, perms: string[] | null): boolean {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -16,15 +16,18 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  Search,
+  ChevronLeft,
 } from "lucide-react";
 
-const PERMISSION_GROUPS = [
+const WEB_PERMISSION_GROUPS = [
   {
     label: "Principal",
     items: [
       { key: "dashboard", label: "Dashboard" },
       { key: "agenda", label: "Agenda" },
       { key: "agenda_picos", label: "Horários de Pico" },
+      { key: "comandas", label: "Comandas" },
     ],
   },
   {
@@ -61,6 +64,7 @@ const PERMISSION_GROUPS = [
     items: [
       { key: "caixa", label: "Caixa" },
       { key: "financeiro", label: "Financeiro" },
+      { key: "comissoes", label: "Comissões" },
     ],
   },
   {
@@ -72,9 +76,66 @@ const PERMISSION_GROUPS = [
       { key: "equipe", label: "Equipe" },
     ],
   },
+  {
+    label: "Usuário",
+    items: [
+      { key: "dados_usuario", label: "Dados Usuário" },
+      { key: "senha_acesso", label: "Senha de Acesso" },
+    ],
+  },
 ];
 
-const ALL_PERMISSIONS = PERMISSION_GROUPS.flatMap(g => g.items.map(i => i.key));
+const APP_PERMISSION_GROUPS = [
+  {
+    label: "Principal",
+    items: [
+      { key: "app_dashboard", label: "Dashboard Profissional" },
+      { key: "app_agenda", label: "Agenda" },
+      { key: "app_comandas", label: "Comandas" },
+    ],
+  },
+  {
+    label: "Cadastros",
+    items: [
+      { key: "app_clientes", label: "Clientes" },
+      { key: "app_servicos", label: "Serviços" },
+      { key: "app_produtos", label: "Produtos" },
+    ],
+  },
+  {
+    label: "Financeiro",
+    items: [
+      { key: "app_caixa", label: "Caixa" },
+      { key: "app_comissoes", label: "Comissões" },
+    ],
+  },
+  {
+    label: "Marketing",
+    items: [
+      { key: "app_rede_social", label: "Rede Social" },
+      { key: "app_divulgacao", label: "Divulgação" },
+    ],
+  },
+  {
+    label: "Outros",
+    items: [
+      { key: "app_ajuda", label: "Ajuda" },
+      { key: "app_videos_tutoriais", label: "Vídeos Tutoriais" },
+      { key: "app_documentos", label: "Documentos" },
+      { key: "app_tap_to_pay", label: "Tap to Pay" },
+    ],
+  },
+];
+
+function getGroupsForTipo(tipo: string) {
+  return tipo === "app" ? APP_PERMISSION_GROUPS : WEB_PERMISSION_GROUPS;
+}
+
+function getAllPermsForTipo(tipo: string) {
+  return getGroupsForTipo(tipo).flatMap(g => g.items.map(i => i.key));
+}
+
+const ALL_PERMISSION_ITEMS = [...WEB_PERMISSION_GROUPS, ...APP_PERMISSION_GROUPS].flatMap(g => g.items);
 
 type Perfil = {
   id: number;
@@ -92,6 +153,8 @@ type Profissional = {
   nomeExibicao: string;
 };
 
+const ITEMS_PER_PAGE = 10;
+
 export default function PerfisAcesso() {
   const { barbeariaId, role } = useAuth();
   const { toast } = useToast();
@@ -107,12 +170,38 @@ export default function PerfisAcesso() {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
 
+  const [activeTab, setActiveTab] = useState<"web" | "app">("web");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+
   useEffect(() => {
     if (barbeariaId) {
       loadPerfis();
       loadProfissionais();
     }
   }, [barbeariaId]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchQuery]);
+
+  const filteredPerfis = useMemo(() => {
+    let filtered = perfis.filter(p => p.tipo === activeTab);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(p =>
+        p.descricao.toLowerCase().includes(q) ||
+        p.profissionais.some(pr => pr.nome.toLowerCase().includes(q))
+      );
+    }
+    return filtered;
+  }, [perfis, activeTab, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredPerfis.length / ITEMS_PER_PAGE));
+  const paginatedPerfis = filteredPerfis.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   async function loadPerfis() {
     try {
@@ -134,15 +223,14 @@ export default function PerfisAcesso() {
       if (!res.ok) throw new Error();
       const data = await res.json();
       setProfissionais(data);
-    } catch {
-    }
+    } catch {}
   }
 
   function resetForm() {
     setShowForm(false);
     setEditingId(null);
     setDescricao("");
-    setTipo("web");
+    setTipo(activeTab);
     setPermissoes([]);
     setSelectedProfIds([]);
     setExpandedGroups({});
@@ -156,15 +244,16 @@ export default function PerfisAcesso() {
     setSelectedProfIds(perfil.profissionais.map(p => p.id));
     setShowForm(true);
     const groups: Record<string, boolean> = {};
-    PERMISSION_GROUPS.forEach(g => { groups[g.label] = true; });
+    getGroupsForTipo(perfil.tipo).forEach(g => { groups[g.label] = true; });
     setExpandedGroups(groups);
   }
 
   function startNew() {
     resetForm();
+    setTipo(activeTab);
     setShowForm(true);
     const groups: Record<string, boolean> = {};
-    PERMISSION_GROUPS.forEach(g => { groups[g.label] = true; });
+    getGroupsForTipo(activeTab).forEach(g => { groups[g.label] = true; });
     setExpandedGroups(groups);
   }
 
@@ -175,7 +264,8 @@ export default function PerfisAcesso() {
   }
 
   function toggleGroup(groupLabel: string) {
-    const groupItems = PERMISSION_GROUPS.find(g => g.label === groupLabel)?.items.map(i => i.key) || [];
+    const groups = getGroupsForTipo(tipo);
+    const groupItems = groups.find(g => g.label === groupLabel)?.items.map(i => i.key) || [];
     const allSelected = groupItems.every(k => permissoes.includes(k));
     if (allSelected) {
       setPermissoes(prev => prev.filter(p => !groupItems.includes(p)));
@@ -185,10 +275,11 @@ export default function PerfisAcesso() {
   }
 
   function toggleAllPermissions() {
-    if (permissoes.length === ALL_PERMISSIONS.length) {
-      setPermissoes([]);
+    const allPerms = getAllPermsForTipo(tipo);
+    if (allPerms.every(k => permissoes.includes(k))) {
+      setPermissoes(prev => prev.filter(p => !allPerms.includes(p)));
     } else {
-      setPermissoes([...ALL_PERMISSIONS]);
+      setPermissoes(prev => [...new Set([...prev, ...allPerms])]);
     }
   }
 
@@ -253,10 +344,12 @@ export default function PerfisAcesso() {
     );
   }
 
+  const currentGroups = getGroupsForTipo(tipo);
+
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="max-w-5xl mx-auto space-y-6">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-[22px] font-bold text-foreground tracking-tight">Perfis de Acesso</h1>
             <p className="text-[13px] text-foreground/45 mt-1">Controle granular de permissões por menu para gerentes e colaboradores</p>
@@ -267,6 +360,47 @@ export default function PerfisAcesso() {
             </Button>
           )}
         </div>
+
+        {!showForm && (
+          <>
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex bg-white border border-black/[0.06] rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setActiveTab("web")}
+                  className={cn(
+                    "px-5 py-2 text-[13px] font-medium transition-all",
+                    activeTab === "web"
+                      ? "bg-foreground text-white"
+                      : "text-foreground/50 hover:text-foreground hover:bg-black/[0.02]"
+                  )}
+                >
+                  Web Admin
+                </button>
+                <button
+                  onClick={() => setActiveTab("app")}
+                  className={cn(
+                    "px-5 py-2 text-[13px] font-medium transition-all",
+                    activeTab === "app"
+                      ? "bg-foreground text-white"
+                      : "text-foreground/50 hover:text-foreground hover:bg-black/[0.02]"
+                  )}
+                >
+                  App
+                </button>
+              </div>
+
+              <div className="relative flex-1 max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-foreground/30" />
+                <Input
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Buscar perfil..."
+                  className="rounded-xl h-9 pl-9 text-[13px]"
+                />
+              </div>
+            </div>
+          </>
+        )}
 
         {showForm && (
           <div className="bg-white rounded-2xl border border-black/[0.06] p-6 space-y-5">
@@ -292,10 +426,16 @@ export default function PerfisAcesso() {
               <div className="space-y-1.5">
                 <Label className="text-[13px]">Tipo</Label>
                 <div className="flex gap-2">
-                  {["web", "app"].map(t => (
+                  {(["web", "app"] as const).map(t => (
                     <button
                       key={t}
-                      onClick={() => setTipo(t)}
+                      onClick={() => {
+                        setTipo(t);
+                        setPermissoes([]);
+                        const groups: Record<string, boolean> = {};
+                        getGroupsForTipo(t).forEach(g => { groups[g.label] = true; });
+                        setExpandedGroups(groups);
+                      }}
                       className={cn(
                         "px-4 py-2 rounded-xl text-[13px] font-medium border transition-all",
                         tipo === t
@@ -303,7 +443,7 @@ export default function PerfisAcesso() {
                           : "bg-white text-foreground/50 border-black/[0.08] hover:border-black/[0.15]"
                       )}
                     >
-                      {t === "web" ? "Web" : "App"}
+                      {t === "web" ? "Web Admin" : "App"}
                     </button>
                   ))}
                 </div>
@@ -312,17 +452,17 @@ export default function PerfisAcesso() {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-[13px] font-semibold">Permissões</Label>
+                <Label className="text-[13px] font-semibold">Permissões ({tipo === "web" ? "Web Admin" : "App"})</Label>
                 <button
                   onClick={toggleAllPermissions}
                   className="text-[12px] text-primary hover:underline"
                 >
-                  {permissoes.length === ALL_PERMISSIONS.length ? "Desmarcar tudo" : "Selecionar tudo"}
+                  {getAllPermsForTipo(tipo).every(k => permissoes.includes(k)) ? "Desmarcar tudo" : "Selecionar tudo"}
                 </button>
               </div>
 
               <div className="space-y-2">
-                {PERMISSION_GROUPS.map(group => {
+                {currentGroups.map(group => {
                   const groupKeys = group.items.map(i => i.key);
                   const allChecked = groupKeys.every(k => permissoes.includes(k));
                   const someChecked = groupKeys.some(k => permissoes.includes(k));
@@ -336,10 +476,13 @@ export default function PerfisAcesso() {
                       >
                         {expanded ? <ChevronDown className="h-3.5 w-3.5 text-foreground/30" /> : <ChevronRight className="h-3.5 w-3.5 text-foreground/30" />}
                         <span className="text-[13px] font-medium text-foreground flex-1 text-left">{group.label}</span>
-                        <button
+                        <span
+                          role="checkbox"
+                          tabIndex={0}
                           onClick={e => { e.stopPropagation(); toggleGroup(group.label); }}
+                          onKeyDown={e => { if (e.key === " " || e.key === "Enter") { e.stopPropagation(); toggleGroup(group.label); } }}
                           className={cn(
-                            "h-5 w-5 rounded-md border flex items-center justify-center transition-colors",
+                            "h-5 w-5 rounded-md border flex items-center justify-center transition-colors cursor-pointer",
                             allChecked
                               ? "bg-foreground border-foreground"
                               : someChecked
@@ -349,25 +492,32 @@ export default function PerfisAcesso() {
                         >
                           {allChecked && <Check className="h-3 w-3 text-white" />}
                           {someChecked && !allChecked && <div className="h-1.5 w-1.5 bg-foreground rounded-sm" />}
-                        </button>
+                        </span>
                       </button>
                       {expanded && (
                         <div className="px-4 py-2 space-y-1 bg-white">
                           {group.items.map(item => (
-                            <label key={item.key} className="flex items-center gap-3 py-1.5 cursor-pointer hover:bg-black/[0.01] px-2 rounded-lg">
-                              <button
-                                onClick={() => togglePermission(item.key)}
+                            <div
+                              key={item.key}
+                              role="checkbox"
+                              tabIndex={0}
+                              aria-checked={permissoes.includes(item.key)}
+                              onClick={() => togglePermission(item.key)}
+                              onKeyDown={e => { if (e.key === " " || e.key === "Enter") togglePermission(item.key); }}
+                              className="flex items-center gap-3 py-1.5 cursor-pointer hover:bg-black/[0.01] px-2 rounded-lg"
+                            >
+                              <span
                                 className={cn(
-                                  "h-4.5 w-4.5 rounded-md border flex items-center justify-center transition-colors shrink-0",
+                                  "h-[18px] w-[18px] rounded-md border flex items-center justify-center transition-colors shrink-0",
                                   permissoes.includes(item.key)
                                     ? "bg-primary border-primary"
                                     : "border-black/[0.15] bg-white"
                                 )}
                               >
                                 {permissoes.includes(item.key) && <Check className="h-3 w-3 text-white" />}
-                              </button>
+                              </span>
                               <span className="text-[13px] text-foreground/70">{item.label}</span>
-                            </label>
+                            </div>
                           ))}
                         </div>
                       )}
@@ -381,8 +531,13 @@ export default function PerfisAcesso() {
               <Label className="text-[13px] font-semibold">Vincular Profissionais</Label>
               <div className="grid gap-2 sm:grid-cols-2">
                 {profissionais.map(prof => (
-                  <label
+                  <div
                     key={prof.id}
+                    role="checkbox"
+                    tabIndex={0}
+                    aria-checked={selectedProfIds.includes(prof.id)}
+                    onClick={() => toggleProfissional(prof.id)}
+                    onKeyDown={e => { if (e.key === " " || e.key === "Enter") toggleProfissional(prof.id); }}
                     className={cn(
                       "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all",
                       selectedProfIds.includes(prof.id)
@@ -390,19 +545,18 @@ export default function PerfisAcesso() {
                         : "border-black/[0.06] hover:border-black/[0.12]"
                     )}
                   >
-                    <button
-                      onClick={() => toggleProfissional(prof.id)}
+                    <span
                       className={cn(
-                        "h-4.5 w-4.5 rounded-md border flex items-center justify-center transition-colors shrink-0",
+                        "h-[18px] w-[18px] rounded-md border flex items-center justify-center transition-colors shrink-0",
                         selectedProfIds.includes(prof.id)
                           ? "bg-primary border-primary"
                           : "border-black/[0.15] bg-white"
                       )}
                     >
                       {selectedProfIds.includes(prof.id) && <Check className="h-3 w-3 text-white" />}
-                    </button>
+                    </span>
                     <span className="text-[13px] text-foreground">{prof.nomeExibicao}</span>
-                  </label>
+                  </div>
                 ))}
                 {profissionais.length === 0 && (
                   <p className="text-[13px] text-foreground/35 col-span-2">Nenhum profissional cadastrado</p>
@@ -419,78 +573,142 @@ export default function PerfisAcesso() {
           </div>
         )}
 
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
-          </div>
-        ) : perfis.length === 0 && !showForm ? (
-          <div className="bg-white rounded-2xl border border-black/[0.06] p-12 text-center">
-            <Shield className="h-10 w-10 text-foreground/15 mx-auto mb-4" />
-            <h3 className="text-[15px] font-semibold text-foreground mb-1">Nenhum perfil de acesso criado</h3>
-            <p className="text-[13px] text-foreground/40 mb-5">
-              Crie perfis para controlar quais menus cada colaborador ou gerente pode acessar
-            </p>
-            {role === "dono" && (
-              <Button onClick={startNew} className="rounded-xl h-9 text-[13px] gap-1.5">
-                <Plus className="h-3.5 w-3.5" /> Criar Primeiro Perfil
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {perfis.map(perfil => (
-              <div key={perfil.id} className="bg-white rounded-2xl border border-black/[0.06] p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-xl bg-primary/[0.06] flex items-center justify-center">
-                      <Shield className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="text-[14px] font-semibold text-foreground">{perfil.descricao}</h3>
-                      <p className="text-[12px] text-foreground/35">
-                        {perfil.tipo === "web" ? "Web" : "App"} · {perfil.permissoes.length} permissões
-                      </p>
-                    </div>
-                  </div>
-                  {role === "dono" && (
-                    <div className="flex gap-1.5">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEdit(perfil)}>
-                        <Pencil className="h-3.5 w-3.5 text-foreground/40" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDelete(perfil.id)}>
-                        <Trash2 className="h-3.5 w-3.5 text-red-400" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {perfil.permissoes.slice(0, 8).map(p => {
-                    const item = PERMISSION_GROUPS.flatMap(g => g.items).find(i => i.key === p);
-                    return (
-                      <span key={p} className="px-2.5 py-1 rounded-lg bg-primary/[0.06] text-primary text-[11px] font-medium">
-                        {item?.label || p}
-                      </span>
-                    );
-                  })}
-                  {perfil.permissoes.length > 8 && (
-                    <span className="px-2.5 py-1 rounded-lg bg-black/[0.03] text-foreground/35 text-[11px] font-medium">
-                      +{perfil.permissoes.length - 8} mais
-                    </span>
-                  )}
-                </div>
-
-                {perfil.profissionais.length > 0 && (
-                  <div className="flex items-center gap-2 pt-2 border-t border-black/[0.04]">
-                    <Users className="h-3.5 w-3.5 text-foreground/25" />
-                    <span className="text-[12px] text-foreground/40">
-                      {perfil.profissionais.map(p => p.nome).join(", ")}
-                    </span>
-                  </div>
+        {!showForm && (
+          <>
+            {loading ? (
+              <div className="flex justify-center py-20">
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
+              </div>
+            ) : filteredPerfis.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-black/[0.06] p-12 text-center">
+                <Shield className="h-10 w-10 text-foreground/15 mx-auto mb-4" />
+                <h3 className="text-[15px] font-semibold text-foreground mb-1">
+                  {searchQuery ? "Nenhum perfil encontrado" : `Nenhum perfil ${activeTab === "web" ? "Web Admin" : "App"} criado`}
+                </h3>
+                <p className="text-[13px] text-foreground/40 mb-5">
+                  {searchQuery
+                    ? "Tente buscar com outros termos"
+                    : "Crie perfis para controlar quais menus cada colaborador ou gerente pode acessar"}
+                </p>
+                {role === "dono" && !searchQuery && (
+                  <Button onClick={startNew} className="rounded-xl h-9 text-[13px] gap-1.5">
+                    <Plus className="h-3.5 w-3.5" /> Criar Primeiro Perfil
+                  </Button>
                 )}
               </div>
-            ))}
-          </div>
+            ) : (
+              <>
+                <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-black/[0.04]">
+                        <th className="text-left px-5 py-3 text-[12px] font-semibold text-foreground/40 uppercase tracking-wider">Perfil</th>
+                        <th className="text-left px-5 py-3 text-[12px] font-semibold text-foreground/40 uppercase tracking-wider hidden sm:table-cell">Permissões</th>
+                        <th className="text-left px-5 py-3 text-[12px] font-semibold text-foreground/40 uppercase tracking-wider hidden md:table-cell">Profissionais</th>
+                        {role === "dono" && (
+                          <th className="text-right px-5 py-3 text-[12px] font-semibold text-foreground/40 uppercase tracking-wider w-24">Ações</th>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedPerfis.map((perfil, idx) => (
+                        <tr
+                          key={perfil.id}
+                          className={cn(
+                            "transition-colors hover:bg-black/[0.01]",
+                            idx < paginatedPerfis.length - 1 && "border-b border-black/[0.04]"
+                          )}
+                        >
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-3">
+                              <div className="h-8 w-8 rounded-lg bg-primary/[0.06] flex items-center justify-center shrink-0">
+                                <Shield className="h-3.5 w-3.5 text-primary" />
+                              </div>
+                              <div>
+                                <p className="text-[13px] font-medium text-foreground">{perfil.descricao}</p>
+                                <p className="text-[11px] text-foreground/35 sm:hidden">
+                                  {perfil.permissoes.length} permissões
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5 hidden sm:table-cell">
+                            <div className="flex flex-wrap gap-1">
+                              {perfil.permissoes.slice(0, 4).map(p => {
+                                const item = ALL_PERMISSION_ITEMS.find(i => i.key === p);
+                                return (
+                                  <span key={p} className="px-2 py-0.5 rounded-md bg-primary/[0.06] text-primary text-[10px] font-medium">
+                                    {item?.label || p}
+                                  </span>
+                                );
+                              })}
+                              {perfil.permissoes.length > 4 && (
+                                <span className="px-2 py-0.5 rounded-md bg-black/[0.03] text-foreground/35 text-[10px] font-medium">
+                                  +{perfil.permissoes.length - 4}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5 hidden md:table-cell">
+                            {perfil.profissionais.length > 0 ? (
+                              <div className="flex items-center gap-1.5">
+                                <Users className="h-3 w-3 text-foreground/25 shrink-0" />
+                                <span className="text-[12px] text-foreground/50 truncate max-w-[200px]">
+                                  {perfil.profissionais.map(p => p.nome).join(", ")}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-[12px] text-foreground/25">—</span>
+                            )}
+                          </td>
+                          {role === "dono" && (
+                            <td className="px-5 py-3.5 text-right">
+                              <div className="flex gap-1 justify-end">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(perfil)}>
+                                  <Pencil className="h-3 w-3 text-foreground/40" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(perfil.id)}>
+                                  <Trash2 className="h-3 w-3 text-red-400" />
+                                </Button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between">
+                    <p className="text-[12px] text-foreground/35">
+                      {filteredPerfis.length} perfil(is) · Página {currentPage} de {totalPages}
+                    </p>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 rounded-lg"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 rounded-lg"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </>
         )}
       </div>
     </AppLayout>

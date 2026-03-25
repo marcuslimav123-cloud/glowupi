@@ -2,8 +2,12 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useGetCurrentUser, useLogoutUser, type UserWithBarbearia } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 
+type UserWithPerfilPermissoes = UserWithBarbearia & {
+  perfilPermissoes?: string[] | null;
+};
+
 interface AuthContextType {
-  user: UserWithBarbearia | null;
+  user: UserWithPerfilPermissoes | null;
   isLoading: boolean;
   logout: () => void;
   isAuthenticated: boolean;
@@ -38,7 +42,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const userRole = user?.role || "dono";
-  const perfilPermissoes = (user as any)?.perfilPermissoes ?? null;
+  const typedUser = user as UserWithPerfilPermissoes | undefined;
+  const perfilPermissoes = typedUser?.perfilPermissoes ?? null;
   const value = {
     user: user || null,
     isLoading,
