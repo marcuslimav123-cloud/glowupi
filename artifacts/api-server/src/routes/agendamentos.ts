@@ -240,18 +240,20 @@ router.delete("/:agendamentoId", requireAuth, async (req, res) => {
     }
   }
 
-  const toleranciaHoras = parseInt(params["cancel_tolerancia_cliente"] || "2");
-  if (agend.data && agend.horaInicio) {
-    const agendDate = new Date(agend.data + "T" + agend.horaInicio + ":00");
-    const agora = new Date();
-    const diffMs = agendDate.getTime() - agora.getTime();
-    const diffHoras = diffMs / (1000 * 60 * 60);
-    if (diffHoras >= 0 && diffHoras < toleranciaHoras) {
-      return res.status(400).json({ error: `Cancelamento não permitido com menos de ${toleranciaHoras} hora(s) de antecedência` });
+  if (user.role !== "dono" && user.role !== "gerente") {
+    const toleranciaHoras = parseInt(params["cancel_tolerancia_cliente"] || "2");
+    if (agend.data && agend.horaInicio) {
+      const agendDate = new Date(agend.data + "T" + agend.horaInicio + ":00");
+      const agora = new Date();
+      const diffMs = agendDate.getTime() - agora.getTime();
+      const diffHoras = diffMs / (1000 * 60 * 60);
+      if (diffHoras >= 0 && diffHoras < toleranciaHoras) {
+        return res.status(400).json({ error: `Cancelamento não permitido com menos de ${toleranciaHoras} hora(s) de antecedência` });
+      }
     }
   }
 
-  await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(eq(agendamentosTable.id, id));
+  await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId)));
   return res.json({ success: true, message: "Agendamento cancelado" });
 });
 
