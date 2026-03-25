@@ -38,7 +38,7 @@ router.get("/faturamento", requireAuth, requireRole("dono", "gerente"), async (r
 
   const servicoMap: Record<string, { servicoId: number; nome: string; quantidade: number; valor: number }> = {};
   comandas.forEach(c => {
-    const servs: any[] = (c.servicos as any) || [];
+    const servs = Array.isArray(c.servicos) ? c.servicos : [];
     servs.forEach(s => {
       if (!servicoMap[s.id]) servicoMap[s.id] = { servicoId: s.id, nome: s.nome, quantidade: 0, valor: 0 };
       servicoMap[s.id].quantidade += 1;
@@ -48,7 +48,7 @@ router.get("/faturamento", requireAuth, requireRole("dono", "gerente"), async (r
 
   const pagMap: Record<string, number> = {};
   comandas.forEach(c => {
-    const pags: any[] = (c.pagamentos as any) || [];
+    const pags = Array.isArray(c.pagamentos) ? c.pagamentos : [];
     pags.forEach(p => {
       if (!pagMap[p.metodo]) pagMap[p.metodo] = 0;
       pagMap[p.metodo] += p.valor;
@@ -236,7 +236,7 @@ router.get("/rankings", requireAuth, requireRole("dono", "gerente"), async (req,
     profMap[key].atendimentos += 1;
     profMap[key].faturamento += parseFloat(c.valorTotal as string);
 
-    const servs: any[] = (c.servicos as any) || [];
+    const servs = Array.isArray(c.servicos) ? c.servicos : [];
     servs.forEach(s => {
       if (!servMap[s.nome]) servMap[s.nome] = { nome: s.nome, quantidade: 0, faturamento: 0 };
       servMap[s.nome].quantidade += 1;
@@ -286,9 +286,9 @@ router.get("/estoque", requireAuth, requireRole("dono", "gerente"), async (req, 
   return res.json(produtos.map(p => ({
     id: p.id,
     nome: p.nome,
-    categoria: (p as any).categoria || null,
+    categoria: null,
     quantidade: p.quantidade,
-    precoVenda: parseFloat(p.precoVenda as string),
+    precoVenda: parseFloat(p.preco as string),
     validade: p.validade,
     ativo: p.ativo,
   })));

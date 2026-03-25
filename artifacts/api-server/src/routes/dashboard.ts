@@ -106,7 +106,7 @@ router.get("/", requireAuth, async (req, res) => {
 
   const servicoMap: Record<number, { servicoId: number; nome: string; quantidade: number; valor: number }> = {};
   comandas.forEach(c => {
-    const servs: any[] = (c.servicos as any) || [];
+    const servs = Array.isArray(c.servicos) ? c.servicos : [];
     servs.forEach(s => {
       if (!servicoMap[s.id]) servicoMap[s.id] = { servicoId: s.id, nome: s.nome, quantidade: 0, valor: 0 };
       servicoMap[s.id].quantidade += 1;
@@ -240,10 +240,11 @@ router.get("/resumo", requireAuth, requireRole("dono", "gerente"), async (req, r
   ).length;
 
   const assinaturasVencendo = assinantes.filter(a => {
-    if (a.status !== "ativo") return false;
     if (!a.dataFim) return false;
     const fim = a.dataFim.toISOString().slice(0, 10);
-    return fim >= todayStr && fim <= in7days;
+    if (a.status === "ativo" && fim <= in7days) return true;
+    if (fim < todayStr) return true;
+    return false;
   }).length;
 
   const barbearia = barbeariaRows[0];
@@ -253,7 +254,7 @@ router.get("/resumo", requireAuth, requireRole("dono", "gerente"), async (req, r
     trialEnd.setDate(trialEnd.getDate() + 30);
     diasRestantesTrial = Math.max(0, Math.ceil((trialEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
   }
-  const subscriptionStatus = (barbearia as any)?.subscriptionStatus || (barbearia as any)?.planoStatus || "trial";
+  const subscriptionStatus = barbearia?.subscriptionStatus || barbearia?.planoStatus || "trial";
 
   return res.json({
     caixasPendentes,

@@ -98,6 +98,7 @@ const NAV_ITEMS: NavItem[] = [
           { name: "Agendamentos", href: "/relatorios/agendamentos", icon: CalendarDays },
           { name: "Aniversariantes", href: "/relatorios/aniversariantes", icon: Gift },
           { name: "Perfil Cliente", href: "/relatorios/perfil-cliente", icon: Users },
+          { name: "Rankings", href: "/relatorios/rankings", icon: Star },
         ],
       },
       {
@@ -105,10 +106,9 @@ const NAV_ITEMS: NavItem[] = [
         items: [
           { name: "Faturamento", href: "/relatorios", icon: DollarSign },
           { name: "Financeiro", href: "/relatorios/financeiro", icon: TrendingUp },
-          { name: "Comandas Itens", href: "/relatorios/canceladas", icon: ClipboardList },
+          { name: "Comandas Canceladas", href: "/relatorios/canceladas", icon: ClipboardList },
           { name: "Estoque", href: "/relatorios/estoque", icon: Package },
           { name: "Pacotes", href: "/relatorios/pacotes", icon: Boxes },
-          { name: "Rankings", href: "/relatorios/rankings", icon: Star },
         ],
       },
     ],
