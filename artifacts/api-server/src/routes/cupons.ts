@@ -54,6 +54,31 @@ router.put("/:cupomId", requireAuth, requireRole("dono", "gerente"), async (req:
   res.json(fmt(row));
 });
 
+router.post("/validar", requireAuth, async (req: any, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const { codigo } = req.body;
+  if (!codigo) return res.status(400).json({ error: "Código do cupom é obrigatório" });
+  const [cupom] = await db.select().from(cuponsTable).where(and(eq(cuponsTable.barbeariaId, barbeariaId), eq(cuponsTable.codigo, codigo.toUpperCase()))).limit(1);
+  if (!cupom) return res.status(404).json({ error: "Cupom não encontrado" });
+  if (!cupom.ativo) return res.status(400).json({ error: "Cupom inativo" });
+  const now = new Date();
+  if (cupom.validadeInicio && now < cupom.validadeInicio) return res.status(400).json({ error: "Cupom ainda não está válido" });
+  if (cupom.validadeFim && now > cupom.validadeFim) return res.status(400).json({ error: "Cupom expirado" });
+  if (cupom.usoMaximo && cupom.usoAtual >= cupom.usoMaximo) return res.status(400).json({ error: "Cupom atingiu o limite de uso" });
+  res.json(fmt(cupom));
+});
+
+router.post("/:cupomId/usar", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const cupomId = parseInt(req.params.cupomId);
+  const [cupom] = await db.select().from(cuponsTable).where(and(eq(cuponsTable.id, cupomId), eq(cuponsTable.barbeariaId, barbeariaId))).limit(1);
+  if (!cupom) return res.status(404).json({ error: "Cupom não encontrado" });
+  await db.update(cuponsTable).set({ usoAtual: cupom.usoAtual + 1 }).where(eq(cuponsTable.id, cupomId));
+  res.json({ success: true });
+});
+
 router.delete("/:cupomId", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;

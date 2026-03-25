@@ -152,6 +152,9 @@ export default function Agenda() {
   const [checkoutDesconto, setCheckoutDesconto] = useState("");
   const [checkoutDescontoTipo, setCheckoutDescontoTipo] = useState<"valor" | "percentual">("valor");
   const [checkoutParcelas, setCheckoutParcelas] = useState(1);
+  const [cupomCodigo, setCupomCodigo] = useState("");
+  const [cupomAplicado, setCupomAplicado] = useState<any>(null);
+  const [cupomErro, setCupomErro] = useState("");
 
   const [bloqueios, setBloqueios] = useState<Bloqueio[]>([]);
 
@@ -319,6 +322,24 @@ export default function Agenda() {
     } catch {}
   };
 
+  const handleAplicarCupom = async () => {
+    if (!cupomCodigo.trim()) return;
+    setCupomErro("");
+    try {
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/cupons/validar`), {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigo: cupomCodigo.trim().toUpperCase() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setCupomErro(data.error || "Cupom inválido"); setCupomAplicado(null); return; }
+      setCupomAplicado(data);
+      setCheckoutDesconto(String(data.valor));
+      setCheckoutDescontoTipo(data.tipo === "percentual" ? "percentual" : "valor");
+      toast({ title: "Cupom aplicado!", description: `${data.tipo === "percentual" ? `${data.valor}%` : `R$ ${data.valor}`} de desconto` });
+    } catch { setCupomErro("Erro ao validar cupom"); setCupomAplicado(null); }
+  };
+
   const calcularValorFinal = () => {
     if (!checkoutAgend) return 0;
     const valor = checkoutAgend.valor;
@@ -345,11 +366,17 @@ export default function Agenda() {
           parcelas: checkoutParcelas,
         }
       });
+      if (cupomAplicado) {
+        try { await fetch(apiUrl(`/barbearias/${barbeariaId}/cupons/${cupomAplicado.id}/usar`), { method: "POST", credentials: "include" }); } catch {}
+      }
       toast({ title: "Checkout realizado!", description: `${formatCurrency(valorFinal)} via ${PAYMENT_METHODS.find(m => m.value === checkoutMetodo)?.label}` });
       setCheckoutAgend(null);
       setCheckoutObs("");
       setCheckoutDesconto("");
       setCheckoutParcelas(1);
+      setCupomCodigo("");
+      setCupomAplicado(null);
+      setCupomErro("");
       refetch();
       qc.invalidateQueries({ queryKey: ["/api/barbearias", barbeariaId, "dashboard"] });
     } catch (err: any) {
@@ -954,12 +981,24 @@ export default function Agenda() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs">Desconto <span className="text-muted-foreground">(opcional)</span></Label>
+                <Label className="text-xs">Cupom de Desconto <span className="text-muted-foreground">(opcional)</span></Label>
                 <div className="flex gap-2">
-                  <Input type="number" min="0" step="0.01" value={checkoutDesconto} onChange={e => setCheckoutDesconto(e.target.value)} placeholder="0" className="bg-background flex-1 h-9 text-sm" />
+                  <Input value={cupomCodigo} onChange={e => { setCupomCodigo(e.target.value.toUpperCase()); if (cupomAplicado) { setCupomAplicado(null); setCheckoutDesconto(""); setCupomErro(""); } }} placeholder="CODIGO" className="bg-background flex-1 h-9 text-sm uppercase" />
+                  <Button type="button" size="sm" variant={cupomAplicado ? "default" : "outline"} className="h-9 text-xs" onClick={handleAplicarCupom} disabled={!cupomCodigo.trim() || !!cupomAplicado}>
+                    {cupomAplicado ? "Aplicado ✓" : "Aplicar"}
+                  </Button>
+                </div>
+                {cupomErro && <p className="text-xs text-red-500">{cupomErro}</p>}
+                {cupomAplicado && <p className="text-xs text-green-600">Cupom {cupomAplicado.codigo}: {cupomAplicado.tipo === "percentual" ? `${cupomAplicado.valor}%` : `R$ ${cupomAplicado.valor}`} de desconto</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Desconto Manual <span className="text-muted-foreground">(opcional)</span></Label>
+                <div className="flex gap-2">
+                  <Input type="number" min="0" step="0.01" value={checkoutDesconto} onChange={e => setCheckoutDesconto(e.target.value)} placeholder="0" className="bg-background flex-1 h-9 text-sm" disabled={!!cupomAplicado} />
                   <div className="flex rounded-lg border border-border overflow-hidden">
-                    <button type="button" onClick={() => setCheckoutDescontoTipo("valor")} className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${checkoutDescontoTipo === "valor" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>R$</button>
-                    <button type="button" onClick={() => setCheckoutDescontoTipo("percentual")} className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${checkoutDescontoTipo === "percentual" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>%</button>
+                    <button type="button" onClick={() => setCheckoutDescontoTipo("valor")} disabled={!!cupomAplicado} className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${checkoutDescontoTipo === "valor" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>R$</button>
+                    <button type="button" onClick={() => setCheckoutDescontoTipo("percentual")} disabled={!!cupomAplicado} className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${checkoutDescontoTipo === "percentual" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>%</button>
                   </div>
                 </div>
               </div>

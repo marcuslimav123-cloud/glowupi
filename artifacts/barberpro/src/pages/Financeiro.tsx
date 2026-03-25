@@ -2,11 +2,13 @@ import React, { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGetRelatorioFaturamento, useGetRelatorioComissoes, useListContasFinanceiras, useCreateContaFinanceira, useUpdateContaFinanceira, useDeleteContaFinanceira } from "@workspace/api-client-react";
+import { useApiList } from "@/hooks/useCrudApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/utils";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { format, subDays, subMonths } from "date-fns";
@@ -29,6 +31,14 @@ export default function Financeiro() {
   const [mesPrev] = useState(format(subMonths(new Date(), 1), "yyyy-MM"));
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formTipo, setFormTipo] = useState<"pagar" | "receber">("pagar");
+  const [formCategoria, setFormCategoria] = useState("");
+
+  const tiposPath = `/barbearias/${barbeariaId}/tipos`;
+  const { data: tipos = [] } = useApiList("tipos", tiposPath, !!barbeariaId);
+  const tiposArr = tipos as any[];
+  const categoriasOptions = tiposArr
+    .filter(t => t.ativo && (formTipo === "pagar" ? t.categoria === "tipo_despesa" : t.categoria === "tipo_receita"))
+    .map(t => t.nome);
 
   const { data: fat } = useGetRelatorioFaturamento(barbeariaId!, { dataInicio, dataFim }, { query: { enabled: !!barbeariaId } });
   const { data: com } = useGetRelatorioComissoes(barbeariaId!, { mes }, { query: { enabled: !!barbeariaId } });
@@ -56,7 +66,7 @@ export default function Financeiro() {
         data: {
           tipo: formTipo,
           descricao: fd.get("descricao") as string,
-          categoria: fd.get("categoria") as string,
+          categoria: formCategoria || (fd.get("categoriaText") as string) || "",
           valor: parseFloat(fd.get("valor") as string),
           dataVencimento: fd.get("dataVencimento") as string,
           status: "pendente",
@@ -151,7 +161,19 @@ export default function Financeiro() {
                 <Button type="button" variant={formTipo === "receber" ? "default" : "outline"} onClick={() => setFormTipo("receber")} className="flex-1">A Receber</Button>
               </div>
               <div><Label>Descrição</Label><Input name="descricao" required /></div>
-              <div><Label>Categoria</Label><Input name="categoria" placeholder="Ex: Aluguel, Material..." /></div>
+              <div>
+                <Label>Categoria</Label>
+                {categoriasOptions.length > 0 ? (
+                  <Select value={formCategoria} onValueChange={setFormCategoria}>
+                    <SelectTrigger><SelectValue placeholder="Selecione a categoria" /></SelectTrigger>
+                    <SelectContent>
+                      {categoriasOptions.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input name="categoriaText" placeholder="Ex: Aluguel, Material..." />
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div><Label>Valor (R$)</Label><Input name="valor" type="number" step="0.01" required /></div>
                 <div><Label>Vencimento</Label><Input name="dataVencimento" type="date" /></div>
