@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { comandasTable } from "@workspace/db/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
+import { getParametros } from "../lib/parametros.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -16,6 +17,21 @@ function formatComanda(c: any) {
     createdAt: c.createdAt?.toISOString?.() ?? c.createdAt,
   };
 }
+
+router.get("/config", requireAuth, async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const params = await getParametros(barbeariaId);
+  return res.json({
+    comanda_obrigatoriedade_bandeira: params["comanda_obrigatoriedade_bandeira"] || "Não",
+    comanda_edicao_comissoes: params["comanda_edicao_comissoes"] || "Liberar",
+    comanda_fechamento_nao_gestor: params["comanda_fechamento_nao_gestor"] || "Não",
+    comanda_inserir_profissionais_caixa: params["comanda_inserir_profissionais_caixa"] || "Sim",
+    comanda_ver_dia_caixa: params["comanda_ver_dia_caixa"] || "Sim",
+    comanda_abertura_nao_gestor: params["comanda_abertura_nao_gestor"] || "Não",
+    comanda_reabertura_nao_gestor: params["comanda_reabertura_nao_gestor"] || "Não",
+  });
+});
 
 router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);

@@ -99,6 +99,22 @@ router.post("/", requireAuth, async (req, res) => {
     if (mesmoServicoDia.length >= limiteDiario) {
       return res.status(400).json({ error: `Limite de ${limiteDiario} agendamento(s) por dia para o mesmo serviço atingido` });
     }
+
+    if (params["agenda_mesmo_horario_cliente"] !== "Sim") {
+      const mesmoHorario = abertos.filter(a => a.data === data && a.horaInicio === horaInicio);
+      if (mesmoHorario.length > 0) {
+        return res.status(409).json({ error: "Cliente já possui agendamento neste horário" });
+      }
+    }
+  }
+
+  const limiteAntecedencia = parseInt(params["agenda_limite_antecedencia"] || "2");
+  const agendDataObj = new Date(data + "T" + horaInicio + ":00");
+  const agoraDate = new Date();
+  const diffMs = agendDataObj.getTime() - agoraDate.getTime();
+  const diffHoras = diffMs / (1000 * 60 * 60);
+  if (diffHoras < limiteAntecedencia && diffHoras >= 0) {
+    return res.status(400).json({ error: `Agendamento requer no mínimo ${limiteAntecedencia} hora(s) de antecedência` });
   }
 
   const [servico] = await db.select().from(servicosTable).where(and(eq(servicosTable.id, servicoId), eq(servicosTable.barbeariaId, barbeariaId))).limit(1);
@@ -208,14 +224,26 @@ router.delete("/:agendamentoId", requireAuth, async (req, res) => {
   const [agend] = await db.select().from(agendamentosTable).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId))).limit(1);
   if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
 
+  const params = await getParametros(barbeariaId);
+
   if (user.role === "colaborador") {
     if (!user.profissionalId) return res.status(403).json({ error: "Acesso negado" });
     if (agend.profissionalId !== user.profissionalId) {
       return res.status(403).json({ error: "Acesso negado" });
     }
-    const params = await getParametros(barbeariaId);
     if (params["cancel_bloquear_profissional"] === "Sim") {
       return res.status(403).json({ error: "Cancelamento bloqueado para profissionais não-gestores" });
+    }
+  }
+
+  const toleranciaHoras = parseInt(params["cancel_tolerancia_cliente"] || "2");
+  if (agend.data && agend.horaInicio) {
+    const agendDate = new Date(agend.data + "T" + agend.horaInicio + ":00");
+    const agora = new Date();
+    const diffMs = agendDate.getTime() - agora.getTime();
+    const diffHoras = diffMs / (1000 * 60 * 60);
+    if (diffHoras >= 0 && diffHoras < toleranciaHoras) {
+      return res.status(400).json({ error: `Cancelamento não permitido com menos de ${toleranciaHoras} hora(s) de antecedência` });
     }
   }
 

@@ -91,14 +91,23 @@ router.get("/", async (req, res) => {
     return res.json([]);
   }
 
+  const limiteAntecedencia = parseInt(params["agenda_limite_antecedencia"] || "2");
+  const agora = new Date();
+  const hojeStr = agora.toISOString().slice(0, 10);
+  const agoraMinutos = agora.getHours() * 60 + agora.getMinutes();
+
   const slots: any[] = [];
   const duracao = servico.duracaoMinutos;
+
+  const globalInicio = timeToMinutes(agendaInicio);
+  const globalFim = timeToMinutes(agendaFim);
 
   for (const prof of profissionais) {
     const schedule = getProfScheduleForDate(prof, data as string);
     if (!schedule) continue;
 
-    const { inicio: inicioTrabalho, fim: fimTrabalho } = schedule;
+    const inicioTrabalho = Math.max(schedule.inicio, globalInicio);
+    const fimTrabalho = Math.min(schedule.fim, globalFim);
 
     for (let t = inicioTrabalho; t + duracao <= fimTrabalho; t += intervalo) {
       const horaInicio = minutesToTime(t);
@@ -115,12 +124,17 @@ router.get("/", async (req, res) => {
         const bf = timeToMinutes(b.horaFim);
         return !(t + duracao <= bi || t >= bf);
       });
+      let tooSoon = false;
+      if ((data as string) === hojeStr) {
+        tooSoon = t < agoraMinutos + limiteAntecedencia * 60;
+      }
+
       slots.push({
         horaInicio,
         horaFim,
         profissionalId: prof.id,
         profissionalNome: prof.nomeExibicao,
-        disponivel: !ocupado && !bloqueado,
+        disponivel: !ocupado && !bloqueado && !tooSoon,
       });
     }
   }
