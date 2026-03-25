@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatPhone, stripPhone } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, MapPin, Clock, Palette, Save, AlertCircle } from "lucide-react";
+import { Building2, MapPin, Clock, Palette, Save, AlertCircle, Link2, Copy, Check, ExternalLink } from "lucide-react";
 
 const DIAS = ["segunda","terca","quarta","quinta","sexta","sabado","domingo"];
 const DIA_LABEL: Record<string,string> = { segunda:"Segunda",terca:"Terça",quarta:"Quarta",quinta:"Quinta",sexta:"Sexta",sabado:"Sábado",domingo:"Domingo" };
@@ -21,6 +21,7 @@ export default function Empresa() {
   const { barbeariaId } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
+  const [linkCopied, setLinkCopied] = useState(false);
   const { data: barbearia, isLoading } = useGetMyBarbearia({ query: { enabled: !!barbeariaId } });
   const updateMutation = useUpdateBarbearia();
 
@@ -108,6 +109,44 @@ export default function Empresa() {
             </div>
           </div>
         </div>
+      )}
+
+      {barbearia?.slug && (
+        <Card className="mb-6">
+          <CardHeader><CardTitle className="flex items-center gap-2"><Link2 className="h-5 w-5 text-primary" /> Página Pública</CardTitle></CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">Compartilhe este link com seus clientes para agendamento online:</p>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 px-3 py-2 rounded-lg bg-muted text-sm font-mono truncate">
+                {window.location.origin}{import.meta.env.BASE_URL}s/{barbearia.slug}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const url = `${window.location.origin}${import.meta.env.BASE_URL}s/${barbearia.slug}`;
+                  navigator.clipboard.writeText(url);
+                  setLinkCopied(true);
+                  toast({ title: "Link copiado!", description: "Compartilhe com seus clientes" });
+                  setTimeout(() => setLinkCopied(false), 2000);
+                }}
+              >
+                {linkCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                asChild
+              >
+                <a href={`${import.meta.env.BASE_URL}s/${barbearia.slug}`} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {isLoading ? (

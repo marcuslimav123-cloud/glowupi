@@ -35,6 +35,7 @@ import PoliticaPrivacidade from "@/pages/PoliticaPrivacidade";
 import TermosDeUso from "@/pages/TermosDeUso";
 
 import PublicBooking from "@/pages/PublicBooking";
+import PublicStorefront from "@/pages/PublicStorefront";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminTenants from "@/pages/admin/AdminTenants";
@@ -76,6 +77,7 @@ function Router() {
       <Route path="/empresa" component={Empresa} />
       <Route path="/clube" component={Clube} />
 
+      <Route path="/s/:slug" component={PublicStorefront} />
       <Route path="/agendar/:slug" component={PublicBooking} />
       <Route path="/politica-de-privacidade" component={PoliticaPrivacidade} />
       <Route path="/termos-de-uso" component={TermosDeUso} />

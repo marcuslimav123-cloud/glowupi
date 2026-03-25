@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable } from "@workspace/db/schema";
-import { eq, and } from "drizzle-orm";
+import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable, avaliacoesTable, recompensasTable, produtosTable } from "@workspace/db/schema";
+import { eq, and, desc } from "drizzle-orm";
 import { requireClient } from "../lib/auth.js";
 
 const router: IRouter = Router();
@@ -44,10 +44,15 @@ router.get("/:slug", async (req, res) => {
   const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.slug, slug)).limit(1);
   if (!barbearia) return res.status(404).json({ error: "Barbearia não encontrada" });
 
-  const [servicos, profissionais] = await Promise.all([
+  const [servicos, profissionais, avaliacoes, recompensas, produtos] = await Promise.all([
     db.select().from(servicosTable).where(and(eq(servicosTable.barbeariaId, barbearia.id), eq(servicosTable.ativo, true))),
     db.select().from(profissionaisTable).where(and(eq(profissionaisTable.barbeariaId, barbearia.id), eq(profissionaisTable.ativo, true))),
+    db.select().from(avaliacoesTable).where(eq(avaliacoesTable.barbeariaId, barbearia.id)).orderBy(desc(avaliacoesTable.createdAt)).limit(20),
+    db.select().from(recompensasTable).where(and(eq(recompensasTable.barbeariaId, barbearia.id), eq(recompensasTable.ativo, true))),
+    db.select().from(produtosTable).where(and(eq(produtosTable.barbeariaId, barbearia.id), eq(produtosTable.ativo, true))),
   ]);
+
+  const notaMedia = avaliacoes.length > 0 ? avaliacoes.reduce((sum, a) => sum + a.nota, 0) / avaliacoes.length : 0;
 
   return res.json({
     id: barbearia.id,
@@ -80,6 +85,28 @@ router.get("/:slug", async (req, res) => {
       createdAt: p.createdAt?.toISOString(),
       updatedAt: p.updatedAt?.toISOString(),
     })),
+    avaliacoes: avaliacoes.map(a => ({
+      id: a.id,
+      clienteNome: a.clienteNome,
+      profissionalNome: a.profissionalNome,
+      nota: a.nota,
+      comentario: a.comentario,
+      createdAt: a.createdAt?.toISOString(),
+    })),
+    notaMedia: Math.round(notaMedia * 10) / 10,
+    totalAvaliacoes: avaliacoes.length,
+    recompensas: recompensas.map(r => ({
+      id: r.id,
+      nome: r.nome,
+      descricao: r.descricao,
+      pontosNecessarios: r.pontosNecessarios,
+      tipo: r.tipo,
+    })),
+    produtos: produtos.map(p => ({
+      id: p.id,
+      nome: p.nome,
+      preco: parseFloat(p.preco as string),
+    })),
   });
 });
 
@@ -110,11 +137,17 @@ router.get("/:slug/slots", async (req, res) => {
     const intervalo = 30;
     const duracao = servico.duracaoMinutos;
 
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+    const isToday = data === todayStr;
+    const currentMinutes = isToday ? now.getHours() * 60 + now.getMinutes() : 0;
+
     for (const prof of profissionais) {
       const schedule = getProfScheduleForDate(prof, data as string);
       if (!schedule) continue;
       const { inicio: inicioTrabalho, fim: fimTrabalho } = schedule;
       for (let t = inicioTrabalho; t + duracao <= fimTrabalho; t += intervalo) {
+        if (isToday && t <= currentMinutes) continue;
         const horaInicio = minutesToTime(t);
         const horaFim = minutesToTime(t + duracao);
         const ocupado = agendamentos.some(a => {
