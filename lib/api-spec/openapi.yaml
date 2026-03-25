@@ -534,6 +534,14 @@ paths:
           in: query
           schema:
             type: string
+        - name: dataInicio
+          in: query
+          schema:
+            type: string
+        - name: dataFim
+          in: query
+          schema:
+            type: string
       responses:
         "200":
           description: List of appointments
@@ -2176,6 +2184,9 @@ components:
           nullable: true
         observacao:
           type: string
+          nullable: true
+        encaixe:
+          type: boolean
           nullable: true
       required:
         - clienteNome

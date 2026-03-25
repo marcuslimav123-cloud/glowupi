@@ -165,7 +165,7 @@ export default function Agenda() {
 
   const { data: profissionais = [] } = useListProfissionais(barbeariaId!, { query: { enabled: !!barbeariaId } });
   const { data: servicos = [] } = useListServicos(barbeariaId!, { query: { enabled: !!barbeariaId } });
-  const { data: agendamentos = [], refetch } = useListAgendamentos(barbeariaId!, dateRangeParams as any, { query: { enabled: !!barbeariaId } });
+  const { data: agendamentos = [], refetch } = useListAgendamentos(barbeariaId!, dateRangeParams, { query: { enabled: !!barbeariaId } });
 
   const createMutation = useCreateAgendamento();
   const updateMutation = useUpdateAgendamento();
@@ -239,8 +239,8 @@ export default function Agenda() {
           data: date,
           horaInicio: formHora,
           observacao: formObs || undefined,
-          encaixe,
-        } as any,
+          encaixe: encaixe || undefined,
+        },
       });
       toast({ title: encaixe ? "Encaixe realizado!" : "Agendado com sucesso!" });
       setIsNewOpen(false);

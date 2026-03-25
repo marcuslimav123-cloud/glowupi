@@ -16,4 +16,5 @@ export interface CreateAgendamentoInput {
   horaInicio: string;
   semPreferencia?: boolean | null;
   observacao?: string | null;
+  encaixe?: boolean | null;
 }
