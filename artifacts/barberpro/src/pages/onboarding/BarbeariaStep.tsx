@@ -39,12 +39,14 @@ const DURACOES = [
 ];
 
 interface ServiceItem {
+  id?: number;
   nome: string;
   preco: string;
   duracaoMinutos: number;
 }
 
 interface ProfessionalItem {
+  id?: number;
   nomeExibicao: string;
   celular: string;
 }
@@ -122,8 +124,8 @@ export default function BarbeariaStep() {
   };
 
   const handleStep1Submit = async () => {
-    if (!locationData.nome || !locationData.telefone) {
-      toast({ title: "Campos obrigatórios", description: "Nome e telefone são obrigatórios.", variant: "destructive" });
+    if (!locationData.nome || !locationData.telefone || !locationData.cep || !locationData.uf || !locationData.cidade) {
+      toast({ title: "Campos obrigatórios", description: "Nome, telefone, CEP, estado e cidade são obrigatórios.", variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -190,7 +192,9 @@ export default function BarbeariaStep() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || "Erro ao criar serviço");
       }
+      const created = await res.json();
       setServices(prev => [...prev, {
+        id: created.id,
         nome: serviceForm.nome,
         preco: serviceForm.preco,
         duracaoMinutos: parseInt(serviceForm.duracaoMinutos)
@@ -203,12 +207,21 @@ export default function BarbeariaStep() {
     }
   };
 
-  const removeService = (index: number) => {
+  const removeService = async (index: number) => {
+    const svc = services[index];
+    if (svc.id && barbeariaId) {
+      try {
+        await fetch(apiUrl(`/barbearias/${barbeariaId}/servicos/${svc.id}`), {
+          method: "DELETE",
+          credentials: "include"
+        });
+      } catch (e) {}
+    }
     setServices(prev => prev.filter((_, i) => i !== index));
   };
 
-  const createProfessionalOnServer = async (name: string) => {
-    if (!barbeariaId) return false;
+  const createProfessionalOnServer = async (name: string): Promise<number | null> => {
+    if (!barbeariaId) return null;
     const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/profissionais`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -222,7 +235,8 @@ export default function BarbeariaStep() {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || "Erro ao criar profissional");
     }
-    return true;
+    const created = await res.json();
+    return created.id;
   };
 
   const addProfessional = async () => {
@@ -233,8 +247,8 @@ export default function BarbeariaStep() {
     if (!barbeariaId) return;
     setLoading(true);
     try {
-      await createProfessionalOnServer(profForm.nomeExibicao);
-      setProfessionals(prev => [...prev, { ...profForm }]);
+      const profId = await createProfessionalOnServer(profForm.nomeExibicao);
+      setProfessionals(prev => [...prev, { id: profId || undefined, ...profForm }]);
       setProfForm({ nomeExibicao: "", celular: "" });
     } catch (err: any) {
       toast({ title: "Erro", description: err.message || "Erro ao adicionar profissional.", variant: "destructive" });
@@ -243,7 +257,16 @@ export default function BarbeariaStep() {
     }
   };
 
-  const removeProfessional = (index: number) => {
+  const removeProfessional = async (index: number) => {
+    const prof = professionals[index];
+    if (prof.id && barbeariaId) {
+      try {
+        await fetch(apiUrl(`/barbearias/${barbeariaId}/profissionais/${prof.id}`), {
+          method: "DELETE",
+          credentials: "include"
+        });
+      } catch (e) {}
+    }
     setProfessionals(prev => prev.filter((_, i) => i !== index));
   };
 

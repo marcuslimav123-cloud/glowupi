@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Sparkles, Building2, Mail, Phone, User } from "lucide-react";
+import { Sparkles, Building2, Mail, Phone, User, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiUrl, formatPhone, stripPhone } from "@/lib/utils";
 
@@ -17,11 +17,13 @@ export default function Register() {
     nome: "",
     email: "",
     senha: "",
-    telefone: ""
+    telefone: "",
+    estabelecimento: ""
   });
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleClientId, setGoogleClientId] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     fetch(apiUrl("/lgpd/google-client-id"))
@@ -115,7 +117,7 @@ export default function Register() {
     setShowConfirmModal(false);
     try {
       await registerMutation.mutateAsync({ data: { ...formData, telefone: stripPhone(formData.telefone) } });
-      window.location.href = "/onboarding/barbearia";
+      setShowSuccess(true);
     } catch (err: any) {
       toast({
         title: "Erro no cadastro",
@@ -124,6 +126,34 @@ export default function Register() {
       });
     }
   };
+
+  if (showSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-[#fafafa]">
+        <div className="w-full max-w-[420px] text-center">
+          <div className="bg-white border border-black/[0.06] rounded-2xl p-10 shadow-xl shadow-black/[0.03]">
+            <div className="flex justify-center mb-6">
+              <div className="h-16 w-16 rounded-full bg-green-50 flex items-center justify-center">
+                <CheckCircle2 className="h-9 w-9 text-green-500" />
+              </div>
+            </div>
+            <h2 className="text-[22px] font-bold text-foreground tracking-tight mb-2">
+              Cadastro Realizado!
+            </h2>
+            <p className="text-foreground/50 text-[14px] mb-8">
+              Sua conta foi criada com sucesso. Agora vamos configurar seu estabelecimento.
+            </p>
+            <Button
+              className="w-full h-12 text-[15px] font-semibold rounded-xl"
+              onClick={() => { window.location.href = "/onboarding/barbearia"; }}
+            >
+              Clique aqui e comece a Usar!
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#fafafa]">
@@ -141,6 +171,11 @@ export default function Register() {
             <div className="space-y-1.5">
               <Label htmlFor="nome" className="text-[13px] text-foreground/60">Nome Completo</Label>
               <Input id="nome" required value={formData.nome} onChange={handleChange} className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="estabelecimento" className="text-[13px] text-foreground/60">Nome do Estabelecimento</Label>
+              <Input id="estabelecimento" value={formData.estabelecimento} onChange={handleChange} placeholder="Ex: Studio Glow Beauty" className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]" />
             </div>
             
             <div className="space-y-1.5">
@@ -202,6 +237,12 @@ export default function Register() {
                 <User className="h-4 w-4 text-foreground/40 flex-shrink-0" />
                 <div><span className="text-foreground/50">Nome:</span> <span className="font-medium">{formData.nome}</span></div>
               </div>
+              {formData.estabelecimento && (
+                <div className="flex items-center gap-3 text-sm">
+                  <Building2 className="h-4 w-4 text-foreground/40 flex-shrink-0" />
+                  <div><span className="text-foreground/50">Estabelecimento:</span> <span className="font-medium">{formData.estabelecimento}</span></div>
+                </div>
+              )}
               <div className="flex items-center gap-3 text-sm">
                 <Mail className="h-4 w-4 text-foreground/40 flex-shrink-0" />
                 <div><span className="text-foreground/50">E-mail:</span> <span className="font-medium">{formData.email}</span></div>
