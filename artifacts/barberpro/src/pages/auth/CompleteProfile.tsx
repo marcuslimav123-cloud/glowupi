@@ -88,7 +88,7 @@ export default function CompleteProfile() {
                 required
                 value={telefone}
                 onChange={e => setTelefone(formatPhone(e.target.value))}
-                placeholder="(99) 99999-9999"
+                placeholder="(99) 91234-5678"
                 className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]"
               />
               <p className="text-[11px] text-foreground/30">Usaremos para notificações e lembretes</p>

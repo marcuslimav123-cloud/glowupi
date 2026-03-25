@@ -56,7 +56,7 @@ function ClienteForm({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>WhatsApp *</Label>
-          <Input value={telefone} onChange={e => setTelefone(formatPhone(e.target.value))} required placeholder="(99) 99999-9999" className="bg-background" />
+          <Input value={telefone} onChange={e => setTelefone(formatPhone(e.target.value))} required placeholder="(99) 91234-5678" className="bg-background" />
         </div>
         <div className="space-y-2">
           <Label>E-mail</Label>

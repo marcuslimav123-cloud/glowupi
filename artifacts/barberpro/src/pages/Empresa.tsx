@@ -162,7 +162,7 @@ export default function Empresa() {
               </div>
               <div className="space-y-2">
                 <Label>Telefone / WhatsApp</Label>
-                <Input value={telefone} onChange={e => setTelefone(formatPhone(e.target.value))} placeholder="(99) 99999-9999" />
+                <Input value={telefone} onChange={e => setTelefone(formatPhone(e.target.value))} placeholder="(99) 91234-5678" />
               </div>
               <div className="space-y-2">
                 <Label>E-mail</Label>

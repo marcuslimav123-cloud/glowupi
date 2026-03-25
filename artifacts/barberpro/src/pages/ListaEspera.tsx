@@ -83,7 +83,7 @@ export default function ListaEspera() {
             <DialogHeader><DialogTitle>Adicionar à Lista de Espera</DialogTitle></DialogHeader>
             <form onSubmit={handleAdd} className="space-y-4">
               <div><Label>Nome do Cliente</Label><Input name="clienteNome" required /></div>
-              <div><Label>Telefone</Label><Input value={telefoneInput} onChange={e => setTelefoneInput(formatPhone(e.target.value))} placeholder="(99) 99999-9999" /></div>
+              <div><Label>Telefone</Label><Input value={telefoneInput} onChange={e => setTelefoneInput(formatPhone(e.target.value))} placeholder="(99) 91234-5678" /></div>
               <div><Label>Data Desejada</Label><Input name="data" type="date" defaultValue={format(new Date(), "yyyy-MM-dd")} /></div>
               <div><Label>Observação</Label><Input name="observacao" placeholder="Preferência de horário, etc." /></div>
               <Button type="submit" className="w-full" disabled={addItem.isPending}>Adicionar</Button>

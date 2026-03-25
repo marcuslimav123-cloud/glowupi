@@ -438,7 +438,7 @@ export default function BarbeariaStep() {
                       id="telefone"
                       value={locationData.telefone}
                       onChange={e => setLocationData(p => ({ ...p, telefone: formatPhone(e.target.value) }))}
-                      placeholder="(99) 99999-9999"
+                      placeholder="(99) 91234-5678"
                       className="h-11"
                     />
                   </div>
@@ -676,7 +676,7 @@ export default function BarbeariaStep() {
                     <Input
                       value={profForm.celular}
                       onChange={e => setProfForm(p => ({ ...p, celular: formatPhone(e.target.value) }))}
-                      placeholder="(99) 99999-9999"
+                      placeholder="(99) 91234-5678"
                       className="h-11"
                     />
                   </div>
