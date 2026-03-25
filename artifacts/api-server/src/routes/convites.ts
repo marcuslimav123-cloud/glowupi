@@ -80,10 +80,12 @@ router.post("/", requireAuth, async (req, res) => {
     }).returning();
 
     let emailSent = false;
+    console.log(`[Convite] Created invite for ${email}, role=${role}, enviarEmail=${enviarEmail}, perfilAcessoId=${perfilAcessoId || 'none'}`);
     if (enviarEmail) {
       try {
         const baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN || req.get("host")}`;
         const link = `${baseUrl}/convite/${token}`;
+        console.log(`[Convite] Sending invite email to ${email}, link=${link}`);
         const result = await sendEmail({
           to: [{ email, name: nomeConvidado || undefined }],
           subject: `Convite para ${barbearia.nome} — Glow Agenda`,
@@ -95,6 +97,7 @@ router.post("/", requireAuth, async (req, res) => {
           }),
         });
         emailSent = result.success;
+        console.log(`[Convite] Email result: success=${result.success}, messageId=${result.messageId || 'none'}, error=${result.error || 'none'}`);
         if (!result.success) {
           console.error("Email invite failed:", result.error);
         }
