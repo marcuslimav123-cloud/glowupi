@@ -133,7 +133,14 @@ router.get("/:slug/slots", async (req, res) => {
 
     let profissionais;
     if (profissionalId) {
-      profissionais = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, parseInt(profissionalId as string)), eq(profissionaisTable.barbeariaId, barbearia.id), eq(profissionaisTable.ativo, true)));
+      const pId = parseInt(profissionalId as string);
+      profissionais = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, pId), eq(profissionaisTable.barbeariaId, barbearia.id), eq(profissionaisTable.ativo, true)));
+      if (profissionais.length > 0) {
+        const profLinks = await db.select().from(profissionalServicosTable).where(and(eq(profissionalServicosTable.profissionalId, pId), eq(profissionalServicosTable.barbeariaId, barbearia.id)));
+        if (profLinks.length > 0 && !profLinks.some(l => l.servicoId === sId)) {
+          return res.json([]);
+        }
+      }
     } else {
       profissionais = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.barbeariaId, barbearia.id), eq(profissionaisTable.ativo, true)));
 
@@ -239,6 +246,11 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
     if (!servico) return res.status(404).json({ error: "Serviço não encontrado" });
     const [profissional] = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, profissionalId), eq(profissionaisTable.barbeariaId, barbearia.id))).limit(1);
     if (!profissional) return res.status(404).json({ error: "Profissional não encontrado" });
+
+    const profLinks = await db.select().from(profissionalServicosTable).where(and(eq(profissionalServicosTable.profissionalId, profissionalId), eq(profissionalServicosTable.barbeariaId, barbearia.id)));
+    if (profLinks.length > 0 && !profLinks.some(l => l.servicoId === servicoId)) {
+      return res.status(400).json({ error: "Este profissional não atende o serviço selecionado" });
+    }
 
     const tempoPadraoStr = params["agenda_tempo_padrao"] || "30min";
     const tempoPadrao = tempoPadraoStr === "1h" ? 60 : (parseInt(tempoPadraoStr) || 30);
