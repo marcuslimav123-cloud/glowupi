@@ -6,7 +6,6 @@ const BREVO_KEYS = [
   process.env.BREVO_API_KEY_1,
   process.env.BREVO_API_KEY_2,
   process.env.BREVO_API_KEY_3,
-  process.env.BREVO_API_KEY_4,
 ].filter(Boolean) as string[];
 
 let currentIndex = 0;
@@ -59,39 +58,59 @@ interface SendEmailParams {
   sender?: { name: string; email: string };
 }
 
-export async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const { key, index } = getNextKey();
-  const sender = params.sender || { name: "Glow Agenda", email: process.env.BREVO_SENDER_EMAIL || "marcuslimav123@gmail.com" };
+async function trySendWithKey(key: string, keyIndex: number, sender: { name: string; email: string }, params: SendEmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "accept": "application/json",
+      "content-type": "application/json",
+      "api-key": key,
+    },
+    body: JSON.stringify({
+      sender,
+      to: params.to,
+      subject: params.subject,
+      htmlContent: params.htmlContent,
+    }),
+  });
 
-  try {
-    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "accept": "application/json",
-        "content-type": "application/json",
-        "api-key": key,
-      },
-      body: JSON.stringify({
-        sender,
-        to: params.to,
-        subject: params.subject,
-        htmlContent: params.htmlContent,
-      }),
-    });
+  const data = await res.json();
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      console.error(`Brevo key ${index} error:`, data);
-      return { success: false, error: data.message || "Erro ao enviar e-mail" };
-    }
-
-    await incrementEmailCount(index);
-    return { success: true, messageId: data.messageId };
-  } catch (err: any) {
-    console.error(`Brevo send error (key ${index}):`, err);
-    return { success: false, error: err.message };
+  if (!res.ok) {
+    console.error(`Brevo key ${keyIndex} error:`, data);
+    return { success: false, error: data.message || "Erro ao enviar e-mail" };
   }
+
+  await incrementEmailCount(keyIndex);
+  console.log(`[Brevo] Email sent via key ${keyIndex}, messageId=${data.messageId}`);
+  return { success: true, messageId: data.messageId };
+}
+
+export async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  if (BREVO_KEYS.length === 0) {
+    return { success: false, error: "Nenhuma chave Brevo configurada" };
+  }
+
+  const sender = params.sender || { name: "Glow Agenda", email: process.env.BREVO_SENDER_EMAIL || "marcuslimav123@gmail.com" };
+  let lastError = "";
+
+  for (let attempt = 0; attempt < BREVO_KEYS.length; attempt++) {
+    const { key, index } = getNextKey();
+    try {
+      const result = await trySendWithKey(key, index, sender, params);
+      if (result.success) {
+        return result;
+      }
+      lastError = result.error || "Erro desconhecido";
+      console.warn(`[Brevo] Key ${index} failed, trying next...`);
+    } catch (err: any) {
+      lastError = err.message;
+      console.error(`[Brevo] Key ${index} exception:`, err.message);
+    }
+  }
+
+  console.error(`[Brevo] All ${BREVO_KEYS.length} keys failed. Last error: ${lastError}`);
+  return { success: false, error: lastError };
 }
 
 export function renderTemplate(template: string, vars: Record<string, string>): string {
