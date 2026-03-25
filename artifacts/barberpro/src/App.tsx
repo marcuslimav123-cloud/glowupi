@@ -51,6 +51,8 @@ import PerfilCliente from "@/pages/relatorios/PerfilCliente";
 import EstoqueReport from "@/pages/relatorios/EstoqueReport";
 import PacotesReport from "@/pages/relatorios/PacotesReport";
 import ComandasItensReport from "@/pages/relatorios/ComandasItensReport";
+import Parametros from "@/pages/configuracoes/Parametros";
+import { RodizioPage, OrdemChegadaPage, ListaEsperaConfigPage, AlertasPage } from "@/pages/configuracoes/PlaceholderConfig";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminTenants from "@/pages/admin/AdminTenants";
@@ -104,6 +106,11 @@ function Router() {
       <Route path="/mensagens" component={Mensagens} />
       <Route path="/equipe" component={Equipe} />
       <Route path="/convite/:token" component={AcceptInvite} />
+      <Route path="/configuracoes/parametros" component={Parametros} />
+      <Route path="/configuracoes/rodizio" component={RodizioPage} />
+      <Route path="/configuracoes/ordem-chegada" component={OrdemChegadaPage} />
+      <Route path="/configuracoes/lista-espera" component={ListaEsperaConfigPage} />
+      <Route path="/configuracoes/alertas" component={AlertasPage} />
       <Route path="/empresa" component={Empresa} />
       <Route path="/clube" component={Clube} />
 

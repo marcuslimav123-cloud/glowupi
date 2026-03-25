@@ -23,3 +23,4 @@ export * from "./cupons";
 export * from "./noticias";
 export * from "./lembretes";
 export * from "./assinaturas";
+export * from "./parametrosConfig";

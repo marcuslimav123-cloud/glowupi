@@ -29,6 +29,7 @@ The design follows a "luxury clinic aesthetic" with a color palette of warm gold
 - **Relatórios Module (Task #12):** Sidebar expandable submenu with 8 report pages: Resumo (KPI dashboard with 11 colored cards), Faturamento, Aniversariantes, Agendamentos, Perfil Cliente, Financeiro, Cancelamentos, Rankings. All gerencial reports use `ReportTemplate.tsx` (date filters, sortable/paginated table, Excel/PDF/Print export). API routes: `/dashboard/resumo` (KPI counts), `/relatorios/*` (6 report endpoints in `relatorios.ts`).
 - **Marketing & Loyalty:** Loyalty programs with rewards, message system for promotions, discount coupons, automated reminders, and client groups.
 - **Public Booking Portal:** Salons can have a public page for online appointment booking.
+- **Configuração de Parâmetros (Task #13):** 38 tenant-scoped business rules across 8 categories (Agenda, Cancelamentos, Comandas, Notificações, Comissões, Clientes, Fidelidade, Outros). Table `parametros_config` with auto-seed on first GET. API: GET/PUT/DELETE at `/barbearias/:id/parametros`. Sidebar "Configurações" section with Parâmetros page + placeholder pages (Rodízio, Ordem de Chegada, Lista de Espera Config, Alertas).
 - **Admin Panel:** A separate super admin interface for platform-level management (tenant activation, configuration, revenue analytics).
 
 ## External Dependencies

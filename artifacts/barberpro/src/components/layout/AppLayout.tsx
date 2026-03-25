@@ -117,6 +117,18 @@ const NAV_ITEMS: NavItem[] = [
   { name: "Caixa", href: "/caixa", icon: DollarSign, roles: ["dono", "gerente"] },
   { name: "Financeiro", href: "/financeiro", icon: TrendingUp, roles: ["dono"] },
   { name: "Lista de Espera", href: "/lista-espera", icon: ClipboardList, roles: ["dono", "gerente"] },
+  {
+    name: "Configurações",
+    icon: Settings,
+    roles: ["dono", "gerente"],
+    children: [
+      { name: "Parâmetros", href: "/configuracoes/parametros", icon: Settings },
+      { name: "Rodízio de Profissionais", href: "/configuracoes/rodizio", icon: UsersRound },
+      { name: "Ordem de Chegada", href: "/configuracoes/ordem-chegada", icon: ClipboardList },
+      { name: "Lista de Espera", href: "/configuracoes/lista-espera", icon: Users },
+      { name: "Alertas", href: "/configuracoes/alertas", icon: Bell },
+    ],
+  },
   { name: "Meu Estúdio", href: "/empresa", icon: Building2, roles: ["dono"] },
   { name: "Equipe", href: "/equipe", icon: UsersRound, roles: ["dono"] },
 ];

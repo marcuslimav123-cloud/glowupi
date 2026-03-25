@@ -34,6 +34,7 @@ import cuponsRouter from "./cupons.js";
 import noticiasRouter from "./noticias.js";
 import lembretesRouter from "./lembretes.js";
 import assinaturasRouter from "./assinaturas.js";
+import parametrosRouter from "./parametros.js";
 
 const router: IRouter = Router();
 
@@ -69,6 +70,7 @@ router.use("/barbearias/:barbeariaId/cupons", cuponsRouter);
 router.use("/barbearias/:barbeariaId/noticias", noticiasRouter);
 router.use("/barbearias/:barbeariaId/lembretes", lembretesRouter);
 router.use("/barbearias/:barbeariaId/assinaturas", assinaturasRouter);
+router.use("/barbearias/:barbeariaId/parametros", parametrosRouter);
 
 router.get("/lgpd/terms", async (_req, res) => {
   try {
