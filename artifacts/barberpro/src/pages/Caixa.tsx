@@ -1,14 +1,33 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { useListComandas } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency } from "@/lib/utils";
-import { format } from "date-fns";
-import { DollarSign, CreditCard, Smartphone, Banknote, Receipt, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { formatCurrency, apiUrl } from "@/lib/utils";
+import { format } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import {
+  DollarSign, CreditCard, Smartphone, Banknote, Receipt, TrendingUp,
+  Search, ChevronUp, ChevronDown, ChevronsUpDown, Plus,
+  Download, FileText, Printer, Columns3, ChevronLeft, ChevronRight,
+  CalendarDays,
+} from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
 
 const METODO_ICON: Record<string, React.ReactNode> = {
   pix: <Smartphone className="h-3.5 w-3.5" />,
@@ -18,31 +37,235 @@ const METODO_ICON: Record<string, React.ReactNode> = {
 };
 const METODO_LABEL: Record<string, string> = { pix: "PIX", dinheiro: "Dinheiro", credito: "Crédito", debito: "Débito", outros: "Outros" };
 
+type SortKey = "id" | "clienteNome" | "profissionalNome" | "valorTotal" | "dataFechamento" | "observacao";
+type SortDir = "asc" | "desc" | null;
+
+const ALL_COLUMNS = [
+  { key: "id", label: "Comanda" },
+  { key: "pagamentos", label: "Cartão" },
+  { key: "dataFechamento", label: "Data" },
+  { key: "valorTotal", label: "Valor" },
+  { key: "clienteNome", label: "Cliente" },
+  { key: "observacao", label: "Obs" },
+  { key: "profissionalNome", label: "Profissional" },
+  { key: "servicos", label: "Serviços" },
+] as const;
+
+function todayStr() {
+  return format(new Date(), "yyyy-MM-dd");
+}
+
 export default function Caixa() {
   const { barbeariaId } = useAuth();
-  const [mes, setMes] = useState(format(new Date(), "yyyy-MM"));
+  const [dataInicio, setDataInicio] = useState(todayStr());
+  const [dataFim, setDataFim] = useState(todayStr());
+  const [searchDataInicio, setSearchDataInicio] = useState(todayStr());
+  const [searchDataFim, setSearchDataFim] = useState(todayStr());
+  const [busca, setBusca] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [visibleCols, setVisibleCols] = useState<Set<string>>(new Set(ALL_COLUMNS.map(c => c.key)));
 
-  const { data: comandas = [], isLoading } = useListComandas(barbeariaId!, { mes }, { query: { enabled: !!barbeariaId } });
+  const { data: comandas = [], isLoading } = useQuery<any[]>({
+    queryKey: ["comandas", barbeariaId, searchDataInicio, searchDataFim],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (searchDataInicio) params.set("dataInicio", searchDataInicio);
+      if (searchDataFim) params.set("dataFim", searchDataFim);
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/comandas?${params}`), { credentials: "include" });
+      if (!res.ok) throw new Error("Erro ao carregar comandas");
+      return res.json();
+    },
+    enabled: !!barbeariaId,
+  });
 
-  const totalBruto = (comandas as any[]).reduce((s, c) => s + c.valorTotal, 0);
-  const totalComissoes = (comandas as any[]).reduce((s, c) => s + c.comissaoTotal, 0);
+  function handlePesquisar() {
+    setSearchDataInicio(dataInicio);
+    setSearchDataFim(dataFim);
+    setPage(1);
+  }
+
+  function handleHoje() {
+    const h = todayStr();
+    setDataInicio(h);
+    setDataFim(h);
+    setSearchDataInicio(h);
+    setSearchDataFim(h);
+    setPage(1);
+  }
+
+  const filtered = useMemo(() => {
+    if (!busca.trim()) return comandas;
+    const q = busca.toLowerCase();
+    return comandas.filter((c: any) =>
+      c.clienteNome?.toLowerCase().includes(q) ||
+      c.profissionalNome?.toLowerCase().includes(q) ||
+      (c.servicos as any[])?.some((s: any) => s.nome?.toLowerCase().includes(q)) ||
+      (c.produtos as any[])?.some((p: any) => p.nome?.toLowerCase().includes(q))
+    );
+  }, [comandas, busca]);
+
+  const sorted = useMemo(() => {
+    if (!sortKey || !sortDir) return filtered;
+    return [...filtered].sort((a: any, b: any) => {
+      let va = a[sortKey];
+      let vb = b[sortKey];
+      if (sortKey === "valorTotal") { va = Number(va); vb = Number(vb); }
+      if (sortKey === "dataFechamento") { va = new Date(va).getTime(); vb = new Date(vb).getTime(); }
+      if (typeof va === "string") { va = va.toLowerCase(); vb = (vb || "").toLowerCase(); }
+      if (va < vb) return sortDir === "asc" ? -1 : 1;
+      if (va > vb) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [filtered, sortKey, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const paginated = sorted.slice((page - 1) * pageSize, page * pageSize);
+
+  const totalBruto = filtered.reduce((s: number, c: any) => s + c.valorTotal, 0);
+  const totalComissoes = filtered.reduce((s: number, c: any) => s + c.comissaoTotal, 0);
   const pagTotals: Record<string, number> = {};
-  (comandas as any[]).forEach(c => (c.pagamentos as any[]).forEach((p: any) => { pagTotals[p.metodo] = (pagTotals[p.metodo] || 0) + p.valor; }));
+  filtered.forEach((c: any) => (c.pagamentos as any[])?.forEach((p: any) => { pagTotals[p.metodo] = (pagTotals[p.metodo] || 0) + p.valor; }));
+
+  function toggleSort(key: SortKey) {
+    if (sortKey !== key) { setSortKey(key); setSortDir("asc"); }
+    else if (sortDir === "asc") setSortDir("desc");
+    else { setSortKey(null); setSortDir(null); }
+  }
+
+  function SortIcon({ col }: { col: SortKey }) {
+    if (sortKey !== col) return <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />;
+    return sortDir === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />;
+  }
+
+  function toggleCol(key: string) {
+    setVisibleCols(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }
+
+  function getPaymentBadge(c: any) {
+    const pags = (c.pagamentos as any[]) || [];
+    if (pags.length === 0) return "—";
+    return pags.map((p: any) => METODO_LABEL[p.metodo] ?? p.metodo).join(", ");
+  }
+
+  function getTableData() {
+    return sorted.map((c: any) => ({
+      Comanda: `#${c.id}`,
+      Cartão: getPaymentBadge(c),
+      Data: c.dataFechamento ? format(new Date(c.dataFechamento), "dd/MM/yyyy HH:mm") : "—",
+      Valor: formatCurrency(c.valorTotal),
+      Cliente: c.clienteNome,
+      Obs: c.observacao || "—",
+      Profissional: c.profissionalNome,
+      Serviços: (c.servicos as any[])?.map((s: any) => s.nome).join(", ") || "—",
+    }));
+  }
+
+  async function exportExcel() {
+    const XLSX = await import("xlsx");
+    const ws = XLSX.utils.json_to_sheet(getTableData());
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Comandas");
+    XLSX.writeFile(wb, `comandas_${searchDataInicio}_${searchDataFim}.xlsx`);
+  }
+
+  async function exportPdf() {
+    const { default: jsPDF } = await import("jspdf");
+    const autoTable = (await import("jspdf-autotable")).default;
+    const doc = new jsPDF({ orientation: "landscape" });
+    doc.setFontSize(16);
+    doc.text("Comandas", 14, 18);
+    doc.setFontSize(10);
+    doc.text(`Período: ${dataInicio} a ${dataFim}`, 14, 26);
+    const tableData = getTableData();
+    const columns = Object.keys(tableData[0] || {});
+    const rows = tableData.map(r => Object.values(r));
+    autoTable(doc, {
+      head: [columns],
+      body: rows,
+      startY: 32,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [212, 175, 55] },
+    });
+    doc.save(`comandas_${searchDataInicio}_${searchDataFim}.pdf`);
+  }
+
+  function handlePrint() {
+    const tableData = getTableData();
+    if (tableData.length === 0) return;
+    const columns = Object.keys(tableData[0]);
+    const printWin = window.open("", "_blank");
+    if (!printWin) return;
+    printWin.document.write(`
+      <html><head><title>Comandas</title>
+      <style>
+        body { font-family: Inter, sans-serif; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
+        th { background: #d4af37; color: white; }
+        h1 { font-size: 18px; }
+        p { font-size: 12px; color: #666; }
+      </style></head><body>
+      <h1>Comandas</h1>
+      <p>Período: ${dataInicio} a ${dataFim} | Total: ${tableData.length} registros</p>
+      <table>
+        <thead><tr>${columns.map(c => `<th>${c}</th>`).join("")}</tr></thead>
+        <tbody>${tableData.map(r => `<tr>${Object.values(r).map(v => `<td>${v}</td>`).join("")}</tr>`).join("")}</tbody>
+      </table>
+      </body></html>
+    `);
+    printWin.document.close();
+    printWin.focus();
+    printWin.print();
+  }
 
   return (
     <AppLayout>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-display font-bold text-foreground">Caixa</h1>
-          <p className="text-muted-foreground mt-1">Histórico de comandas e recebimentos</p>
-        </div>
-        <div className="space-y-1">
-          <Label>Mês</Label>
-          <Input type="month" value={mes} onChange={e => setMes(e.target.value)} className="w-44" />
+          <p className="text-muted-foreground mt-1">Comandas e recebimentos</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <Card className="mb-6">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row items-end gap-3 flex-wrap">
+            <div className="space-y-1">
+              <Label className="text-xs">Data Inicial*</Label>
+              <Input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} className="w-40" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Data Final*</Label>
+              <Input type="date" value={dataFim} onChange={e => setDataFim(e.target.value)} className="w-40" />
+            </div>
+            <Button onClick={handleHoje} variant="outline" size="sm" className="gap-1.5">
+              <CalendarDays className="h-4 w-4" /> Hoje
+            </Button>
+            <Button onClick={handlePesquisar} size="sm">
+              <Search className="h-4 w-4 mr-1.5" /> Pesquisar
+            </Button>
+            <div className="flex-1" />
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar cliente, profissional, serviço..."
+                value={busca}
+                onChange={e => { setBusca(e.target.value); setPage(1); }}
+                className="pl-9"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardContent className="p-5">
             <div className="flex items-center gap-3 mb-2">
@@ -74,58 +297,170 @@ export default function Caixa() {
         ))}
       </div>
 
-      {isLoading ? (
-        <div className="space-y-3">{[1,2,3,4].map(i => <div key={i} className="h-20 bg-card rounded-xl animate-pulse" />)}</div>
-      ) : (comandas as any[]).length === 0 ? (
-        <Card className="text-center py-16">
-          <CardContent>
-            <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Nenhuma comanda neste período.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardHeader><CardTitle>Comandas do Mês ({(comandas as any[]).length})</CardTitle></CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {(comandas as any[]).slice().reverse().map((c: any) => (
-                <div key={c.id} className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border hover:bg-muted/50 transition-colors">
-                  <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/20">
-                    <Receipt className="h-5 w-5 text-green-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-sm">{c.clienteNome}</p>
-                      <Badge variant="secondary" className="text-xs">{c.profissionalNome}</Badge>
-                    </div>
-                    <div className="flex gap-2 mt-1 flex-wrap">
-                      {(c.servicos as any[]).map((s: any, i: number) => (
-                        <span key={i} className="text-xs text-muted-foreground">{s.nome}</span>
-                      ))}
-                      {(c.produtos as any[]).map((p: any, i: number) => (
-                        <span key={i} className="text-xs text-muted-foreground">• {p.nome}</span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <div className="flex gap-1 flex-wrap justify-end">
-                      {(c.pagamentos as any[]).map((p: any, i: number) => (
-                        <Badge key={i} variant="outline" className="text-xs gap-1">
-                          {METODO_ICON[p.metodo]} {METODO_LABEL[p.metodo] ?? p.metodo}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-primary">{formatCurrency(c.valorTotal)}</p>
-                      <p className="text-xs text-muted-foreground">com. {formatCurrency(c.comissaoTotal)}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <CardTitle className="text-lg">Comandas ({filtered.length})</CardTitle>
+            <div className="flex items-center gap-2 flex-wrap">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1.5">
+                    <Columns3 className="h-4 w-4" /> Colunas
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {ALL_COLUMNS.map(col => (
+                    <DropdownMenuCheckboxItem
+                      key={col.key}
+                      checked={visibleCols.has(col.key)}
+                      onCheckedChange={() => toggleCol(col.key)}
+                    >
+                      {col.label}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={exportExcel} disabled={filtered.length === 0}>
+                <Download className="h-4 w-4" /> Excel
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={exportPdf} disabled={filtered.length === 0}>
+                <FileText className="h-4 w-4" /> PDF
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={handlePrint} disabled={filtered.length === 0}>
+                <Printer className="h-4 w-4" /> Imprimir
+              </Button>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-3">{[1,2,3,4].map(i => <div key={i} className="h-12 bg-muted/30 rounded-lg animate-pulse" />)}</div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-16">
+              <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">Nenhuma comanda neste período.</p>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      {visibleCols.has("id") && (
+                        <th className="text-left py-3 px-3 font-medium text-muted-foreground cursor-pointer select-none" onClick={() => toggleSort("id")}>
+                          <span className="inline-flex items-center gap-1"># <SortIcon col="id" /></span>
+                        </th>
+                      )}
+                      {visibleCols.has("pagamentos") && (
+                        <th className="text-left py-3 px-3 font-medium text-muted-foreground">Cartão</th>
+                      )}
+                      {visibleCols.has("dataFechamento") && (
+                        <th className="text-left py-3 px-3 font-medium text-muted-foreground cursor-pointer select-none" onClick={() => toggleSort("dataFechamento")}>
+                          <span className="inline-flex items-center gap-1">Data <SortIcon col="dataFechamento" /></span>
+                        </th>
+                      )}
+                      {visibleCols.has("valorTotal") && (
+                        <th className="text-left py-3 px-3 font-medium text-muted-foreground cursor-pointer select-none" onClick={() => toggleSort("valorTotal")}>
+                          <span className="inline-flex items-center gap-1">Valor <SortIcon col="valorTotal" /></span>
+                        </th>
+                      )}
+                      {visibleCols.has("clienteNome") && (
+                        <th className="text-left py-3 px-3 font-medium text-muted-foreground cursor-pointer select-none" onClick={() => toggleSort("clienteNome")}>
+                          <span className="inline-flex items-center gap-1">Cliente <SortIcon col="clienteNome" /></span>
+                        </th>
+                      )}
+                      {visibleCols.has("observacao") && (
+                        <th className="text-left py-3 px-3 font-medium text-muted-foreground">Obs</th>
+                      )}
+                      {visibleCols.has("profissionalNome") && (
+                        <th className="text-left py-3 px-3 font-medium text-muted-foreground cursor-pointer select-none" onClick={() => toggleSort("profissionalNome")}>
+                          <span className="inline-flex items-center gap-1">Profissional <SortIcon col="profissionalNome" /></span>
+                        </th>
+                      )}
+                      {visibleCols.has("servicos") && (
+                        <th className="text-left py-3 px-3 font-medium text-muted-foreground">Serviços</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginated.map((c: any) => (
+                      <tr key={c.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                        {visibleCols.has("id") && (
+                          <td className="py-3 px-3 font-mono text-xs">#{c.id}</td>
+                        )}
+                        {visibleCols.has("pagamentos") && (
+                          <td className="py-3 px-3">
+                            <div className="flex gap-1 flex-wrap">
+                              {(c.pagamentos as any[])?.map((p: any, i: number) => (
+                                <Badge key={i} variant="outline" className="text-xs gap-1">
+                                  {METODO_ICON[p.metodo]} {METODO_LABEL[p.metodo] ?? p.metodo}
+                                </Badge>
+                              ))}
+                            </div>
+                          </td>
+                        )}
+                        {visibleCols.has("dataFechamento") && (
+                          <td className="py-3 px-3 text-xs whitespace-nowrap">
+                            {c.dataFechamento ? format(new Date(c.dataFechamento), "dd/MM/yyyy HH:mm") : "—"}
+                          </td>
+                        )}
+                        {visibleCols.has("valorTotal") && (
+                          <td className="py-3 px-3 font-semibold text-primary">{formatCurrency(c.valorTotal)}</td>
+                        )}
+                        {visibleCols.has("clienteNome") && (
+                          <td className="py-3 px-3">{c.clienteNome}</td>
+                        )}
+                        {visibleCols.has("observacao") && (
+                          <td className="py-3 px-3 text-xs text-muted-foreground max-w-[150px] truncate">{c.observacao || "—"}</td>
+                        )}
+                        {visibleCols.has("profissionalNome") && (
+                          <td className="py-3 px-3">
+                            <Badge variant="secondary" className="text-xs">{c.profissionalNome}</Badge>
+                          </td>
+                        )}
+                        {visibleCols.has("servicos") && (
+                          <td className="py-3 px-3 text-xs text-muted-foreground max-w-[200px] truncate">
+                            {(c.servicos as any[])?.map((s: any) => s.nome).join(", ")}
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t border-border">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Mostrando {Math.min((page - 1) * pageSize + 1, sorted.length)} até {Math.min(page * pageSize, sorted.length)} de {sorted.length} registros</span>
+                  <Select value={String(pageSize)} onValueChange={v => { setPageSize(Number(v)); setPage(1); }}>
+                    <SelectTrigger className="w-20 h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-xs">por página</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                    <ChevronLeft className="h-4 w-4" /> Anterior
+                  </Button>
+                  <span className="px-3 text-sm text-muted-foreground">
+                    {page} / {totalPages}
+                  </span>
+                  <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                    Próximo <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </AppLayout>
   );
 }
