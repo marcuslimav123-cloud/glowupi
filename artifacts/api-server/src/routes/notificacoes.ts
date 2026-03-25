@@ -48,10 +48,7 @@ router.get("/mensagens", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const mensagens = await db.select().from(mensagensTable)
-    .where(and(
-      eq(mensagensTable.barbeariaId, barbeariaId),
-      eq(mensagensTable.status, "rascunho")
-    ))
+    .where(eq(mensagensTable.barbeariaId, barbeariaId))
     .orderBy(desc(mensagensTable.createdAt))
     .limit(10);
   return res.json(mensagens.map(m => ({
