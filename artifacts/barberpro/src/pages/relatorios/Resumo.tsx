@@ -84,15 +84,19 @@ export default function Resumo() {
         </div>
       ) : null}
 
-      <div className="mt-8 bg-primary/5 border border-primary/10 rounded-2xl p-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <span className="text-sm text-foreground/60">Período de teste ativo</span>
+      {data?.subscriptionStatus === "trial" && (
+        <div className="mt-8 bg-primary/5 border border-primary/10 rounded-2xl p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <span className="text-sm text-foreground/60">
+              Período de teste — <strong>{data.diasRestantesTrial}</strong> {data.diasRestantesTrial === 1 ? "dia restante" : "dias restantes"}
+            </span>
+          </div>
+          <Link href="/#precos">
+            <Button size="sm" className="rounded-full text-xs">Contratar</Button>
+          </Link>
         </div>
-        <Link href="/#precos">
-          <Button size="sm" className="rounded-full text-xs">Contratar</Button>
-        </Link>
-      </div>
+      )}
     </AppLayout>
   );
 }

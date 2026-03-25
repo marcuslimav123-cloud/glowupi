@@ -3,7 +3,7 @@ import { db } from "@workspace/db";
 import {
   comandasTable, profissionaisTable, barbeariasTable,
   agendamentosTable, clientesTable, produtosTable,
-  contasFinanceirasTable, servicosTable
+  contasFinanceirasTable, servicosTable, pacotesTable, pacotesClienteTable
 } from "@workspace/db/schema";
 import { eq, and, sql, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
@@ -275,6 +275,56 @@ router.get("/perfil-cliente", requireAuth, requireRole("dono", "gerente"), async
     ultimaVisita: c.ultimaVisita,
     createdAt: c.createdAt?.toISOString(),
   })));
+});
+
+router.get("/estoque", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+
+  const produtos = await db.select().from(produtosTable).where(eq(produtosTable.barbeariaId, barbeariaId));
+
+  return res.json(produtos.map(p => ({
+    id: p.id,
+    nome: p.nome,
+    categoria: (p as any).categoria || null,
+    quantidade: p.quantidade,
+    precoVenda: parseFloat(p.precoVenda as string),
+    validade: p.validade,
+    ativo: p.ativo,
+  })));
+});
+
+router.get("/pacotes", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const { dataInicio, dataFim } = req.query;
+
+  const [pacotes, vendas] = await Promise.all([
+    db.select().from(pacotesTable).where(eq(pacotesTable.barbeariaId, barbeariaId)),
+    db.select().from(pacotesClienteTable).where(eq(pacotesClienteTable.barbeariaId, barbeariaId)),
+  ]);
+
+  const pacoteMap = Object.fromEntries(pacotes.map(p => [p.id, p]));
+
+  const filtered = vendas.filter(v => {
+    if (!dataInicio || !dataFim) return true;
+    const d = v.dataCompra ? v.dataCompra.toISOString().slice(0, 10) : "";
+    return d >= (dataInicio as string) && d <= (dataFim as string);
+  });
+
+  return res.json(filtered.map(v => {
+    const pac = pacoteMap[v.pacoteId];
+    return {
+      id: v.id,
+      nome: pac?.nome || "—",
+      clienteNome: v.clienteNome,
+      valorTotal: pac ? parseFloat(pac.preco as string) : 0,
+      sessoes: v.sessoesTotal,
+      sessoesUsadas: v.sessoesUsadas,
+      status: v.status,
+      dataVenda: v.dataCompra?.toISOString().slice(0, 10) || "",
+    };
+  }));
 });
 
 export default router;

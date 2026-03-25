@@ -16,7 +16,7 @@ export type ColumnDef = {
   key: string;
   label: string;
   sortable?: boolean;
-  render?: (value: any, row: any) => React.ReactNode;
+  render?: (value: any, row: any, index?: number) => React.ReactNode;
 };
 
 type Props = {
@@ -244,7 +244,7 @@ export default function ReportTemplate({
                         <tr key={row.id ?? rowIdx} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                           {columns.map(col => (
                             <td key={col.key} className="py-3 px-3">
-                              {col.render ? col.render(row[col.key], row) : (row[col.key] ?? "—")}
+                              {col.render ? col.render(row[col.key], row, (page - 1) * pageSize + rowIdx) : (row[col.key] ?? "—")}
                             </td>
                           ))}
                         </tr>

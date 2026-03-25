@@ -105,7 +105,9 @@ const NAV_ITEMS: NavItem[] = [
         items: [
           { name: "Faturamento", href: "/relatorios", icon: DollarSign },
           { name: "Financeiro", href: "/relatorios/financeiro", icon: TrendingUp },
-          { name: "Cancelamentos", href: "/relatorios/canceladas", icon: ClipboardList },
+          { name: "Comandas Itens", href: "/relatorios/canceladas", icon: ClipboardList },
+          { name: "Estoque", href: "/relatorios/estoque", icon: Package },
+          { name: "Pacotes", href: "/relatorios/pacotes", icon: Boxes },
           { name: "Rankings", href: "/relatorios/rankings", icon: Star },
         ],
       },

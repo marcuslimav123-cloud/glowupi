@@ -185,7 +185,7 @@ router.get("/resumo", requireAuth, requireRole("dono", "gerente"), async (req, r
   d30.setDate(d30.getDate() + 30);
   const in30days = d30.toISOString().slice(0, 10);
 
-  const [clientes, produtos, contas, agendamentosPendentes, clienteUsers, assinantes] = await Promise.all([
+  const [clientes, produtos, contas, agendamentosPendentes, clienteUsers, assinantes, barbeariaRows] = await Promise.all([
     db.select().from(clientesTable).where(eq(clientesTable.barbeariaId, barbeariaId)),
     db.select().from(produtosTable).where(and(eq(produtosTable.barbeariaId, barbeariaId), eq(produtosTable.ativo, true))),
     db.select().from(contasFinanceirasTable).where(eq(contasFinanceirasTable.barbeariaId, barbeariaId)),
@@ -194,6 +194,7 @@ router.get("/resumo", requireAuth, requireRole("dono", "gerente"), async (req, r
     ),
     db.select().from(clienteUsersTable),
     db.select().from(assinantesTable).where(eq(assinantesTable.barbeariaId, barbeariaId)),
+    db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)),
   ]);
 
   const caixasPendentes = agendamentosPendentes.length;
@@ -245,10 +246,21 @@ router.get("/resumo", requireAuth, requireRole("dono", "gerente"), async (req, r
     return fim >= todayStr && fim <= in7days;
   }).length;
 
+  const barbearia = barbeariaRows[0];
+  let diasRestantesTrial = 0;
+  if (barbearia?.createdAt) {
+    const trialEnd = new Date(barbearia.createdAt);
+    trialEnd.setDate(trialEnd.getDate() + 30);
+    diasRestantesTrial = Math.max(0, Math.ceil((trialEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+  }
+  const subscriptionStatus = (barbearia as any)?.subscriptionStatus || (barbearia as any)?.planoStatus || "trial";
+
   return res.json({
     caixasPendentes,
     clientesSemUsuario,
     clientesRetorno,
+    diasRestantesTrial,
+    subscriptionStatus,
     contasReceberSemana: Math.round(contasReceberSemana * 100) / 100,
     contasPagarSemana: Math.round(contasPagarSemana * 100) / 100,
     clientesAusentes60,
