@@ -38,6 +38,7 @@ import parametrosRouter from "./parametros.js";
 import notificacoesRouter from "./notificacoes.js";
 import perfisAcessoRouter from "./perfisAcesso.js";
 import emailTemplatesRouter from "./emailTemplates.js";
+import storageRouter from "./storage.js";
 
 const router: IRouter = Router();
 
@@ -77,6 +78,7 @@ router.use("/barbearias/:barbeariaId/parametros", parametrosRouter);
 router.use("/barbearias/:barbeariaId/notificacoes", notificacoesRouter);
 router.use("/barbearias/:barbeariaId/perfis-acesso", perfisAcessoRouter);
 router.use("/email-templates", emailTemplatesRouter);
+router.use(storageRouter);
 
 router.get("/lgpd/terms", async (_req, res) => {
   try {

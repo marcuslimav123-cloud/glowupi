@@ -15,8 +15,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit2, Trash2, Users, Award, ToggleLeft, ToggleRight, Clock, Calendar, Scissors, Check } from "lucide-react";
+import { Plus, Edit2, Trash2, Users, Award, ToggleLeft, ToggleRight, Clock, Calendar, Scissors, Check, User } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { ImageUpload } from "@/components/ImageUpload";
 
 type Prof = {
   id: number;
@@ -156,16 +157,14 @@ function ProfForm({
         <Label>Especialidade</Label>
         <Input value={esp} onChange={e => setEsp(e.target.value)} placeholder="Ex: Nail Designer, Esteticista" className="bg-background" />
       </div>
-      <div className="space-y-2">
-        <Label>URL da Foto</Label>
-        <Input value={fotoUrl} onChange={e => setFotoUrl(e.target.value)} placeholder="https://exemplo.com/foto.jpg" className="bg-background" />
-        {fotoUrl && (
-          <div className="flex items-center gap-3 mt-1">
-            <img src={fotoUrl} alt="Preview" className="h-12 w-12 rounded-full object-cover border border-border" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-            <span className="text-xs text-muted-foreground">Preview</span>
-          </div>
-        )}
-      </div>
+      <ImageUpload
+        value={fotoUrl}
+        onChange={(url) => setFotoUrl(url || "")}
+        shape="circle"
+        size="md"
+        label="Foto de Perfil"
+        placeholder={<User className="h-6 w-6 text-muted-foreground" />}
+      />
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Tipo de Comissão</Label>

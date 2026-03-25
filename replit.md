@@ -38,6 +38,8 @@ The design follows a "luxury clinic aesthetic" with a color palette of warm gold
 - **Team Invite Flow:** Owner invites team members via `/convites` API. Invite includes role (gerente/colaborador) + optional perfil de acesso. Invite can be sent via Brevo email or link copied for WhatsApp. Convidado accepts by authenticating with Google (email must match invite). `convites` table has `perfil_acesso_id` column. Accept page at `/convite/:token` requires Google auth.
 - **Google-Only Registration:** Manual registration is blocked (API returns 403). New users must register via Google Sign-In for verified emails. Login page keeps email/password as secondary option for existing accounts.
 
+- **Object Storage & Image Upload:** GCS-backed object storage via Replit App Storage. Presigned URL upload flow (client → API for presigned URL → client uploads directly to GCS). `ImageUpload` component (`components/ImageUpload.tsx`) provides reusable upload UI with preview, remove, and drag-to-replace. Upload endpoint requires staff auth (`requireAuth`). Serving endpoint is public (for logos/photos visible on public storefront). Storage routes: `POST /api/storage/uploads/request-url` (auth required), `GET /api/storage/objects/*` (public serving). Business `logoUrl` stored on barbearias table; professional `fotoUrl` on profissionais table. Both displayed on PublicStorefront/PublicBooking pages.
+
 ## External Dependencies
 - **Stripe:** For payment processing, subscription management, and billing.
 - **PostgreSQL:** Primary database.

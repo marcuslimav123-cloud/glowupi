@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ImageUpload } from "@/components/ImageUpload";
 import { formatPhone, stripPhone } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, MapPin, Clock, Palette, Save, AlertCircle, Link2, Copy, Check, ExternalLink } from "lucide-react";
+import { Building2, MapPin, Clock, Palette, Save, Link2, Copy, Check, ExternalLink, ImageIcon } from "lucide-react";
 
 const DIAS = ["segunda","terca","quarta","quinta","sexta","sabado","domingo"];
 const DIA_LABEL: Record<string,string> = { segunda:"Segunda",terca:"Terça",quarta:"Quarta",quinta:"Quinta",sexta:"Sexta",sabado:"Sábado",domingo:"Domingo" };
@@ -38,6 +39,7 @@ export default function Empresa() {
   const [corPrimaria, setCorPrimaria] = useState("#3b82f6");
   const [horarios, setHorarios] = useState<any>(DEFAULT_HORARIOS);
   const [loadingCep, setLoadingCep] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (barbearia) {
@@ -53,6 +55,7 @@ export default function Empresa() {
       setUf(barbearia.uf || "");
       setCorPrimaria(barbearia.corPrimaria || "#3b82f6");
       setHorarios((barbearia.horarioFuncionamento as any) || DEFAULT_HORARIOS);
+      setLogoUrl((barbearia as any).logoUrl || null);
     }
   }, [barbearia]);
 
@@ -83,7 +86,7 @@ export default function Empresa() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateMutation.mutateAsync({ data: { nome, telefone: stripPhone(telefone), email: email || null, cnpj: cnpj || null, cep: cep || null, logradouro: logradouro || null, numero: numero || null, bairro: bairro || null, cidade: cidade || null, uf: uf || null, corPrimaria, horarioFuncionamento: horarios } });
+      await updateMutation.mutateAsync({ data: { nome, telefone: stripPhone(telefone), email: email || null, cnpj: cnpj || null, cep: cep || null, logradouro: logradouro || null, numero: numero || null, bairro: bairro || null, cidade: cidade || null, uf: uf || null, corPrimaria, horarioFuncionamento: horarios, logoUrl } as any });
       qc.invalidateQueries();
       toast({ title: "Dados atualizados com sucesso!" });
     } catch { toast({ title: "Erro ao salvar", variant: "destructive" }); }
@@ -98,9 +101,13 @@ export default function Empresa() {
 
       {barbearia && (
         <div className="flex items-center gap-3 mb-6 p-4 bg-card rounded-xl border border-border">
-          <div className="h-12 w-12 rounded-xl flex items-center justify-center border border-primary/30" style={{ background: `${corPrimaria}20` }}>
-            <Building2 className="h-6 w-6" style={{ color: corPrimaria }} />
-          </div>
+          {logoUrl ? (
+            <img src={logoUrl} alt={barbearia.nome} className="h-12 w-12 rounded-xl object-cover border border-primary/30" />
+          ) : (
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center border border-primary/30" style={{ background: `${corPrimaria}20` }}>
+              <Building2 className="h-6 w-6" style={{ color: corPrimaria }} />
+            </div>
+          )}
           <div>
             <p className="font-bold text-lg">{barbearia.nome}</p>
             <div className="flex items-center gap-2 mt-1">
@@ -153,6 +160,22 @@ export default function Empresa() {
         <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-40 bg-card rounded-2xl animate-pulse" />)}</div>
       ) : (
         <form onSubmit={handleSave} className="space-y-6">
+          <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5 text-primary" /> Logo do Estúdio</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Essa imagem aparecerá na sua página pública de agendamento. Recomendamos uma imagem quadrada (ex: 500x500px).
+              </p>
+              <ImageUpload
+                value={logoUrl}
+                onChange={setLogoUrl}
+                shape="square"
+                size="lg"
+                placeholder={<Building2 className="h-8 w-8 text-muted-foreground" />}
+              />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader><CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5 text-primary" /> Dados do Estúdio</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
