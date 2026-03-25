@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { apiUrl, APP_NAME, getRoleLabel } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Eye, EyeOff } from "lucide-react";
+import { Sparkles, Loader2, CheckCircle2 } from "lucide-react";
 
 interface InviteInfo {
   email: string;
@@ -22,10 +21,10 @@ export default function AcceptInvite() {
   const [invite, setInvite] = useState<InviteInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [nome, setNome] = useState("");
-  const [senha, setSenha] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false);
+  const [googleFailed, setGoogleFailed] = useState(false);
+  const googleInitRef = useRef(false);
 
   useEffect(() => {
     if (!token) return;
@@ -36,26 +35,75 @@ export default function AcceptInvite() {
           setError(data.error);
         } else {
           setInvite(data);
-          if (data.nomeConvidado) setNome(data.nomeConvidado);
         }
       })
       .catch(() => setError("Erro ao carregar convite"))
       .finally(() => setLoading(false));
   }, [token]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (senha.length < 6) {
-      toast({ title: "Senha muito curta", description: "Mínimo 6 caracteres", variant: "destructive" });
+  useEffect(() => {
+    if (!invite) return;
+
+    const timeout = setTimeout(() => {
+      if (!googleInitRef.current) setGoogleFailed(true);
+    }, 5000);
+
+    fetch(apiUrl("/lgpd/google-client-id"))
+      .then(r => r.json())
+      .then(data => {
+        if (data.clientId) loadGoogleScript(data.clientId);
+        else setGoogleFailed(true);
+      })
+      .catch(() => setGoogleFailed(true));
+
+    return () => clearTimeout(timeout);
+  }, [invite]);
+
+  const loadGoogleScript = (clientId: string) => {
+    if (document.getElementById("google-gsi-script")) {
+      initGoogleButton(clientId);
       return;
     }
-    setSubmitting(true);
+    const script = document.createElement("script");
+    script.id = "google-gsi-script";
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => initGoogleButton(clientId);
+    script.onerror = () => setGoogleFailed(true);
+    document.head.appendChild(script);
+  };
+
+  const initGoogleButton = (clientId: string) => {
+    if (!(window as any).google) { setGoogleFailed(true); return; }
+    (window as any).google.accounts.id.initialize({
+      client_id: clientId,
+      callback: handleGoogleResponse,
+    });
+    const container = document.getElementById("google-accept-btn");
+    if (container) {
+      (window as any).google.accounts.id.renderButton(container, {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        width: 340,
+        text: "continue_with",
+        shape: "pill",
+        locale: "pt-BR",
+      });
+      googleInitRef.current = true;
+      setGoogleReady(true);
+    }
+  };
+
+  const handleGoogleResponse = async (response: any) => {
+    setGoogleLoading(true);
     try {
       const res = await fetch(apiUrl(`/convites/accept/${token}`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ nome, senha }),
+        body: JSON.stringify({ credential: response.credential }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -63,13 +111,13 @@ export default function AcceptInvite() {
         return;
       }
       toast({ title: "Conta criada!", description: "Bem-vinda à equipe!" });
-      setLocation("/agenda");
+      window.location.href = "/dashboard";
     } catch {
       toast({ title: "Erro", description: "Falha ao aceitar convite", variant: "destructive" });
     } finally {
-      setSubmitting(false);
+      setGoogleLoading(false);
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -113,50 +161,47 @@ export default function AcceptInvite() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-[13px] font-medium text-foreground/60 mb-1.5 block">Email</label>
-            <Input
-              value={invite?.email || ""}
-              disabled
-              className="rounded-xl h-11 text-[14px] bg-black/[0.02]"
-            />
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-7 shadow-xl shadow-black/[0.03]">
+          <div className="text-center mb-5">
+            <p className="text-[13px] text-foreground/50">
+              Para aceitar o convite, entre com a conta Google do e-mail:
+            </p>
+            <p className="text-[14px] font-semibold text-foreground mt-1">{invite?.email}</p>
           </div>
-          <div>
-            <label className="text-[13px] font-medium text-foreground/60 mb-1.5 block">Seu Nome</label>
-            <Input
-              required
-              value={nome}
-              onChange={e => setNome(e.target.value)}
-              placeholder="Como deseja ser chamada"
-              className="rounded-xl h-11 text-[14px]"
-            />
-          </div>
-          <div>
-            <label className="text-[13px] font-medium text-foreground/60 mb-1.5 block">Criar Senha</label>
-            <div className="relative">
-              <Input
-                type={showPassword ? "text" : "password"}
-                required
-                minLength={6}
-                value={senha}
-                onChange={e => setSenha(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-                className="rounded-xl h-11 text-[14px] pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/30 hover:text-foreground/60"
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
+
+          {!googleFailed ? (
+            <div className="flex flex-col items-center gap-3">
+              <div id="google-accept-btn" className="flex justify-center min-h-[44px]" />
+              {googleLoading && (
+                <div className="flex items-center gap-2 text-[13px] text-foreground/40">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Criando sua conta...
+                </div>
+              )}
+              {!googleReady && !googleLoading && (
+                <div className="flex items-center gap-2 text-[13px] text-foreground/40">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Preparando...
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-3">
+              <p className="text-[13px] text-foreground/50 mb-3">
+                Para aceitar o convite, abra este link em uma nova aba do navegador.
+              </p>
+            </div>
+          )}
+
+          <div className="mt-5 pt-4 border-t border-black/[0.04]">
+            <div className="flex items-start gap-2.5">
+              <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <p className="text-[12px] text-foreground/40 leading-relaxed">
+                Ao entrar com o Google, sua conta será criada automaticamente e você terá acesso ao sistema de <strong>{invite?.estabelecimento}</strong>.
+              </p>
             </div>
           </div>
-          <Button type="submit" disabled={submitting} className="w-full rounded-xl h-11 text-[14px] font-medium mt-2">
-            {submitting ? "Criando conta..." : "Aceitar Convite e Criar Conta"}
-          </Button>
-        </form>
+        </div>
       </div>
     </div>
   );

@@ -1,9 +1,11 @@
 import { Router, type IRouter } from "express";
 import crypto from "crypto";
 import { db } from "@workspace/db";
-import { convitesTable, usersTable, barbeariasTable, profissionaisTable } from "@workspace/db/schema";
+import { convitesTable, usersTable, barbeariasTable, profissionaisTable, perfisAcessoTable, profissionaisPerfisTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
-import { requireAuth, hashPassword, createSession } from "../lib/auth.js";
+import { requireAuth, createSession } from "../lib/auth.js";
+import { sendEmail, buildInviteEmailHtml } from "../lib/brevo.js";
+import { OAuth2Client } from "google-auth-library";
 
 const router: IRouter = Router();
 
@@ -42,9 +44,18 @@ router.post("/", requireAuth, async (req, res) => {
       return res.status(403).json({ error: "Seu plano não permite adicionar membros à equipe. Faça upgrade para o plano '2 a 5 Profissionais' ou superior." });
     }
 
-    const { email, role, nomeConvidado } = req.body;
+    const { email, role, nomeConvidado, perfilAcessoId, enviarEmail } = req.body;
     if (!email || !role) return res.status(400).json({ error: "Email e cargo são obrigatórios" });
     if (!["gerente", "colaborador"].includes(role)) return res.status(400).json({ error: "Cargo deve ser 'gerente' ou 'colaborador'" });
+
+    if (perfilAcessoId) {
+      const pid = parseInt(perfilAcessoId);
+      if (isNaN(pid)) return res.status(400).json({ error: "Perfil de acesso inválido" });
+      const [perfil] = await db.select().from(perfisAcessoTable).where(
+        and(eq(perfisAcessoTable.id, pid), eq(perfisAcessoTable.barbeariaId, barbearia.id))
+      ).limit(1);
+      if (!perfil) return res.status(400).json({ error: "Perfil de acesso não encontrado" });
+    }
 
     const [existingUser] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
     if (existingUser) return res.status(400).json({ error: "Este email já está cadastrado no sistema" });
@@ -61,17 +72,44 @@ router.post("/", requireAuth, async (req, res) => {
       barbeariaId: barbearia.id,
       email,
       role,
+      perfilAcessoId: perfilAcessoId ? parseInt(perfilAcessoId) : null,
       token,
       status: "pendente",
       nomeConvidado: nomeConvidado || null,
       expiresAt,
     }).returning();
 
+    let emailSent = false;
+    if (enviarEmail) {
+      try {
+        const baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN || req.get("host")}`;
+        const link = `${baseUrl}/convite/${token}`;
+        const result = await sendEmail({
+          to: [{ email, name: nomeConvidado || undefined }],
+          subject: `Convite para ${barbearia.nome} — Glow Agenda`,
+          htmlContent: buildInviteEmailHtml({
+            nomeEstabelecimento: barbearia.nome,
+            nomeConvidado: nomeConvidado || undefined,
+            role,
+            link,
+          }),
+        });
+        emailSent = result.success;
+        if (!result.success) {
+          console.error("Email invite failed:", result.error);
+        }
+      } catch (emailErr) {
+        console.error("Email send exception:", emailErr);
+        emailSent = false;
+      }
+    }
+
     return res.status(201).json({
       ...convite,
       createdAt: convite.createdAt.toISOString(),
       expiresAt: convite.expiresAt.toISOString(),
       acceptedAt: null,
+      emailSent: enviarEmail ? emailSent : null,
     });
   } catch (e) {
     console.error("create convite error:", e);
@@ -107,6 +145,7 @@ router.get("/token/:token", async (req, res) => {
       email: convite.email,
       role: convite.role,
       nomeConvidado: convite.nomeConvidado,
+      perfilAcessoId: convite.perfilAcessoId,
       estabelecimento: barbearia?.nome || "Estabelecimento",
     });
   } catch (e) {
@@ -118,22 +157,38 @@ router.get("/token/:token", async (req, res) => {
 router.post("/accept/:token", async (req, res) => {
   try {
     const { token } = req.params;
-    const { nome, senha } = req.body;
-    if (!nome || !senha) return res.status(400).json({ error: "Nome e senha são obrigatórios" });
+    const { credential } = req.body;
+    if (!credential) return res.status(400).json({ error: "Autenticação via Google é obrigatória" });
+
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) return res.status(500).json({ error: "Login com Google não configurado" });
+
+    const client = new OAuth2Client(clientId);
+    const ticket = await client.verifyIdToken({ idToken: credential, audience: clientId });
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) return res.status(400).json({ error: "Token do Google inválido" });
+    if (!payload.email_verified) return res.status(400).json({ error: "E-mail do Google não verificado" });
 
     const [convite] = await db.select().from(convitesTable).where(eq(convitesTable.token, token)).limit(1);
     if (!convite) return res.status(404).json({ error: "Convite não encontrado" });
     if (convite.status !== "pendente") return res.status(400).json({ error: "Este convite já foi usado" });
     if (convite.expiresAt < new Date()) return res.status(400).json({ error: "Este convite expirou" });
 
+    if (payload.email.toLowerCase() !== convite.email.toLowerCase()) {
+      return res.status(400).json({ error: `Este convite foi enviado para ${convite.email}. Faça login com a conta Google correspondente.` });
+    }
+
     const [existingUser] = await db.select().from(usersTable).where(eq(usersTable.email, convite.email)).limit(1);
     if (existingUser) return res.status(400).json({ error: "Este email já está cadastrado" });
 
-    const senhaHash = hashPassword(senha);
+    const nome = payload.name || convite.nomeConvidado || payload.email.split("@")[0];
+    const fotoUrl = payload.picture || null;
+
     const [newUser] = await db.insert(usersTable).values({
       nome,
       email: convite.email,
-      senhaHash,
+      googleId: payload.sub,
+      fotoUrl,
       role: convite.role,
       barbeariaId: convite.barbeariaId,
     }).returning();
@@ -147,6 +202,13 @@ router.post("/accept/:token", async (req, res) => {
       }).returning();
 
       await db.update(usersTable).set({ profissionalId: prof.id }).where(eq(usersTable.id, newUser.id));
+
+      if (convite.perfilAcessoId) {
+        await db.insert(profissionaisPerfisTable).values({
+          profissionalId: prof.id,
+          perfilId: convite.perfilAcessoId,
+        });
+      }
     }
 
     await db.update(convitesTable).set({

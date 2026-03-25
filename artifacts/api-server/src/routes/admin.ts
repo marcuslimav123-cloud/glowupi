@@ -1,9 +1,10 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { superAdminsTable, barbeariasTable, usersTable, platformConfigTable, comandasTable } from "@workspace/db/schema";
-import { eq, sql, desc, count } from "drizzle-orm";
+import { superAdminsTable, barbeariasTable, usersTable, platformConfigTable, comandasTable, brevoEmailLogTable } from "@workspace/db/schema";
+import { eq, sql, desc, count, and, gte } from "drizzle-orm";
 import { verifyAdminPassword, createAdminSession, deleteAdminSession, requireAdmin } from "../lib/adminAuth.js";
 import { stripeStorage } from "../stripeStorage.js";
+import { getEmailStats } from "../lib/brevo.js";
 
 const PLAN_MONTHLY_PRICES: Record<string, Record<string, number>> = {
   "1 Pro": { mensal: 79.90, semestral: 67.80, anual: 55.90 },
@@ -239,6 +240,27 @@ router.get("/revenue", requireAdmin, async (_req, res) => {
     periodBreakdown,
     revenueByMonth,
   });
+});
+
+router.get("/email-stats", requireAdmin, async (req, res) => {
+  try {
+    const stats = await getEmailStats();
+
+    const last7 = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dia = d.toISOString().split("T")[0];
+      const logs = await db.select().from(brevoEmailLogTable).where(eq(brevoEmailLogTable.dia, dia));
+      const total = logs.reduce((sum, l) => sum + l.contagem, 0);
+      last7.push({ dia, total, contas: logs.map(l => ({ keyIndex: l.keyIndex, contagem: l.contagem })) });
+    }
+
+    return res.json({ hoje: stats, historico: last7 });
+  } catch (e) {
+    console.error("email-stats error:", e);
+    return res.status(500).json({ error: "Erro interno" });
+  }
 });
 
 export default router;

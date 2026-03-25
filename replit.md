@@ -34,10 +34,15 @@ The design follows a "luxury clinic aesthetic" with a color palette of warm gold
 - **Perfis de Acesso Granulares (Task #15):** Access profile system for granular menu-level permissions. Tables: `perfis_acesso` (barbeariaId, descricao, tipo web/app, permissoes jsonb, ativo) and `profissionais_perfis` (links profissional to perfil). API CRUD at `/barbearias/:id/perfis-acesso` with validated permissions, tipo, and tenant-scoped profissionalId verification. Frontend page at `/configuracoes/acessos` (dono-only). `/auth/me` returns `perfilPermissoes` array for gerente/colaborador users with assigned profiles. Sidebar filtering enhanced via `HREF_TO_PERMISSION` mapping — when a user has `perfilPermissoes`, nav items are filtered by permission keys (24 permission keys across 6 groups).
 - **Admin Panel:** A separate super admin interface for platform-level management (tenant activation, configuration, revenue analytics).
 
+- **Email (Brevo Integration):** Round-robin email sending across 4 Brevo API keys (300/day each = 1200/day total). `brevo_email_log` table tracks daily counts per key. Service at `api-server/src/lib/brevo.ts`. Admin endpoint `GET /admin/email-stats` shows daily usage. Used for invite emails and future transactional emails.
+- **Team Invite Flow:** Owner invites team members via `/convites` API. Invite includes role (gerente/colaborador) + optional perfil de acesso. Invite can be sent via Brevo email or link copied for WhatsApp. Convidado accepts by authenticating with Google (email must match invite). `convites` table has `perfil_acesso_id` column. Accept page at `/convite/:token` requires Google auth.
+- **Google-Only Registration:** Manual registration is blocked (API returns 403). New users must register via Google Sign-In for verified emails. Login page keeps email/password as secondary option for existing accounts.
+
 ## External Dependencies
 - **Stripe:** For payment processing, subscription management, and billing.
 - **PostgreSQL:** Primary database.
-- **Google Sign-In API:** For user authentication.
+- **Google Sign-In API:** For user authentication (required for registration and team invite acceptance).
+- **Brevo (Sendinblue):** Transactional email sending with 4-key round-robin rotation. Keys: BREVO_API_KEY_1 through BREVO_API_KEY_4.
 - **ViaCEP:** For address auto-fill functionality during onboarding.
 - **Recharts:** For data visualization in dashboards and reports.
 - **Orval:** For API client code generation from OpenAPI specifications.

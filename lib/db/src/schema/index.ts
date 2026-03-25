@@ -26,3 +26,4 @@ export * from "./assinaturas";
 export * from "./parametrosConfig";
 export * from "./solicitacoesCadastro";
 export * from "./perfisAcesso";
+export * from "./brevoEmailLog";
