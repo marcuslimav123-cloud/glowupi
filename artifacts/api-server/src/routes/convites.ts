@@ -135,6 +135,50 @@ router.delete("/:id", requireAuth, async (req, res) => {
   }
 });
 
+router.post("/:id/resend", requireAuth, async (req, res) => {
+  try {
+    const user = (req as any).user;
+    if (user.role !== "dono") return res.status(403).json({ error: "Apenas proprietários podem reenviar convites" });
+    const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
+    if (!barbearia) return res.status(404).json({ error: "Estabelecimento não encontrado" });
+
+    const conviteId = parseInt(req.params.id);
+    const [convite] = await db.select().from(convitesTable).where(
+      and(eq(convitesTable.id, conviteId), eq(convitesTable.barbeariaId, barbearia.id))
+    ).limit(1);
+    if (!convite) return res.status(404).json({ error: "Convite não encontrado" });
+    if (convite.status !== "pendente") return res.status(400).json({ error: "Este convite já foi aceito" });
+
+    const baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN || req.get("host")}`;
+    const link = `${baseUrl}/convite/${convite.token}`;
+    console.log(`[Convite] Resending invite email to ${convite.email}`);
+
+    try {
+      const result = await sendEmail({
+        to: [{ email: convite.email, name: convite.nomeConvidado || undefined }],
+        subject: `Lembrete: Convite para ${barbearia.nome} — Glow Agenda`,
+        htmlContent: buildInviteEmailHtml({
+          nomeEstabelecimento: barbearia.nome,
+          nomeConvidado: convite.nomeConvidado || undefined,
+          role: convite.role,
+          link,
+        }),
+      });
+      console.log(`[Convite] Resend result: success=${result.success}, messageId=${result.messageId || 'none'}`);
+      if (!result.success) {
+        return res.status(500).json({ error: `Falha ao enviar e-mail: ${result.error}` });
+      }
+      return res.json({ success: true, messageId: result.messageId });
+    } catch (emailErr: any) {
+      console.error("Resend email exception:", emailErr);
+      return res.status(500).json({ error: `Erro ao enviar e-mail: ${emailErr.message}` });
+    }
+  } catch (e) {
+    console.error("resend convite error:", e);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 router.get("/token/:token", async (req, res) => {
   try {
     const { token } = req.params;

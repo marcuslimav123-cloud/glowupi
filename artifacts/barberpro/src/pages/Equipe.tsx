@@ -5,7 +5,7 @@ import { apiUrl, getRoleLabel, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { UsersRound, Plus, Trash2, Copy, Check, Mail, Send, X, Shield } from "lucide-react";
+import { UsersRound, Plus, Trash2, Copy, Check, Mail, Send, X, Shield, RefreshCw } from "lucide-react";
 
 interface TeamMember {
   id: number;
@@ -52,6 +52,7 @@ export default function Equipe() {
   const [enviarEmail, setEnviarEmail] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [copiedToken, setCopiedToken] = useState<number | null>(null);
+  const [resendingId, setResendingId] = useState<number | null>(null);
 
   useEffect(() => {
     loadData();
@@ -165,6 +166,26 @@ export default function Equipe() {
       }
     } catch {
       toast({ title: "Erro", variant: "destructive" });
+    }
+  }
+
+  async function handleResendInvite(id: number) {
+    setResendingId(id);
+    try {
+      const res = await fetch(apiUrl(`/convites/${id}/resend`), {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ title: "Erro ao reenviar", description: data.error, variant: "destructive" });
+        return;
+      }
+      toast({ title: "E-mail reenviado com sucesso!" });
+    } catch {
+      toast({ title: "Erro", description: "Falha ao reenviar convite", variant: "destructive" });
+    } finally {
+      setResendingId(null);
     }
   }
 
@@ -395,10 +416,20 @@ export default function Equipe() {
                         variant="outline"
                         size="sm"
                         className="h-8 rounded-lg text-[12px] gap-1.5"
+                        onClick={() => handleResendInvite(invite.id)}
+                        disabled={resendingId === invite.id}
+                      >
+                        <RefreshCw className={cn("h-3.5 w-3.5", resendingId === invite.id && "animate-spin")} />
+                        {resendingId === invite.id ? "Enviando..." : "Reenviar"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-lg text-[12px] gap-1.5"
                         onClick={() => copyInviteLink(invite)}
                       >
                         {copiedToken === invite.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                        {copiedToken === invite.id ? "Copiado" : "Copiar Link"}
+                        {copiedToken === invite.id ? "Copiado" : "Link"}
                       </Button>
                       <Button
                         variant="ghost"
