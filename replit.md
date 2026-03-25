@@ -33,3 +33,8 @@ I want to iteratively develop this project, focusing on small, reviewable change
 *   **API Codegen:** Orval
 *   **Google Sign-In:** Google API (requires `GOOGLE_CLIENT_ID` environment variable and `google-auth-library` for backend verification).
 *   **Address Auto-fill:** ViaCEP (for address lookup in onboarding).
+*   **Exports:** xlsx (Excel), jspdf + jspdf-autotable (PDF) for Comandas/Caixa exports.
+
+## Database Schema Management
+Schema changes use `pnpm --filter @workspace/db run push` (drizzle push) — no migration files.
+After pushing, restart the API server workflow.
