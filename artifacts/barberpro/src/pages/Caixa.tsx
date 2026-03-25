@@ -270,6 +270,10 @@ export default function Caixa() {
     }
   }
 
+  function escapeHtml(str: string): string {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
   function handlePrint() {
     const tableData = getTableData();
     if (tableData.length === 0) return;
@@ -287,10 +291,10 @@ export default function Caixa() {
         p { font-size: 12px; color: #666; }
       </style></head><body>
       <h1>Comandas</h1>
-      <p>Período: ${dataInicio} a ${dataFim} | Total: ${tableData.length} registros</p>
+      <p>Período: ${escapeHtml(dataInicio)} a ${escapeHtml(dataFim)} | Total: ${tableData.length} registros</p>
       <table>
-        <thead><tr>${columns.map(c => `<th>${c}</th>`).join("")}</tr></thead>
-        <tbody>${tableData.map(r => `<tr>${Object.values(r).map(v => `<td>${v}</td>`).join("")}</tr>`).join("")}</tbody>
+        <thead><tr>${columns.map(c => `<th>${escapeHtml(c)}</th>`).join("")}</tr></thead>
+        <tbody>${tableData.map(r => `<tr>${Object.values(r).map(v => `<td>${escapeHtml(String(v))}</td>`).join("")}</tr>`).join("")}</tbody>
       </table>
       </body></html>
     `);

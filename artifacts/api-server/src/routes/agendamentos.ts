@@ -212,7 +212,6 @@ router.post("/:agendamentoId/checkout", requireAuth, requireRole("dono", "gerent
   const comissaoTotal = comissaoServico + comissaoProdutos;
   const now = new Date();
   const mesAno = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const user = (req as any).user;
   const [comanda] = await db.insert(comandasTable).values({
     barbeariaId,
     agendamentoId: id,
@@ -230,7 +229,7 @@ router.post("/:agendamentoId/checkout", requireAuth, requireRole("dono", "gerent
     parcelas,
     status: "paga",
     observacao: observacao || null,
-    cadastradoPor: user?.nome || null,
+    cadastradoPor: profissional?.nomeExibicao || agend.profissionalNome,
   }).returning();
   await db.update(agendamentosTable).set({ status: "pago", pago: true, updatedAt: new Date() }).where(eq(agendamentosTable.id, id));
   if (agend.clienteId) {
