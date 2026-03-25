@@ -132,6 +132,22 @@ router.post("/complete-profile", requireAuth, async (req, res) => {
   }
 });
 
+router.put("/tema", requireAuth, async (req, res) => {
+  try {
+    const user = (req as any).user;
+    const { tema } = req.body;
+    const validTemas = ["blue", "black", "purple", "green", "red", "yellow", "teal", "bluegray", "brown", "light-blue", "light-purple", "light-green", "light-red", "light-yellow", "light-teal", "light-bluegray", "light-brown"];
+    if (!tema || !validTemas.includes(tema)) {
+      return res.status(400).json({ error: "Tema inválido" });
+    }
+    const [updated] = await db.update(usersTable).set({ tema, updatedAt: new Date() }).where(eq(usersTable.id, user.id)).returning();
+    return res.json({ tema: updated.tema });
+  } catch (e) {
+    console.error("tema update error:", e);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 router.get("/me", requireAuth, async (req, res) => {
   try {
     const user = (req as any).user;

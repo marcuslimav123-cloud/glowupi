@@ -13,6 +13,7 @@ export const usersTable = pgTable("users", {
   role: text("role").notNull().default("dono"),
   barbeariaId: integer("barbearia_id"),
   profissionalId: integer("profissional_id"),
+  tema: text("tema").default("blue"),
   ativo: boolean("ativo").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

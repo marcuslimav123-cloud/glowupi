@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { APP_NAME, getRoleLabel } from "@/lib/utils";
+import { HeaderBar, applyTheme } from "./HeaderBar";
 
 type NavItem = {
   name: string;
@@ -166,6 +167,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, barbeariaId, location, role]);
 
+  React.useEffect(() => {
+    if (user && (user as any).tema) {
+      applyTheme((user as any).tema);
+    }
+  }, [user]);
+
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-[#fafafa]"><div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div></div>;
   }
@@ -202,13 +209,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[#fafafa]">
-      <div className="md:hidden flex items-center justify-between px-5 py-3 border-b border-black/[0.04] bg-white">
-        <div className="flex items-center gap-2 font-semibold text-[15px] text-foreground tracking-tight">
-          <Sparkles className="h-[18px] w-[18px] text-primary" /> {APP_NAME}
+      <div className="md:hidden flex items-center justify-between px-4 py-2.5 border-b border-black/[0.04] bg-white">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="h-8 w-8 shrink-0">
+            {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </Button>
+          <div className="font-semibold text-[14px] text-foreground tracking-tight flex items-center gap-1.5">
+            <Sparkles className="h-[16px] w-[16px] text-primary" /> {APP_NAME}
+          </div>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="h-8 w-8">
-          {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-        </Button>
+        <HeaderBar />
       </div>
 
       <aside className={cn(
@@ -298,6 +308,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden relative">
+        <div className="hidden md:flex items-center justify-end px-6 py-2.5 border-b border-black/[0.04] bg-white shrink-0">
+          <HeaderBar />
+        </div>
         {shouldShowUpgrade && (
           <div className="bg-primary/5 border-b border-primary/10 px-4 py-2 flex items-center justify-center gap-3 z-20">
             <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />

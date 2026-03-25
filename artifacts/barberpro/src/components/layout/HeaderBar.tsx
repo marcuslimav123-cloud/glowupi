@@ -1,0 +1,363 @@
+import React, { useState, useRef, useEffect } from "react";
+import { Link } from "wouter";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiUrl } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import {
+  CalendarDays, DollarSign, FileText, Cake, Mail, UserPlus,
+  User, LogOut, Palette, Shield, Settings, X, Check,
+} from "lucide-react";
+
+const THEMES = [
+  { id: "blue", label: "Blue", color: "#3b82f6" },
+  { id: "black", label: "Black", color: "#18181b" },
+  { id: "purple", label: "Purple", color: "#8b5cf6" },
+  { id: "green", label: "Green", color: "#22c55e" },
+  { id: "red", label: "Red", color: "#ef4444" },
+  { id: "yellow", label: "Yellow", color: "#eab308" },
+  { id: "teal", label: "Teal", color: "#14b8a6" },
+  { id: "bluegray", label: "Blue Gray", color: "#64748b" },
+  { id: "brown", label: "Brown", color: "#92400e" },
+  { id: "light-blue", label: "Light Blue", color: "#93c5fd" },
+  { id: "light-purple", label: "Light Purple", color: "#c4b5fd" },
+  { id: "light-green", label: "Light Green", color: "#86efac" },
+  { id: "light-red", label: "Light Red", color: "#fca5a5" },
+  { id: "light-yellow", label: "Light Yellow", color: "#fde68a" },
+  { id: "light-teal", label: "Light Teal", color: "#99f6e4" },
+  { id: "light-bluegray", label: "Light Gray", color: "#cbd5e1" },
+  { id: "light-brown", label: "Light Brown", color: "#d97706" },
+];
+
+function Popup({ open, onClose, children, className = "" }: { open: boolean; onClose: () => void; children: React.ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    }
+    if (open) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div ref={ref} className={`absolute right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-black/[0.06] z-[100] ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+export function HeaderBar() {
+  const { user, logout, barbeariaId, role, isDono, isGerente } = useAuth();
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [activePopup, setActivePopup] = useState<string | null>(null);
+  const [themeOpen, setThemeOpen] = useState(false);
+  const [solTab, setSolTab] = useState("todos");
+
+  const toggle = (key: string) => setActivePopup(prev => prev === key ? null : key);
+
+  const { data: aniversariantes } = useQuery({
+    queryKey: ["notificacoes", "aniversariantes", barbeariaId],
+    queryFn: async () => {
+      const r = await fetch(apiUrl(`/barbearias/${barbeariaId}/notificacoes/aniversariantes`), { credentials: "include" });
+      return r.json();
+    },
+    enabled: !!barbeariaId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: mensagens } = useQuery({
+    queryKey: ["notificacoes", "mensagens", barbeariaId],
+    queryFn: async () => {
+      const r = await fetch(apiUrl(`/barbearias/${barbeariaId}/notificacoes/mensagens`), { credentials: "include" });
+      return r.json();
+    },
+    enabled: !!barbeariaId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: solicitacoes } = useQuery({
+    queryKey: ["notificacoes", "solicitacoes", barbeariaId, solTab],
+    queryFn: async () => {
+      const url = solTab === "todos"
+        ? apiUrl(`/barbearias/${barbeariaId}/notificacoes/solicitacoes`)
+        : apiUrl(`/barbearias/${barbeariaId}/notificacoes/solicitacoes?status=${solTab}`);
+      const r = await fetch(url, { credentials: "include" });
+      return r.json();
+    },
+    enabled: !!barbeariaId && (isDono || isGerente),
+    staleTime: 30 * 1000,
+  });
+
+  const handleSolicitacao = async (id: number, status: string) => {
+    await fetch(apiUrl(`/barbearias/${barbeariaId}/notificacoes/solicitacoes/${id}`), {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ status }),
+    });
+    qc.invalidateQueries({ queryKey: ["notificacoes", "solicitacoes"] });
+    toast({ title: status === "aprovado" ? "Solicitação aprovada" : "Solicitação reprovada" });
+  };
+
+  const handleTheme = async (tema: string) => {
+    try {
+      await fetch(apiUrl("/auth/tema"), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ tema }),
+      });
+      qc.invalidateQueries({ queryKey: ["getCurrentUser"] });
+      setThemeOpen(false);
+      setActivePopup(null);
+      toast({ title: "Tema atualizado!" });
+      applyTheme(tema);
+    } catch {
+      toast({ title: "Erro ao salvar tema", variant: "destructive" });
+    }
+  };
+
+  if (!user) return null;
+
+  const currentTema = (user as any).tema || "blue";
+
+  const iconBtn = "relative flex items-center justify-center h-9 w-9 rounded-lg hover:bg-black/[0.04] transition-colors cursor-pointer";
+  const iconCls = "h-[18px] w-[18px] text-foreground/50";
+
+  return (
+    <div className="flex items-center gap-1">
+      <Link href="/agenda" className={iconBtn} title="Agenda">
+        <CalendarDays className={iconCls} />
+      </Link>
+
+      <Link href="/caixa" className={iconBtn} title="Financeiro">
+        <DollarSign className={iconCls} />
+      </Link>
+
+      <Link href="/caixa" className={iconBtn} title="Comandas">
+        <FileText className={iconCls} />
+      </Link>
+
+      <div className="relative">
+        <button onClick={() => toggle("aniversarios")} className={iconBtn} title="Aniversários">
+          <Cake className={iconCls} />
+        </button>
+        <Popup open={activePopup === "aniversarios"} onClose={() => setActivePopup(null)} className="w-72">
+          <div className="p-4">
+            <h3 className="font-semibold text-[14px] text-foreground mb-3">Aniversariantes</h3>
+            {aniversariantes?.hoje?.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-[11px] font-semibold text-foreground/40 uppercase">Hoje</p>
+                {aniversariantes.hoje.map((c: any) => (
+                  <div key={c.id} className="flex items-center gap-2 py-1.5">
+                    <div className="h-7 w-7 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 text-[11px] font-bold">
+                      {c.nome.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-medium">{c.nome}</p>
+                      <p className="text-[11px] text-foreground/40">{c.telefone}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[13px] text-foreground/40">Nenhum Aniversário.</p>
+            )}
+            {aniversariantes?.semana?.length > 0 && (
+              <div className="mt-3 space-y-2 border-t border-black/[0.04] pt-3">
+                <p className="text-[11px] font-semibold text-foreground/40 uppercase">Próximos 7 dias</p>
+                {aniversariantes.semana.slice(0, 5).map((c: any) => (
+                  <div key={c.id} className="flex items-center gap-2 py-1">
+                    <div className="h-6 w-6 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-[10px] font-bold">
+                      {c.nome.charAt(0)}
+                    </div>
+                    <p className="text-[12px] text-foreground/60">{c.nome}</p>
+                    <p className="text-[10px] text-foreground/30 ml-auto">{c.aniversario?.slice(5)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <Link href="/relatorios/aniversariantes" className="block mt-3 text-[12px] text-primary font-medium hover:underline" onClick={() => setActivePopup(null)}>
+              Ver Histórico →
+            </Link>
+          </div>
+        </Popup>
+      </div>
+
+      <div className="relative">
+        <button onClick={() => toggle("mensagens")} className={iconBtn} title="Mensagens">
+          <Mail className={iconCls} />
+        </button>
+        <Popup open={activePopup === "mensagens"} onClose={() => setActivePopup(null)} className="w-72">
+          <div className="p-4">
+            <h3 className="font-semibold text-[14px] text-foreground mb-3">Mensagens</h3>
+            {Array.isArray(mensagens) && mensagens.length > 0 ? (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {mensagens.map((m: any) => (
+                  <div key={m.id} className="flex items-start gap-2 py-1.5 border-b border-black/[0.03] last:border-0">
+                    <Mail className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-[13px] font-medium">{m.titulo}</p>
+                      <p className="text-[11px] text-foreground/40">{m.tipo} · {m.status}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[13px] text-foreground/40">Nenhuma Mensagem</p>
+            )}
+            <Link href="/mensagens" className="block mt-3 text-[12px] text-primary font-medium hover:underline" onClick={() => setActivePopup(null)}>
+              Ver Histórico →
+            </Link>
+          </div>
+        </Popup>
+      </div>
+
+      {(isDono || isGerente) && (
+        <div className="relative">
+          <button onClick={() => toggle("solicitacoes")} className={iconBtn} title="Solicitações de Cadastro">
+            <UserPlus className={iconCls} />
+          </button>
+          <Popup open={activePopup === "solicitacoes"} onClose={() => setActivePopup(null)} className="w-80">
+            <div className="p-4">
+              <h3 className="font-semibold text-[14px] text-foreground mb-3">Solicitações de Cadastro</h3>
+              <div className="flex gap-1 mb-3">
+                {["todos", "pendente", "aprovado", "reprovado"].map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setSolTab(tab)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                      solTab === tab ? "bg-primary/10 text-primary" : "text-foreground/40 hover:bg-black/[0.03]"
+                    }`}
+                  >
+                    {tab === "todos" ? "Todos" : tab === "pendente" ? "Pendentes" : tab === "aprovado" ? "Aprovados" : "Reprovados"}
+                  </button>
+                ))}
+              </div>
+              {Array.isArray(solicitacoes) && solicitacoes.length > 0 ? (
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {solicitacoes.map((s: any) => (
+                    <div key={s.id} className="flex items-center gap-2 py-1.5 border-b border-black/[0.03] last:border-0">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-medium truncate">{s.nome}</p>
+                        <p className="text-[11px] text-foreground/40">{s.telefone}</p>
+                      </div>
+                      {s.status === "pendente" ? (
+                        <div className="flex gap-1 shrink-0">
+                          <button onClick={() => handleSolicitacao(s.id, "aprovado")} className="h-7 w-7 rounded-md bg-green-50 hover:bg-green-100 flex items-center justify-center transition-colors">
+                            <Check className="h-3.5 w-3.5 text-green-600" />
+                          </button>
+                          <button onClick={() => handleSolicitacao(s.id, "reprovado")} className="h-7 w-7 rounded-md bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors">
+                            <X className="h-3.5 w-3.5 text-red-600" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                          s.status === "aprovado" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
+                        }`}>{s.status}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[13px] text-foreground/40">Nenhuma solicitação pendente.</p>
+              )}
+            </div>
+          </Popup>
+        </div>
+      )}
+
+      <div className="w-px h-5 bg-black/[0.06] mx-1" />
+
+      <div className="relative">
+        <button onClick={() => toggle("perfil")} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-black/[0.04] transition-colors cursor-pointer">
+          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-semibold text-[12px]">
+            {user.nome.charAt(0).toUpperCase()}
+          </div>
+        </button>
+        <Popup open={activePopup === "perfil"} onClose={() => setActivePopup(null)} className="w-56">
+          <div className="bg-primary/10 rounded-t-xl px-4 py-4 flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-[14px]">
+              {user.nome.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="text-[14px] font-semibold text-foreground truncate">{user.nome}</p>
+              <p className="text-[11px] text-foreground/50 capitalize">{role}</p>
+            </div>
+          </div>
+          <div className="p-2 space-y-0.5">
+            <Link href="/empresa" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-foreground/60 hover:text-foreground hover:bg-black/[0.03] transition-colors" onClick={() => setActivePopup(null)}>
+              <Settings className="h-4 w-4" /> Conta
+            </Link>
+            {isDono && (
+              <Link href="/equipe" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-foreground/60 hover:text-foreground hover:bg-black/[0.03] transition-colors" onClick={() => setActivePopup(null)}>
+                <Shield className="h-4 w-4" /> Acessos
+              </Link>
+            )}
+            <button onClick={() => { setThemeOpen(true); }} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-foreground/60 hover:text-foreground hover:bg-black/[0.03] transition-colors text-left">
+              <Palette className="h-4 w-4" /> Temas
+            </button>
+            <div className="border-t border-black/[0.04] mt-1 pt-1">
+              <button onClick={() => { setActivePopup(null); logout(); }} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-red-500 hover:bg-red-50 transition-colors text-left">
+                <LogOut className="h-4 w-4" /> Sair
+              </button>
+            </div>
+          </div>
+        </Popup>
+      </div>
+
+      {themeOpen && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[200] flex items-center justify-center" onClick={() => setThemeOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-[380px] max-w-[90vw]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-black/[0.06]">
+              <h3 className="font-semibold text-[16px]">Selecionar Tema</h3>
+              <button onClick={() => setThemeOpen(false)} className="h-8 w-8 rounded-lg hover:bg-black/[0.04] flex items-center justify-center">
+                <X className="h-4 w-4 text-foreground/40" />
+              </button>
+            </div>
+            <div className="p-5 grid grid-cols-4 gap-3">
+              {THEMES.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => handleTheme(t.id)}
+                  className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl transition-all ${
+                    currentTema === t.id ? "bg-black/[0.04] ring-2 ring-primary" : "hover:bg-black/[0.02]"
+                  }`}
+                >
+                  <div className="h-10 w-10 rounded-full border-2 border-white shadow-md" style={{ background: t.color }} />
+                  <span className="text-[10px] font-medium text-foreground/60 leading-tight text-center">{t.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const THEME_COLORS: Record<string, string> = {
+  "blue": "210 100% 50%",
+  "black": "240 6% 10%",
+  "purple": "263 70% 58%",
+  "green": "142 71% 45%",
+  "red": "0 84% 60%",
+  "yellow": "48 96% 53%",
+  "teal": "168 80% 40%",
+  "bluegray": "215 16% 47%",
+  "brown": "27 69% 31%",
+  "light-blue": "213 93% 78%",
+  "light-purple": "255 82% 82%",
+  "light-green": "149 80% 73%",
+  "light-red": "0 94% 82%",
+  "light-yellow": "45 96% 76%",
+  "light-teal": "170 91% 76%",
+  "light-bluegray": "213 27% 84%",
+  "light-brown": "38 92% 50%",
+};
+
+export function applyTheme(tema: string) {
+  const hsl = THEME_COLORS[tema] || THEME_COLORS["blue"];
+  document.documentElement.style.setProperty("--primary", hsl);
+}
