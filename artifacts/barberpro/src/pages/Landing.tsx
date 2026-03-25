@@ -19,11 +19,6 @@ import {
   Zap,
   Menu,
   X,
-  Clock,
-  TrendingUp,
-  Smartphone,
-  HeadphonesIcon,
-  Lock,
 } from "lucide-react";
 import { APP_NAME } from "@/lib/utils";
 
@@ -101,11 +96,10 @@ const TESTIMONIALS = [
 ];
 
 const DIFFERENTIALS = [
-  { icon: Smartphone, text: "Interface intuitiva e mobile-first" },
-  { icon: HeadphonesIcon, text: "Suporte dedicado para você" },
-  { icon: TrendingUp, text: "Relatórios automáticos em tempo real" },
-  { icon: Lock, text: "Segurança total com criptografia" },
-  { icon: Clock, text: "Atualizações constantes e gratuitas" },
+  "Interface intuitiva e mobile-first",
+  "Suporte dedicado para você",
+  "Relatórios automáticos em tempo real",
+  "Segurança total com criptografia",
 ];
 
 const STATS = [
@@ -320,20 +314,23 @@ export default function Landing() {
         </div>
 
         {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-b border-black/[0.06] px-6 pb-6 pt-2 space-y-1 animate-in slide-in-from-top-2">
-            <a href="#features" onClick={(e) => smoothScroll(e, "features")} className="block py-3 text-[15px] text-foreground/70 font-medium border-b border-black/[0.04]">Funcionalidades</a>
-            <a href="#pricing" onClick={(e) => smoothScroll(e, "pricing")} className="block py-3 text-[15px] text-foreground/70 font-medium border-b border-black/[0.04]">Preços</a>
-            <a href="#testimonials" onClick={(e) => smoothScroll(e, "testimonials")} className="block py-3 text-[15px] text-foreground/70 font-medium border-b border-black/[0.04]">Depoimentos</a>
-            <a href="#faq" onClick={(e) => smoothScroll(e, "faq")} className="block py-3 text-[15px] text-foreground/70 font-medium border-b border-black/[0.04]">FAQ</a>
-            <div className="flex gap-3 pt-4">
-              <Link href="/login" className="flex-1">
-                <Button variant="outline" className="w-full h-11 rounded-full text-[14px]">Entrar</Button>
-              </Link>
-              <Link href="/cadastro" className="flex-1">
-                <Button className="w-full h-11 rounded-full text-[14px]">Teste Grátis</Button>
-              </Link>
+          <>
+            <div className="fixed inset-0 top-14 bg-black/30 backdrop-blur-sm z-40 md:hidden" onClick={() => setMobileMenuOpen(false)} />
+            <div className="fixed top-14 left-0 right-0 z-50 md:hidden bg-white border-b border-black/[0.06] px-6 pb-6 pt-2 space-y-1 shadow-xl">
+              <a href="#features" onClick={(e) => smoothScroll(e, "features")} className="block py-3 text-[15px] text-foreground/70 font-medium border-b border-black/[0.04]">Funcionalidades</a>
+              <a href="#pricing" onClick={(e) => smoothScroll(e, "pricing")} className="block py-3 text-[15px] text-foreground/70 font-medium border-b border-black/[0.04]">Preços</a>
+              <a href="#testimonials" onClick={(e) => smoothScroll(e, "testimonials")} className="block py-3 text-[15px] text-foreground/70 font-medium border-b border-black/[0.04]">Depoimentos</a>
+              <a href="#faq" onClick={(e) => smoothScroll(e, "faq")} className="block py-3 text-[15px] text-foreground/70 font-medium border-b border-black/[0.04]">FAQ</a>
+              <div className="flex gap-3 pt-4">
+                <Link href="/login" className="flex-1">
+                  <Button variant="outline" className="w-full h-11 rounded-full text-[14px]">Entrar</Button>
+                </Link>
+                <Link href="/cadastro" className="flex-1">
+                  <Button className="w-full h-11 rounded-full text-[14px]">Teste Grátis</Button>
+                </Link>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </nav>
 
@@ -373,7 +370,7 @@ export default function Landing() {
               </div>
             </AnimatedSection>
 
-            <AnimatedSection delay={200} className="hidden lg:block">
+            <AnimatedSection delay={200} className="mt-8 lg:mt-0">
               <DashboardMockup />
             </AnimatedSection>
           </div>
@@ -472,12 +469,12 @@ export default function Landing() {
                 Desenvolvido por quem entende a rotina de profissionais de beleza. Cada funcionalidade foi pensada para simplificar seu dia.
               </p>
               <div className="space-y-4">
-                {DIFFERENTIALS.map((item, i) => (
+                {DIFFERENTIALS.map((text, i) => (
                   <div key={i} className="flex items-center gap-4">
-                    <div className="h-9 w-9 rounded-lg bg-primary/8 flex items-center justify-center shrink-0">
-                      <item.icon className="h-4 w-4 text-primary" />
+                    <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Check className="h-4 w-4 text-primary" />
                     </div>
-                    <span className="text-[15px] text-foreground/70 font-medium">{item.text}</span>
+                    <span className="text-[15px] text-foreground/70 font-medium">{text}</span>
                   </div>
                 ))}
               </div>
