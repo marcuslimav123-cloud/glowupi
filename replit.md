@@ -42,7 +42,7 @@ The design follows a "luxury clinic aesthetic" with a color palette of warm gold
 - **Stripe:** For payment processing, subscription management, and billing.
 - **PostgreSQL:** Primary database.
 - **Google Sign-In API:** For user authentication (required for registration and team invite acceptance).
-- **Brevo (Sendinblue):** Transactional email sending with 4-key round-robin rotation. Keys: BREVO_API_KEY_1 through BREVO_API_KEY_4.
+- **Brevo (Sendinblue):** Transactional email sending with 4-key round-robin rotation. Keys: BREVO_API_KEY_1 through BREVO_API_KEY_4. Verified sender: marcuslimav123@gmail.com (BREVO_SENDER_EMAIL). Email templates stored in `email_templates` table with per-tenant overrides. Templates page at `/configuracoes/templates`.
 - **ViaCEP:** For address auto-fill functionality during onboarding.
 - **Recharts:** For data visualization in dashboards and reports.
 - **Orval:** For API client code generation from OpenAPI specifications.

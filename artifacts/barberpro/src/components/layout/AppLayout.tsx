@@ -35,6 +35,7 @@ import {
   ChevronDown,
   ChevronRight,
   Shield,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { APP_NAME, getRoleLabel } from "@/lib/utils";
@@ -126,6 +127,7 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { name: "Parâmetros", href: "/configuracoes/parametros", icon: Settings },
       { name: "Perfis de Acesso", href: "/configuracoes/acessos", icon: Shield, roles: ["dono"] },
+      { name: "Templates de E-mail", href: "/configuracoes/templates", icon: Mail, roles: ["dono"] },
       { name: "Rodízio de Profissionais", href: "/configuracoes/rodizio", icon: UsersRound },
       { name: "Ordem de Chegada", href: "/configuracoes/ordem-chegada", icon: ClipboardList },
       { name: "Lista de Espera", href: "/configuracoes/lista-espera", icon: Users },
@@ -169,6 +171,7 @@ const HREF_TO_PERMISSION: Record<string, string> = {
   "/lista-espera": "lista_espera",
   "/configuracoes/parametros": "configuracoes",
   "/configuracoes/acessos": "configuracoes",
+  "/configuracoes/templates": "configuracoes",
   "/configuracoes/rodizio": "configuracoes",
   "/configuracoes/ordem-chegada": "configuracoes",
   "/configuracoes/lista-espera": "configuracoes",

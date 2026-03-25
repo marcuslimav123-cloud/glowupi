@@ -4,7 +4,8 @@ import { db } from "@workspace/db";
 import { convitesTable, usersTable, barbeariasTable, profissionaisTable, perfisAcessoTable, profissionaisPerfisTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, createSession } from "../lib/auth.js";
-import { sendEmail, buildInviteEmailHtml } from "../lib/brevo.js";
+import { sendEmail, renderTemplate } from "../lib/brevo.js";
+import { getTemplateForType } from "./emailTemplates.js";
 import { OAuth2Client } from "google-auth-library";
 
 const router: IRouter = Router();
@@ -85,16 +86,24 @@ router.post("/", requireAuth, async (req, res) => {
       try {
         const baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN || req.get("host")}`;
         const link = `${baseUrl}/convite/${token}`;
+        const cargoLabel = role === "gerente" ? "Gerente" : "Colaborador(a)";
         console.log(`[Convite] Sending invite email to ${email}, link=${link}`);
+
+        const template = await getTemplateForType("convite", barbearia.id);
+        const vars: Record<string, string> = {
+          nomeConvidado: nomeConvidado || "Profissional",
+          nomeEstabelecimento: barbearia.nome,
+          cargo: cargoLabel,
+          link,
+        };
+
+        const htmlContent = template ? renderTemplate(template.corpo, vars) : `<p>Você foi convidado(a) para ${barbearia.nome}. <a href="${link}">Aceitar Convite</a></p>`;
+        const subject = template ? renderTemplate(template.assunto, vars) : `Convite para ${barbearia.nome} — Glow Agenda`;
+
         const result = await sendEmail({
           to: [{ email, name: nomeConvidado || undefined }],
-          subject: `Convite para ${barbearia.nome} — Glow Agenda`,
-          htmlContent: buildInviteEmailHtml({
-            nomeEstabelecimento: barbearia.nome,
-            nomeConvidado: nomeConvidado || undefined,
-            role,
-            link,
-          }),
+          subject,
+          htmlContent,
         });
         emailSent = result.success;
         console.log(`[Convite] Email result: success=${result.success}, messageId=${result.messageId || 'none'}, error=${result.error || 'none'}`);
@@ -154,15 +163,22 @@ router.post("/:id/resend", requireAuth, async (req, res) => {
     console.log(`[Convite] Resending invite email to ${convite.email}`);
 
     try {
+      const cargoLabel = convite.role === "gerente" ? "Gerente" : "Colaborador(a)";
+      const template = await getTemplateForType("convite", barbearia.id);
+      const vars: Record<string, string> = {
+        nomeConvidado: convite.nomeConvidado || "Profissional",
+        nomeEstabelecimento: barbearia.nome,
+        cargo: cargoLabel,
+        link,
+      };
+
+      const htmlContent = template ? renderTemplate(template.corpo, vars) : `<p>Você foi convidado(a) para ${barbearia.nome}. <a href="${link}">Aceitar Convite</a></p>`;
+      const subject = template ? renderTemplate(template.assunto, vars) + " (Lembrete)" : `Lembrete: Convite para ${barbearia.nome} — Glow Agenda`;
+
       const result = await sendEmail({
         to: [{ email: convite.email, name: convite.nomeConvidado || undefined }],
-        subject: `Lembrete: Convite para ${barbearia.nome} — Glow Agenda`,
-        htmlContent: buildInviteEmailHtml({
-          nomeEstabelecimento: barbearia.nome,
-          nomeConvidado: convite.nomeConvidado || undefined,
-          role: convite.role,
-          link,
-        }),
+        subject,
+        htmlContent,
       });
       console.log(`[Convite] Resend result: success=${result.success}, messageId=${result.messageId || 'none'}`);
       if (!result.success) {

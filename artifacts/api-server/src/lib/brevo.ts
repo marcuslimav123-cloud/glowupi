@@ -61,7 +61,7 @@ interface SendEmailParams {
 
 export async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const { key, index } = getNextKey();
-  const sender = params.sender || { name: "Glow Agenda", email: "noreply@glowagenda.com" };
+  const sender = params.sender || { name: "Glow Agenda", email: process.env.BREVO_SENDER_EMAIL || "marcuslimav123@gmail.com" };
 
   try {
     const res = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -92,6 +92,10 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
     console.error(`Brevo send error (key ${index}):`, err);
     return { success: false, error: err.message };
   }
+}
+
+export function renderTemplate(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] || "");
 }
 
 export function buildInviteEmailHtml(params: {

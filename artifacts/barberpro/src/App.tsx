@@ -54,6 +54,7 @@ import ComandasItensReport from "@/pages/relatorios/ComandasItensReport";
 import Parametros from "@/pages/configuracoes/Parametros";
 import PerfisAcesso from "@/pages/configuracoes/PerfisAcesso";
 import { RodizioPage, OrdemChegadaPage, ListaEsperaConfigPage, AlertasPage } from "@/pages/configuracoes/PlaceholderConfig";
+import EmailTemplates from "@/pages/configuracoes/EmailTemplates";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminTenants from "@/pages/admin/AdminTenants";
@@ -113,6 +114,7 @@ function Router() {
       <Route path="/configuracoes/lista-espera" component={ListaEsperaConfigPage} />
       <Route path="/configuracoes/alertas" component={AlertasPage} />
       <Route path="/configuracoes/acessos" component={PerfisAcesso} />
+      <Route path="/configuracoes/templates" component={EmailTemplates} />
       <Route path="/empresa" component={Empresa} />
       <Route path="/clube" component={Clube} />
 

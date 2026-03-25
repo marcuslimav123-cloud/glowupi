@@ -27,3 +27,4 @@ export * from "./parametrosConfig";
 export * from "./solicitacoesCadastro";
 export * from "./perfisAcesso";
 export * from "./brevoEmailLog";
+export * from "./emailTemplates";
