@@ -6,9 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatCurrency, apiUrl } from "@/lib/utils";
 import { format } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import {
   DollarSign, CreditCard, Smartphone, Banknote, Receipt, TrendingUp,
   Search, ChevronUp, ChevronDown, ChevronsUpDown, Plus,
@@ -37,7 +39,7 @@ const METODO_ICON: Record<string, React.ReactNode> = {
 };
 const METODO_LABEL: Record<string, string> = { pix: "PIX", dinheiro: "Dinheiro", credito: "Crédito", debito: "Débito", outros: "Outros" };
 
-type SortKey = "id" | "clienteNome" | "profissionalNome" | "valorTotal" | "dataFechamento" | "observacao";
+type SortKey = "id" | "clienteNome" | "profissionalNome" | "valorTotal" | "dataFechamento" | "observacao" | "cadastradoPor";
 type SortDir = "asc" | "desc" | null;
 
 const ALL_COLUMNS = [
@@ -47,6 +49,7 @@ const ALL_COLUMNS = [
   { key: "valorTotal", label: "Valor" },
   { key: "clienteNome", label: "Cliente" },
   { key: "observacao", label: "Obs" },
+  { key: "cadastradoPor", label: "Cadastrou" },
   { key: "profissionalNome", label: "Profissional" },
   { key: "servicos", label: "Serviços" },
 ] as const;
@@ -57,6 +60,8 @@ function todayStr() {
 
 export default function Caixa() {
   const { barbeariaId } = useAuth();
+  const { toast } = useToast();
+  const qc = useQueryClient();
   const [dataInicio, setDataInicio] = useState(todayStr());
   const [dataFim, setDataFim] = useState(todayStr());
   const [searchDataInicio, setSearchDataInicio] = useState(todayStr());
@@ -67,6 +72,26 @@ export default function Caixa() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [visibleCols, setVisibleCols] = useState<Set<string>>(new Set(ALL_COLUMNS.map(c => c.key)));
+  const [novaComandaOpen, setNovaComandaOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const { data: profissionais = [] } = useQuery<any[]>({
+    queryKey: ["profissionais-caixa", barbeariaId],
+    queryFn: async () => {
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/profissionais`), { credentials: "include" });
+      return res.ok ? res.json() : [];
+    },
+    enabled: !!barbeariaId,
+  });
+
+  const { data: servicos = [] } = useQuery<any[]>({
+    queryKey: ["servicos-caixa", barbeariaId],
+    queryFn: async () => {
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/servicos`), { credentials: "include" });
+      return res.ok ? res.json() : [];
+    },
+    enabled: !!barbeariaId,
+  });
 
   const { data: comandas = [], isLoading } = useQuery<any[]>({
     queryKey: ["comandas", barbeariaId, searchDataInicio, searchDataFim],
@@ -162,6 +187,7 @@ export default function Caixa() {
       Valor: formatCurrency(c.valorTotal),
       Cliente: c.clienteNome,
       Obs: c.observacao || "—",
+      Cadastrou: c.cadastradoPor || "—",
       Profissional: c.profissionalNome,
       Serviços: (c.servicos as any[])?.map((s: any) => s.nome).join(", ") || "—",
     }));
@@ -194,6 +220,54 @@ export default function Caixa() {
       headStyles: { fillColor: [212, 175, 55] },
     });
     doc.save(`comandas_${searchDataInicio}_${searchDataFim}.pdf`);
+  }
+
+  async function handleNovaComanda(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const fd = new FormData(e.currentTarget);
+      const profissionalId = parseInt(fd.get("profissionalId") as string);
+      const servicoId = parseInt(fd.get("servicoId") as string);
+      const clienteNome = fd.get("clienteNome") as string;
+      const clienteTelefone = fd.get("clienteTelefone") as string;
+      const metodo = fd.get("metodo") as string;
+      const agendRes = await fetch(apiUrl(`/barbearias/${barbeariaId}/agendamentos`), {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clienteNome,
+          clienteTelefone: clienteTelefone || "00000000000",
+          profissionalId,
+          servicoId,
+          data: todayStr(),
+          horaInicio: format(new Date(), "HH:mm"),
+          encaixe: true,
+        }),
+      });
+      if (!agendRes.ok) throw new Error("Erro ao criar agendamento");
+      const agend = await agendRes.json();
+      const servico = servicos.find((s: any) => s.id === servicoId);
+      const valor = servico ? parseFloat(servico.preco) : 0;
+      const checkoutRes = await fetch(apiUrl(`/barbearias/${barbeariaId}/agendamentos/${agend.id}/checkout`), {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pagamentos: [{ metodo, valor }],
+          observacao: fd.get("observacao") as string || null,
+        }),
+      });
+      if (!checkoutRes.ok) throw new Error("Erro ao fechar comanda");
+      toast({ title: "Comanda criada com sucesso" });
+      setNovaComandaOpen(false);
+      qc.invalidateQueries({ queryKey: ["comandas"] });
+    } catch (err: any) {
+      toast({ title: err.message || "Erro", variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handlePrint() {
@@ -232,6 +306,9 @@ export default function Caixa() {
           <h1 className="text-3xl font-display font-bold text-foreground">Caixa</h1>
           <p className="text-muted-foreground mt-1">Comandas e recebimentos</p>
         </div>
+        <Button onClick={() => setNovaComandaOpen(true)} className="bg-green-600 hover:bg-green-700 gap-1.5">
+          <Plus className="h-4 w-4" /> Comanda
+        </Button>
       </div>
 
       <Card className="mb-6">
@@ -372,6 +449,11 @@ export default function Caixa() {
                       {visibleCols.has("observacao") && (
                         <th className="text-left py-3 px-3 font-medium text-muted-foreground">Obs</th>
                       )}
+                      {visibleCols.has("cadastradoPor") && (
+                        <th className="text-left py-3 px-3 font-medium text-muted-foreground cursor-pointer select-none" onClick={() => toggleSort("cadastradoPor")}>
+                          <span className="inline-flex items-center gap-1">Cadastrou <SortIcon col="cadastradoPor" /></span>
+                        </th>
+                      )}
                       {visibleCols.has("profissionalNome") && (
                         <th className="text-left py-3 px-3 font-medium text-muted-foreground cursor-pointer select-none" onClick={() => toggleSort("profissionalNome")}>
                           <span className="inline-flex items-center gap-1">Profissional <SortIcon col="profissionalNome" /></span>
@@ -412,6 +494,9 @@ export default function Caixa() {
                         )}
                         {visibleCols.has("observacao") && (
                           <td className="py-3 px-3 text-xs text-muted-foreground max-w-[150px] truncate">{c.observacao || "—"}</td>
+                        )}
+                        {visibleCols.has("cadastradoPor") && (
+                          <td className="py-3 px-3 text-xs">{c.cadastradoPor || "—"}</td>
                         )}
                         {visibleCols.has("profissionalNome") && (
                           <td className="py-3 px-3">
@@ -461,6 +546,56 @@ export default function Caixa() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={novaComandaOpen} onOpenChange={setNovaComandaOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Nova Comanda</DialogTitle></DialogHeader>
+          <form onSubmit={handleNovaComanda} className="space-y-4">
+            <div>
+              <Label>Cliente *</Label>
+              <Input name="clienteNome" required placeholder="Nome do cliente" />
+            </div>
+            <div>
+              <Label>Telefone</Label>
+              <Input name="clienteTelefone" placeholder="(00) 00000-0000" />
+            </div>
+            <div>
+              <Label>Profissional *</Label>
+              <select name="profissionalId" required className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
+                <option value="">Selecione...</option>
+                {profissionais.map((p: any) => (
+                  <option key={p.id} value={p.id}>{p.nomeExibicao}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label>Serviço *</Label>
+              <select name="servicoId" required className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
+                <option value="">Selecione...</option>
+                {servicos.map((s: any) => (
+                  <option key={s.id} value={s.id}>{s.nome} — {formatCurrency(parseFloat(s.preco))}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label>Forma de Pagamento *</Label>
+              <select name="metodo" required className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
+                <option value="pix">PIX</option>
+                <option value="dinheiro">Dinheiro</option>
+                <option value="credito">Crédito</option>
+                <option value="debito">Débito</option>
+              </select>
+            </div>
+            <div>
+              <Label>Observação</Label>
+              <Input name="observacao" placeholder="Observação (opcional)" />
+            </div>
+            <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={submitting}>
+              {submitting ? "Criando..." : "Criar Comanda"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

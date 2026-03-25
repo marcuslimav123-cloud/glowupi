@@ -23,6 +23,7 @@ export const comandasTable = pgTable("comandas", {
   parcelas: integer("parcelas").default(1),
   status: text("status").notNull().default("paga"),
   observacao: text("observacao"),
+  cadastradoPor: text("cadastrado_por"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
