@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { usersTable, barbeariasTable, superAdminsTable } from "@workspace/db/schema";
-import { eq } from "drizzle-orm";
+import { usersTable, barbeariasTable, superAdminsTable, profissionaisTable, profissionaisPerfisTable, perfisAcessoTable } from "@workspace/db/schema";
+import { eq, and } from "drizzle-orm";
 import { hashPassword, createSession, deleteSession, requireAuth } from "../lib/auth.js";
 import { OAuth2Client } from "google-auth-library";
 
@@ -160,6 +160,23 @@ router.get("/me", requireAuth, async (req, res) => {
       const [b] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, user.barbeariaId)).limit(1);
       barbearia = b || null;
     }
+    let perfilPermissoes: string[] | null = null;
+    if (barbearia && (user.role === "gerente" || user.role === "colaborador") && user.profissionalId) {
+      const [vinculo] = await db.select().from(profissionaisPerfisTable)
+        .where(eq(profissionaisPerfisTable.profissionalId, user.profissionalId)).limit(1);
+      if (vinculo) {
+        const [perfil] = await db.select().from(perfisAcessoTable)
+          .where(and(
+            eq(perfisAcessoTable.id, vinculo.perfilId),
+            eq(perfisAcessoTable.ativo, true),
+            eq(perfisAcessoTable.barbeariaId, barbearia.id)
+          )).limit(1);
+        if (perfil && Array.isArray(perfil.permissoes)) {
+          perfilPermissoes = perfil.permissoes as string[];
+        }
+      }
+    }
+
     return res.json({
       ...userWithoutPass,
       createdAt: user.createdAt.toISOString(),
@@ -171,6 +188,7 @@ router.get("/me", requireAuth, async (req, res) => {
       } : null,
       barbeariaId: barbearia?.id ?? null,
       onboardingCompleto: barbearia ? barbearia.onboardingStep >= 3 : false,
+      perfilPermissoes,
     });
   } catch (e) {
     console.error("me error:", e);

@@ -34,6 +34,7 @@ import {
   ShoppingCart,
   ChevronDown,
   ChevronRight,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { APP_NAME, getRoleLabel } from "@/lib/utils";
@@ -124,6 +125,7 @@ const NAV_ITEMS: NavItem[] = [
     roles: ["dono", "gerente"],
     children: [
       { name: "Parâmetros", href: "/configuracoes/parametros", icon: Settings },
+      { name: "Perfis de Acesso", href: "/configuracoes/acessos", icon: Shield, roles: ["dono"] },
       { name: "Rodízio de Profissionais", href: "/configuracoes/rodizio", icon: UsersRound },
       { name: "Ordem de Chegada", href: "/configuracoes/ordem-chegada", icon: ClipboardList },
       { name: "Lista de Espera", href: "/configuracoes/lista-espera", icon: Users },
@@ -134,18 +136,73 @@ const NAV_ITEMS: NavItem[] = [
   { name: "Equipe", href: "/equipe", icon: UsersRound, roles: ["dono"] },
 ];
 
-function filterNavByRole(items: NavItem[], role: string): NavItem[] {
+const HREF_TO_PERMISSION: Record<string, string> = {
+  "/dashboard": "dashboard",
+  "/agenda": "agenda",
+  "/agenda/picos": "agenda_picos",
+  "/gestao/clientes": "clientes",
+  "/gestao/profissionais": "profissionais",
+  "/gestao/servicos": "servicos",
+  "/gestao/produtos": "produtos",
+  "/cadastros/tipos": "tipos",
+  "/cadastros/cupons": "cupons",
+  "/mensagens": "mensagens",
+  "/cadastros/lembretes": "lembretes",
+  "/avaliacoes": "avaliacoes",
+  "/clube": "clube",
+  "/cadastros/clubes": "clubes_assinatura",
+  "/pacotes": "pacotes",
+  "/pacotes/vendas": "venda_pacotes",
+  "/relatorios": "relatorios",
+  "/relatorios/resumo": "relatorios",
+  "/relatorios/aniversariantes": "relatorios",
+  "/relatorios/agendamentos": "relatorios",
+  "/relatorios/financeiro": "relatorios",
+  "/relatorios/canceladas": "relatorios",
+  "/relatorios/rankings": "relatorios",
+  "/relatorios/perfil-cliente": "relatorios",
+  "/relatorios/estoque": "relatorios",
+  "/relatorios/pacotes": "relatorios",
+  "/relatorios/comandas-itens": "relatorios",
+  "/caixa": "caixa",
+  "/financeiro": "financeiro",
+  "/lista-espera": "lista_espera",
+  "/configuracoes/parametros": "configuracoes",
+  "/configuracoes/acessos": "configuracoes",
+  "/configuracoes/rodizio": "configuracoes",
+  "/configuracoes/ordem-chegada": "configuracoes",
+  "/configuracoes/lista-espera": "configuracoes",
+  "/configuracoes/alertas": "configuracoes",
+  "/empresa": "empresa",
+  "/equipe": "equipe",
+};
+
+function hasPermission(href: string | undefined, perms: string[] | null): boolean {
+  if (!perms) return true;
+  if (!href) return true;
+  const key = HREF_TO_PERMISSION[href];
+  if (!key) return true;
+  return perms.includes(key);
+}
+
+function filterNavByRole(items: NavItem[], role: string, perfilPermissoes?: string[] | null): NavItem[] {
   return items.reduce<NavItem[]>((acc, item) => {
     if (item.roles && !item.roles.includes(role)) return acc;
     if (item.children) {
       const filteredChildren = item.children.filter(
-        child => !child.roles || child.roles.includes(role)
+        child => (!child.roles || child.roles.includes(role)) && hasPermission(child.href, perfilPermissoes ?? null)
       );
       if (filteredChildren.length > 0) {
-        acc.push({ ...item, children: filteredChildren });
+        const filteredSubgroups = item.subgroups?.map(sg => ({
+          ...sg,
+          items: sg.items.filter(sub => hasPermission(sub.href, perfilPermissoes ?? null)),
+        })).filter(sg => sg.items.length > 0);
+        acc.push({ ...item, children: filteredChildren, subgroups: filteredSubgroups });
       }
     } else {
-      acc.push(item);
+      if (hasPermission(item.href, perfilPermissoes ?? null)) {
+        acc.push(item);
+      }
     }
     return acc;
   }, []);
@@ -153,7 +210,7 @@ function filterNavByRole(items: NavItem[], role: string): NavItem[] {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { user, logout, isLoading, barbeariaId, role } = useAuth();
+  const { user, logout, isLoading, barbeariaId, role, perfilPermissoes } = useAuth();
   const { canAccess, status, shouldShowUpgrade } = useSubscriptionGuard();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
@@ -233,7 +290,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5">
-          {filterNavByRole(NAV_ITEMS, role).map((item) => (
+          {filterNavByRole(NAV_ITEMS, role, perfilPermissoes).map((item) => (
             <div key={item.name}>
               {item.href ? (
                 <Link href={item.href} className={cn(

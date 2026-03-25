@@ -52,6 +52,7 @@ import EstoqueReport from "@/pages/relatorios/EstoqueReport";
 import PacotesReport from "@/pages/relatorios/PacotesReport";
 import ComandasItensReport from "@/pages/relatorios/ComandasItensReport";
 import Parametros from "@/pages/configuracoes/Parametros";
+import PerfisAcesso from "@/pages/configuracoes/PerfisAcesso";
 import { RodizioPage, OrdemChegadaPage, ListaEsperaConfigPage, AlertasPage } from "@/pages/configuracoes/PlaceholderConfig";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -111,6 +112,7 @@ function Router() {
       <Route path="/configuracoes/ordem-chegada" component={OrdemChegadaPage} />
       <Route path="/configuracoes/lista-espera" component={ListaEsperaConfigPage} />
       <Route path="/configuracoes/alertas" component={AlertasPage} />
+      <Route path="/configuracoes/acessos" component={PerfisAcesso} />
       <Route path="/empresa" component={Empresa} />
       <Route path="/clube" component={Clube} />
 
