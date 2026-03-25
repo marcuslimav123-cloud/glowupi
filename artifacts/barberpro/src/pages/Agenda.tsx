@@ -826,6 +826,9 @@ export default function Agenda() {
             <button onClick={() => navigate("/gestao/profissionais")} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
               <UserCheck className="h-3.5 w-3.5 text-muted-foreground" /> Profissionais
             </button>
+            <button onClick={() => navigate("/gestao/produtos")} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
+              <List className="h-3.5 w-3.5 text-muted-foreground" /> Produtos
+            </button>
           </div>
 
           {viewMode === "dia" && bloqueios.length > 0 && (
