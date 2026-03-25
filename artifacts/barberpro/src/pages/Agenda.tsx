@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -14,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight,
   CheckCircle, XCircle, Receipt, Star, PartyPopper, Lock, Zap,
-  List, Clock, Users
+  List, Clock, Users, Scissors, ClipboardList, UserCheck
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -123,6 +124,7 @@ export default function Agenda() {
   const { barbeariaId } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
+  const [, navigate] = useLocation();
 
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [viewMode, setViewMode] = useState<ViewMode>("dia");
@@ -172,6 +174,20 @@ export default function Agenda() {
   const checkoutMutation = useCheckoutAgendamento();
 
   const timeSlots = generateTimeSlots("08:00", "20:00", 30);
+
+  const availableTimeSlots = useMemo(() => {
+    if (!formProfId || bloqueios.length === 0) return timeSlots;
+    const profBloqueios = bloqueios.filter(b => b.profissionalId === parseInt(formProfId));
+    if (profBloqueios.length === 0) return timeSlots;
+    return timeSlots.filter(slot => {
+      const slotMin = timeToMinutes(slot);
+      return !profBloqueios.some(b => {
+        const bStart = timeToMinutes(b.horaInicio);
+        const bEnd = timeToMinutes(b.horaFim);
+        return slotMin >= bStart && slotMin < bEnd;
+      });
+    });
+  }, [timeSlots, formProfId, bloqueios]);
 
   const filteredAgendamentos = useMemo(() => {
     const all = agendamentos as Agendamento[];
@@ -685,7 +701,7 @@ export default function Agenda() {
               <Select value={formHora} onValueChange={setFormHora}>
                 <SelectTrigger className="bg-background h-9 text-sm"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>
-                  {timeSlots.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  {(isEncaixe ? timeSlots : availableTimeSlots).map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -799,7 +815,16 @@ export default function Agenda() {
               </button>
             )}
             <button onClick={() => setViewMode("dia")} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
-              <List className="h-3.5 w-3.5 text-muted-foreground" /> Lista de Agendamentos
+              <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" /> Horários Disponíveis
+            </button>
+            <button onClick={() => navigate("/lista-espera")} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
+              <ClipboardList className="h-3.5 w-3.5 text-muted-foreground" /> Lista de Espera
+            </button>
+            <button onClick={() => navigate("/gestao/servicos")} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
+              <Scissors className="h-3.5 w-3.5 text-muted-foreground" /> Serviços
+            </button>
+            <button onClick={() => navigate("/gestao/profissionais")} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
+              <UserCheck className="h-3.5 w-3.5 text-muted-foreground" /> Profissionais
             </button>
           </div>
 

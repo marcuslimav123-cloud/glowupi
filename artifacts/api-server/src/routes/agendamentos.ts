@@ -2,7 +2,8 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import {
   agendamentosTable, barbeariasTable, profissionaisTable,
-  servicosTable, clientesTable, comandasTable, produtosTable
+  servicosTable, clientesTable, comandasTable, produtosTable,
+  bloqueiosHorarioTable
 } from "@workspace/db/schema";
 import { eq, and, sql, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
@@ -66,6 +67,19 @@ router.post("/", requireAuth, async (req, res) => {
   const [profissional] = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, profissionalId), eq(profissionaisTable.barbeariaId, barbeariaId))).limit(1);
   if (!profissional) return res.status(404).json({ error: "Profissional não encontrado" });
   const horaFim = addMinutesToTime(horaInicio, servico.duracaoMinutos);
+  if (!encaixe) {
+    const bloqueios = await db.select().from(bloqueiosHorarioTable).where(
+      and(
+        eq(bloqueiosHorarioTable.barbeariaId, barbeariaId),
+        eq(bloqueiosHorarioTable.profissionalId, profissionalId),
+        eq(bloqueiosHorarioTable.data, data),
+      )
+    );
+    const overlaps = bloqueios.some(b => horaInicio < b.horaFim && horaFim > b.horaInicio);
+    if (overlaps) {
+      return res.status(409).json({ error: "Este horário está bloqueado para o profissional selecionado" });
+    }
+  }
   let isAniversario = false;
   if (clienteId) {
     const [cliente] = await db.select().from(clientesTable).where(eq(clientesTable.id, clienteId)).limit(1);
