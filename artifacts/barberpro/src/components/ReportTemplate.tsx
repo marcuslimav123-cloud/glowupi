@@ -211,11 +211,6 @@ export default function ReportTemplate({
         <CardContent>
           {isLoading ? (
             <div className="space-y-3">{[1,2,3,4].map(i => <div key={i} className="h-12 bg-muted/30 rounded-lg animate-pulse" />)}</div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-16">
-              {emptyIcon}
-              <p className="text-muted-foreground mt-4">{emptyMessage || "Nenhum registro encontrado."}</p>
-            </div>
           ) : (
             <>
               <div className="overflow-x-auto">
@@ -237,41 +232,52 @@ export default function ReportTemplate({
                     </tr>
                   </thead>
                   <tbody>
-                    {paginated.map((row, rowIdx) => (
-                      <tr key={row.id ?? rowIdx} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                        {columns.map(col => (
-                          <td key={col.key} className="py-3 px-3">
-                            {col.render ? col.render(row[col.key], row) : (row[col.key] ?? "—")}
-                          </td>
-                        ))}
+                    {filtered.length === 0 ? (
+                      <tr>
+                        <td colSpan={columns.length} className="py-16 text-center">
+                          {emptyIcon}
+                          <p className="text-muted-foreground mt-4">{emptyMessage || "Nenhum registro encontrado."}</p>
+                        </td>
                       </tr>
-                    ))}
+                    ) : (
+                      paginated.map((row, rowIdx) => (
+                        <tr key={row.id ?? rowIdx} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                          {columns.map(col => (
+                            <td key={col.key} className="py-3 px-3">
+                              {col.render ? col.render(row[col.key], row) : (row[col.key] ?? "—")}
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
-              <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Resultados por página:</span>
-                  <Select value={String(pageSize)} onValueChange={v => { setPageSize(Number(v)); setPage(1); }}>
-                    <SelectTrigger className="w-20 h-8"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {[10, 25, 50, 100].map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+              {filtered.length > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Resultados por página:</span>
+                    <Select value={String(pageSize)} onValueChange={v => { setPageSize(Number(v)); setPage(1); }}>
+                      <SelectTrigger className="w-20 h-8"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {[10, 25, 50, 100].map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    Mostrando {from} até {to} de {sorted.length} registros
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
+                      <ChevronLeft className="h-4 w-4" /> Anterior
+                    </Button>
+                    <span className="text-sm px-3">{page} / {totalPages}</span>
+                    <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+                      Próximo <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <span className="text-sm text-muted-foreground">
-                  Mostrando {from} até {to} de {sorted.length} registros
-                </span>
-                <div className="flex items-center gap-1">
-                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
-                    <ChevronLeft className="h-4 w-4" /> Anterior
-                  </Button>
-                  <span className="text-sm px-3">{page} / {totalPages}</span>
-                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
-                    Próximo <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+              )}
             </>
           )}
         </CardContent>

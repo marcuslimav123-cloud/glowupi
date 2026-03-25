@@ -9,6 +9,11 @@ import { format, subDays, addDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 
 const COLUMNS: ColumnDef[] = [
+  { key: "imagem", label: "Foto", render: (v: string) => (
+    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[11px] font-semibold overflow-hidden">
+      {v ? <img src={v} alt="" className="h-full w-full object-cover" /> : "—"}
+    </div>
+  )},
   { key: "nome", label: "Nome" },
   { key: "aniversario", label: "Data" },
   { key: "diasAte", label: "Dias", render: (v: number) => (
@@ -16,7 +21,8 @@ const COLUMNS: ColumnDef[] = [
       {v === 0 ? "Hoje!" : v > 0 ? `em ${v} dias` : `há ${Math.abs(v)} dias`}
     </Badge>
   )},
-  { key: "telefone", label: "Telefone" },
+  { key: "telefone", label: "Telefone", render: (v: string) => v || "—" },
+  { key: "celular", label: "Celular", render: (v: string) => v || "—" },
 ];
 
 export default function Aniversariantes() {

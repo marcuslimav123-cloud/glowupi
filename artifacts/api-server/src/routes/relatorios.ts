@@ -120,8 +120,10 @@ router.get("/aniversariantes", requireAuth, requireRole("dono", "gerente"), asyn
     const diffDias = Math.round(diffMs / (1000 * 60 * 60 * 24));
     return {
       id: c.id,
+      imagem: null,
       nome: c.nome,
       telefone: c.telefone,
+      celular: c.telefone,
       aniversario: c.aniversario,
       diasAte: diffDias,
     };
@@ -251,10 +253,17 @@ router.get("/rankings", requireAuth, requireRole("dono", "gerente"), async (req,
 router.get("/perfil-cliente", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const { dataInicio, dataFim } = req.query;
 
   const clientes = await db.select().from(clientesTable).where(eq(clientesTable.barbeariaId, barbeariaId));
 
-  return res.json(clientes.map(c => ({
+  const filtered = clientes.filter(c => {
+    if (!dataInicio || !dataFim) return true;
+    const created = c.createdAt ? c.createdAt.toISOString().slice(0, 10) : "";
+    return created >= (dataInicio as string) && created <= (dataFim as string);
+  });
+
+  return res.json(filtered.map(c => ({
     id: c.id,
     nome: c.nome,
     telefone: c.telefone,

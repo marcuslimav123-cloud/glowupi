@@ -44,6 +44,7 @@ type NavItem = {
   icon: any;
   roles?: string[];
   children?: NavItem[];
+  subgroups?: { label: string; items: NavItem[] }[];
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -89,14 +90,26 @@ const NAV_ITEMS: NavItem[] = [
     roles: ["dono", "gerente"],
     children: [
       { name: "Resumo", href: "/relatorios/resumo", icon: LayoutDashboard },
-      { name: "Faturamento", href: "/relatorios", icon: DollarSign },
-      { name: "Aniversariantes", href: "/relatorios/aniversariantes", icon: Gift },
-      { name: "Agendamentos", href: "/relatorios/agendamentos", icon: CalendarDays },
-      { name: "Perfil Cliente", href: "/relatorios/perfil-cliente", icon: Users },
-      { name: "Financeiro", href: "/relatorios/financeiro", icon: TrendingUp },
-      { name: "Cancelamentos", href: "/relatorios/canceladas", icon: ClipboardList },
-      { name: "Rankings", href: "/relatorios/rankings", icon: Star },
-    ]
+    ],
+    subgroups: [
+      {
+        label: "Agendamentos",
+        items: [
+          { name: "Agendamentos", href: "/relatorios/agendamentos", icon: CalendarDays },
+          { name: "Aniversariantes", href: "/relatorios/aniversariantes", icon: Gift },
+          { name: "Perfil Cliente", href: "/relatorios/perfil-cliente", icon: Users },
+        ],
+      },
+      {
+        label: "Gerencial",
+        items: [
+          { name: "Faturamento", href: "/relatorios", icon: DollarSign },
+          { name: "Financeiro", href: "/relatorios/financeiro", icon: TrendingUp },
+          { name: "Cancelamentos", href: "/relatorios/canceladas", icon: ClipboardList },
+          { name: "Rankings", href: "/relatorios/rankings", icon: Star },
+        ],
+      },
+    ],
   },
   { name: "Caixa", href: "/caixa", icon: DollarSign, roles: ["dono", "gerente"] },
   { name: "Financeiro", href: "/financeiro", icon: TrendingUp, roles: ["dono"] },
@@ -223,6 +236,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         <child.icon className="h-[15px] w-[15px]" />
                         {child.name}
                       </Link>
+                    ))}
+                    {item.subgroups?.map(sg => (
+                      <div key={sg.label} className="mt-2">
+                        <div className="px-4 py-1 text-[10px] font-semibold text-foreground/20 uppercase tracking-wider">
+                          {sg.label}
+                        </div>
+                        {sg.items.map(sub => (
+                          <Link key={sub.name} href={sub.href!} className={cn(
+                            "flex items-center gap-2.5 px-3 py-2 ml-3 rounded-lg text-[13px] font-medium transition-all duration-150",
+                            location === sub.href
+                              ? "bg-primary/8 text-primary"
+                              : "text-foreground/50 hover:text-foreground hover:bg-black/[0.03]"
+                          )} onClick={() => setMobileMenuOpen(false)}>
+                            <sub.icon className="h-[15px] w-[15px]" />
+                            {sub.name}
+                          </Link>
+                        ))}
+                      </div>
                     ))}
                   </div>
                 </div>

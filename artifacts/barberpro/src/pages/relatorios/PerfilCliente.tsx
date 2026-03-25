@@ -6,7 +6,7 @@ import { apiUrl, formatCurrency } from "@/lib/utils";
 import ReportTemplate, { type ColumnDef } from "@/components/ReportTemplate";
 import { Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 
 const COLUMNS: ColumnDef[] = [
   { key: "nome", label: "Nome" },
@@ -21,12 +21,15 @@ const COLUMNS: ColumnDef[] = [
 
 export default function PerfilCliente() {
   const { barbeariaId } = useAuth();
-  const today = format(new Date(), "yyyy-MM-dd");
+  const [dataInicio, setDataInicio] = useState(format(subDays(new Date(), 90), "yyyy-MM-dd"));
+  const [dataFim, setDataFim] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [searchDI, setSearchDI] = useState(dataInicio);
+  const [searchDF, setSearchDF] = useState(dataFim);
 
   const { data = [], isLoading } = useQuery<any[]>({
-    queryKey: ["relatorio-perfil-cliente", barbeariaId],
+    queryKey: ["relatorio-perfil-cliente", barbeariaId, searchDI, searchDF],
     queryFn: async () => {
-      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/relatorios/perfil-cliente`), { credentials: "include" });
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/relatorios/perfil-cliente?dataInicio=${searchDI}&dataFim=${searchDF}`), { credentials: "include" });
       if (!res.ok) throw new Error("Erro");
       return res.json();
     },
@@ -44,14 +47,13 @@ export default function PerfilCliente() {
         columns={COLUMNS}
         data={data}
         isLoading={isLoading}
-        dataInicio={today}
-        dataFim={today}
-        onDataInicioChange={() => {}}
-        onDataFimChange={() => {}}
-        onPesquisar={() => {}}
-        showDateFilters={false}
+        dataInicio={dataInicio}
+        dataFim={dataFim}
+        onDataInicioChange={setDataInicio}
+        onDataFimChange={setDataFim}
+        onPesquisar={() => { setSearchDI(dataInicio); setSearchDF(dataFim); }}
         emptyIcon={<Users className="h-12 w-12 text-muted-foreground mx-auto" />}
-        emptyMessage="Nenhum cliente cadastrado."
+        emptyMessage="Nenhum cliente encontrado no período."
       />
     </AppLayout>
   );
