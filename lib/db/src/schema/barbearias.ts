@@ -32,6 +32,7 @@ export const barbeariasTable = pgTable("barbearias", {
   subscriptionStatus: text("subscription_status").default("trial"),
   subscriptionPlan: text("subscription_plan"),
   subscriptionPeriod: text("subscription_period"),
+  segmentacao: jsonb("segmentacao").default({}),
   onboardingStep: integer("onboarding_step").notNull().default(1),
   ativo: boolean("ativo").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),

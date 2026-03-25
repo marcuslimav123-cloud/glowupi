@@ -73,7 +73,7 @@ router.put("/me", requireAuth, requireRole("dono"), async (req, res) => {
     const user = (req as any).user;
     const [existing] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
     if (!existing) return res.status(404).json({ error: "Barbearia não encontrada" });
-    const { nome, telefone, email, cnpj, cep, logradouro, numero, bairro, cidade, uf, corPrimaria, horarioFuncionamento } = req.body;
+    const { nome, telefone, email, cnpj, cep, logradouro, numero, bairro, cidade, uf, corPrimaria, horarioFuncionamento, segmentacao, onboardingStep } = req.body;
     const [updated] = await db.update(barbeariasTable)
       .set({
         nome: nome ?? existing.nome,
@@ -88,6 +88,8 @@ router.put("/me", requireAuth, requireRole("dono"), async (req, res) => {
         uf: uf ?? existing.uf,
         corPrimaria: corPrimaria ?? existing.corPrimaria,
         horarioFuncionamento: horarioFuncionamento ?? existing.horarioFuncionamento,
+        segmentacao: segmentacao ?? existing.segmentacao,
+        onboardingStep: onboardingStep ?? existing.onboardingStep,
         updatedAt: new Date(),
       })
       .where(eq(barbeariasTable.id, existing.id))

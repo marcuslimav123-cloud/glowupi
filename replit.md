@@ -38,7 +38,7 @@ artifacts-monorepo/
 ## Database Schema
 
 - `users` — User accounts (dono/gerente/colaborador/cliente roles; optional googleId for Google Sign-In; barbeariaId+profissionalId for staff members)
-- `barbearias` — Salon/studio profiles (multi-tenant root; table name kept for API compatibility). Includes Stripe fields: stripe_customer_id, stripe_subscription_id, subscription_status, subscription_plan, subscription_period
+- `barbearias` — Salon/studio profiles (multi-tenant root; table name kept for API compatibility). Includes Stripe fields: stripe_customer_id, stripe_subscription_id, subscription_status, subscription_plan, subscription_period. Has `segmentacao` (jsonb) for onboarding data (tipoEstabelecimento, comoSoube, numProfissionais)
 - `profissionais` — Professionals per salon
 - `servicos` — Services offered (nails, skincare, hair, etc.)
 - `clientes` — Clients per salon
