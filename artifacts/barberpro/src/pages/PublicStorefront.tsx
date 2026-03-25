@@ -3,8 +3,7 @@ import { useParams } from "wouter";
 import {
   Calendar, Clock, Scissors, User, ChevronLeft, ChevronRight, Check,
   MapPin, Phone, Loader2, LogOut, Star, Search, Gift, CreditCard,
-  ShoppingBag, X, Instagram, Facebook, Globe, Wifi, ParkingCircle,
-  Accessibility, Baby, Coffee, AirVent
+  ShoppingBag, X, Instagram, Wifi
 } from "lucide-react";
 import ClientAuthModal from "@/components/ClientAuthModal";
 
@@ -414,7 +413,7 @@ export default function PublicStorefront() {
                 ...(barbearia.totalAvaliacoes > 0 ? [{ id: "avaliacoes", label: "Avaliações", count: barbearia.totalAvaliacoes }] : []),
                 ...(barbearia.recompensas.length > 0 ? [{ id: "fidelidade", label: "Fidelidade", count: barbearia.recompensas.length }] : []),
                 ...(barbearia.produtos.length > 0 ? [{ id: "produtos", label: "Produtos", count: barbearia.produtos.length }] : []),
-                ...(barbearia.formasPagamento.length > 0 || horarioDisplay ? [{ id: "info", label: "Info" }] : []),
+                ...(barbearia.formasPagamento.length > 0 || horarioDisplay ? [{ id: "info", label: "Comodidades" }] : []),
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -575,7 +574,7 @@ export default function PublicStorefront() {
 
             {(barbearia.formasPagamento.length > 0 || horarioDisplay) && (
               <section id="section-info" className="mb-10">
-                <h2 className="text-lg font-bold mb-4">Informações</h2>
+                <h2 className="text-lg font-bold mb-4">Comodidades</h2>
 
                 {horarioDisplay && (
                   <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] mb-3">
