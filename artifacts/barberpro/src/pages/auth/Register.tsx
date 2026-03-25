@@ -1,28 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { useRegisterUser } from "@workspace/api-client-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Sparkles, Building2, Mail, Phone, User, CheckCircle2 } from "lucide-react";
+import { Sparkles, CheckCircle2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiUrl, formatPhone, stripPhone } from "@/lib/utils";
+import { apiUrl } from "@/lib/utils";
 
 export default function Register() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const registerMutation = useRegisterUser();
-  const [formData, setFormData] = useState({
-    nome: "",
-    email: "",
-    senha: "",
-    telefone: "",
-    estabelecimento: ""
-  });
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleClientId, setGoogleClientId] = useState("");
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
@@ -38,7 +26,10 @@ export default function Register() {
   }, []);
 
   const loadGoogleScript = (clientId: string) => {
-    if (document.getElementById("google-gsi-script")) return;
+    if (document.getElementById("google-gsi-script")) {
+      initGoogleButton(clientId);
+      return;
+    }
     const script = document.createElement("script");
     script.id = "google-gsi-script";
     script.src = "https://accounts.google.com/gsi/client";
@@ -60,11 +51,12 @@ export default function Register() {
         type: "standard",
         theme: "outline",
         size: "large",
-        width: "100%",
+        width: 340,
         text: "signup_with",
         shape: "pill",
         locale: "pt-BR",
       });
+      setGoogleReady(true);
     }
   };
 
@@ -92,38 +84,6 @@ export default function Register() {
       });
     } finally {
       setGoogleLoading(false);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    if (id === "telefone") {
-      setFormData(prev => ({ ...prev, telefone: formatPhone(value) }));
-    } else {
-      setFormData(prev => ({ ...prev, [id]: value }));
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.nome || !formData.email || !formData.telefone || !formData.senha) {
-      toast({ title: "Campos obrigatórios", description: "Preencha todos os campos.", variant: "destructive" });
-      return;
-    }
-    setShowConfirmModal(true);
-  };
-
-  const handleConfirmRegister = async () => {
-    setShowConfirmModal(false);
-    try {
-      await registerMutation.mutateAsync({ data: { ...formData, telefone: stripPhone(formData.telefone) } });
-      setShowSuccess(true);
-    } catch (err: any) {
-      toast({
-        title: "Erro no cadastro",
-        description: err.message || "Tente novamente mais tarde.",
-        variant: "destructive"
-      });
     }
   };
 
@@ -167,57 +127,43 @@ export default function Register() {
         </div>
 
         <div className="bg-white border border-black/[0.06] rounded-2xl p-7 shadow-xl shadow-black/[0.03]">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="nome" className="text-[13px] text-foreground/60">Nome Completo</Label>
-              <Input id="nome" required value={formData.nome} onChange={handleChange} className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]" />
-            </div>
+          <div className="text-center mb-6">
+            <p className="text-foreground/50 text-[14px]">
+              Crie sua conta usando o Google para garantir a segurança do seu e-mail verificado.
+            </p>
+          </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="estabelecimento" className="text-[13px] text-foreground/60">Nome do Estabelecimento</Label>
-              <Input id="estabelecimento" value={formData.estabelecimento} onChange={handleChange} placeholder="Ex: Studio Glow Beauty" className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]" />
-            </div>
-            
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-[13px] text-foreground/60">E-mail</Label>
-              <Input id="email" type="email" required value={formData.email} onChange={handleChange} className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]" />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="telefone" className="text-[13px] text-foreground/60">WhatsApp</Label>
-              <Input id="telefone" required value={formData.telefone} onChange={handleChange} placeholder="(99) 99999-9999" className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]" />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="senha" className="text-[13px] text-foreground/60">Senha</Label>
-              <Input id="senha" type="password" required value={formData.senha} onChange={handleChange} className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]" />
-            </div>
-
-            <Button 
-              type="submit" 
-              className="w-full h-11 text-[14px] font-medium rounded-xl mt-2"
-              disabled={registerMutation.isPending}
-            >
-              {registerMutation.isPending ? "Criando..." : "Começar Agora"}
-            </Button>
-          </form>
-
-          {googleClientId && (
-            <>
-              <div className="relative my-5">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-black/[0.06]"></div>
-                </div>
-                <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
-                  <span className="bg-white px-3 text-foreground/30">ou cadastre-se com</span>
-                </div>
-              </div>
+          {googleClientId ? (
+            <div className="flex flex-col items-center gap-3">
               <div id="google-signup-btn" className="flex justify-center" />
               {googleLoading && (
-                <p className="text-center text-[13px] text-foreground/40 mt-2">Cadastrando com Google...</p>
+                <div className="flex items-center gap-2 text-[13px] text-foreground/40">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Cadastrando com Google...
+                </div>
               )}
-            </>
+              {!googleReady && !googleLoading && (
+                <div className="flex items-center gap-2 text-[13px] text-foreground/40">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Carregando...
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-foreground/30" />
+              <p className="text-[13px] text-foreground/40">Preparando autenticação...</p>
+            </div>
           )}
+
+          <div className="mt-6 pt-5 border-t border-black/[0.04]">
+            <div className="flex items-start gap-2.5">
+              <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <p className="text-[12px] text-foreground/40 leading-relaxed">
+                Ao criar sua conta com o Google, garantimos que seu e-mail é real e verificado. Seus dados são protegidos pela LGPD.
+              </p>
+            </div>
+          </div>
 
           <div className="mt-6 text-center text-[13px] text-foreground/40">
             Já tem uma conta?{" "}
@@ -226,40 +172,6 @@ export default function Register() {
             </Link>
           </div>
         </div>
-
-        <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle className="text-lg">Confirmar Cadastro</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3 py-2">
-              <div className="flex items-center gap-3 text-sm">
-                <User className="h-4 w-4 text-foreground/40 flex-shrink-0" />
-                <div><span className="text-foreground/50">Nome:</span> <span className="font-medium">{formData.nome}</span></div>
-              </div>
-              {formData.estabelecimento && (
-                <div className="flex items-center gap-3 text-sm">
-                  <Building2 className="h-4 w-4 text-foreground/40 flex-shrink-0" />
-                  <div><span className="text-foreground/50">Estabelecimento:</span> <span className="font-medium">{formData.estabelecimento}</span></div>
-                </div>
-              )}
-              <div className="flex items-center gap-3 text-sm">
-                <Mail className="h-4 w-4 text-foreground/40 flex-shrink-0" />
-                <div><span className="text-foreground/50">E-mail:</span> <span className="font-medium">{formData.email}</span></div>
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                <Phone className="h-4 w-4 text-foreground/40 flex-shrink-0" />
-                <div><span className="text-foreground/50">WhatsApp:</span> <span className="font-medium">{formData.telefone}</span></div>
-              </div>
-            </div>
-            <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={() => setShowConfirmModal(false)}>Cancelar</Button>
-              <Button onClick={handleConfirmRegister} disabled={registerMutation.isPending}>
-                {registerMutation.isPending ? "Criando..." : "Confirmar"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );

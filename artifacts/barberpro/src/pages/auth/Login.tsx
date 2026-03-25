@@ -4,7 +4,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { APP_NAME, APP_TAGLINE, apiUrl } from "@/lib/utils";
 
@@ -23,6 +23,8 @@ export default function Login() {
   const [senha, setSenha] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleClientId, setGoogleClientId] = useState("");
+  const [googleReady, setGoogleReady] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
 
   useEffect(() => {
     fetch(apiUrl("/lgpd/google-client-id"))
@@ -37,7 +39,10 @@ export default function Login() {
   }, []);
 
   const loadGoogleScript = (clientId: string) => {
-    if (document.getElementById("google-gsi-script")) return;
+    if (document.getElementById("google-gsi-script")) {
+      initGoogleButton(clientId);
+      return;
+    }
     const script = document.createElement("script");
     script.id = "google-gsi-script";
     script.src = "https://accounts.google.com/gsi/client";
@@ -59,11 +64,12 @@ export default function Login() {
         type: "standard",
         theme: "outline",
         size: "large",
-        width: "100%",
+        width: 340,
         text: "signin_with",
         shape: "pill",
         locale: "pt-BR",
       });
+      setGoogleReady(true);
     }
   };
 
@@ -129,57 +135,81 @@ export default function Login() {
         </div>
 
         <div className="bg-white border border-black/[0.06] rounded-2xl p-7 shadow-xl shadow-black/[0.03]">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-[13px] text-foreground/60">E-mail</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="seu@email.com" 
-                className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+          {googleClientId ? (
+            <div className="flex flex-col items-center gap-3 mb-5">
+              <div id="google-signin-btn" className="flex justify-center" />
+              {googleLoading && (
+                <div className="flex items-center gap-2 text-[13px] text-foreground/40">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Autenticando com Google...
+                </div>
+              )}
+              {!googleReady && !googleLoading && (
+                <div className="flex items-center gap-2 text-[13px] text-foreground/40">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Carregando...
+                </div>
+              )}
             </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="senha" className="text-[13px] text-foreground/60">Senha</Label>
-                <a href="#" className="text-[12px] text-primary hover:underline">Esqueceu?</a>
-              </div>
-              <Input 
-                id="senha" 
-                type="password" 
-                className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                required
-              />
+          ) : null}
+
+          {!showEmailForm ? (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setShowEmailForm(true)}
+                className="text-[12px] text-foreground/30 hover:text-foreground/50 transition-colors underline"
+              >
+                Entrar com e-mail e senha
+              </button>
             </div>
-
-            <Button 
-              type="submit" 
-              className="w-full h-11 text-[14px] font-medium rounded-xl"
-              disabled={loginMutation.isPending}
-            >
-              {loginMutation.isPending ? "Entrando..." : "Entrar"}
-            </Button>
-          </form>
-
-          {googleClientId && (
+          ) : (
             <>
               <div className="relative my-5">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-black/[0.06]"></div>
                 </div>
                 <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
-                  <span className="bg-white px-3 text-foreground/30">ou continue com</span>
+                  <span className="bg-white px-3 text-foreground/30">ou com e-mail</span>
                 </div>
               </div>
-              <div id="google-signin-btn" className="flex justify-center" />
-              {googleLoading && (
-                <p className="text-center text-[13px] text-foreground/40 mt-2">Autenticando com Google...</p>
-              )}
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-[13px] text-foreground/60">E-mail</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="senha" className="text-[13px] text-foreground/60">Senha</Label>
+                    <a href="#" className="text-[12px] text-primary hover:underline">Esqueceu?</a>
+                  </div>
+                  <Input
+                    id="senha"
+                    type="password"
+                    className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]"
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full h-11 text-[14px] font-medium rounded-xl"
+                  disabled={loginMutation.isPending}
+                >
+                  {loginMutation.isPending ? "Entrando..." : "Entrar"}
+                </Button>
+              </form>
             </>
           )}
 

@@ -7,32 +7,8 @@ import { OAuth2Client } from "google-auth-library";
 
 const router: IRouter = Router();
 
-router.post("/register", async (req, res) => {
-  try {
-    const { nome, email, senha, telefone } = req.body;
-    if (!nome || !email || !senha) {
-      return res.status(400).json({ error: "Nome, email e senha são obrigatórios" });
-    }
-    const [existing] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
-    if (existing) {
-      return res.status(400).json({ error: "Email já cadastrado" });
-    }
-    const senhaHash = hashPassword(senha);
-    const [user] = await db.insert(usersTable).values({
-      nome,
-      email,
-      senhaHash,
-      telefone: telefone || null,
-      role: "dono",
-    }).returning();
-    const token = createSession(user.id);
-    res.cookie("session", token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: "lax" });
-    const { senhaHash: _, ...userWithoutPass } = user;
-    return res.status(201).json({ token, user: { ...userWithoutPass, createdAt: user.createdAt.toISOString() } });
-  } catch (e) {
-    console.error("register error:", e);
-    return res.status(500).json({ error: "Erro interno" });
-  }
+router.post("/register", async (_req, res) => {
+  return res.status(403).json({ error: "O cadastro é feito exclusivamente via Google. Use o botão 'Cadastrar com Google'." });
 });
 
 router.post("/login", async (req, res) => {
