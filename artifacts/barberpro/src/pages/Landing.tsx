@@ -700,7 +700,7 @@ export default function Landing() {
                   <div
                     className="overflow-hidden transition-all duration-300"
                     style={{
-                      maxHeight: openFaq === i ? "200px" : "0px",
+                      maxHeight: openFaq === i ? "500px" : "0px",
                       opacity: openFaq === i ? 1 : 0,
                     }}
                   >
@@ -728,7 +728,7 @@ export default function Landing() {
             Comece agora com 30 dias grátis e descubra como o {APP_NAME} pode simplificar sua rotina.
           </p>
           <Link href="/cadastro">
-            <Button size="lg" className="text-[14px] px-10 h-13 rounded-full shadow-lg shadow-primary/20 font-semibold">
+            <Button size="lg" className="text-[14px] px-10 h-[52px] rounded-full shadow-lg shadow-primary/20 font-semibold">
               Começar Teste Grátis
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
