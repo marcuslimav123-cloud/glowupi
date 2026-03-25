@@ -18,7 +18,7 @@ const KPI_CONFIG = [
   { key: "contasReceberSemana", label: "Contas a Receber (7 dias)", icon: ArrowDownCircle, color: "bg-red-600", textColor: "text-white", link: "/financeiro", isCurrency: true },
   { key: "contasPagarSemana", label: "Contas a Pagar (7 dias)", icon: ArrowUpCircle, color: "bg-blue-600", textColor: "text-white", link: "/financeiro", isCurrency: true },
   { key: "clientesAusentes60", label: "Ausentes +60 dias", icon: UserX, color: "bg-purple-500", textColor: "text-white", link: "/gestao/clientes" },
-  { key: "usuariosConectados", label: "Usuários Conectados", icon: UserCheck, color: "bg-yellow-500", textColor: "text-white" },
+  { key: "usuariosConectados", label: "Usuários Conectados", icon: UserCheck, color: "bg-yellow-500", textColor: "text-white", link: "/gestao/clientes" },
   { key: "novosClientesSemana", label: "Novos Clientes (7 dias)", icon: UserPlus, color: "bg-green-500", textColor: "text-white", link: "/gestao/clientes" },
   { key: "produtosVencer30", label: "Produtos a Vencer (30 dias)", icon: Package, color: "bg-red-500", textColor: "text-white", link: "/gestao/produtos" },
   { key: "contasPagarAtrasadas", label: "Contas Atrasadas", icon: AlertTriangle, color: "bg-purple-600", textColor: "text-white", link: "/financeiro" },
@@ -70,13 +70,11 @@ export default function Resumo() {
                 </div>
                 <div className="flex items-end justify-between mt-3">
                   <span className="text-sm font-medium opacity-90">{kpi.label}</span>
-                  {kpi.link && (
-                    <Link href={kpi.link}>
-                      <span className="text-xs opacity-75 hover:opacity-100 cursor-pointer flex items-center gap-0.5">
-                        Mais Info <ChevronRight className="h-3 w-3" />
-                      </span>
-                    </Link>
-                  )}
+                  <Link href={kpi.link || "#"}>
+                    <span className="text-xs opacity-75 hover:opacity-100 cursor-pointer flex items-center gap-0.5">
+                      Mais Informações <ChevronRight className="h-3 w-3" />
+                    </span>
+                  </Link>
                 </div>
               </div>
             );
