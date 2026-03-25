@@ -4,7 +4,7 @@ import {
   agendamentosTable, barbeariasTable, profissionaisTable,
   servicosTable, clientesTable, comandasTable, produtosTable
 } from "@workspace/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
@@ -33,7 +33,7 @@ router.get("/", requireAuth, async (req, res) => {
   if (user.role === "colaborador" && !user.profissionalId) {
     return res.json([]);
   }
-  const { data, profissionalId, status } = req.query;
+  const { data, profissionalId, status, dataInicio, dataFim } = req.query;
   const scopedProfId = user.role === "colaborador"
     ? user.profissionalId
     : (profissionalId ? parseInt(profissionalId as string) : undefined);
@@ -41,6 +41,8 @@ router.get("/", requireAuth, async (req, res) => {
     and(
       eq(agendamentosTable.barbeariaId, barbeariaId),
       data ? eq(agendamentosTable.data, data as string) : undefined,
+      dataInicio ? gte(agendamentosTable.data, dataInicio as string) : undefined,
+      dataFim ? lte(agendamentosTable.data, dataFim as string) : undefined,
       scopedProfId ? eq(agendamentosTable.profissionalId, scopedProfId) : undefined,
       status ? eq(agendamentosTable.status, status as string) : undefined,
     )
@@ -52,7 +54,7 @@ router.post("/", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const user = (req as any).user;
-  const { clienteId, clienteNome, clienteTelefone, profissionalId, servicoId, data, horaInicio, semPreferencia, observacao } = req.body;
+  const { clienteId, clienteNome, clienteTelefone, profissionalId, servicoId, data, horaInicio, semPreferencia, observacao, encaixe } = req.body;
   if (!clienteNome || !clienteTelefone || !profissionalId || !servicoId || !data || !horaInicio) {
     return res.status(400).json({ error: "Dados inválidos" });
   }
@@ -92,6 +94,7 @@ router.post("/", requireAuth, async (req, res) => {
     observacao: observacao || null,
     aniversario: isAniversario,
     vip: false,
+    encaixe: encaixe ?? false,
   }).returning();
   return res.status(201).json(formatAgend(agend));
 });

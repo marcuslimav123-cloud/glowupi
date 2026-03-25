@@ -26,6 +26,7 @@ export const agendamentosTable = pgTable("agendamentos", {
   observacao: text("observacao"),
   aniversario: boolean("aniversario").notNull().default(false),
   vip: boolean("vip").notNull().default(false),
+  encaixe: boolean("encaixe").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

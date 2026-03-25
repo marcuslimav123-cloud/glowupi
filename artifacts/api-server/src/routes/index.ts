@@ -28,6 +28,7 @@ import checkoutRouter from "./checkout.js";
 import adminRouter from "./admin.js";
 import convitesRouter from "./convites.js";
 import clientAuthRouter from "./clientAuth.js";
+import bloqueiosRouter from "./bloqueios.js";
 
 const router: IRouter = Router();
 
@@ -57,6 +58,7 @@ router.use("/barbearias/:barbeariaId/mensagens", mensagensRouter);
 router.use("/checkout", checkoutRouter);
 router.use("/public", publicRouter);
 router.use("/convites", convitesRouter);
+router.use("/barbearias/:barbeariaId/bloqueios", bloqueiosRouter);
 
 router.get("/lgpd/terms", async (_req, res) => {
   try {

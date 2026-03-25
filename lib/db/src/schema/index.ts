@@ -17,3 +17,4 @@ export * from "./platformConfig";
 export * from "./superAdmins";
 export * from "./convites";
 export * from "./clienteUsers";
+export * from "./bloqueiosHorario";

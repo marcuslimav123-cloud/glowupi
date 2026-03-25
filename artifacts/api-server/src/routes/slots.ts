@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { agendamentosTable, profissionaisTable, servicosTable, barbeariasTable } from "@workspace/db/schema";
+import { agendamentosTable, profissionaisTable, servicosTable, barbeariasTable, bloqueiosHorarioTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 
 const router: IRouter = Router({ mergeParams: true });
@@ -66,6 +66,13 @@ router.get("/", async (req, res) => {
     )
   );
 
+  const bloqueios = await db.select().from(bloqueiosHorarioTable).where(
+    and(
+      eq(bloqueiosHorarioTable.barbeariaId, barbeariaId),
+      eq(bloqueiosHorarioTable.data, data as string),
+    )
+  );
+
   const slots: any[] = [];
   const intervalo = 30;
   const duracao = servico.duracaoMinutos;
@@ -85,12 +92,18 @@ router.get("/", async (req, res) => {
         const af = timeToMinutes(a.horaFim);
         return !(t + duracao <= ai || t >= af);
       });
+      const bloqueado = bloqueios.some(b => {
+        if (b.profissionalId !== prof.id) return false;
+        const bi = timeToMinutes(b.horaInicio);
+        const bf = timeToMinutes(b.horaFim);
+        return !(t + duracao <= bi || t >= bf);
+      });
       slots.push({
         horaInicio,
         horaFim,
         profissionalId: prof.id,
         profissionalNome: prof.nomeExibicao,
-        disponivel: !ocupado,
+        disponivel: !ocupado && !bloqueado,
       });
     }
   }

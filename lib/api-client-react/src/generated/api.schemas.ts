@@ -708,6 +708,8 @@ export type ListClientesParams = {
 
 export type ListAgendamentosParams = {
   data?: string;
+  dataInicio?: string;
+  dataFim?: string;
   profissionalId?: number;
   status?: string;
 };

@@ -1,18 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   useListAgendamentos, useListProfissionais, useListServicos,
-  useCreateAgendamento, useUpdateAgendamento, useCheckoutAgendamento, useListProdutos
+  useCreateAgendamento, useUpdateAgendamento, useCheckoutAgendamento
 } from "@workspace/api-client-react";
-import { generateTimeSlots, formatCurrency } from "@/lib/utils";
+import { generateTimeSlots, formatCurrency, apiUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight, Search, CheckCircle, XCircle, Receipt, Star, PartyPopper } from "lucide-react";
+import {
+  Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight,
+  CheckCircle, XCircle, Receipt, Star, PartyPopper, Lock, Zap,
+  List, Clock, Users
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -32,8 +35,20 @@ type Agendamento = {
   pago: boolean;
   aniversario: boolean;
   vip: boolean;
+  encaixe?: boolean;
   observacao: string | null;
 };
+
+type Bloqueio = {
+  id: number;
+  profissionalId: number;
+  data: string;
+  horaInicio: string;
+  horaFim: string;
+  motivo: string | null;
+};
+
+type ViewMode = "dia" | "semana" | "mes";
 
 const PAYMENT_METHODS = [
   { value: "pix", label: "PIX" },
@@ -42,9 +57,18 @@ const PAYMENT_METHODS = [
   { value: "debito", label: "Débito" },
 ];
 
-function getStatusColor(status: string) {
+const STATUS_LEGEND = [
+  { label: "Confirmado", color: "bg-primary/30 border-primary/50" },
+  { label: "Pago", color: "bg-green-500/20 border-green-500/50" },
+  { label: "Cancelado", color: "bg-destructive/20 border-destructive/50" },
+  { label: "Encaixe", color: "bg-amber-500/20 border-amber-500/50" },
+  { label: "Bloqueado", color: "bg-gray-300/40 border-gray-400/50" },
+];
+
+function getStatusColor(status: string, encaixe?: boolean) {
+  if (encaixe) return 'bg-amber-500/20 border-amber-500/50 text-amber-600';
   switch (status) {
-    case 'pago': return 'bg-green-500/20 border-green-500/50 text-green-400';
+    case 'pago': return 'bg-green-500/20 border-green-500/50 text-green-600';
     case 'confirmado': return 'bg-primary/20 border-primary/50 text-primary';
     case 'cancelado': return 'bg-destructive/20 border-destructive/50 text-destructive';
     default: return 'bg-secondary border-border text-foreground';
@@ -56,17 +80,59 @@ function timeToMinutes(t: string) {
   return h * 60 + m;
 }
 
+function formatDateBR(dateStr: string) {
+  const d = new Date(dateStr + "T12:00:00");
+  return d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+}
+
+function getWeekDates(dateStr: string) {
+  const d = new Date(dateStr + "T12:00:00");
+  const day = d.getDay();
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - ((day + 6) % 7));
+  const dates: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    const dd = new Date(monday);
+    dd.setDate(monday.getDate() + i);
+    dates.push(dd.toISOString().split('T')[0]);
+  }
+  return dates;
+}
+
+function getMonthDates(dateStr: string) {
+  const d = new Date(dateStr + "T12:00:00");
+  const year = d.getFullYear();
+  const month = d.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startOffset = (firstDay.getDay() + 6) % 7;
+  const dates: (string | null)[] = [];
+  for (let i = 0; i < startOffset; i++) dates.push(null);
+  for (let day = 1; day <= lastDay.getDate(); day++) {
+    const dd = new Date(year, month, day);
+    dates.push(dd.toISOString().split('T')[0]);
+  }
+  while (dates.length % 7 !== 0) dates.push(null);
+  return dates;
+}
+
+const WEEKDAY_NAMES = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
 export default function Agenda() {
   const { barbeariaId } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
 
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [viewMode, setViewMode] = useState<ViewMode>("dia");
+  const [selectedProfId, setSelectedProfId] = useState<string>("all");
   const [isNewOpen, setIsNewOpen] = useState(false);
+  const [isEncaixeOpen, setIsEncaixeOpen] = useState(false);
+  const [isBlockOpen, setIsBlockOpen] = useState(false);
   const [checkoutAgend, setCheckoutAgend] = useState<Agendamento | null>(null);
   const [cancelAgend, setCancelAgend] = useState<Agendamento | null>(null);
 
-  // New agendamento form state (shadcn Select doesn't work with FormData)
   const [formNome, setFormNome] = useState("");
   const [formTelefone, setFormTelefone] = useState("");
   const [formProfId, setFormProfId] = useState("");
@@ -74,15 +140,32 @@ export default function Agenda() {
   const [formHora, setFormHora] = useState("");
   const [formObs, setFormObs] = useState("");
 
+  const [blockProfId, setBlockProfId] = useState("");
+  const [blockHoraInicio, setBlockHoraInicio] = useState("");
+  const [blockHoraFim, setBlockHoraFim] = useState("");
+  const [blockMotivo, setBlockMotivo] = useState("");
+
   const [checkoutMetodo, setCheckoutMetodo] = useState("pix");
   const [checkoutObs, setCheckoutObs] = useState("");
   const [checkoutDesconto, setCheckoutDesconto] = useState("");
   const [checkoutDescontoTipo, setCheckoutDescontoTipo] = useState<"valor" | "percentual">("valor");
   const [checkoutParcelas, setCheckoutParcelas] = useState(1);
 
+  const [bloqueios, setBloqueios] = useState<Bloqueio[]>([]);
+
+  const weekDates = useMemo(() => getWeekDates(date), [date]);
+  const monthDates = useMemo(() => getMonthDates(date), [date]);
+
+  const dateRangeParams = useMemo(() => {
+    if (viewMode === "dia") return { data: date };
+    if (viewMode === "semana") return { dataInicio: weekDates[0], dataFim: weekDates[6] };
+    const monthD = getMonthDates(date).filter(Boolean) as string[];
+    return { dataInicio: monthD[0], dataFim: monthD[monthD.length - 1] };
+  }, [viewMode, date, weekDates]);
+
   const { data: profissionais = [] } = useListProfissionais(barbeariaId!, { query: { enabled: !!barbeariaId } });
   const { data: servicos = [] } = useListServicos(barbeariaId!, { query: { enabled: !!barbeariaId } });
-  const { data: agendamentos = [], refetch } = useListAgendamentos(barbeariaId!, { data: date }, { query: { enabled: !!barbeariaId } });
+  const { data: agendamentos = [], refetch } = useListAgendamentos(barbeariaId!, dateRangeParams as any, { query: { enabled: !!barbeariaId } });
 
   const createMutation = useCreateAgendamento();
   const updateMutation = useUpdateAgendamento();
@@ -90,24 +173,56 @@ export default function Agenda() {
 
   const timeSlots = generateTimeSlots("08:00", "20:00", 30);
 
-  const handlePrevDay = () => {
+  const filteredAgendamentos = useMemo(() => {
+    const all = agendamentos as Agendamento[];
+    if (selectedProfId === "all") return all;
+    return all.filter(a => a.profissionalId === parseInt(selectedProfId));
+  }, [agendamentos, selectedProfId]);
+
+  const fetchBloqueios = async (d: string) => {
+    if (!barbeariaId) return;
+    try {
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/bloqueios?data=${d}`), { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setBloqueios(data);
+      }
+    } catch {}
+  };
+
+  React.useEffect(() => {
+    if (viewMode === "dia") fetchBloqueios(date);
+    else setBloqueios([]);
+  }, [date, viewMode, barbeariaId]);
+
+  const handleDateChange = (newDate: string) => {
+    setDate(newDate);
+  };
+
+  const handlePrev = () => {
     const d = new Date(date + "T12:00:00");
-    d.setDate(d.getDate() - 1);
+    if (viewMode === "dia") d.setDate(d.getDate() - 1);
+    else if (viewMode === "semana") d.setDate(d.getDate() - 7);
+    else d.setMonth(d.getMonth() - 1);
     setDate(d.toISOString().split('T')[0]);
   };
 
-  const handleNextDay = () => {
+  const handleNext = () => {
     const d = new Date(date + "T12:00:00");
-    d.setDate(d.getDate() + 1);
+    if (viewMode === "dia") d.setDate(d.getDate() + 1);
+    else if (viewMode === "semana") d.setDate(d.getDate() + 7);
+    else d.setMonth(d.getMonth() + 1);
     setDate(d.toISOString().split('T')[0]);
   };
+
+  const goToToday = () => setDate(new Date().toISOString().split('T')[0]);
 
   const resetForm = () => {
     setFormNome(""); setFormTelefone(""); setFormProfId("");
     setFormServId(""); setFormHora(""); setFormObs("");
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent, encaixe = false) => {
     e.preventDefault();
     if (!formProfId || !formServId || !formHora) {
       toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
@@ -124,10 +239,12 @@ export default function Agenda() {
           data: date,
           horaInicio: formHora,
           observacao: formObs || undefined,
-        }
+          encaixe,
+        } as any,
       });
-      toast({ title: "Agendado com sucesso!" });
+      toast({ title: encaixe ? "Encaixe realizado!" : "Agendado com sucesso!" });
       setIsNewOpen(false);
+      setIsEncaixeOpen(false);
       resetForm();
       refetch();
     } catch (err: any) {
@@ -146,6 +263,44 @@ export default function Agenda() {
     } catch {
       toast({ title: "Erro ao cancelar", variant: "destructive" });
     }
+  };
+
+  const handleCreateBlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!blockProfId || !blockHoraInicio || !blockHoraFim) {
+      toast({ title: "Preencha todos os campos", variant: "destructive" });
+      return;
+    }
+    try {
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/bloqueios`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          profissionalId: parseInt(blockProfId),
+          data: date,
+          horaInicio: blockHoraInicio,
+          horaFim: blockHoraFim,
+          motivo: blockMotivo || null,
+        }),
+      });
+      if (!res.ok) throw new Error("Erro ao bloquear horário");
+      toast({ title: "Horário bloqueado!" });
+      setIsBlockOpen(false);
+      setBlockProfId(""); setBlockHoraInicio(""); setBlockHoraFim(""); setBlockMotivo("");
+      fetchBloqueios(date);
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteBlock = async (bloqueioId: number) => {
+    try {
+      await fetch(apiUrl(`/barbearias/${barbeariaId}/bloqueios/${bloqueioId}`), {
+        method: "DELETE", credentials: "include"
+      });
+      fetchBloqueios(date);
+    } catch {}
   };
 
   const calcularValorFinal = () => {
@@ -187,122 +342,131 @@ export default function Agenda() {
     }
   };
 
-  // Calculate appointment height based on duration
   const getSlotHeight = (agend: Agendamento) => {
     const start = timeToMinutes(agend.horaInicio);
     const end = timeToMinutes(agend.horaFim);
     const slots = Math.max(1, (end - start) / 30);
-    return slots * 80 - 4;
+    return slots * 56 - 2;
   };
 
   const getSlotTop = (agend: Agendamento) => {
     const idx = timeSlots.findIndex(t => t === agend.horaInicio.slice(0, 5));
-    return idx === -1 ? 0 : idx * 80 + 2;
+    return idx === -1 ? 0 : idx * 56 + 1;
   };
 
-  return (
-    <AppLayout>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Agenda</h1>
-          <p className="text-muted-foreground mt-1">Gerencie seus horários</p>
-        </div>
+  const dateDisplay = useMemo(() => {
+    if (viewMode === "dia") return formatDateBR(date);
+    if (viewMode === "semana") {
+      return `${new Date(weekDates[0] + "T12:00:00").toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} — ${new Date(weekDates[6] + "T12:00:00").toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`;
+    }
+    const d = new Date(date + "T12:00:00");
+    return `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+  }, [viewMode, date, weekDates]);
 
-        <div className="flex items-center gap-4 bg-card p-2 rounded-xl border border-border shadow-sm">
-          <Button variant="ghost" size="icon" onClick={handlePrevDay}><ChevronLeft className="h-5 w-5"/></Button>
-          <div className="flex items-center gap-2 px-4 font-medium min-w-[140px] justify-center">
-            <CalendarIcon className="h-4 w-4 text-primary" />
-            {new Date(date + "T12:00:00").toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}
-          </div>
-          <Button variant="ghost" size="icon" onClick={handleNextDay}><ChevronRight className="h-5 w-5"/></Button>
-        </div>
-
-        <Button className="shadow-lg shadow-primary/25" onClick={() => { resetForm(); setIsNewOpen(true); }}>
-          <Plus className="mr-2 h-4 w-4"/> Novo Agendamento
-        </Button>
-      </div>
-
-      {/* AGENDA GRID */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-xl flex flex-col h-[calc(100vh-220px)] min-h-[500px]">
-        {/* Header Row */}
+  const renderDayView = () => {
+    const profs = selectedProfId === "all" ? profissionais as any[] : (profissionais as any[]).filter((p: any) => String(p.id) === selectedProfId);
+    const dayAgends = filteredAgendamentos.filter(a => a.data === date);
+    return (
+      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg flex flex-col h-[calc(100vh-260px)] min-h-[400px]">
         <div className="flex border-b border-border bg-muted/30">
-          <div className="w-20 shrink-0 border-r border-border p-4 flex items-center justify-center">
-            <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+          <div className="w-16 shrink-0 border-r border-border p-3 flex items-center justify-center">
+            <Clock className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="flex-1 flex overflow-x-auto">
-            {(profissionais as any[]).map((prof: any) => {
-              const profAgends = (agendamentos as Agendamento[]).filter(a => a.profissionalId === prof.id && a.status === "pago");
+            {profs.map((prof: any) => {
+              const profAgends = dayAgends.filter(a => a.profissionalId === prof.id && a.status === "pago");
               const total = profAgends.reduce((s, a) => s + a.valor, 0);
               return (
-                <div key={prof.id} className="flex-1 min-w-[180px] p-4 text-center border-r border-border last:border-r-0">
+                <div key={prof.id} className="flex-1 min-w-[160px] p-3 text-center border-r border-border last:border-r-0">
                   <div className="flex items-center justify-center gap-2">
-                    <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs border border-primary/20">
+                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] border border-primary/20">
                       {prof.nomeExibicao.charAt(0)}
                     </div>
-                    <p className="font-semibold text-foreground truncate text-sm">{prof.nomeExibicao}</p>
+                    <p className="font-semibold text-foreground truncate text-xs">{prof.nomeExibicao}</p>
                   </div>
-                  <p className="text-xs text-primary mt-1 font-medium">{formatCurrency(total)} hoje</p>
+                  <p className="text-[10px] text-primary mt-0.5 font-medium">{formatCurrency(total)}</p>
                 </div>
               );
             })}
-            {(profissionais as any[]).length === 0 && (
-              <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground p-4">
-                Nenhum profissional cadastrado
-              </div>
+            {profs.length === 0 && (
+              <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground p-4">Nenhum profissional</div>
             )}
           </div>
         </div>
 
-        {/* Time Grid */}
         <div className="flex-1 overflow-y-auto relative">
           <div className="flex min-h-max">
-            <div className="w-20 shrink-0 border-r border-border bg-card">
+            <div className="w-16 shrink-0 border-r border-border bg-card">
               {timeSlots.map(time => (
-                <div key={time} className="h-20 border-b border-border flex items-start justify-center pt-2 text-xs text-muted-foreground font-medium">
+                <div key={time} className="h-14 border-b border-border/40 flex items-start justify-center pt-1 text-[10px] text-muted-foreground font-medium">
                   {time}
                 </div>
               ))}
             </div>
 
             <div className="flex-1 flex relative">
-              {(profissionais as any[]).map((prof: any) => (
-                <div key={prof.id} className="flex-1 min-w-[180px] border-r border-border last:border-r-0 relative">
+              {profs.map((prof: any) => (
+                <div key={prof.id} className="flex-1 min-w-[160px] border-r border-border last:border-r-0 relative">
                   {timeSlots.map(time => (
-                    <div key={time} className="h-20 border-b border-border/40 hover:bg-primary/5 transition-colors cursor-pointer"
-                      onClick={() => { setFormProfId(String(prof.id)); setFormHora(time); resetForm(); setFormProfId(String(prof.id)); setFormHora(time); setIsNewOpen(true); }} />
+                    <div key={time} className="h-14 border-b border-border/30 hover:bg-primary/5 transition-colors cursor-pointer"
+                      onClick={() => { resetForm(); setFormProfId(String(prof.id)); setFormHora(time); setIsNewOpen(true); }} />
                   ))}
 
-                  {(agendamentos as Agendamento[]).filter(a => a.profissionalId === prof.id).map(agend => (
+                  {bloqueios.filter(b => b.profissionalId === prof.id).map(b => {
+                    const startIdx = timeSlots.findIndex(t => t === b.horaInicio.slice(0, 5));
+                    const startMin = timeToMinutes(b.horaInicio);
+                    const endMin = timeToMinutes(b.horaFim);
+                    const slots = Math.max(1, (endMin - startMin) / 30);
+                    if (startIdx === -1) return null;
+                    return (
+                      <div
+                        key={`block-${b.id}`}
+                        className="absolute left-0.5 right-0.5 rounded-md bg-gray-200/60 border border-gray-300/60 flex items-center justify-center z-5 cursor-pointer group"
+                        style={{ top: `${startIdx * 56 + 1}px`, height: `${slots * 56 - 2}px` }}
+                        onClick={() => handleDeleteBlock(b.id)}
+                        title={b.motivo || "Bloqueado — clique para remover"}
+                      >
+                        <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                          <Lock className="h-3 w-3" />
+                          <span className="hidden group-hover:inline">Remover</span>
+                          <span className="group-hover:hidden">{b.motivo || "Bloqueado"}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {dayAgends.filter(a => a.profissionalId === prof.id).map(agend => (
                     <div
                       key={agend.id}
-                      className={`absolute left-1 right-1 rounded-lg border p-2 text-xs shadow-sm cursor-pointer z-10 flex flex-col justify-between group hover:shadow-md transition-all ${getStatusColor(agend.status)}`}
+                      className={`absolute left-0.5 right-0.5 rounded-lg border p-1.5 text-[10px] shadow-sm cursor-pointer z-10 flex flex-col justify-between group hover:shadow-md transition-all ${getStatusColor(agend.status, agend.encaixe)}`}
                       style={{ top: `${getSlotTop(agend)}px`, height: `${getSlotHeight(agend)}px` }}
                       onClick={() => agend.status !== 'pago' && agend.status !== 'cancelado' && setCheckoutAgend(agend)}
                     >
                       <div className="flex items-start justify-between gap-1">
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1">
-                            {agend.aniversario && <PartyPopper className="h-3 w-3 text-yellow-400 shrink-0" />}
-                            {agend.vip && <Star className="h-3 w-3 text-amber-500 shrink-0" />}
+                          <div className="flex items-center gap-0.5">
+                            {agend.encaixe && <Zap className="h-2.5 w-2.5 text-amber-500 shrink-0" />}
+                            {agend.aniversario && <PartyPopper className="h-2.5 w-2.5 text-yellow-400 shrink-0" />}
+                            {agend.vip && <Star className="h-2.5 w-2.5 text-amber-500 shrink-0" />}
                             <span className="font-semibold truncate">{agend.clienteNome}</span>
                           </div>
-                          <p className="truncate opacity-80 mt-0.5">{agend.servicoNome}</p>
+                          <p className="truncate opacity-80">{agend.servicoNome}</p>
                         </div>
-                        <span className="font-bold shrink-0">{formatCurrency(agend.valor)}</span>
+                        <span className="font-bold shrink-0 text-[9px]">{formatCurrency(agend.valor)}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="opacity-70">{agend.horaInicio.slice(0,5)} – {agend.horaFim.slice(0,5)}</span>
                         {agend.status === 'confirmado' && (
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="hover:text-green-400" title="Checkout" onClick={e => { e.stopPropagation(); setCheckoutAgend(agend); }}>
-                              <Receipt className="h-3.5 w-3.5" />
+                            <button className="hover:text-green-500" title="Checkout" onClick={e => { e.stopPropagation(); setCheckoutAgend(agend); }}>
+                              <Receipt className="h-3 w-3" />
                             </button>
-                            <button className="hover:text-red-400" title="Cancelar" onClick={e => { e.stopPropagation(); setCancelAgend(agend); }}>
-                              <XCircle className="h-3.5 w-3.5" />
+                            <button className="hover:text-red-500" title="Cancelar" onClick={e => { e.stopPropagation(); setCancelAgend(agend); }}>
+                              <XCircle className="h-3 w-3" />
                             </button>
                           </div>
                         )}
-                        {agend.status === 'pago' && <CheckCircle className="h-3.5 w-3.5" />}
+                        {agend.status === 'pago' && <CheckCircle className="h-3 w-3" />}
                       </div>
                     </div>
                   ))}
@@ -312,207 +476,498 @@ export default function Agenda() {
           </div>
         </div>
       </div>
+    );
+  };
 
-      {/* New Appointment Dialog */}
-      <Dialog open={isNewOpen} onOpenChange={v => { setIsNewOpen(v); if (!v) resetForm(); }}>
-        <DialogContent className="bg-card border-border sm:max-w-[500px]">
+  const renderWeekView = () => {
+    return (
+      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg flex flex-col h-[calc(100vh-260px)] min-h-[400px]">
+        <div className="flex border-b border-border bg-muted/30">
+          <div className="w-16 shrink-0 border-r border-border p-3 flex items-center justify-center">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="flex-1 flex">
+            {weekDates.map((wd, i) => {
+              const isToday = wd === new Date().toISOString().split('T')[0];
+              const dayAgends = filteredAgendamentos.filter(a => a.data === wd);
+              return (
+                <div
+                  key={wd}
+                  className={`flex-1 min-w-[100px] p-2 text-center border-r border-border last:border-r-0 cursor-pointer hover:bg-primary/5 ${isToday ? "bg-primary/10" : ""}`}
+                  onClick={() => { setDate(wd); setViewMode("dia"); }}
+                >
+                  <p className={`text-[10px] font-medium ${isToday ? "text-primary" : "text-muted-foreground"}`}>{WEEKDAY_NAMES[i]}</p>
+                  <p className={`text-sm font-bold ${isToday ? "text-primary" : "text-foreground"}`}>{new Date(wd + "T12:00:00").getDate()}</p>
+                  {dayAgends.length > 0 && <p className="text-[9px] text-primary font-medium">{dayAgends.length} agend.</p>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto relative">
+          <div className="flex min-h-max">
+            <div className="w-16 shrink-0 border-r border-border bg-card">
+              {timeSlots.map(time => (
+                <div key={time} className="h-12 border-b border-border/40 flex items-start justify-center pt-1 text-[10px] text-muted-foreground font-medium">
+                  {time}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex-1 flex">
+              {weekDates.map(wd => {
+                const dayAgends = filteredAgendamentos.filter(a => a.data === wd);
+                return (
+                  <div key={wd} className="flex-1 min-w-[100px] border-r border-border last:border-r-0 relative">
+                    {timeSlots.map(time => (
+                      <div key={time} className="h-12 border-b border-border/30 hover:bg-primary/5 transition-colors cursor-pointer"
+                        onClick={() => { setDate(wd); resetForm(); setFormHora(time); setIsNewOpen(true); }} />
+                    ))}
+                    {dayAgends.map(agend => {
+                      const idx = timeSlots.findIndex(t => t === agend.horaInicio.slice(0, 5));
+                      const startMin = timeToMinutes(agend.horaInicio);
+                      const endMin = timeToMinutes(agend.horaFim);
+                      const slots = Math.max(1, (endMin - startMin) / 30);
+                      if (idx === -1) return null;
+                      return (
+                        <div
+                          key={agend.id}
+                          className={`absolute left-0.5 right-0.5 rounded-md border p-1 text-[9px] shadow-sm cursor-pointer z-10 hover:shadow-md transition-all ${getStatusColor(agend.status, agend.encaixe)}`}
+                          style={{ top: `${idx * 48 + 1}px`, height: `${slots * 48 - 2}px` }}
+                          onClick={() => { setDate(wd); setViewMode("dia"); }}
+                          title={`${agend.clienteNome} - ${agend.servicoNome}`}
+                        >
+                          <p className="font-semibold truncate">{agend.clienteNome}</p>
+                          <p className="truncate opacity-70">{agend.horaInicio.slice(0,5)}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderMonthView = () => {
+    const d = new Date(date + "T12:00:00");
+    const today = new Date().toISOString().split('T')[0];
+    return (
+      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg p-4">
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {WEEKDAY_NAMES.map(day => (
+            <div key={day} className="text-center text-[11px] font-semibold text-muted-foreground py-1">{day}</div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {monthDates.map((md, i) => {
+            if (!md) return <div key={`empty-${i}`} className="h-20" />;
+            const dayAgends = filteredAgendamentos.filter(a => a.data === md);
+            const isToday = md === today;
+            const isSelected = md === date;
+            const dayNum = new Date(md + "T12:00:00").getDate();
+            const paidCount = dayAgends.filter(a => a.status === "pago").length;
+            const confirmedCount = dayAgends.filter(a => a.status === "confirmado").length;
+            return (
+              <div
+                key={md}
+                className={`h-20 rounded-lg border p-1.5 cursor-pointer transition-all hover:border-primary/50 ${isToday ? "border-primary bg-primary/5" : isSelected ? "border-primary/30 bg-primary/5" : "border-border/40"}`}
+                onClick={() => { setDate(md); setViewMode("dia"); }}
+              >
+                <p className={`text-xs font-bold ${isToday ? "text-primary" : "text-foreground"}`}>{dayNum}</p>
+                {dayAgends.length > 0 && (
+                  <div className="mt-1 space-y-0.5">
+                    {confirmedCount > 0 && (
+                      <div className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                        <span className="text-[9px] text-primary font-medium">{confirmedCount}</span>
+                      </div>
+                    )}
+                    {paidCount > 0 && (
+                      <div className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                        <span className="text-[9px] text-green-600 font-medium">{paidCount}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderMiniCalendar = () => {
+    const d = new Date(date + "T12:00:00");
+    const today = new Date().toISOString().split('T')[0];
+    const miniMonthDates = getMonthDates(date);
+    return (
+      <div className="bg-card border border-border rounded-xl p-3">
+        <div className="flex items-center justify-between mb-2">
+          <button onClick={() => { const nd = new Date(date + "T12:00:00"); nd.setMonth(nd.getMonth() - 1); setDate(nd.toISOString().split('T')[0]); }} className="text-muted-foreground hover:text-foreground">
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+          <span className="text-xs font-semibold">{MONTH_NAMES[d.getMonth()]} {d.getFullYear()}</span>
+          <button onClick={() => { const nd = new Date(date + "T12:00:00"); nd.setMonth(nd.getMonth() + 1); setDate(nd.toISOString().split('T')[0]); }} className="text-muted-foreground hover:text-foreground">
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        <div className="grid grid-cols-7 gap-0.5">
+          {["S", "T", "Q", "Q", "S", "S", "D"].map((d, i) => (
+            <div key={i} className="text-center text-[9px] font-medium text-muted-foreground py-0.5">{d}</div>
+          ))}
+          {miniMonthDates.map((md, i) => {
+            if (!md) return <div key={`e-${i}`} />;
+            const dayNum = new Date(md + "T12:00:00").getDate();
+            const isToday = md === today;
+            const isSelected = md === date;
+            return (
+              <button
+                key={md}
+                className={`text-[10px] h-6 w-6 mx-auto rounded-full flex items-center justify-center font-medium transition-colors
+                  ${isSelected ? "bg-primary text-white" : isToday ? "bg-primary/20 text-primary" : "hover:bg-muted text-foreground"}`}
+                onClick={() => handleDateChange(md)}
+              >
+                {dayNum}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderAppointmentDialog = (isEncaixe: boolean) => (
+    <Dialog open={isEncaixe ? isEncaixeOpen : isNewOpen} onOpenChange={v => { if (isEncaixe) setIsEncaixeOpen(v); else setIsNewOpen(v); if (!v) resetForm(); }}>
+      <DialogContent className="bg-card border-border sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-display flex items-center gap-2">
+            {isEncaixe && <Zap className="h-5 w-5 text-amber-500" />}
+            {isEncaixe ? "Encaixe" : "Novo Agendamento"}
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={e => handleCreate(e, isEncaixe)} className="space-y-3 mt-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5 col-span-2">
+              <Label className="text-xs">Nome do Cliente *</Label>
+              <Input value={formNome} onChange={e => setFormNome(e.target.value)} required placeholder="Ex: Mariana Silva" className="bg-background h-9 text-sm" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">WhatsApp *</Label>
+              <Input value={formTelefone} onChange={e => setFormTelefone(e.target.value)} required placeholder="(11) 99999-9999" className="bg-background h-9 text-sm" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Profissional *</Label>
+              <Select value={formProfId} onValueChange={setFormProfId}>
+                <SelectTrigger className="bg-background h-9 text-sm"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  {(profissionais as any[]).map((p: any) => <SelectItem key={p.id} value={String(p.id)}>{p.nomeExibicao}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Serviço *</Label>
+              <Select value={formServId} onValueChange={setFormServId}>
+                <SelectTrigger className="bg-background h-9 text-sm"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  {(servicos as any[]).map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.nome} — {formatCurrency(s.preco)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Horário *</Label>
+              <Select value={formHora} onValueChange={setFormHora}>
+                <SelectTrigger className="bg-background h-9 text-sm"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  {timeSlots.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5 col-span-2">
+              <Label className="text-xs">Observação <span className="text-muted-foreground">(opcional)</span></Label>
+              <Input value={formObs} onChange={e => setFormObs(e.target.value)} placeholder="Ex: Trazer foto de referência" className="bg-background h-9 text-sm" />
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+            <CalendarIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span>Data: <strong className="text-foreground">{new Date(date + "T12:00:00").toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</strong></span>
+          </div>
+          <Button type="submit" className="w-full h-9 text-sm" disabled={createMutation.isPending}>
+            {createMutation.isPending ? "Agendando..." : isEncaixe ? "Confirmar Encaixe" : "Confirmar Agendamento"}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+
+  return (
+    <AppLayout>
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <h1 className="text-2xl font-display font-bold text-foreground">Agenda</h1>
+              <p className="text-muted-foreground text-sm">Gerencie seus horários</p>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex bg-muted/50 rounded-lg p-0.5 border border-border">
+                {(["dia", "semana", "mes"] as ViewMode[]).map(mode => (
+                  <button
+                    key={mode}
+                    onClick={() => setViewMode(mode)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === mode ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    {mode === "dia" ? "Dia" : mode === "semana" ? "Semana" : "Mês"}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-0.5">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handlePrev}><ChevronLeft className="h-4 w-4"/></Button>
+                <button onClick={goToToday} className="px-2 py-1 text-xs font-medium text-foreground min-w-[120px] text-center hover:text-primary transition-colors">
+                  {dateDisplay}
+                </button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleNext}><ChevronRight className="h-4 w-4"/></Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            <Select value={selectedProfId} onValueChange={setSelectedProfId}>
+              <SelectTrigger className="w-[180px] h-8 text-xs bg-card border-border">
+                <Users className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                <SelectValue placeholder="Profissional" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {(profissionais as any[]).map((p: any) => <SelectItem key={p.id} value={String(p.id)}>{p.nomeExibicao}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Button size="sm" className="h-8 text-xs shadow-md shadow-primary/20" onClick={() => { resetForm(); setIsNewOpen(true); }}>
+              <Plus className="mr-1 h-3.5 w-3.5"/> Novo
+            </Button>
+            <Button size="sm" variant="outline" className="h-8 text-xs border-amber-400/50 text-amber-600 hover:bg-amber-50" onClick={() => { resetForm(); setIsEncaixeOpen(true); }}>
+              <Zap className="mr-1 h-3.5 w-3.5"/> Encaixe
+            </Button>
+            {viewMode === "dia" && (
+              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setIsBlockOpen(true)}>
+                <Lock className="mr-1 h-3.5 w-3.5"/> Bloquear
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={goToToday}>
+              Hoje
+            </Button>
+          </div>
+
+          {viewMode === "dia" && renderDayView()}
+          {viewMode === "semana" && renderWeekView()}
+          {viewMode === "mes" && renderMonthView()}
+        </div>
+
+        <div className="w-full lg:w-[240px] shrink-0 space-y-3">
+          {renderMiniCalendar()}
+
+          <div className="bg-card border border-border rounded-xl p-3 space-y-2">
+            <h3 className="text-xs font-semibold text-foreground">Legenda</h3>
+            {STATUS_LEGEND.map(s => (
+              <div key={s.label} className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded border ${s.color}`} />
+                <span className="text-[10px] text-muted-foreground">{s.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-card border border-border rounded-xl p-3 space-y-1.5">
+            <h3 className="text-xs font-semibold text-foreground mb-2">Ações Rápidas</h3>
+            <button onClick={() => { resetForm(); setIsNewOpen(true); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
+              <Plus className="h-3.5 w-3.5 text-primary" /> Novo Agendamento
+            </button>
+            <button onClick={() => { resetForm(); setIsEncaixeOpen(true); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
+              <Zap className="h-3.5 w-3.5 text-amber-500" /> Encaixe
+            </button>
+            {viewMode === "dia" && (
+              <button onClick={() => setIsBlockOpen(true)} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
+                <Lock className="h-3.5 w-3.5 text-gray-500" /> Bloquear Horário
+              </button>
+            )}
+            <button onClick={() => setViewMode("dia")} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
+              <List className="h-3.5 w-3.5 text-muted-foreground" /> Lista de Agendamentos
+            </button>
+          </div>
+
+          {viewMode === "dia" && bloqueios.length > 0 && (
+            <div className="bg-card border border-border rounded-xl p-3 space-y-1.5">
+              <h3 className="text-xs font-semibold text-foreground">Bloqueios Hoje</h3>
+              {bloqueios.map(b => {
+                const profName = (profissionais as any[]).find((p: any) => p.id === b.profissionalId)?.nomeExibicao || "?";
+                return (
+                  <div key={b.id} className="flex items-center justify-between text-[10px] text-muted-foreground bg-muted/30 rounded-md px-2 py-1">
+                    <div>
+                      <span className="font-medium text-foreground">{profName}</span>
+                      <span className="ml-1">{b.horaInicio} - {b.horaFim}</span>
+                    </div>
+                    <button onClick={() => handleDeleteBlock(b.id)} className="text-destructive hover:text-destructive/80">
+                      <XCircle className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {renderAppointmentDialog(false)}
+      {renderAppointmentDialog(true)}
+
+      <Dialog open={isBlockOpen} onOpenChange={setIsBlockOpen}>
+        <DialogContent className="bg-card border-border sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-display">Novo Agendamento</DialogTitle>
+            <DialogTitle className="text-xl font-display flex items-center gap-2">
+              <Lock className="h-5 w-5 text-gray-500" /> Bloquear Horário
+            </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleCreate} className="space-y-4 mt-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2 col-span-2">
-                <Label>Nome do Cliente *</Label>
-                <Input value={formNome} onChange={e => setFormNome(e.target.value)} required placeholder="Ex: Mariana Silva" className="bg-background" />
-              </div>
-              <div className="space-y-2">
-                <Label>WhatsApp *</Label>
-                <Input value={formTelefone} onChange={e => setFormTelefone(e.target.value)} required placeholder="(11) 99999-9999" className="bg-background" />
-              </div>
-              <div className="space-y-2">
-                <Label>Profissional *</Label>
-                <Select value={formProfId} onValueChange={setFormProfId} required>
-                  <SelectTrigger className="bg-background"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                  <SelectContent>
-                    {(profissionais as any[]).map((p: any) => (
-                      <SelectItem key={p.id} value={String(p.id)}>{p.nomeExibicao}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Serviço *</Label>
-                <Select value={formServId} onValueChange={setFormServId} required>
-                  <SelectTrigger className="bg-background"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                  <SelectContent>
-                    {(servicos as any[]).map((s: any) => (
-                      <SelectItem key={s.id} value={String(s.id)}>
-                        {s.nome} — {formatCurrency(s.preco)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Horário *</Label>
-                <Select value={formHora} onValueChange={setFormHora} required>
-                  <SelectTrigger className="bg-background"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+          <form onSubmit={handleCreateBlock} className="space-y-3 mt-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Profissional *</Label>
+              <Select value={blockProfId} onValueChange={setBlockProfId}>
+                <SelectTrigger className="bg-background h-9 text-sm"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  {(profissionais as any[]).map((p: any) => <SelectItem key={p.id} value={String(p.id)}>{p.nomeExibicao}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Início *</Label>
+                <Select value={blockHoraInicio} onValueChange={setBlockHoraInicio}>
+                  <SelectTrigger className="bg-background h-9 text-sm"><SelectValue placeholder="Início" /></SelectTrigger>
                   <SelectContent>
                     {timeSlots.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2 col-span-2">
-                <Label>Observação <span className="text-muted-foreground text-xs">(opcional)</span></Label>
-                <Input value={formObs} onChange={e => setFormObs(e.target.value)} placeholder="Ex: Trazer foto de referência" className="bg-background" />
+              <div className="space-y-1.5">
+                <Label className="text-xs">Fim *</Label>
+                <Select value={blockHoraFim} onValueChange={setBlockHoraFim}>
+                  <SelectTrigger className="bg-background h-9 text-sm"><SelectValue placeholder="Fim" /></SelectTrigger>
+                  <SelectContent>
+                    {timeSlots.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
-              <CalendarIcon className="h-4 w-4 text-primary shrink-0" />
+            <div className="space-y-1.5">
+              <Label className="text-xs">Motivo <span className="text-muted-foreground">(opcional)</span></Label>
+              <Input value={blockMotivo} onChange={e => setBlockMotivo(e.target.value)} placeholder="Ex: Almoço" className="bg-background h-9 text-sm" />
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+              <CalendarIcon className="h-3.5 w-3.5 text-primary shrink-0" />
               <span>Data: <strong className="text-foreground">{new Date(date + "T12:00:00").toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</strong></span>
             </div>
-            <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-              {createMutation.isPending ? "Agendando..." : "Confirmar Agendamento"}
-            </Button>
+            <Button type="submit" className="w-full h-9 text-sm">Bloquear Horário</Button>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Checkout Dialog */}
+      <Dialog open={!!cancelAgend} onOpenChange={v => { if (!v) setCancelAgend(null); }}>
+        <DialogContent className="bg-card border-border sm:max-w-[360px]">
+          <DialogHeader>
+            <DialogTitle className="text-lg">Cancelar Agendamento?</DialogTitle>
+          </DialogHeader>
+          {cancelAgend && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">Deseja cancelar o agendamento de <strong className="text-foreground">{cancelAgend.clienteNome}</strong>?</p>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setCancelAgend(null)}>Não</Button>
+                <Button variant="destructive" className="flex-1" onClick={handleCancel}>Sim, Cancelar</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!checkoutAgend} onOpenChange={v => { if (!v) { setCheckoutAgend(null); setCheckoutDesconto(""); setCheckoutParcelas(1); } }}>
         <DialogContent className="bg-card border-border sm:max-w-[460px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-display flex items-center gap-2">
+            <DialogTitle className="text-lg font-display flex items-center gap-2">
               <Receipt className="h-5 w-5 text-primary" /> Finalizar Atendimento
             </DialogTitle>
           </DialogHeader>
           {checkoutAgend && (
-            <div className="space-y-4 mt-2">
-              <div className="p-4 rounded-xl bg-muted/40 border border-border space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Cliente</span>
-                  <span className="font-medium">{checkoutAgend.clienteNome}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Serviço</span>
-                  <span className="font-medium">{checkoutAgend.servicoNome}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Profissional</span>
-                  <span className="font-medium">{checkoutAgend.profissionalNome}</span>
-                </div>
-                <div className="flex justify-between text-sm border-t border-border pt-2 mt-2">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">{formatCurrency(checkoutAgend.valor)}</span>
+            <div className="space-y-3 mt-2">
+              <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1.5 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Cliente</span><span className="font-medium">{checkoutAgend.clienteNome}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Serviço</span><span className="font-medium">{checkoutAgend.servicoNome}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Profissional</span><span className="font-medium">{checkoutAgend.profissionalNome}</span></div>
+                <div className="flex justify-between border-t border-border pt-1.5 mt-1.5">
+                  <span className="text-muted-foreground">Subtotal</span><span className="font-medium">{formatCurrency(checkoutAgend.valor)}</span>
                 </div>
                 {parseFloat(checkoutDesconto) > 0 && (
-                  <div className="flex justify-between text-sm text-green-400">
+                  <div className="flex justify-between text-green-600 text-xs">
                     <span>Desconto ({checkoutDescontoTipo === "percentual" ? `${checkoutDesconto}%` : `R$ ${checkoutDesconto}`})</span>
                     <span>-{formatCurrency(checkoutAgend.valor - valorFinal)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-sm font-bold border-t border-border pt-2 mt-1">
-                  <span>Total</span>
-                  <span className="text-primary text-lg">{formatCurrency(valorFinal)}</span>
+                <div className="flex justify-between font-bold border-t border-border pt-1.5 mt-1">
+                  <span>Total</span><span className="text-primary text-base">{formatCurrency(valorFinal)}</span>
                 </div>
                 {checkoutParcelas > 1 && (
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{checkoutParcelas}x</span>
-                    <span>{formatCurrency(valorParcela)}/parcela</span>
-                  </div>
+                  <div className="flex justify-between text-[11px] text-muted-foreground"><span>{checkoutParcelas}x</span><span>{formatCurrency(valorParcela)}/parcela</span></div>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label>Desconto <span className="text-muted-foreground text-xs">(opcional)</span></Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Desconto <span className="text-muted-foreground">(opcional)</span></Label>
                 <div className="flex gap-2">
-                  <Input
-                    type="number" min="0" step="0.01"
-                    value={checkoutDesconto}
-                    onChange={e => setCheckoutDesconto(e.target.value)}
-                    placeholder="0"
-                    className="bg-background flex-1"
-                  />
+                  <Input type="number" min="0" step="0.01" value={checkoutDesconto} onChange={e => setCheckoutDesconto(e.target.value)} placeholder="0" className="bg-background flex-1 h-9 text-sm" />
                   <div className="flex rounded-lg border border-border overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => setCheckoutDescontoTipo("valor")}
-                      className={`px-3 py-2 text-xs font-medium transition-colors ${checkoutDescontoTipo === "valor" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                    >R$</button>
-                    <button
-                      type="button"
-                      onClick={() => setCheckoutDescontoTipo("percentual")}
-                      className={`px-3 py-2 text-xs font-medium transition-colors ${checkoutDescontoTipo === "percentual" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                    >%</button>
+                    <button type="button" onClick={() => setCheckoutDescontoTipo("valor")} className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${checkoutDescontoTipo === "valor" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>R$</button>
+                    <button type="button" onClick={() => setCheckoutDescontoTipo("percentual")} className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${checkoutDescontoTipo === "percentual" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>%</button>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Forma de Pagamento</Label>
-                <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Forma de Pagamento</Label>
+                <div className="grid grid-cols-2 gap-1.5">
                   {PAYMENT_METHODS.map(m => (
-                    <button
-                      key={m.value}
-                      type="button"
-                      onClick={() => setCheckoutMetodo(m.value)}
-                      className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${checkoutMetodo === m.value ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20" : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"}`}
-                    >
-                      {m.label}
-                    </button>
+                    <button key={m.value} type="button" onClick={() => setCheckoutMetodo(m.value)}
+                      className={`px-3 py-2.5 rounded-xl border text-xs font-medium transition-all ${checkoutMetodo === m.value ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}
+                    >{m.label}</button>
                   ))}
                 </div>
               </div>
 
-              {(checkoutMetodo === "credito") && (
-                <div className="space-y-2">
-                  <Label>Parcelas</Label>
-                  <div className="flex gap-2">
+              {checkoutMetodo === "credito" && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Parcelas</Label>
+                  <div className="flex gap-1.5">
                     {[1, 2, 3, 4, 6, 12].map(n => (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => setCheckoutParcelas(n)}
-                        className={`flex-1 py-2 rounded-lg border text-xs font-medium transition-all ${checkoutParcelas === n ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}
+                      <button key={n} type="button" onClick={() => setCheckoutParcelas(n)}
+                        className={`flex-1 py-1.5 rounded-lg border text-xs font-medium transition-all ${checkoutParcelas === n ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"}`}
                       >{n}x</button>
                     ))}
                   </div>
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label>Observação <span className="text-muted-foreground text-xs">(opcional)</span></Label>
-                <Input value={checkoutObs} onChange={e => setCheckoutObs(e.target.value)} placeholder="Ex: retorno em 30 dias" className="bg-background" />
+              <div className="space-y-1.5">
+                <Label className="text-xs">Observação <span className="text-muted-foreground">(opcional)</span></Label>
+                <Input value={checkoutObs} onChange={e => setCheckoutObs(e.target.value)} className="bg-background h-9 text-sm" />
               </div>
 
-              <Button className="w-full" onClick={handleCheckout} disabled={checkoutMutation.isPending}>
-                <CheckCircle className="h-4 w-4 mr-2" />
-                {checkoutMutation.isPending ? "Finalizando..." : `Confirmar — ${formatCurrency(valorFinal)}`}
+              <Button className="w-full h-10 text-sm font-medium" onClick={handleCheckout} disabled={checkoutMutation.isPending}>
+                {checkoutMutation.isPending ? "Processando..." : `Confirmar — ${formatCurrency(valorFinal)}`}
               </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Cancel Confirmation Dialog */}
-      <Dialog open={!!cancelAgend} onOpenChange={v => { if (!v) setCancelAgend(null); }}>
-        <DialogContent className="bg-card border-border sm:max-w-[380px]">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-display flex items-center gap-2 text-destructive">
-              <XCircle className="h-5 w-5" /> Cancelar Agendamento
-            </DialogTitle>
-          </DialogHeader>
-          {cancelAgend && (
-            <div className="space-y-4 mt-2">
-              <p className="text-sm text-muted-foreground">
-                Tem certeza que deseja cancelar o agendamento de <strong className="text-foreground">{cancelAgend.clienteNome}</strong> às <strong className="text-foreground">{cancelAgend.horaInicio.slice(0,5)}</strong>?
-              </p>
-              <div className="flex gap-3">
-                <Button variant="outline" className="flex-1" onClick={() => setCancelAgend(null)}>Manter</Button>
-                <Button variant="destructive" className="flex-1" onClick={handleCancel} disabled={updateMutation.isPending}>
-                  {updateMutation.isPending ? "Cancelando..." : "Sim, cancelar"}
-                </Button>
-              </div>
             </div>
           )}
         </DialogContent>

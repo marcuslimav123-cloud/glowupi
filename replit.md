@@ -42,7 +42,8 @@ artifacts-monorepo/
 - `profissionais` — Professionals per salon
 - `servicos` — Services offered (nails, skincare, hair, etc.)
 - `clientes` — Clients per salon
-- `agendamentos` — Appointments with status (confirmado/pago/cancelado)
+- `agendamentos` — Appointments with status (confirmado/pago/cancelado); `encaixe` boolean flag for squeeze-in appointments
+- `bloqueios_horario` — Blocked time slots per professional (barbeariaId, profissionalId, data, horaInicio, horaFim, motivo)
 - `comandas` — Checkout records with services, products, payments, commissions (desconto, descontoTipo, parcelas)
 - `produtos` — Product inventory (codigoBarras, validade)
 - `contasFinanceiras` — Financial accounts payable/receivable
