@@ -1,9 +1,10 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { barbeariasTable } from "@workspace/db/schema";
+import { barbeariasTable, parametrosConfigTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAuth, requireRole } from "../lib/auth.js";
 import { slugify } from "../lib/slugify.js";
+import { PARAMETROS_DEFAULTS } from "./parametros.js";
 
 const router: IRouter = Router();
 
@@ -50,6 +51,19 @@ router.post("/", requireAuth, requireRole("dono"), async (req, res) => {
       onboardingStep: 2,
       planoVencimento,
     }).returning();
+
+    try {
+      const paramRows = PARAMETROS_DEFAULTS.map(p => ({
+        barbeariaId: barbearia.id,
+        chave: p.chave,
+        valor: p.valorPadrao,
+        tipo: p.tipo,
+      }));
+      await db.insert(parametrosConfigTable).values(paramRows);
+    } catch (seedErr) {
+      console.error("parametros seed error (non-fatal):", seedErr);
+    }
+
     return res.status(201).json(formatBarbearia(barbearia));
   } catch (e) {
     console.error("createBarbearia error:", e);

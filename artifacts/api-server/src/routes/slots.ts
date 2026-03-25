@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { agendamentosTable, profissionaisTable, servicosTable, barbeariasTable, bloqueiosHorarioTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
+import { getParametros } from "../lib/parametros.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -73,8 +74,24 @@ router.get("/", async (req, res) => {
     )
   );
 
+  const params = await getParametros(barbeariaId);
+
+  const slotSizeParam = params["agenda_tamanho_slots"] || "30min";
+  const intervalo = parseInt(slotSizeParam) || 30;
+
+  const agendaInicio = params["agenda_horario_inicio"] || "08:00";
+  const agendaFim = params["agenda_horario_fim"] || "20:00";
+
+  const limiteFuturoDias = parseInt(params["agenda_limite_futuro_dias"] || "30");
+  const dataReq = new Date((data as string) + "T12:00:00");
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const diffDias = Math.ceil((dataReq.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDias > limiteFuturoDias) {
+    return res.json([]);
+  }
+
   const slots: any[] = [];
-  const intervalo = 30;
   const duracao = servico.duracaoMinutos;
 
   for (const prof of profissionais) {

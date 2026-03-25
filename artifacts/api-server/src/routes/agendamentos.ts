@@ -7,6 +7,7 @@ import {
 } from "@workspace/db/schema";
 import { eq, and, sql, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
+import { getParametros } from "../lib/parametros.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -62,6 +63,46 @@ router.post("/", requireAuth, async (req, res) => {
   if (user.role === "colaborador" && (!user.profissionalId || profissionalId !== user.profissionalId)) {
     return res.status(403).json({ error: "Você só pode criar agendamentos para si mesma" });
   }
+  const params = await getParametros(barbeariaId);
+
+  const limiteFuturoDias = parseInt(params["agenda_limite_futuro_dias"] || "30");
+  const dataAgend = new Date(data + "T12:00:00");
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const diffDias = Math.ceil((dataAgend.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDias > limiteFuturoDias) {
+    return res.status(400).json({ error: `Agendamento não pode exceder ${limiteFuturoDias} dias no futuro` });
+  }
+
+  if (user.role === "colaborador") {
+    const bloqEdicao = params["cancel_bloquear_edicao_profissional"] || "Não";
+    const bloqSemCliente = params["cliente_agendar_sem_cliente"] || "Não";
+    if (bloqSemCliente === "Sim" && !clienteId) {
+      return res.status(400).json({ error: "Seleção de cliente é obrigatória" });
+    }
+  }
+
+  if (clienteId) {
+    const limiteAbertos = parseInt(params["agenda_limite_abertos_cliente"] || "5");
+    const abertos = await db.select().from(agendamentosTable).where(
+      and(
+        eq(agendamentosTable.barbeariaId, barbeariaId),
+        eq(agendamentosTable.clienteId, clienteId),
+        eq(agendamentosTable.status, "confirmado"),
+        gte(agendamentosTable.data, hoje.toISOString().slice(0, 10))
+      )
+    );
+    if (abertos.length >= limiteAbertos) {
+      return res.status(400).json({ error: `Cliente atingiu o limite de ${limiteAbertos} agendamentos em aberto` });
+    }
+
+    const limiteDiario = parseInt(params["agenda_limite_diario_mesmo_servico"] || "1");
+    const mesmoServicoDia = abertos.filter(a => a.data === data && a.servicoId === servicoId);
+    if (mesmoServicoDia.length >= limiteDiario) {
+      return res.status(400).json({ error: `Limite de ${limiteDiario} agendamento(s) por dia para o mesmo serviço atingido` });
+    }
+  }
+
   const [servico] = await db.select().from(servicosTable).where(and(eq(servicosTable.id, servicoId), eq(servicosTable.barbeariaId, barbeariaId))).limit(1);
   if (!servico) return res.status(404).json({ error: "Serviço não encontrado" });
   const [profissional] = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, profissionalId), eq(profissionaisTable.barbeariaId, barbeariaId))).limit(1);
@@ -162,14 +203,21 @@ router.delete("/:agendamentoId", requireAuth, async (req, res) => {
   if (!barbeariaId) return;
   const user = (req as any).user;
   const id = parseInt(req.params.agendamentoId);
+  const [agend] = await db.select().from(agendamentosTable).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId))).limit(1);
+  if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
+
   if (user.role === "colaborador") {
     if (!user.profissionalId) return res.status(403).json({ error: "Acesso negado" });
-    const [agend] = await db.select().from(agendamentosTable).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId))).limit(1);
-    if (agend && agend.profissionalId !== user.profissionalId) {
+    if (agend.profissionalId !== user.profissionalId) {
       return res.status(403).json({ error: "Acesso negado" });
     }
+    const params = await getParametros(barbeariaId);
+    if (params["cancel_bloquear_profissional"] === "Sim") {
+      return res.status(403).json({ error: "Cancelamento bloqueado para profissionais não-gestores" });
+    }
   }
-  await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId)));
+
+  await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(eq(agendamentosTable.id, id));
   return res.json({ success: true, message: "Agendamento cancelado" });
 });
 
