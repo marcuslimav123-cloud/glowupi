@@ -1,55 +1,15 @@
-import { db } from "@workspace/db";
-import { brevoEmailLogTable } from "@workspace/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import nodemailer from "nodemailer";
 
-const BREVO_KEYS = [
-  process.env.BREVO_API_KEY_1,
-  process.env.BREVO_API_KEY_2,
-  process.env.BREVO_API_KEY_3,
-].filter(Boolean) as string[];
+const GMAIL_USER = process.env.GMAIL_USER || "marcuslimav123@gmail.com";
+const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || "";
 
-let currentIndex = 0;
-
-function getNextKey(): { key: string; index: number } {
-  if (BREVO_KEYS.length === 0) throw new Error("Nenhuma chave Brevo configurada");
-  const index = currentIndex % BREVO_KEYS.length;
-  currentIndex++;
-  return { key: BREVO_KEYS[index], index: index + 1 };
-}
-
-async function incrementEmailCount(keyIndex: number) {
-  const today = new Date().toISOString().split("T")[0];
-  const [existing] = await db
-    .select()
-    .from(brevoEmailLogTable)
-    .where(and(eq(brevoEmailLogTable.keyIndex, keyIndex), eq(brevoEmailLogTable.dia, today)))
-    .limit(1);
-
-  if (existing) {
-    await db
-      .update(brevoEmailLogTable)
-      .set({ contagem: sql`${brevoEmailLogTable.contagem} + 1`, updatedAt: new Date() })
-      .where(eq(brevoEmailLogTable.id, existing.id));
-  } else {
-    await db.insert(brevoEmailLogTable).values({ keyIndex, dia: today, contagem: 1 });
-  }
-}
-
-export async function getEmailStats() {
-  const today = new Date().toISOString().split("T")[0];
-  const logs = await db
-    .select()
-    .from(brevoEmailLogTable)
-    .where(eq(brevoEmailLogTable.dia, today));
-
-  const stats = BREVO_KEYS.map((_, i) => {
-    const log = logs.find(l => l.keyIndex === i + 1);
-    return { keyIndex: i + 1, contagem: log?.contagem || 0 };
-  });
-
-  const total = stats.reduce((sum, s) => sum + s.contagem, 0);
-  return { dia: today, total, limite: BREVO_KEYS.length * 300, contas: stats };
-}
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: GMAIL_USER,
+    pass: GMAIL_APP_PASSWORD,
+  },
+});
 
 interface SendEmailParams {
   to: { email: string; name?: string }[];
@@ -58,59 +18,38 @@ interface SendEmailParams {
   sender?: { name: string; email: string };
 }
 
-async function trySendWithKey(key: string, keyIndex: number, sender: { name: string; email: string }, params: SendEmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST",
-    headers: {
-      "accept": "application/json",
-      "content-type": "application/json",
-      "api-key": key,
-    },
-    body: JSON.stringify({
-      sender,
-      to: params.to,
-      subject: params.subject,
-      htmlContent: params.htmlContent,
-    }),
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    console.error(`Brevo key ${keyIndex} error:`, data);
-    return { success: false, error: data.message || "Erro ao enviar e-mail" };
+export async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  if (!GMAIL_APP_PASSWORD) {
+    console.error("[Email] GMAIL_APP_PASSWORD not configured");
+    return { success: false, error: "Senha de app do Gmail não configurada" };
   }
 
-  await incrementEmailCount(keyIndex);
-  console.log(`[Brevo] Email sent via key ${keyIndex}, messageId=${data.messageId}`);
-  return { success: true, messageId: data.messageId };
+  const senderName = params.sender?.name || "Glow Agenda";
+  const recipients = params.to.map(r => r.name ? `"${r.name}" <${r.email}>` : r.email).join(", ");
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"${senderName}" <${GMAIL_USER}>`,
+      to: recipients,
+      subject: params.subject,
+      html: params.htmlContent,
+    });
+
+    console.log(`[Email] Sent to ${recipients}, messageId=${info.messageId}`);
+    return { success: true, messageId: info.messageId };
+  } catch (err: any) {
+    console.error(`[Email] Failed to send to ${recipients}:`, err.message);
+    return { success: false, error: err.message };
+  }
 }
 
-export async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  if (BREVO_KEYS.length === 0) {
-    return { success: false, error: "Nenhuma chave Brevo configurada" };
-  }
-
-  const sender = params.sender || { name: "Glow Agenda", email: process.env.BREVO_SENDER_EMAIL || "marcuslimav123@gmail.com" };
-  let lastError = "";
-
-  for (let attempt = 0; attempt < BREVO_KEYS.length; attempt++) {
-    const { key, index } = getNextKey();
-    try {
-      const result = await trySendWithKey(key, index, sender, params);
-      if (result.success) {
-        return result;
-      }
-      lastError = result.error || "Erro desconhecido";
-      console.warn(`[Brevo] Key ${index} failed, trying next...`);
-    } catch (err: any) {
-      lastError = err.message;
-      console.error(`[Brevo] Key ${index} exception:`, err.message);
-    }
-  }
-
-  console.error(`[Brevo] All ${BREVO_KEYS.length} keys failed. Last error: ${lastError}`);
-  return { success: false, error: lastError };
+export async function getEmailStats() {
+  return {
+    dia: new Date().toISOString().split("T")[0],
+    total: 0,
+    limite: 500,
+    contas: [{ provider: "Gmail SMTP", status: GMAIL_APP_PASSWORD ? "configured" : "missing password" }],
+  };
 }
 
 export function renderTemplate(template: string, vars: Record<string, string>): string {
