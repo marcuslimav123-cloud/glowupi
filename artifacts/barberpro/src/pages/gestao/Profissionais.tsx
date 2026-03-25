@@ -3,7 +3,8 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   useListProfissionais, useCreateProfissional,
-  useUpdateProfissional, useDeleteProfissional
+  useUpdateProfissional, useDeleteProfissional,
+  useListServicos
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit2, Trash2, Users, Award, ToggleLeft, ToggleRight, Clock, Calendar } from "lucide-react";
+import { Plus, Edit2, Trash2, Users, Award, ToggleLeft, ToggleRight, Clock, Calendar, Scissors, Check } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 type Prof = {
@@ -25,6 +26,16 @@ type Prof = {
   comissaoValor: number;
   ativo: boolean;
   horarios?: any;
+  fotoUrl?: string | null;
+  servicoIds?: number[];
+};
+
+type Servico = {
+  id: number;
+  nome: string;
+  preco: number;
+  duracaoMinutos: number;
+  ativo: boolean;
 };
 
 const DIAS_SEMANA = [
@@ -91,22 +102,52 @@ function ScheduleEditor({ value, onChange }: { value: any; onChange: (v: any) =>
 }
 
 function ProfForm({
-  initial, onSave, onCancel, isPending
+  initial, onSave, onCancel, isPending, servicos
 }: {
   initial?: Partial<Prof>;
   onSave: (d: any) => void;
   onCancel: () => void;
   isPending?: boolean;
+  servicos: Servico[];
 }) {
   const [nome, setNome] = useState(initial?.nomeExibicao ?? "");
   const [esp, setEsp] = useState(initial?.especialidade ?? "");
   const [tipo, setTipo] = useState<string>(initial?.comissaoTipo ?? "percentual");
   const [valor, setValor] = useState(String(initial?.comissaoValor ?? ""));
+  const [fotoUrl, setFotoUrl] = useState(initial?.fotoUrl ?? "");
   const [horarios, setHorarios] = useState<any>(initial?.horarios || { porDia: {} });
   const [showSchedule, setShowSchedule] = useState(!!initial?.horarios?.porDia && Object.keys(initial.horarios.porDia).length > 0);
+  const [selectedServicoIds, setSelectedServicoIds] = useState<number[]>(initial?.servicoIds || []);
+
+  const activeServicos = servicos.filter(s => s.ativo);
+
+  const toggleServico = (id: number) => {
+    setSelectedServicoIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const selectAll = () => {
+    setSelectedServicoIds(activeServicos.map(s => s.id));
+  };
+
+  const clearAll = () => {
+    setSelectedServicoIds([]);
+  };
 
   return (
-    <form onSubmit={e => { e.preventDefault(); onSave({ nomeExibicao: nome, especialidade: esp || null, comissaoTipo: tipo, comissaoValor: parseFloat(valor), horarios: showSchedule ? horarios : null }); }} className="space-y-4 mt-2">
+    <form onSubmit={e => {
+      e.preventDefault();
+      onSave({
+        nomeExibicao: nome,
+        especialidade: esp || null,
+        comissaoTipo: tipo,
+        comissaoValor: parseFloat(valor),
+        fotoUrl: fotoUrl || null,
+        horarios: showSchedule ? horarios : null,
+        servicoIds: selectedServicoIds,
+      });
+    }} className="space-y-4 mt-2">
       <div className="space-y-2">
         <Label>Nome de Exibição *</Label>
         <Input value={nome} onChange={e => setNome(e.target.value)} required placeholder="Ex: Ana Beatriz" className="bg-background" />
@@ -114,6 +155,16 @@ function ProfForm({
       <div className="space-y-2">
         <Label>Especialidade</Label>
         <Input value={esp} onChange={e => setEsp(e.target.value)} placeholder="Ex: Nail Designer, Esteticista" className="bg-background" />
+      </div>
+      <div className="space-y-2">
+        <Label>URL da Foto</Label>
+        <Input value={fotoUrl} onChange={e => setFotoUrl(e.target.value)} placeholder="https://exemplo.com/foto.jpg" className="bg-background" />
+        {fotoUrl && (
+          <div className="flex items-center gap-3 mt-1">
+            <img src={fotoUrl} alt="Preview" className="h-12 w-12 rounded-full object-cover border border-border" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            <span className="text-xs text-muted-foreground">Preview</span>
+          </div>
+        )}
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -135,6 +186,51 @@ function ProfForm({
             className="bg-background"
           />
         </div>
+      </div>
+
+      <div className="border-t border-border pt-4">
+        <Label className="flex items-center gap-2 text-sm font-medium mb-3">
+          <Scissors className="h-4 w-4 text-primary" />
+          Serviços que atende
+        </Label>
+        {activeServicos.length === 0 ? (
+          <p className="text-xs text-muted-foreground">Nenhum serviço ativo cadastrado</p>
+        ) : (
+          <>
+            <div className="flex gap-2 mb-2">
+              <button type="button" onClick={selectAll} className="text-xs text-primary hover:underline">Selecionar todos</button>
+              <span className="text-xs text-muted-foreground">|</span>
+              <button type="button" onClick={clearAll} className="text-xs text-muted-foreground hover:underline">Limpar</button>
+            </div>
+            <div className="rounded-xl border border-border overflow-hidden max-h-48 overflow-y-auto">
+              {activeServicos.map((s, i) => {
+                const checked = selectedServicoIds.includes(s.id);
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => toggleServico(s.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted/30 ${i > 0 ? "border-t border-border/50" : ""}`}
+                  >
+                    <div className={`h-5 w-5 rounded-md border flex items-center justify-center shrink-0 transition-all ${checked ? "bg-primary border-primary" : "border-border"}`}>
+                      {checked && <Check className="h-3 w-3 text-primary-foreground" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{s.nome}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {s.duracaoMinutos}min — R$ {s.preco.toFixed(2).replace(".", ",")}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1.5">
+              {selectedServicoIds.length} de {activeServicos.length} selecionado(s)
+              {selectedServicoIds.length === 0 && " — profissional aparecerá em todos os serviços"}
+            </p>
+          </>
+        )}
       </div>
 
       <div className="border-t border-border pt-4">
@@ -167,6 +263,7 @@ export default function Profissionais() {
   const qc = useQueryClient();
 
   const { data: profissionais = [], isLoading } = useListProfissionais(barbeariaId!, { query: { enabled: !!barbeariaId } });
+  const { data: servicos = [] } = useListServicos(barbeariaId!, { query: { enabled: !!barbeariaId } });
   const createMutation = useCreateProfissional();
   const updateMutation = useUpdateProfissional();
   const deleteMutation = useDeleteProfissional();
@@ -225,6 +322,9 @@ export default function Profissionais() {
     return `${workDays.length} dias • ${offDays.length} folga(s)`;
   };
 
+  const servicoMap: Record<number, string> = {};
+  (servicos as Servico[]).forEach(s => { servicoMap[s.id] = s.nome; });
+
   return (
     <AppLayout>
       <div className="flex items-center justify-between mb-8">
@@ -250,8 +350,12 @@ export default function Profissionais() {
         <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-xl">
           {(profissionais as Prof[]).map((p, i) => (
             <div key={p.id} className={`flex items-center gap-4 p-5 hover:bg-muted/20 transition-colors ${i !== 0 ? "border-t border-border" : ""} ${!p.ativo ? "opacity-50" : ""}`}>
-              <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg border border-primary/20 shrink-0">
-                {p.nomeExibicao.charAt(0).toUpperCase()}
+              <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg border border-primary/20 shrink-0 overflow-hidden">
+                {p.fotoUrl ? (
+                  <img src={p.fotoUrl} alt={p.nomeExibicao} className="h-full w-full object-cover" />
+                ) : (
+                  p.nomeExibicao.charAt(0).toUpperCase()
+                )}
               </div>
 
               <div className="flex-1 min-w-0">
@@ -262,6 +366,20 @@ export default function Profissionais() {
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground mt-0.5">{p.especialidade || "Sem especialidade definida"}</p>
+                {p.servicoIds && p.servicoIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {p.servicoIds.slice(0, 3).map(sId => (
+                      <span key={sId} className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                        {servicoMap[sId] || `#${sId}`}
+                      </span>
+                    ))}
+                    {p.servicoIds.length > 3 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                        +{p.servicoIds.length - 3}
+                      </span>
+                    )}
+                  </div>
+                )}
                 {getScheduleSummary(p) && (
                   <div className="flex items-center gap-1 mt-1">
                     <Clock className="h-3 w-3 text-primary" />
@@ -306,6 +424,7 @@ export default function Profissionais() {
             onSave={handleSave}
             onCancel={() => { setModalOpen(false); setEditing(null); }}
             isPending={createMutation.isPending || updateMutation.isPending}
+            servicos={servicos as Servico[]}
           />
         </DialogContent>
       </Dialog>

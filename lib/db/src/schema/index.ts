@@ -28,3 +28,4 @@ export * from "./solicitacoesCadastro";
 export * from "./perfisAcesso";
 export * from "./brevoEmailLog";
 export * from "./emailTemplates";
+export * from "./profissionalServicos";

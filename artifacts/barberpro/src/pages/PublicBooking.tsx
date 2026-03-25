@@ -310,7 +310,12 @@ export default function PublicBooking() {
             </div>
           )}
 
-          {step === "profissional" && (
+          {step === "profissional" && (() => {
+            const hasAnyLinks = barbearia.profissionais.some((p: any) => p.servicoIds && p.servicoIds.length > 0);
+            const filtered = hasAnyLinks && selectedServico
+              ? barbearia.profissionais.filter((p: any) => !p.servicoIds || p.servicoIds.length === 0 || p.servicoIds.includes(selectedServico.id))
+              : barbearia.profissionais;
+            return (
             <div>
               <h2 className="text-lg font-semibold mb-1">Escolha o profissional</h2>
               <p className="text-white/30 text-sm mb-5">Quem vai te atender?</p>
@@ -321,17 +326,31 @@ export default function PublicBooking() {
                 <p className="font-medium">Sem preferência</p>
                 <p className="text-white/30 text-xs mt-0.5">Qualquer profissional disponível</p>
               </button>
-              {barbearia.profissionais.map((p) => (
+              {filtered.map((p: any) => (
                 <button
                   key={p.id}
                   onClick={() => handleSelectProfissional(p)}
-                  className="w-full p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/20 transition-all text-left mb-2"
+                  className="w-full p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/20 transition-all text-left mb-2 flex items-center gap-3"
                 >
-                  <p className="font-medium">{p.nomeExibicao}</p>
+                  <div className="h-10 w-10 rounded-full flex items-center justify-center border border-white/10 overflow-hidden" style={{ background: `${accent}20` }}>
+                    {p.fotoUrl ? (
+                      <img src={p.fotoUrl} alt={p.nomeExibicao} className="h-full w-full rounded-full object-cover" />
+                    ) : (
+                      <User className="h-5 w-5" style={{ color: accent }} />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium">{p.nomeExibicao}</p>
+                    {p.especialidade && <p className="text-white/30 text-xs mt-0.5">{p.especialidade}</p>}
+                  </div>
                 </button>
               ))}
+              {filtered.length === 0 && (
+                <p className="text-center py-8 text-white/30 text-sm">Nenhum profissional disponível para este serviço</p>
+              )}
             </div>
-          )}
+            );
+          })()}
 
           {step === "data" && (
             <div>

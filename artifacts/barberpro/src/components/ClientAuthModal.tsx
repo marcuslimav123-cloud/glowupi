@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Eye, EyeOff, Loader2 } from "lucide-react";
 
 interface ClientUser {
@@ -31,8 +31,6 @@ export default function ClientAuthModal({ open, onClose, onAuthenticated, accent
   const [regEmail, setRegEmail] = useState("");
   const [regTelefone, setRegTelefone] = useState("");
   const [regSenha, setRegSenha] = useState("");
-
-  if (!open) return null;
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -100,7 +98,7 @@ export default function ClientAuthModal({ open, onClose, onAuthenticated, accent
     }
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!open) return;
     const googleClientId = sessionStorage.getItem("googleClientId");
     if (!googleClientId) return;
@@ -137,6 +135,8 @@ export default function ClientAuthModal({ open, onClose, onAuthenticated, accent
       });
     }
   }, [open, tab]);
+
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
