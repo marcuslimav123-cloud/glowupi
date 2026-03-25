@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,13 @@ import {
   Heart,
   Shield,
   Zap,
+  Menu,
+  X,
+  Clock,
+  TrendingUp,
+  Smartphone,
+  HeadphonesIcon,
+  Lock,
 } from "lucide-react";
 import { APP_NAME } from "@/lib/utils";
 
@@ -93,10 +100,120 @@ const TESTIMONIALS = [
   { name: "Patricia Mendes", role: "Proprietária de Salão", text: "Com o clube de fidelidade, minhas clientes voltam muito mais. A taxa de retorno aumentou 40% em 3 meses!" },
 ];
 
+const DIFFERENTIALS = [
+  { icon: Smartphone, text: "Interface intuitiva e mobile-first" },
+  { icon: HeadphonesIcon, text: "Suporte dedicado para você" },
+  { icon: TrendingUp, text: "Relatórios automáticos em tempo real" },
+  { icon: Lock, text: "Segurança total com criptografia" },
+  { icon: Clock, text: "Atualizações constantes e gratuitas" },
+];
+
+const STATS = [
+  { value: "500+", label: "Profissionais ativos" },
+  { value: "50k+", label: "Agendamentos realizados" },
+  { value: "4.9", label: "Nota de satisfação" },
+  { value: "99.9%", label: "Disponibilidade" },
+];
+
 type BillingPeriod = "mensal" | "semestral" | "anual";
 
 function formatBRL(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function useScrolled(threshold = 20) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > threshold);
+    window.addEventListener("scroll", handler, { passive: true });
+    handler();
+    return () => window.removeEventListener("scroll", handler);
+  }, [threshold]);
+  return scrolled;
+}
+
+function useInView(options?: IntersectionObserverInit) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setInView(true);
+        observer.unobserve(el);
+      }
+    }, { threshold: 0.1, ...options });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return { ref, inView };
+}
+
+function AnimatedSection({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+  const { ref, inView } = useInView();
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: inView ? 1 : 0,
+        transform: inView ? "translateY(0)" : "translateY(32px)",
+        transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function DashboardMockup() {
+  return (
+    <div className="relative w-full max-w-[520px] mx-auto lg:mx-0">
+      <div className="absolute -inset-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-[32px] blur-2xl" />
+      <div className="relative rounded-2xl border border-black/[0.08] bg-white shadow-2xl shadow-black/[0.08] overflow-hidden">
+        <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-black/[0.04] bg-[#fafafa]">
+          <div className="h-2.5 w-2.5 rounded-full bg-red-400/60" />
+          <div className="h-2.5 w-2.5 rounded-full bg-yellow-400/60" />
+          <div className="h-2.5 w-2.5 rounded-full bg-green-400/60" />
+          <span className="ml-3 text-[10px] text-foreground/30 font-medium">Glow Agenda — Dashboard</span>
+        </div>
+        <div className="p-4 space-y-3">
+          <div className="grid grid-cols-3 gap-2.5">
+            <div className="rounded-xl bg-gradient-to-br from-primary/8 to-primary/3 p-3 border border-primary/10">
+              <p className="text-[9px] text-foreground/40 mb-0.5">Hoje</p>
+              <p className="text-[18px] font-bold text-foreground">12</p>
+              <p className="text-[9px] text-primary font-medium">agendamentos</p>
+            </div>
+            <div className="rounded-xl bg-[#fafafa] p-3 border border-black/[0.04]">
+              <p className="text-[9px] text-foreground/40 mb-0.5">Semana</p>
+              <p className="text-[18px] font-bold text-foreground">67</p>
+              <p className="text-[9px] text-foreground/40 font-medium">clientes</p>
+            </div>
+            <div className="rounded-xl bg-[#fafafa] p-3 border border-black/[0.04]">
+              <p className="text-[9px] text-foreground/40 mb-0.5">Faturamento</p>
+              <p className="text-[18px] font-bold text-foreground">R$ 5k</p>
+              <p className="text-[9px] text-green-600 font-medium">+23%</p>
+            </div>
+          </div>
+          <div className="rounded-xl bg-[#fafafa] border border-black/[0.04] p-3">
+            <p className="text-[10px] font-semibold text-foreground/60 mb-2">Próximos Horários</p>
+            {[
+              { time: "09:00", client: "Ana Paula", service: "Corte + Escova" },
+              { time: "10:30", client: "Maria Clara", service: "Coloração" },
+              { time: "13:00", client: "Juliana Costa", service: "Manicure" },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-3 py-1.5 border-b border-black/[0.03] last:border-0">
+                <span className="text-[10px] font-medium text-primary w-10">{item.time}</span>
+                <span className="text-[10px] text-foreground font-medium flex-1">{item.client}</span>
+                <span className="text-[9px] text-foreground/40">{item.service}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function Landing() {
@@ -105,6 +222,8 @@ export default function Landing() {
   const [pricingMode, setPricingMode] = useState<string>("all_plans");
   const [stripeProducts, setStripeProducts] = useState<ProductInfo[]>([]);
   const [isLoadingCheckout, setIsLoadingCheckout] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const scrolled = useScrolled();
 
   useEffect(() => {
     fetch(PRICING_MODE_ENDPOINT)
@@ -150,123 +269,250 @@ export default function Landing() {
     }
   };
 
+  const smoothScroll = useCallback((e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    setMobileMenuOpen(false);
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
   const discountLabel = period === "anual" ? "30% OFF" : period === "semestral" ? "15% OFF" : null;
 
   return (
-    <div className="min-h-screen bg-[#fafafa]">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#fafafa]/80 backdrop-blur-xl border-b border-black/[0.04]">
-        <div className="max-w-[1200px] mx-auto px-6 h-12 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-semibold text-[15px] tracking-tight text-foreground">
-            <Sparkles className="h-[18px] w-[18px] text-primary" />
+    <div className="min-h-screen bg-[#fafafa] overflow-x-hidden">
+      {/* ── NAV ── */}
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? "bg-white/80 backdrop-blur-xl border-b border-black/[0.06] shadow-sm shadow-black/[0.02]"
+          : "bg-transparent"
+      }`}>
+        <div className="max-w-[1200px] mx-auto px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 font-semibold text-[16px] tracking-tight text-foreground">
+            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+              <Sparkles className="h-4 w-4 text-primary" />
+            </div>
             {APP_NAME}
           </div>
-          <div className="hidden md:flex items-center gap-7">
-            <a href="#features" className="text-xs text-foreground/60 hover:text-foreground transition-colors">Funcionalidades</a>
-            <a href="#pricing" className="text-xs text-foreground/60 hover:text-foreground transition-colors">Preços</a>
-            <a href="#testimonials" className="text-xs text-foreground/60 hover:text-foreground transition-colors">Depoimentos</a>
-            <a href="#faq" className="text-xs text-foreground/60 hover:text-foreground transition-colors">FAQ</a>
+
+          <div className="hidden md:flex items-center gap-8">
+            <a href="#features" onClick={(e) => smoothScroll(e, "features")} className="text-[13px] text-foreground/50 hover:text-foreground transition-colors font-medium">Funcionalidades</a>
+            <a href="#pricing" onClick={(e) => smoothScroll(e, "pricing")} className="text-[13px] text-foreground/50 hover:text-foreground transition-colors font-medium">Preços</a>
+            <a href="#testimonials" onClick={(e) => smoothScroll(e, "testimonials")} className="text-[13px] text-foreground/50 hover:text-foreground transition-colors font-medium">Depoimentos</a>
+            <a href="#faq" onClick={(e) => smoothScroll(e, "faq")} className="text-[13px] text-foreground/50 hover:text-foreground transition-colors font-medium">FAQ</a>
           </div>
-          <div className="flex items-center gap-3">
+
+          <div className="hidden md:flex items-center gap-3">
             <Link href="/login">
-              <Button variant="ghost" size="sm" className="text-xs h-8 px-3 text-foreground/60 hover:text-foreground">
+              <Button variant="ghost" size="sm" className="text-[13px] h-9 px-4 text-foreground/60 hover:text-foreground font-medium">
                 Entrar
               </Button>
             </Link>
             <Link href="/cadastro">
-              <Button size="sm" className="text-xs h-8 px-4 rounded-full">
+              <Button size="sm" className="text-[13px] h-9 px-5 rounded-full font-medium shadow-md shadow-primary/15">
                 Teste Grátis
               </Button>
             </Link>
           </div>
+
+          <button className="md:hidden p-2 -mr-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
+
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white border-b border-black/[0.06] px-6 pb-6 pt-2 space-y-1 animate-in slide-in-from-top-2">
+            <a href="#features" onClick={(e) => smoothScroll(e, "features")} className="block py-3 text-[15px] text-foreground/70 font-medium border-b border-black/[0.04]">Funcionalidades</a>
+            <a href="#pricing" onClick={(e) => smoothScroll(e, "pricing")} className="block py-3 text-[15px] text-foreground/70 font-medium border-b border-black/[0.04]">Preços</a>
+            <a href="#testimonials" onClick={(e) => smoothScroll(e, "testimonials")} className="block py-3 text-[15px] text-foreground/70 font-medium border-b border-black/[0.04]">Depoimentos</a>
+            <a href="#faq" onClick={(e) => smoothScroll(e, "faq")} className="block py-3 text-[15px] text-foreground/70 font-medium border-b border-black/[0.04]">FAQ</a>
+            <div className="flex gap-3 pt-4">
+              <Link href="/login" className="flex-1">
+                <Button variant="outline" className="w-full h-11 rounded-full text-[14px]">Entrar</Button>
+              </Link>
+              <Link href="/cadastro" className="flex-1">
+                <Button className="w-full h-11 rounded-full text-[14px]">Teste Grátis</Button>
+              </Link>
+            </div>
+          </div>
+        )}
       </nav>
 
-      <section className="pt-28 pb-24 px-6">
-        <div className="max-w-[680px] mx-auto text-center">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/8 text-primary text-xs font-medium mb-8 border border-primary/10">
-            <Sparkles className="h-3 w-3" />
-            30 dias grátis para testar
-          </div>
-          <h1 className="text-[44px] sm:text-[56px] lg:text-[64px] font-bold text-foreground leading-[1.05] mb-6">
-            A plataforma completa para{" "}
-            <span className="bg-gradient-to-r from-primary to-amber-500 bg-clip-text text-transparent">profissionais de beleza</span>
-          </h1>
-          <p className="text-[17px] sm:text-[19px] text-foreground/50 leading-relaxed max-w-[520px] mx-auto mb-10">
-            Gerencie sua agenda, clientes, finanças e muito mais em um só lugar. Feito sob medida para salões de beleza e estéticas.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/cadastro">
-              <Button size="lg" className="text-sm px-8 h-12 rounded-full shadow-lg shadow-primary/15 font-medium w-full sm:w-auto">
-                Começar Agora — É Grátis
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-            <a href="#features">
-              <Button size="lg" variant="outline" className="text-sm px-8 h-12 rounded-full w-full sm:w-auto border-black/10 text-foreground/70 hover:text-foreground">
-                Ver Funcionalidades
-              </Button>
-            </a>
-          </div>
-          <div className="mt-10 flex items-center justify-center gap-6 text-[13px] text-foreground/40">
-            <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-green-500" /> Sem cartão de crédito</span>
-            <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-green-500" /> Cancele quando quiser</span>
-            <span className="flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-green-500" /> 100% seguro</span>
+      {/* ── HERO ── */}
+      <section className="pt-24 md:pt-32 pb-16 md:pb-24 px-6">
+        <div className="max-w-[1200px] mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <AnimatedSection>
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/8 text-primary text-[13px] font-medium mb-8 border border-primary/10">
+                <Sparkles className="h-3.5 w-3.5" />
+                30 dias grátis para testar
+              </div>
+              <h1 className="text-[36px] sm:text-[44px] lg:text-[52px] xl:text-[58px] font-extrabold text-foreground leading-[1.08] mb-6 tracking-tight">
+                A plataforma completa para{" "}
+                <span className="bg-gradient-to-r from-primary via-amber-500 to-primary bg-clip-text text-transparent">profissionais de beleza</span>
+              </h1>
+              <p className="text-[16px] sm:text-[18px] text-foreground/50 leading-relaxed max-w-[480px] mb-10">
+                Gerencie sua agenda, clientes, finanças e muito mais em um só lugar. Feito sob medida para salões de beleza e estéticas.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 mb-8">
+                <Link href="/cadastro">
+                  <Button size="lg" className="text-[14px] px-8 h-12 rounded-full shadow-lg shadow-primary/20 font-semibold w-full sm:w-auto">
+                    Começar Agora — É Grátis
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+                <a href="#features" onClick={(e) => smoothScroll(e, "features")}>
+                  <Button size="lg" variant="outline" className="text-[14px] px-8 h-12 rounded-full w-full sm:w-auto border-black/[0.08] text-foreground/60 hover:text-foreground hover:border-black/[0.15]">
+                    Ver Funcionalidades
+                  </Button>
+                </a>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-foreground/40">
+                <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-green-500" /> Sem cartão de crédito</span>
+                <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-green-500" /> Cancele quando quiser</span>
+                <span className="flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-green-500" /> 100% seguro</span>
+              </div>
+            </AnimatedSection>
+
+            <AnimatedSection delay={200} className="hidden lg:block">
+              <DashboardMockup />
+            </AnimatedSection>
           </div>
         </div>
       </section>
 
-      <section id="features" className="py-24 px-6 bg-white">
-        <div className="max-w-[1100px] mx-auto">
-          <div className="text-center mb-16">
-            <p className="text-primary text-sm font-medium mb-3">Funcionalidades</p>
-            <h2 className="text-[32px] sm:text-[40px] font-bold text-foreground leading-tight mb-4">
-              Tudo que você precisa em um só lugar
-            </h2>
-            <p className="text-foreground/50 text-[17px] max-w-[480px] mx-auto">
-              Ferramentas poderosas para transformar a gestão do seu salão
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {FEATURES.map((feature, i) => (
-              <div
-                key={i}
-                className="group p-6 rounded-2xl bg-[#fafafa] hover:bg-white border border-transparent hover:border-black/[0.04] hover:shadow-lg hover:shadow-black/[0.03] transition-all duration-300"
-              >
-                <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center mb-4">
-                  <feature.icon className="h-5 w-5 text-primary" />
-                </div>
-                <h3 className="text-[15px] font-semibold text-foreground mb-1.5">{feature.title}</h3>
-                <p className="text-foreground/45 text-[14px] leading-relaxed">{feature.desc}</p>
-              </div>
+      {/* ── SOCIAL PROOF / STATS ── */}
+      <section className="py-12 px-6 border-y border-black/[0.04] bg-white">
+        <div className="max-w-[1000px] mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {STATS.map((stat, i) => (
+              <AnimatedSection key={i} delay={i * 80} className="text-center">
+                <p className="text-[28px] sm:text-[32px] font-extrabold text-foreground tracking-tight">{stat.value}</p>
+                <p className="text-[13px] text-foreground/40 font-medium mt-1">{stat.label}</p>
+              </AnimatedSection>
             ))}
           </div>
         </div>
       </section>
 
+      {/* ── FEATURES ── */}
+      <section id="features" className="py-24 md:py-32 px-6">
+        <div className="max-w-[1100px] mx-auto">
+          <AnimatedSection className="text-center mb-16">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/8 text-primary text-[12px] font-semibold mb-4 uppercase tracking-wider border border-primary/10">
+              Funcionalidades
+            </div>
+            <h2 className="text-[28px] sm:text-[36px] lg:text-[42px] font-extrabold text-foreground leading-tight mb-4 tracking-tight">
+              Tudo que você precisa em um só lugar
+            </h2>
+            <p className="text-foreground/45 text-[16px] sm:text-[18px] max-w-[520px] mx-auto">
+              Ferramentas poderosas para transformar a gestão do seu salão
+            </p>
+          </AnimatedSection>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {FEATURES.map((feature, i) => (
+              <AnimatedSection key={i} delay={i * 60}>
+                <div className="group p-6 rounded-2xl bg-white hover:bg-white border border-black/[0.04] hover:border-black/[0.08] hover:shadow-xl hover:shadow-black/[0.04] transition-all duration-300 h-full">
+                  <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary/12 to-primary/4 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform duration-300">
+                    <feature.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <h3 className="text-[15px] font-bold text-foreground mb-2">{feature.title}</h3>
+                  <p className="text-foreground/45 text-[14px] leading-relaxed">{feature.desc}</p>
+                </div>
+              </AnimatedSection>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── DIFFERENTIAL ── */}
+      <section className="py-24 md:py-32 px-6 bg-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-transparent to-primary/[0.02]" />
+        <div className="max-w-[1100px] mx-auto relative">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <AnimatedSection>
+              <div className="relative w-full max-w-[440px] mx-auto lg:mx-0">
+                <div className="absolute -inset-8 bg-gradient-to-br from-primary/8 to-transparent rounded-[40px] blur-3xl" />
+                <div className="relative rounded-2xl border border-black/[0.06] bg-[#fafafa] p-8 space-y-4">
+                  <div className="flex items-center gap-3 pb-4 border-b border-black/[0.04]">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-[14px] font-bold text-foreground">{APP_NAME}</p>
+                      <p className="text-[11px] text-foreground/40">Painel do Profissional</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2.5">
+                    {[
+                      { label: "Agendamentos hoje", value: "12", color: "text-primary" },
+                      { label: "Clientes ativos", value: "234", color: "text-foreground" },
+                      { label: "Faturamento mensal", value: "R$ 12.450", color: "text-green-600" },
+                      { label: "Taxa de retorno", value: "87%", color: "text-foreground" },
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center justify-between py-2 px-3 rounded-lg bg-white border border-black/[0.03]">
+                        <span className="text-[13px] text-foreground/50">{item.label}</span>
+                        <span className={`text-[15px] font-bold ${item.color}`}>{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </AnimatedSection>
+
+            <AnimatedSection delay={150}>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/8 text-primary text-[12px] font-semibold mb-5 uppercase tracking-wider border border-primary/10">
+                Por que escolher
+              </div>
+              <h2 className="text-[28px] sm:text-[36px] font-extrabold text-foreground leading-tight mb-6 tracking-tight">
+                Feito para quem faz<br />
+                <span className="bg-gradient-to-r from-primary to-amber-500 bg-clip-text text-transparent">a beleza acontecer</span>
+              </h2>
+              <p className="text-foreground/45 text-[16px] leading-relaxed mb-8 max-w-[420px]">
+                Desenvolvido por quem entende a rotina de profissionais de beleza. Cada funcionalidade foi pensada para simplificar seu dia.
+              </p>
+              <div className="space-y-4">
+                {DIFFERENTIALS.map((item, i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <div className="h-9 w-9 rounded-lg bg-primary/8 flex items-center justify-center shrink-0">
+                      <item.icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-[15px] text-foreground/70 font-medium">{item.text}</span>
+                  </div>
+                ))}
+              </div>
+            </AnimatedSection>
+          </div>
+        </div>
+      </section>
+
+      {/* ── PRICING ── */}
       {pricingMode !== "hidden" && (
-        <section id="pricing" className="py-24 px-6">
+        <section id="pricing" className="py-24 md:py-32 px-6">
           <div className="max-w-[1100px] mx-auto">
-            <div className="text-center mb-14">
-              <p className="text-primary text-sm font-medium mb-3">Preços</p>
-              <h2 className="text-[32px] sm:text-[40px] font-bold text-foreground leading-tight mb-4">
+            <AnimatedSection className="text-center mb-14">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/8 text-primary text-[12px] font-semibold mb-4 uppercase tracking-wider border border-primary/10">
+                Preços
+              </div>
+              <h2 className="text-[28px] sm:text-[36px] lg:text-[42px] font-extrabold text-foreground leading-tight mb-4 tracking-tight">
                 Escolha o plano ideal
               </h2>
-              <p className="text-foreground/50 text-[17px] max-w-[440px] mx-auto">
+              <p className="text-foreground/45 text-[16px] sm:text-[18px] max-w-[480px] mx-auto">
                 Planos flexíveis para o tamanho do seu negócio
               </p>
-            </div>
+            </AnimatedSection>
 
             {pricingMode === "single_price" ? (
-              <div className="max-w-sm mx-auto">
-                <div className="rounded-3xl bg-white border border-black/[0.06] p-8 text-center shadow-xl shadow-black/[0.03]">
+              <AnimatedSection className="max-w-sm mx-auto">
+                <div className="rounded-3xl bg-white border border-black/[0.06] p-8 text-center shadow-xl shadow-black/[0.04]">
                   <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/8 text-primary text-xs font-semibold mb-5">
                     <Zap className="h-3 w-3" /> PLANO ÚNICO
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-1.5">Acesso Completo</h3>
+                  <h3 className="text-lg font-bold text-foreground mb-1.5">Acesso Completo</h3>
                   <p className="text-foreground/45 text-sm mb-6">Todas as funcionalidades, sem limites</p>
                   <div className="mb-8">
                     <span className="text-sm text-foreground/40">R$</span>
-                    <span className="text-5xl font-bold text-foreground ml-1 tracking-tight">97</span>
+                    <span className="text-5xl font-extrabold text-foreground ml-1 tracking-tight">97</span>
                     <span className="text-foreground/40">,00/mês</span>
                   </div>
                   <ul className="text-left space-y-3 mb-8">
@@ -278,7 +524,7 @@ export default function Landing() {
                   </ul>
                   <Button
                     size="lg"
-                    className="w-full h-12 text-sm rounded-full font-medium"
+                    className="w-full h-12 text-sm rounded-full font-semibold shadow-md shadow-primary/15"
                     onClick={() => handleSubscribe("single", "mensal")}
                     disabled={isLoadingCheckout === "single-mensal"}
                   >
@@ -286,7 +532,7 @@ export default function Landing() {
                   </Button>
                   <p className="text-xs text-foreground/35 mt-3">Em até 12x sem juros no cartão</p>
                 </div>
-              </div>
+              </AnimatedSection>
             ) : (
               <>
                 <div className="flex justify-center mb-10">
@@ -294,7 +540,7 @@ export default function Landing() {
                     {(["anual", "semestral", "mensal"] as BillingPeriod[]).map((p) => (
                       <button
                         key={p}
-                        className={`px-5 py-2 rounded-full text-[13px] font-medium transition-all duration-200 ${
+                        className={`px-5 py-2.5 rounded-full text-[13px] font-semibold transition-all duration-200 ${
                           period === p
                             ? "bg-foreground text-white shadow-md"
                             : "text-foreground/50 hover:text-foreground"
@@ -309,76 +555,77 @@ export default function Landing() {
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-[1000px] mx-auto">
-                  {TIERS_STATIC.map((tier) => {
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-[1050px] mx-auto">
+                  {TIERS_STATIC.map((tier, idx) => {
                     const priceValue = tier.prices[period];
                     const originalPrice = tier.prices.mensal;
                     const isPopular = tier.popular;
                     const loadingKey = `${tier.tier}-${period}`;
 
                     return (
-                      <div
-                        key={tier.tier}
-                        className={`rounded-2xl bg-white p-6 flex flex-col relative transition-all duration-300 ${
-                          isPopular
-                            ? "border-2 border-primary shadow-xl shadow-primary/8 ring-1 ring-primary/5"
-                            : "border border-black/[0.06] hover:border-black/[0.1] hover:shadow-lg hover:shadow-black/[0.03]"
-                        }`}
-                      >
-                        {discountLabel && (
-                          <div className="absolute -top-2.5 right-4 bg-foreground text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
-                            {discountLabel}
-                          </div>
-                        )}
-                        {isPopular && (
-                          <div className="absolute -top-2.5 left-4 bg-primary text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
-                            POPULAR
-                          </div>
-                        )}
-
-                        <h3 className="font-semibold text-[15px] text-foreground mt-2">{tier.label}</h3>
-
-                        <div className="mt-4 mb-1">
-                          <span className="text-xs text-foreground/40">R$</span>
-                          <span className="text-[32px] font-bold text-foreground ml-0.5 tracking-tight">
-                            {formatBRL(priceValue).split(",")[0]}
-                          </span>
-                          <span className="text-foreground/40 text-sm">,{formatBRL(priceValue).split(",")[1]}/mês</span>
-                        </div>
-
-                        {period !== "mensal" && (
-                          <p className="text-xs text-foreground/35 line-through mb-0.5">
-                            R$ {formatBRL(originalPrice)}/mês
-                          </p>
-                        )}
-
-                        {period !== "mensal" && (
-                          <p className="text-xs text-foreground/40 mb-4">
-                            Total: R$ {formatBRL(tier.totals[period as "semestral" | "anual"])}
-                          </p>
-                        )}
-
-                        {period === "mensal" && <div className="mb-4" />}
-
-                        <Button
-                          className={`w-full mt-auto h-11 text-[13px] font-medium rounded-full ${
-                            isPopular ? "shadow-md shadow-primary/15" : ""
+                      <AnimatedSection key={tier.tier} delay={idx * 80}>
+                        <div
+                          className={`rounded-2xl bg-white p-6 flex flex-col relative transition-all duration-300 h-full ${
+                            isPopular
+                              ? "border-2 border-primary shadow-xl shadow-primary/8 ring-1 ring-primary/5"
+                              : "border border-black/[0.06] hover:border-black/[0.1] hover:shadow-xl hover:shadow-black/[0.04]"
                           }`}
-                          variant={isPopular ? "default" : "outline"}
-                          onClick={() => handleSubscribe(tier.tier, period)}
-                          disabled={isLoadingCheckout === loadingKey}
                         >
-                          {isLoadingCheckout === loadingKey ? "Redirecionando..." : "Assinar"}
-                        </Button>
+                          {discountLabel && (
+                            <div className="absolute -top-2.5 right-4 bg-foreground text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                              {discountLabel}
+                            </div>
+                          )}
+                          {isPopular && (
+                            <div className="absolute -top-2.5 left-4 bg-primary text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                              POPULAR
+                            </div>
+                          )}
 
-                        <p className="text-[11px] text-center text-foreground/35 mt-2">
-                          {period === "anual"
-                            ? "Em até 12x s/ juros"
-                            : period === "semestral"
-                            ? "Em até 6x s/ juros"
-                            : "Cobrança mensal"}
-                        </p>
-                      </div>
+                          <h3 className="font-bold text-[15px] text-foreground mt-2">{tier.label}</h3>
+
+                          <div className="mt-4 mb-1">
+                            <span className="text-xs text-foreground/40">R$</span>
+                            <span className="text-[32px] font-extrabold text-foreground ml-0.5 tracking-tight">
+                              {formatBRL(priceValue).split(",")[0]}
+                            </span>
+                            <span className="text-foreground/40 text-sm">,{formatBRL(priceValue).split(",")[1]}/mês</span>
+                          </div>
+
+                          {period !== "mensal" && (
+                            <p className="text-xs text-foreground/35 line-through mb-0.5">
+                              R$ {formatBRL(originalPrice)}/mês
+                            </p>
+                          )}
+
+                          {period !== "mensal" && (
+                            <p className="text-xs text-foreground/40 mb-4">
+                              Total: R$ {formatBRL(tier.totals[period as "semestral" | "anual"])}
+                            </p>
+                          )}
+
+                          {period === "mensal" && <div className="mb-4" />}
+
+                          <Button
+                            className={`w-full mt-auto h-11 text-[13px] font-semibold rounded-full ${
+                              isPopular ? "shadow-md shadow-primary/15" : ""
+                            }`}
+                            variant={isPopular ? "default" : "outline"}
+                            onClick={() => handleSubscribe(tier.tier, period)}
+                            disabled={isLoadingCheckout === loadingKey}
+                          >
+                            {isLoadingCheckout === loadingKey ? "Redirecionando..." : "Assinar"}
+                          </Button>
+
+                          <p className="text-[11px] text-center text-foreground/35 mt-2">
+                            {period === "anual"
+                              ? "Em até 12x s/ juros"
+                              : period === "semestral"
+                              ? "Em até 6x s/ juros"
+                              : "Cobrança mensal"}
+                          </p>
+                        </div>
+                      </AnimatedSection>
                     );
                   })}
                 </div>
@@ -388,104 +635,160 @@ export default function Landing() {
         </section>
       )}
 
-      <section id="testimonials" className="py-24 px-6 bg-white">
+      {/* ── TESTIMONIALS ── */}
+      <section id="testimonials" className="py-24 md:py-32 px-6 bg-white">
         <div className="max-w-[1100px] mx-auto">
-          <div className="text-center mb-14">
-            <p className="text-primary text-sm font-medium mb-3">Depoimentos</p>
-            <h2 className="text-[32px] sm:text-[40px] font-bold text-foreground leading-tight">
+          <AnimatedSection className="text-center mb-14">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/8 text-primary text-[12px] font-semibold mb-4 uppercase tracking-wider border border-primary/10">
+              Depoimentos
+            </div>
+            <h2 className="text-[28px] sm:text-[36px] lg:text-[42px] font-extrabold text-foreground leading-tight tracking-tight">
               O que nossas clientes dizem
             </h2>
-          </div>
+          </AnimatedSection>
+
           <div className="grid md:grid-cols-3 gap-5">
             {TESTIMONIALS.map((t, i) => (
-              <div key={i} className="rounded-2xl bg-[#fafafa] border border-transparent p-7">
-                <div className="flex gap-0.5 mb-5">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} className="h-4 w-4 fill-primary text-primary" />
-                  ))}
-                </div>
-                <p className="text-foreground/60 text-[14px] leading-relaxed mb-6">"{t.text}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-semibold text-sm">
-                    {t.name.charAt(0)}
+              <AnimatedSection key={i} delay={i * 100}>
+                <div className="rounded-2xl bg-[#fafafa] border border-black/[0.04] p-7 h-full flex flex-col hover:shadow-lg hover:shadow-black/[0.03] transition-all duration-300">
+                  <div className="flex gap-0.5 mb-5">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star key={s} className="h-4 w-4 fill-primary text-primary" />
+                    ))}
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{t.name}</p>
-                    <p className="text-xs text-foreground/40">{t.role}</p>
+                  <p className="text-foreground/55 text-[14px] leading-relaxed mb-6 flex-1">"{t.text}"</p>
+                  <div className="flex items-center gap-3 pt-4 border-t border-black/[0.04]">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-bold text-[14px]">
+                      {t.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-[14px] font-bold text-foreground">{t.name}</p>
+                      <p className="text-[12px] text-foreground/40">{t.role}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </AnimatedSection>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="faq" className="py-24 px-6">
+      {/* ── FAQ ── */}
+      <section id="faq" className="py-24 md:py-32 px-6">
         <div className="max-w-[640px] mx-auto">
-          <div className="text-center mb-14">
-            <p className="text-primary text-sm font-medium mb-3">FAQ</p>
-            <h2 className="text-[32px] sm:text-[40px] font-bold text-foreground leading-tight">
+          <AnimatedSection className="text-center mb-14">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/8 text-primary text-[12px] font-semibold mb-4 uppercase tracking-wider border border-primary/10">
+              FAQ
+            </div>
+            <h2 className="text-[28px] sm:text-[36px] lg:text-[42px] font-extrabold text-foreground leading-tight tracking-tight">
               Perguntas Frequentes
             </h2>
-          </div>
-          <div className="space-y-2">
+          </AnimatedSection>
+
+          <div className="space-y-2.5">
             {FAQ_ITEMS.map((item, i) => (
-              <div key={i} className="rounded-2xl bg-white border border-black/[0.04] overflow-hidden">
-                <button
-                  className="w-full px-6 py-4.5 flex items-center justify-between text-left"
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                >
-                  <span className="font-medium text-foreground text-[14px]">{item.q}</span>
-                  <ChevronDown
-                    className={`h-4 w-4 text-foreground/30 transition-transform duration-200 ${
-                      openFaq === i ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                {openFaq === i && (
-                  <div className="px-6 pb-5 text-[14px] text-foreground/50 leading-relaxed">{item.a}</div>
-                )}
-              </div>
+              <AnimatedSection key={i} delay={i * 50}>
+                <div className="rounded-2xl bg-white border border-black/[0.04] overflow-hidden hover:border-black/[0.08] transition-colors">
+                  <button
+                    className="w-full px-6 py-5 flex items-center justify-between text-left"
+                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  >
+                    <span className="font-semibold text-foreground text-[14px] pr-4">{item.q}</span>
+                    <ChevronDown
+                      className={`h-4 w-4 text-foreground/30 transition-transform duration-300 shrink-0 ${
+                        openFaq === i ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  <div
+                    className="overflow-hidden transition-all duration-300"
+                    style={{
+                      maxHeight: openFaq === i ? "200px" : "0px",
+                      opacity: openFaq === i ? 1 : 0,
+                    }}
+                  >
+                    <div className="px-6 pb-5 text-[14px] text-foreground/50 leading-relaxed">{item.a}</div>
+                  </div>
+                </div>
+              </AnimatedSection>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="py-24 px-6">
-        <div className="max-w-[640px] mx-auto text-center">
-          <h2 className="text-[32px] sm:text-[40px] font-bold text-foreground leading-tight mb-4">
-            Pronta para transformar seu salão?
+      {/* ── CTA FINAL ── */}
+      <section className="py-24 md:py-32 px-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.04] via-primary/[0.02] to-transparent" />
+        <AnimatedSection className="max-w-[640px] mx-auto text-center relative">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/8 text-primary text-[13px] font-semibold mb-6 border border-primary/10">
+            <Sparkles className="h-3.5 w-3.5" />
+            Comece hoje mesmo
+          </div>
+          <h2 className="text-[28px] sm:text-[36px] lg:text-[42px] font-extrabold text-foreground leading-tight mb-5 tracking-tight">
+            Pronta para transformar<br className="hidden sm:block" /> seu salão?
           </h2>
-          <p className="text-[17px] text-foreground/50 mb-10">
+          <p className="text-[16px] sm:text-[18px] text-foreground/45 mb-10 max-w-[480px] mx-auto">
             Comece agora com 30 dias grátis e descubra como o {APP_NAME} pode simplificar sua rotina.
           </p>
           <Link href="/cadastro">
-            <Button size="lg" className="text-sm px-10 h-12 rounded-full shadow-lg shadow-primary/15 font-medium">
+            <Button size="lg" className="text-[14px] px-10 h-13 rounded-full shadow-lg shadow-primary/20 font-semibold">
               Começar Teste Grátis
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
-        </div>
+          <p className="text-[13px] text-foreground/35 mt-6">Sem cartão de crédito. Cancele a qualquer momento.</p>
+        </AnimatedSection>
       </section>
 
-      <footer className="border-t border-black/[0.04] py-10 px-6 bg-white">
-        <div className="max-w-[1100px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2 font-semibold text-[14px] text-foreground">
-            <Sparkles className="h-4 w-4 text-primary" />
-            {APP_NAME}
-          </div>
-          <div className="flex gap-6 text-[13px] text-foreground/40">
-            <a href="#features" className="hover:text-foreground transition-colors">Funcionalidades</a>
-            <a href="#pricing" className="hover:text-foreground transition-colors">Preços</a>
-            <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
-          </div>
-          <div className="flex flex-col md:flex-row items-center gap-4">
-            <div className="flex gap-4 text-[12px] text-foreground/35">
-              <Link href="/politica-de-privacidade" className="hover:text-foreground transition-colors">Política de Privacidade</Link>
-              <Link href="/termos-de-uso" className="hover:text-foreground transition-colors">Termos de Uso</Link>
+      {/* ── FOOTER ── */}
+      <footer className="border-t border-black/[0.06] bg-white">
+        <div className="max-w-[1100px] mx-auto px-6 py-16">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-14">
+            <div>
+              <div className="flex items-center gap-2.5 font-semibold text-[15px] text-foreground mb-4">
+                <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" />
+                </div>
+                {APP_NAME}
+              </div>
+              <p className="text-[13px] text-foreground/40 leading-relaxed max-w-[240px]">
+                Organize sua agenda e fidelize suas clientes com a plataforma mais completa do mercado.
+              </p>
             </div>
+
+            <div>
+              <h4 className="text-[13px] font-bold text-foreground mb-4 uppercase tracking-wider">Produto</h4>
+              <div className="space-y-3">
+                <a href="#features" onClick={(e) => smoothScroll(e, "features")} className="block text-[13px] text-foreground/40 hover:text-foreground transition-colors">Funcionalidades</a>
+                <a href="#pricing" onClick={(e) => smoothScroll(e, "pricing")} className="block text-[13px] text-foreground/40 hover:text-foreground transition-colors">Preços</a>
+                <a href="#testimonials" onClick={(e) => smoothScroll(e, "testimonials")} className="block text-[13px] text-foreground/40 hover:text-foreground transition-colors">Depoimentos</a>
+                <a href="#faq" onClick={(e) => smoothScroll(e, "faq")} className="block text-[13px] text-foreground/40 hover:text-foreground transition-colors">FAQ</a>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-[13px] font-bold text-foreground mb-4 uppercase tracking-wider">Empresa</h4>
+              <div className="space-y-3">
+                <Link href="/login" className="block text-[13px] text-foreground/40 hover:text-foreground transition-colors">Entrar</Link>
+                <Link href="/cadastro" className="block text-[13px] text-foreground/40 hover:text-foreground transition-colors">Criar Conta</Link>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-[13px] font-bold text-foreground mb-4 uppercase tracking-wider">Legal</h4>
+              <div className="space-y-3">
+                <Link href="/politica-de-privacidade" className="block text-[13px] text-foreground/40 hover:text-foreground transition-colors">Política de Privacidade</Link>
+                <Link href="/termos-de-uso" className="block text-[13px] text-foreground/40 hover:text-foreground transition-colors">Termos de Uso</Link>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-8 border-t border-black/[0.04] flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-[12px] text-foreground/30">
-              &copy; {new Date().getFullYear()} {APP_NAME}
+              &copy; {new Date().getFullYear()} {APP_NAME}. Todos os direitos reservados.
+            </p>
+            <p className="text-[12px] text-foreground/25">
+              Feito com carinho para profissionais de beleza
             </p>
           </div>
         </div>

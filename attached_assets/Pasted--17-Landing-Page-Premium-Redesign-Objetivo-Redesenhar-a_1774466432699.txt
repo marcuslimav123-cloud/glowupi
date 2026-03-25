@@ -1,0 +1,73 @@
+#17 - Landing Page Premium Redesign
+Objetivo
+Redesenhar a landing page do Glow Agenda para nível ultra profissional, mantendo toda a funcionalidade existente (Stripe checkout, FAQ interativo, depoimentos) e a identidade visual gold (#c4a46a) da marca.
+
+Arquivo Principal
+artifacts/barberpro/src/pages/Landing.tsx (496 linhas — reescrever visual, manter lógica)
+Melhorias Planejadas
+1. Header/Navbar Premium
+Transparente no topo, fica sólido com blur suave (backdrop-blur-xl) ao rolar (scroll detection)
+Logo à esquerda com ícone Sparkles
+Menu central: Funcionalidades | Preços | Depoimentos | FAQ
+Botões: "Entrar" (ghost) + "Teste Grátis" (rounded-full, primary)
+Menu hamburger mobile com slide panel
+2. Hero Section — Layout Dividido
+Texto à esquerda, mockup/ilustração do dashboard à direita (CSS mockup, não imagem)
+Título grande com gradiente gold em "profissionais de beleza"
+Subtítulo descritivo
+2 CTAs: "Começar Agora — É Grátis" (primary) + "Ver Funcionalidades" (outline)
+Badges: "Sem cartão" | "Cancele quando quiser" | "100% seguro"
+Seção de social proof com números: "500+ profissionais", "50.000+ agendamentos", "4.9★ satisfação"
+3. Seção de Funcionalidades (9 features existentes)
+Manter os 9 cards existentes
+Grid 3x3 em desktop, 2 colunas tablet, 1 coluna mobile
+Cards com hover elegante (elevação suave + borda)
+Ícones em containers com background primary/8
+Animação fade-in ao entrar na viewport (IntersectionObserver)
+4. Seção Diferencial (NOVA)
+Layout alternado: imagem/ilustração à esquerda + texto à direita
+Título: "Feito para quem faz a beleza acontecer"
+Lista com checkmarks gold: Interface intuitiva, Suporte dedicado, Relatórios automáticos, Segurança total
+Visual sofisticado com gradiente sutil de fundo
+5. Seção de Preços (manter lógica Stripe)
+Manter toda a lógica existente: TIERS_STATIC, billing period toggle, Stripe checkout
+Manter pricingMode (all_plans / single_price / hidden)
+Refinar visual: mais espaçamento, cards mais respirados
+"POPULAR" badge refinado
+Manter funcionalidade de desconto (30% OFF anual, 15% OFF semestral)
+6. Seção de Depoimentos (manter dados)
+Manter os 3 depoimentos existentes
+Cards com estrelas gold
+Layout refinado com mais breathing room
+7. FAQ Interativo (manter dados e lógica)
+Manter os 6 itens de FAQ
+Accordion com animação suave (transição de altura)
+Visual mais limpo
+8. CTA Final
+Seção com fundo gradiente sutil
+"Pronta para transformar seu salão?"
+CTA grande e chamativo
+9. Footer Premium
+Links organizados em colunas (Produto, Empresa, Legal)
+Manter links existentes: Política de Privacidade, Termos de Uso
+Copyright
+10. Animações e Micro-interações
+Scroll-triggered fade-in para cada seção (IntersectionObserver, sem biblioteca externa)
+Hover states elegantes em cards e botões
+Transições suaves em todo o site
+Smooth scroll nos links de âncora
+11. Mobile-First Responsivo
+Hero empilhado em mobile (texto em cima, mockup embaixo)
+Cards em coluna única
+Menu hamburger com overlay
+Preços em carousel/swipe ou grid empilhado
+Badges empilhados
+Todo texto legível sem zoom
+Regras
+NÃO alterar nenhuma outra página (dashboard, login, etc.)
+NÃO remover funcionalidade existente (Stripe, FAQ, depoimentos)
+Manter importações e lógica de pricing intactas
+Font: Inter (já configurada)
+Paleta: #fafafa fundo, #c4a46a gold accent, foreground para texto
+Todos botões primários: rounded-full
+Bastante espaçamento entre seções (py-24 a py-32)
