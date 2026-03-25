@@ -55,6 +55,13 @@ artifacts-monorepo/
 - `resgates` — Loyalty redemption history
 - `movimentacoesEstoque` — Inventory movement history
 - `mensagens` — Messages (retorno/promocao) with draft/sent status
+- `tipos` — Generic categories (categoria_servico, forma_pagamento, tipo_despesa, tipo_receita)
+- `cupons` — Discount coupons (codigo, tipo percentual/fixo, valor, validade, uso)
+- `noticias` — News/promotions (titulo, conteudo, imagemUrl, publicadoEm)
+- `grupos_clientes` — Client groups for segmented messaging
+- `lembretes_config` — Automated reminder configurations (tipo, intervaloDias, mensagemTemplate with {vars})
+- `planos_assinatura` — Subscription club plans (nome, precoMensal, limiteUso)
+- `assinantes` — Subscription club members (clienteNome, planoId, status, dataInicio/dataFim)
 - `convites` — Team invite tokens (email, role, token, status pendente/aceito, expiresAt)
 - `cliente_users` — Client authentication accounts (nome, email, senhaHash, googleId, telefone, fotoUrl) — separate from staff users
 - `platform_config` — Global platform settings (pricing_mode, lgpd_terms, etc.)
@@ -104,6 +111,12 @@ All under `/api`:
 - `/barbearias/{id}/resgates/**` — Loyalty redemptions
 - `/barbearias/{id}/produtos/{produtoId}/movimentacoes/**` — Inventory movements
 - `/barbearias/{id}/mensagens/**` — Messages CRUD
+- `/barbearias/{id}/tipos/**` — Types/categories CRUD
+- `/barbearias/{id}/cupons/**` — Discount coupons CRUD
+- `/barbearias/{id}/noticias/**` — News/promotions CRUD + `/grupos` sub-routes
+- `/barbearias/{id}/lembretes/**` — Reminder config CRUD
+- `/barbearias/{id}/assinaturas/planos/**` — Subscription plans CRUD
+- `/barbearias/{id}/assinaturas/assinantes/**` — Subscribers CRUD
 - `/checkout/pricing-config` — Public: get pricing mode + products/prices
 - `/checkout/create-checkout-session` — Create Stripe Checkout session
 - `/checkout/subscription-status` — Get subscription status
@@ -137,10 +150,15 @@ All under `/api`:
 - `/relatorios` — Revenue & commission reports with charts
 - `/caixa` — Checkout/comanda history
 - `/financeiro` — Financial management (Resumo/A Pagar/A Receber tabs, CRUD contas)
-- `/pacotes` — Service packages management + client package sales & session tracking
+- `/pacotes` — Service packages management (Meus Pacotes)
+- `/pacotes/vendas` — Package sales to clients with session tracking
+- `/cadastros/tipos` — Types/Categories management (4 tabs: Categorias de Serviço, Formas de Pagamento, Tipos de Despesa, Tipos de Receita)
+- `/cadastros/cupons` — Discount coupons management (code, type, value, validity, usage)
+- `/cadastros/lembretes` — Automated reminders configuration with template variables ({nome_cliente}, {servico}, {data})
+- `/cadastros/clubes` — Subscription clubs (Plans + Subscribers management)
 - `/lista-espera` — Waitlist management with status tracking
 - `/avaliacoes` — Satisfaction surveys dashboard with ratings distribution
-- `/mensagens` — Return messages & promotions (draft/send)
+- `/mensagens` — Return messages & promotions (draft/send) + Notícias/Promoções tab
 - `/empresa` — Studio settings with ViaCEP + hours toggle
 - `/clube` — Loyalty program (Ranking/Recompensas/Resgates tabs)
 - `/admin/login` — Super admin login (dark slate theme)
@@ -172,7 +190,11 @@ All under `/api`:
 - Financial management (accounts payable/receivable)
 - Waitlist management
 - Client satisfaction surveys with professional rankings
-- Messages system (return reminders & promotions)
+- Messages system (return reminders & promotions) + News/Promotions management
+- Discount coupons (percentage/fixed, validity, usage tracking)
+- Automated reminders configuration with template variables
+- Subscription clubs (plans + subscribers management)
+- Types/categories system (service categories, payment methods, expense/revenue types)
 - Inventory movements with stock tracking
 - Dashboard with Recharts charts (bar + donut)
 - Responsive sidebar (collapses to mobile menu on small screens)

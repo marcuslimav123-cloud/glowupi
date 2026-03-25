@@ -34,6 +34,11 @@ import AcceptInvite from "@/pages/auth/AcceptInvite";
 import PoliticaPrivacidade from "@/pages/PoliticaPrivacidade";
 import TermosDeUso from "@/pages/TermosDeUso";
 
+import Tipos from "@/pages/cadastros/Tipos";
+import Cupons from "@/pages/cadastros/Cupons";
+import Lembretes from "@/pages/cadastros/Lembretes";
+import ClubesAssinatura from "@/pages/cadastros/Clubes";
+import VendaPacotes from "@/pages/VendaPacotes";
 import PublicBooking from "@/pages/PublicBooking";
 import PublicStorefront from "@/pages/PublicStorefront";
 import AdminLogin from "@/pages/admin/AdminLogin";
@@ -69,6 +74,11 @@ function Router() {
       <Route path="/caixa" component={Caixa} />
       <Route path="/financeiro" component={Financeiro} />
       <Route path="/pacotes" component={Pacotes} />
+      <Route path="/pacotes/vendas" component={VendaPacotes} />
+      <Route path="/cadastros/tipos" component={Tipos} />
+      <Route path="/cadastros/cupons" component={Cupons} />
+      <Route path="/cadastros/lembretes" component={Lembretes} />
+      <Route path="/cadastros/clubes" component={ClubesAssinatura} />
       <Route path="/lista-espera" component={ListaEspera} />
       <Route path="/avaliacoes" component={Avaliacoes} />
       <Route path="/mensagens" component={Mensagens} />

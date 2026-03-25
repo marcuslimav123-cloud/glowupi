@@ -25,7 +25,15 @@ import {
   Star,
   Gift,
   Boxes,
-  AlertTriangle
+  AlertTriangle,
+  Tag,
+  Ticket,
+  Newspaper,
+  Bell,
+  Crown,
+  ShoppingCart,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { APP_NAME, getRoleLabel } from "@/lib/utils";
@@ -49,26 +57,38 @@ const NAV_ITEMS: NavItem[] = [
     ]
   },
   { 
-    name: "Gestão", 
+    name: "Cadastros", 
     icon: Settings,
     roles: ["dono", "gerente"],
     children: [
+      { name: "Clientes", href: "/gestao/clientes", icon: Users },
       { name: "Profissionais", href: "/gestao/profissionais", icon: Users },
       { name: "Serviços", href: "/gestao/servicos", icon: Heart },
       { name: "Produtos", href: "/gestao/produtos", icon: Package },
-      { name: "Clientes", href: "/gestao/clientes", icon: Users },
+      { name: "Tipos / Categorias", href: "/cadastros/tipos", icon: Tag },
+      { name: "Cupons de Desconto", href: "/cadastros/cupons", icon: Ticket },
+      { name: "Mensagens", href: "/mensagens", icon: MessageSquare },
+      { name: "Lembretes", href: "/cadastros/lembretes", icon: Bell },
+      { name: "Avaliações", href: "/avaliacoes", icon: Star },
+      { name: "Clube de Fidelidade", href: "/clube", icon: Award },
+      { name: "Clubes de Assinatura", href: "/cadastros/clubes", icon: Crown },
+    ]
+  },
+  { 
+    name: "Pacotes", 
+    icon: Boxes,
+    roles: ["dono", "gerente"],
+    children: [
+      { name: "Meus Pacotes", href: "/pacotes", icon: Boxes },
+      { name: "Venda de Pacotes", href: "/pacotes/vendas", icon: ShoppingCart },
     ]
   },
   { name: "Relatórios", href: "/relatorios", icon: BarChart3, roles: ["dono", "gerente"] },
   { name: "Caixa", href: "/caixa", icon: DollarSign, roles: ["dono", "gerente"] },
   { name: "Financeiro", href: "/financeiro", icon: TrendingUp, roles: ["dono"] },
-  { name: "Pacotes", href: "/pacotes", icon: Boxes, roles: ["dono", "gerente"] },
   { name: "Lista de Espera", href: "/lista-espera", icon: ClipboardList, roles: ["dono", "gerente"] },
-  { name: "Avaliações", href: "/avaliacoes", icon: Star, roles: ["dono", "gerente"] },
-  { name: "Mensagens", href: "/mensagens", icon: MessageSquare, roles: ["dono", "gerente"] },
   { name: "Meu Estúdio", href: "/empresa", icon: Building2, roles: ["dono"] },
   { name: "Equipe", href: "/equipe", icon: UsersRound, roles: ["dono"] },
-  { name: "Clube de Fidelidade", href: "/clube", icon: Award, roles: ["dono", "gerente"] },
 ];
 
 function filterNavByRole(items: NavItem[], role: string): NavItem[] {

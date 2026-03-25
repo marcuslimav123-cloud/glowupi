@@ -18,3 +18,8 @@ export * from "./superAdmins";
 export * from "./convites";
 export * from "./clienteUsers";
 export * from "./bloqueiosHorario";
+export * from "./tipos";
+export * from "./cupons";
+export * from "./noticias";
+export * from "./lembretes";
+export * from "./assinaturas";
