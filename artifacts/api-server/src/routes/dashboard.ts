@@ -2,7 +2,8 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import {
   comandasTable, agendamentosTable, clientesTable,
-  profissionaisTable, produtosTable, barbeariasTable
+  profissionaisTable, produtosTable, barbeariasTable,
+  contasFinanceirasTable, assinantesTable, clienteUsersTable
 } from "@workspace/db/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
@@ -163,6 +164,99 @@ router.get("/", requireAuth, async (req, res) => {
       createdAt: c.createdAt?.toISOString(),
       updatedAt: c.updatedAt?.toISOString(),
     })),
+  });
+});
+
+router.get("/resumo", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const d7 = new Date();
+  d7.setDate(d7.getDate() + 7);
+  const in7days = d7.toISOString().slice(0, 10);
+  const d60 = new Date();
+  d60.setDate(d60.getDate() - 60);
+  const ago60 = d60.toISOString().slice(0, 10);
+  const d7ago = new Date();
+  d7ago.setDate(d7ago.getDate() - 7);
+  const ago7 = d7ago.toISOString().slice(0, 10);
+  const d30 = new Date();
+  d30.setDate(d30.getDate() + 30);
+  const in30days = d30.toISOString().slice(0, 10);
+
+  const [clientes, produtos, contas, agendamentosPendentes, clienteUsers, assinantes] = await Promise.all([
+    db.select().from(clientesTable).where(eq(clientesTable.barbeariaId, barbeariaId)),
+    db.select().from(produtosTable).where(and(eq(produtosTable.barbeariaId, barbeariaId), eq(produtosTable.ativo, true))),
+    db.select().from(contasFinanceirasTable).where(eq(contasFinanceirasTable.barbeariaId, barbeariaId)),
+    db.select().from(agendamentosTable).where(
+      and(eq(agendamentosTable.barbeariaId, barbeariaId), eq(agendamentosTable.status, "confirmado"), eq(agendamentosTable.pago, false))
+    ),
+    db.select().from(clienteUsersTable),
+    db.select().from(assinantesTable).where(eq(assinantesTable.barbeariaId, barbeariaId)),
+  ]);
+
+  const caixasPendentes = agendamentosPendentes.length;
+
+  const clienteUserEmails = new Set(clienteUsers.map(u => u.email?.toLowerCase()));
+  const clientesSemUsuario = clientes.filter(c => !c.email || !clienteUserEmails.has(c.email.toLowerCase())).length;
+
+  const clientesRetorno = clientes.filter(c => {
+    if (!c.ultimaVisita) return false;
+    return c.ultimaVisita >= ago60 && c.ultimaVisita < ago7;
+  }).length;
+
+  const contasReceberSemana = contas.filter(c =>
+    c.tipo === "receber" && c.status === "pendente" &&
+    c.dataVencimento >= todayStr && c.dataVencimento <= in7days
+  ).reduce((s, c) => s + parseFloat(c.valor as string), 0);
+
+  const contasPagarSemana = contas.filter(c =>
+    c.tipo === "pagar" && c.status === "pendente" &&
+    c.dataVencimento >= todayStr && c.dataVencimento <= in7days
+  ).reduce((s, c) => s + parseFloat(c.valor as string), 0);
+
+  const clientesAusentes60 = clientes.filter(c => {
+    if (!c.ultimaVisita) return true;
+    return c.ultimaVisita < ago60;
+  }).length;
+
+  const clienteEmails = new Set(clientes.map(c => c.email?.toLowerCase()).filter(Boolean));
+  const usuariosConectados = clienteUsers.filter(u => u.email && clienteEmails.has(u.email.toLowerCase())).length;
+
+  const novosClientesSemana = clientes.filter(c => {
+    const d = c.createdAt ? c.createdAt.toISOString().slice(0, 10) : "";
+    return d >= ago7;
+  }).length;
+
+  const produtosVencer30 = produtos.filter(p => {
+    if (!p.validade) return false;
+    return p.validade >= todayStr && p.validade <= in30days;
+  }).length;
+
+  const contasPagarAtrasadas = contas.filter(c =>
+    c.tipo === "pagar" && c.status === "pendente" && c.dataVencimento < todayStr
+  ).length;
+
+  const assinaturasVencendo = assinantes.filter(a => {
+    if (a.status !== "ativo") return false;
+    if (!a.dataFim) return false;
+    const fim = a.dataFim.toISOString().slice(0, 10);
+    return fim >= todayStr && fim <= in7days;
+  }).length;
+
+  return res.json({
+    caixasPendentes,
+    clientesSemUsuario,
+    clientesRetorno,
+    contasReceberSemana: Math.round(contasReceberSemana * 100) / 100,
+    contasPagarSemana: Math.round(contasPagarSemana * 100) / 100,
+    clientesAusentes60,
+    usuariosConectados,
+    novosClientesSemana,
+    produtosVencer30,
+    contasPagarAtrasadas,
+    assinaturasVencendo,
   });
 });
 

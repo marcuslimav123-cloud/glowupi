@@ -1,7 +1,11 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { comandasTable, profissionaisTable, barbeariasTable } from "@workspace/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import {
+  comandasTable, profissionaisTable, barbeariasTable,
+  agendamentosTable, clientesTable, produtosTable,
+  contasFinanceirasTable, servicosTable
+} from "@workspace/db/schema";
+import { eq, and, sql, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
@@ -87,6 +91,180 @@ router.get("/comissoes", requireAuth, requireRole("dono", "gerente"), async (req
   return res.json(Object.values(profMap).map(p => ({
     ...p,
     percentualMedio: p.faturamentoBruto > 0 ? (p.comissaoTotal / p.faturamentoBruto) * 100 : 0,
+  })));
+});
+
+router.get("/aniversariantes", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const { dataInicio, dataFim } = req.query;
+  if (!dataInicio || !dataFim) return res.status(400).json({ error: "dataInicio e dataFim são obrigatórios" });
+
+  const clientes = await db.select().from(clientesTable).where(eq(clientesTable.barbeariaId, barbeariaId));
+  const start = dataInicio as string;
+  const end = dataFim as string;
+
+  const result = clientes.filter(c => {
+    if (!c.aniversario) return false;
+    const mmdd = c.aniversario.slice(5);
+    const thisYear = start.slice(0, 4);
+    const testDate = `${thisYear}-${mmdd}`;
+    return testDate >= start && testDate <= end;
+  }).map(c => {
+    const mmdd = c.aniversario!.slice(5);
+    const thisYear = start.slice(0, 4);
+    const bday = new Date(`${thisYear}-${mmdd}T00:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffMs = bday.getTime() - today.getTime();
+    const diffDias = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    return {
+      id: c.id,
+      nome: c.nome,
+      telefone: c.telefone,
+      aniversario: c.aniversario,
+      diasAte: diffDias,
+    };
+  }).sort((a, b) => a.diasAte - b.diasAte);
+
+  return res.json(result);
+});
+
+router.get("/agendamentos-report", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const { dataInicio, dataFim } = req.query;
+  if (!dataInicio || !dataFim) return res.status(400).json({ error: "dataInicio e dataFim são obrigatórios" });
+
+  const agendamentos = await db.select().from(agendamentosTable).where(
+    and(
+      eq(agendamentosTable.barbeariaId, barbeariaId),
+      gte(agendamentosTable.data, dataInicio as string),
+      lte(agendamentosTable.data, dataFim as string),
+    )
+  );
+
+  return res.json(agendamentos.map(a => ({
+    id: a.id,
+    data: a.data,
+    horaInicio: a.horaInicio,
+    horaFim: a.horaFim,
+    clienteNome: a.clienteNome,
+    profissionalNome: a.profissionalNome,
+    servicoNome: a.servicoNome,
+    status: a.status,
+    valor: parseFloat(a.valor as string),
+    pago: a.pago,
+    encaixe: a.encaixe,
+  })));
+});
+
+router.get("/financeiro-report", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const { dataInicio, dataFim } = req.query;
+  if (!dataInicio || !dataFim) return res.status(400).json({ error: "dataInicio e dataFim são obrigatórios" });
+
+  const contas = await db.select().from(contasFinanceirasTable).where(
+    and(
+      eq(contasFinanceirasTable.barbeariaId, barbeariaId),
+      gte(contasFinanceirasTable.dataVencimento, dataInicio as string),
+      lte(contasFinanceirasTable.dataVencimento, dataFim as string),
+    )
+  );
+
+  return res.json(contas.map(c => ({
+    id: c.id,
+    tipo: c.tipo,
+    categoria: c.categoria,
+    descricao: c.descricao,
+    valor: parseFloat(c.valor as string),
+    dataVencimento: c.dataVencimento,
+    dataPagamento: c.dataPagamento,
+    status: c.status,
+  })));
+});
+
+router.get("/comandas-canceladas", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const { dataInicio, dataFim } = req.query;
+  if (!dataInicio || !dataFim) return res.status(400).json({ error: "dataInicio e dataFim são obrigatórios" });
+
+  const agendamentos = await db.select().from(agendamentosTable).where(
+    and(
+      eq(agendamentosTable.barbeariaId, barbeariaId),
+      eq(agendamentosTable.status, "cancelado"),
+      gte(agendamentosTable.data, dataInicio as string),
+      lte(agendamentosTable.data, dataFim as string),
+    )
+  );
+
+  return res.json(agendamentos.map(a => ({
+    id: a.id,
+    data: a.data,
+    horaInicio: a.horaInicio,
+    clienteNome: a.clienteNome,
+    profissionalNome: a.profissionalNome,
+    servicoNome: a.servicoNome,
+    valor: parseFloat(a.valor as string),
+  })));
+});
+
+router.get("/rankings", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const { dataInicio, dataFim } = req.query;
+  if (!dataInicio || !dataFim) return res.status(400).json({ error: "dataInicio e dataFim são obrigatórios" });
+
+  const comandas = await db.select().from(comandasTable).where(
+    and(
+      eq(comandasTable.barbeariaId, barbeariaId),
+      sql`DATE(${comandasTable.dataFechamento}) >= ${dataInicio}`,
+      sql`DATE(${comandasTable.dataFechamento}) <= ${dataFim}`
+    )
+  );
+
+  const profMap: Record<string, { nome: string; atendimentos: number; faturamento: number }> = {};
+  const servMap: Record<string, { nome: string; quantidade: number; faturamento: number }> = {};
+
+  comandas.forEach(c => {
+    const key = c.profissionalNome;
+    if (!profMap[key]) profMap[key] = { nome: key, atendimentos: 0, faturamento: 0 };
+    profMap[key].atendimentos += 1;
+    profMap[key].faturamento += parseFloat(c.valorTotal as string);
+
+    const servs: any[] = (c.servicos as any) || [];
+    servs.forEach(s => {
+      if (!servMap[s.nome]) servMap[s.nome] = { nome: s.nome, quantidade: 0, faturamento: 0 };
+      servMap[s.nome].quantidade += 1;
+      servMap[s.nome].faturamento += s.valor;
+    });
+  });
+
+  return res.json({
+    profissionais: Object.values(profMap).sort((a, b) => b.faturamento - a.faturamento),
+    servicos: Object.values(servMap).sort((a, b) => b.faturamento - a.faturamento),
+  });
+});
+
+router.get("/perfil-cliente", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+
+  const clientes = await db.select().from(clientesTable).where(eq(clientesTable.barbeariaId, barbeariaId));
+
+  return res.json(clientes.map(c => ({
+    id: c.id,
+    nome: c.nome,
+    telefone: c.telefone,
+    email: c.email,
+    aniversario: c.aniversario,
+    vip: c.vip,
+    pontosFidelidade: c.pontosFidelidade,
+    totalGasto: parseFloat(c.totalGasto as string),
+    ultimaVisita: c.ultimaVisita,
+    createdAt: c.createdAt?.toISOString(),
   })));
 });
 

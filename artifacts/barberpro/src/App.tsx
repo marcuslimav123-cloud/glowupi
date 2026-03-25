@@ -41,6 +41,13 @@ import ClubesAssinatura from "@/pages/cadastros/Clubes";
 import VendaPacotes from "@/pages/VendaPacotes";
 import PublicBooking from "@/pages/PublicBooking";
 import PublicStorefront from "@/pages/PublicStorefront";
+import Resumo from "@/pages/relatorios/Resumo";
+import Aniversariantes from "@/pages/relatorios/Aniversariantes";
+import AgendamentosReport from "@/pages/relatorios/AgendamentosReport";
+import FinanceiroReport from "@/pages/relatorios/FinanceiroReport";
+import ComandasCanceladas from "@/pages/relatorios/ComandasCanceladas";
+import RankingsReport from "@/pages/relatorios/RankingsReport";
+import PerfilCliente from "@/pages/relatorios/PerfilCliente";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminTenants from "@/pages/admin/AdminTenants";
@@ -70,6 +77,13 @@ function Router() {
       <Route path="/gestao/produtos" component={Produtos} />
       <Route path="/gestao/clientes" component={Clientes} />
 
+      <Route path="/relatorios/resumo" component={Resumo} />
+      <Route path="/relatorios/aniversariantes" component={Aniversariantes} />
+      <Route path="/relatorios/agendamentos" component={AgendamentosReport} />
+      <Route path="/relatorios/financeiro" component={FinanceiroReport} />
+      <Route path="/relatorios/canceladas" component={ComandasCanceladas} />
+      <Route path="/relatorios/rankings" component={RankingsReport} />
+      <Route path="/relatorios/perfil-cliente" component={PerfilCliente} />
       <Route path="/relatorios" component={Relatorios} />
       <Route path="/caixa" component={Caixa} />
       <Route path="/financeiro" component={Financeiro} />

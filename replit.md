@@ -1,231 +1,42 @@
-# Glow Agenda — SaaS para Salões de Beleza
+# Glow Agenda
 
 ## Overview
+Glow Agenda is a multi-tenant SaaS platform designed for beauty salon and studio management. It aims to provide a comprehensive solution for beauty professionals, including manicurists, estheticians, and hair stylists, to manage their businesses efficiently. The platform includes features for appointment scheduling, client management, financial tracking, marketing, and loyalty programs. The business vision is to become the leading management tool for beauty industry professionals, enhancing their operational efficiency and client engagement.
 
-Multi-tenant SaaS for beauty salon management (salão/estúdio de beleza). Full-stack monorepo with React frontend and Express backend using PostgreSQL. Targets manicurists, estheticians, hair stylists, and other beauty professionals.
+## User Preferences
+I prefer clear and concise communication. When making changes, prioritize iterative development and ask for confirmation before implementing major architectural shifts or complex features. I value detailed explanations for significant code modifications or new feature implementations. Do not make changes to files within the `artifacts-monorepo/artifacts/barberpro` directory, as this legacy directory is maintained for compatibility reasons.
 
-## Stack
+## System Architecture
+The project is a full-stack monorepo utilizing `pnpm workspaces`. The frontend is built with `React`, `Vite`, `TailwindCSS`, `shadcn/ui`, and `Recharts` for data visualization. The backend uses `Express 5` and `PostgreSQL` with `Drizzle ORM`. `TypeScript 5.9` is used across the entire monorepo.
 
-- **Monorepo tool**: pnpm workspaces
-- **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.9
-- **Frontend**: React + Vite + TailwindCSS + shadcn/ui + Recharts
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **Payments**: Stripe (via Replit integration) + stripe-replit-sync
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec) — run `pnpm --filter @workspace/api-spec run codegen`
-- **Auth**: Session-based (cookie) with SHA-256 password hashing (in-memory sessions map). Super admin uses separate session cookie ("admin_session"). Client auth uses "client_session" cookie (separate from staff). Google Sign-In supported (requires GOOGLE_CLIENT_ID env var). Multi-level access: dono (full), gerente (read-only dashboard/agenda/clientes/relatorios), colaborador (own agenda only). Staff invited via convites system with token-based accept flow.
-- **Build**: esbuild (CJS bundle)
-- **Exports**: xlsx (Excel), jspdf + jspdf-autotable (PDF) — in barberpro devDependencies
-- **Fonts**: Inter (all text — headings and body). Apple-inspired design: clean sans-serif, generous whitespace, subtle borders (border-black/[0.04]), #fafafa backgrounds, pill-shaped buttons, minimal shadows
-- **DB Schema Management**: `pnpm --filter @workspace/db run push` (drizzle push, no migration files)
+**UI/UX Decisions:**
+The design follows a "luxury clinic aesthetic" with a color palette of warm gold, cream, and off-white, aiming for a high-end feel. It uses `Inter` for body text and `DM Serif Display` for headings, with subtle borders and `fafafa` backgrounds for a clean, Apple-inspired look.
 
-## Structure
+**Technical Implementations:**
+- **Authentication:** Session-based with cookies. Supports Google Sign-In. Features a multi-level access control system (owner, manager, collaborator, client) and a separate super admin login.
+- **API:** All endpoints are prefixed with `/api` and are documented with OpenAPI, generating client code via Orval.
+- **Database:** `PostgreSQL` managed with `Drizzle ORM`, structured for multi-tenancy.
+- **Stripe Integration:** Handled via `stripe` and `stripe-replit-sync` for subscription management, product syncing, and webhook processing. Pricing is configurable and supports various subscription tiers and billing periods.
+- **Reporting & Exports:** Supports exporting data to `XLSX` and `PDF` formats.
+- **Monorepo Structure:** Divided into `artifacts` (api-server, barberpro), `lib` (shared code like api-spec, api-client-react, api-zod, db), and `scripts` (utility scripts).
 
-```text
-artifacts-monorepo/
-├── artifacts/
-│   ├── api-server/         # Express API server
-│   └── barberpro/          # React + Vite frontend (directory name kept for compatibility)
-├── lib/                    # Shared libraries
-│   ├── api-spec/           # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/   # Generated React Query hooks
-│   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (seed-products.ts, etc.)
-```
+**Feature Specifications:**
+- **Multi-tenancy:** Each salon operates in an isolated environment.
+- **Subscription Management:** Includes a 30-day free trial, various subscription plans, and a subscription guard to control access.
+- **Appointment & Schedule Management:** Visual agenda, professional schedules with per-weekday configuration, and peak hours analysis.
+- **Client & Product Management:** Detailed client profiles, product inventory with barcode/expiry tracking, and movement history.
+- **Financial & Reporting:** Commission calculations, checkout with split payments and discounts, financial accounts (payable/receivable), and various analytical reports.
+- **Relatórios Module (Task #12):** Sidebar expandable submenu with 8 report pages: Resumo (KPI dashboard with 11 colored cards), Faturamento, Aniversariantes, Agendamentos, Perfil Cliente, Financeiro, Cancelamentos, Rankings. All gerencial reports use `ReportTemplate.tsx` (date filters, sortable/paginated table, Excel/PDF/Print export). API routes: `/dashboard/resumo` (KPI counts), `/relatorios/*` (6 report endpoints in `relatorios.ts`).
+- **Marketing & Loyalty:** Loyalty programs with rewards, message system for promotions, discount coupons, automated reminders, and client groups.
+- **Public Booking Portal:** Salons can have a public page for online appointment booking.
+- **Admin Panel:** A separate super admin interface for platform-level management (tenant activation, configuration, revenue analytics).
 
-## Database Schema
-
-- `users` — User accounts (dono/gerente/colaborador/cliente roles; optional googleId for Google Sign-In; barbeariaId+profissionalId for staff members)
-- `barbearias` — Salon/studio profiles (multi-tenant root; table name kept for API compatibility). Includes Stripe fields: stripe_customer_id, stripe_subscription_id, subscription_status, subscription_plan, subscription_period. Has `segmentacao` (jsonb) for onboarding data (tipoEstabelecimento, comoSoube, numProfissionais)
-- `profissionais` — Professionals per salon
-- `servicos` — Services offered (nails, skincare, hair, etc.)
-- `clientes` — Clients per salon
-- `agendamentos` — Appointments with status (confirmado/pago/cancelado); `encaixe` boolean flag for squeeze-in appointments
-- `bloqueios_horario` — Blocked time slots per professional (barbeariaId, profissionalId, data, horaInicio, horaFim, motivo)
-- `comandas` — Checkout records with services, products, payments, commissions (desconto, descontoTipo, parcelas, cadastradoPor)
-- `produtos` — Product inventory (codigoBarras, validade)
-- `contasFinanceiras` — Financial accounts payable/receivable
-- `pacotes` — Service packages (nome, preco, sessoesTotal, validade)
-- `pacotesCliente` — Client package purchases with session tracking
-- `avaliacoes` — Satisfaction surveys (nota 1-5, comentario)
-- `listaEspera` — Waitlist management
-- `recompensas` — Loyalty rewards catalog
-- `resgates` — Loyalty redemption history
-- `movimentacoesEstoque` — Inventory movement history
-- `mensagens` — Messages (retorno/promocao) with draft/sent status
-- `tipos` — Generic categories (categoria_servico, forma_pagamento, tipo_despesa, tipo_receita)
-- `cupons` — Discount coupons (codigo, tipo percentual/fixo, valor, validade, uso)
-- `noticias` — News/promotions (titulo, conteudo, imagemUrl, publicadoEm)
-- `grupos_clientes` — Client groups for segmented messaging
-- `lembretes_config` — Automated reminder configurations (tipo, intervaloDias, mensagemTemplate with {vars})
-- `planos_assinatura` — Subscription club plans (nome, precoMensal, limiteUso)
-- `assinantes` — Subscription club members (clienteNome, planoId, status, dataInicio/dataFim)
-- `convites` — Team invite tokens (email, role, token, status pendente/aceito, expiresAt)
-- `cliente_users` — Client authentication accounts (nome, email, senhaHash, googleId, telefone, fotoUrl) — separate from staff users
-- `platform_config` — Global platform settings (pricing_mode, lgpd_terms, etc.)
-- `super_admins` — Super admin accounts for platform owners
-- `stripe.*` — Auto-managed by stripe-replit-sync (products, prices, customers, subscriptions)
-
-## Stripe Integration
-
-- **Packages**: `stripe` + `stripe-replit-sync` installed at workspace root
-- **stripeClient.ts**: In both `artifacts/api-server/src/` and `scripts/src/` — fetches credentials from Replit connector API
-- **Webhook**: `/api/stripe/webhook` route registered BEFORE `express.json()` in `app.ts`
-- **Initialization**: `index.ts` runs `runMigrations()`, sets up managed webhook, and runs `syncBackfill()` on startup
-- **Products**: Created via `scripts/src/seed-products.ts` — 4 tier plans (1 Pro, 2-5 Pro, 6-15 Pro, +15 Pro) x 3 periods (mensal, semestral, anual) + 1 single-price plan (R$97/mês)
-- **Seed command**: `pnpm --filter @workspace/scripts exec tsx src/seed-products.ts`
-- **Data flow**: Products created via Stripe API → synced to `stripe.*` tables via webhooks → queried from PostgreSQL
-
-### Pricing (BRL)
-
-**Mensal:** 1 Pro R$79,90 | 2-5 Pro R$109,90 | 6-15 Pro R$164,50 | +15 Pro R$219,90
-**Semestral (15% off):** 1 Pro R$67,80 | 2-5 Pro R$93,30 | 6-15 Pro R$139,80 | +15 Pro R$186,80
-**Anual (30% off):** 1 Pro R$55,90 | 2-5 Pro R$76,90 | 6-15 Pro R$115,15 | +15 Pro R$153,90
-**Preço Único:** R$97,00/mês (toggleable via admin panel)
-
-## API Endpoints
-
-All under `/api`:
-- `/auth/register`, `/auth/login`, `/auth/logout`, `/auth/me`, `/auth/google` — Authentication (incl. Google Sign-In)
-- `/lgpd/terms` — Public LGPD terms endpoint
-- `/lgpd/google-client-id` — Public Google Client ID endpoint
-- `/barbearias`, `/barbearias/me` — Salon management (endpoint name kept for compatibility)
-- `/barbearias/{id}/profissionais/**` — Professionals CRUD
-- `/barbearias/{id}/servicos/**` — Services CRUD
-- `/barbearias/{id}/clientes/**` — Clients CRUD
-- `/barbearias/{id}/agendamentos/**` — Appointments + checkout
-- `/barbearias/{id}/comandas` — Service orders listing
-- `/barbearias/{id}/produtos/**` — Products/inventory CRUD
-- `/barbearias/{id}/dashboard` — Dashboard metrics
-- `/barbearias/{id}/relatorios/faturamento` — Revenue reports
-- `/barbearias/{id}/relatorios/comissoes` — Commission reports
-- `/barbearias/{id}/slots-disponiveis` — Available time slots
-- `/barbearias/{id}/financeiro/**` — Financial accounts CRUD
-- `/barbearias/{id}/pacotes/**` — Service packages CRUD
-- `/barbearias/{id}/pacotes-cliente/**` — Client packages + session usage
-- `/barbearias/{id}/avaliacoes/**` — Satisfaction surveys
-- `/barbearias/{id}/lista-espera/**` — Waitlist CRUD
-- `/barbearias/{id}/recompensas/**` — Loyalty rewards CRUD
-- `/barbearias/{id}/resgates/**` — Loyalty redemptions
-- `/barbearias/{id}/produtos/{produtoId}/movimentacoes/**` — Inventory movements
-- `/barbearias/{id}/mensagens/**` — Messages CRUD
-- `/barbearias/{id}/tipos/**` — Types/categories CRUD
-- `/barbearias/{id}/cupons/**` — Discount coupons CRUD
-- `/barbearias/{id}/noticias/**` — News/promotions CRUD + `/grupos` sub-routes
-- `/barbearias/{id}/lembretes/**` — Reminder config CRUD
-- `/barbearias/{id}/assinaturas/planos/**` — Subscription plans CRUD
-- `/barbearias/{id}/assinaturas/assinantes/**` — Subscribers CRUD
-- `/checkout/pricing-config` — Public: get pricing mode + products/prices
-- `/checkout/create-checkout-session` — Create Stripe Checkout session
-- `/checkout/subscription-status` — Get subscription status
-- `/checkout/create-portal-session` — Create Stripe billing portal session
-- `/stripe/webhook` — Stripe webhook (registered before express.json)
-- `/public/{slug}` — Public salon page (no auth required)
-- `/public/{slug}/agendar` — Public appointment booking
-- `/admin/login` — Super admin login (separate auth system)
-- `/admin/logout` — Super admin logout
-- `/admin/me` — Get current super admin profile
-- `/admin/dashboard` — Platform overview stats (studios, subscriptions, churn, plan distribution)
-- `/admin/tenants` — List all salon tenants with owner info
-- `/admin/tenants/:id/toggle` — Activate/deactivate a salon
-- `/admin/config` — GET/PUT platform configuration (pricing_mode, etc.)
-- `/admin/revenue` — Revenue analytics (status/plan/period breakdown, monthly revenue)
-
-## Frontend Pages
-
-- `/` — Landing/sales page (public, no auth required)
-- `/login`, `/cadastro` — Auth pages
-- `/onboarding/barbearia` — Onboarding step 1 (create salon/studio)
-- `/checkout/success` — Subscription activation success page
-- `/checkout/cancel` — Payment cancellation page
-- `/dashboard` — Main dashboard with charts, metrics, rankings (trial upgrade banner for free-trial users)
-- `/agenda` — Visual schedule with appointment management + checkout modal (discounts, installments)
-- `/agenda/picos` — Peak hours heatmap analysis
-- `/gestao/profissionais` — Professional management with per-weekday schedule editor (horários por dia)
-- `/gestao/servicos` — Service management
-- `/gestao/clientes` — Client management with search, VIP, birthday detection
-- `/gestao/produtos` — Product/inventory management with movement history, barcode, expiry tracking
-- `/relatorios` — Revenue & commission reports with charts
-- `/caixa` — Comandas with date range filters, search, sortable table, pagination, column visibility, Excel/PDF/Print export, "+ Comanda" dialog
-- `/financeiro` — Financial management (Resumo/A Pagar/A Receber tabs, CRUD contas)
-- `/pacotes` — Service packages management (Meus Pacotes)
-- `/pacotes/vendas` — Package sales to clients with session tracking
-- `/cadastros/tipos` — Types/Categories management (4 tabs: Categorias de Serviço, Formas de Pagamento, Tipos de Despesa, Tipos de Receita)
-- `/cadastros/cupons` — Discount coupons management (code, type, value, validity, usage)
-- `/cadastros/lembretes` — Automated reminders configuration with template variables ({nome_cliente}, {servico}, {data})
-- `/cadastros/clubes` — Subscription clubs (Plans + Subscribers management)
-- `/lista-espera` — Waitlist management with status tracking
-- `/avaliacoes` — Satisfaction surveys dashboard with ratings distribution
-- `/mensagens` — Return messages & promotions (draft/send) + Notícias/Promoções tab
-- `/empresa` — Studio settings with ViaCEP + hours toggle
-- `/clube` — Loyalty program (Ranking/Recompensas/Resgates tabs)
-- `/admin/login` — Super admin login (dark slate theme)
-- `/admin` — Admin dashboard (KPI cards, recent signups, plan distribution)
-- `/admin/assinantes` — Tenant management (search, activate/deactivate)
-- `/admin/configuracoes` — Platform configuration (pricing mode toggle)
-- `/admin/receita` — Revenue analytics (subscription/plan/period breakdown, monthly chart)
-
-## Design & Theme
-
-- **Luxury clinic aesthetic**: white marble, warm gold, cream, off-white — inspired by high-end beauty clinics
-- **Fonts**: Inter (body/UI), DM Serif Display (headings/display)
-- **Brand**: "Glow Agenda" with Sparkles icon
-- **Color palette**: Primary warm gold (hsl 38 45% 58%), amber accents for VIP, warm neutral backgrounds (hsl 40 20% 98%), warm beige borders/muted tones
-- **Chart colors**: gold, warm beige, terracotta, sage green, burnt sienna
-
-## Key Features
-
-- Multi-tenant: each salon is isolated by barbeariaId
-- 30-day free trial plan
-- Landing/sales page with animated sections, pricing toggle, testimonials, FAQ
-- Stripe subscription billing (4 tiers x 3 periods + single price mode)
-- Commission calculation (percentage or fixed per professional)
-- Checkout with split payment support (pix, dinheiro, crédito, débito) + discounts (R$ or %) + installments (credit card)
-- Subscription guard: blocks access for canceled/inactive subscriptions, shows trial upgrade banner
-- Flexible per-professional schedules (per-weekday hours with day-off support)
-- Loyalty points for clients with rewards catalog and redemption
-- Service packages with session tracking
-- Financial management (accounts payable/receivable)
-- Waitlist management
-- Client satisfaction surveys with professional rankings
-- Messages system (return reminders & promotions) + News/Promotions management
-- Discount coupons (percentage/fixed, validity, usage tracking)
-- Automated reminders configuration with template variables
-- Subscription clubs (plans + subscribers management)
-- Types/categories system (service categories, payment methods, expense/revenue types)
-- Inventory movements with stock tracking
-- Dashboard with Recharts charts (bar + donut)
-- Responsive sidebar (collapses to mobile menu on small screens)
-- ViaCEP integration for address auto-fill in onboarding
-- Public booking portal at `/public/{slug}`
-- Peak hours heatmap analysis
-- Low-stock product alerts with margin calculation, expiry warnings, barcode tracking
-- Inventory movement history (entrada/saída) per product with reason tracking
-- Public page enhanced with fotos, formasPagamento, redesSociais from barbearias
-- Slots API respects per-professional schedules (horarios.porDia with folga support)
-- Super Admin Panel at `/admin/*` with dark slate theme (separate from main app)
-  - Login: marcus@admin.com / MaGu1409 (override via SUPER_ADMIN_EMAIL/SUPER_ADMIN_PASSWORD env vars)
-  - Second account: gustavo@admin.com / GuMa1409 (override via SUPER_ADMIN2_EMAIL/SUPER_ADMIN2_PASSWORD env vars)
-  - Dashboard: KPI cards, recent signups, plan distribution
-  - Tenant management: search, toggle activate/deactivate
-  - Platform config: pricing_mode toggle (all_plans/single_price/hidden) + LGPD terms editor
-  - Revenue analytics: MRR/ARR cards, MRR by plan, subscription/plan/period breakdown, monthly revenue chart
-- LGPD consent popup: shows on all pages until accepted (localStorage). Terms editable from admin panel (platform_config lgpd_terms key)
-- Google Sign-In: Login/Register pages show Google button when GOOGLE_CLIENT_ID env var is set. Backend verifies ID token via google-auth-library
-
-## Important Notes
-
-- shadcn Select components do NOT bind to native form FormData — always use React state (useState) for Select values
-- DB numeric fields stored as strings in Postgres — parse with parseFloat() in routes
-- Demo login: joao@barberpro.com / 123456, barbeariaId: 1 (legacy test credentials, not user-facing)
-- `date-fns` v3 is installed; use `date-fns/locale` for ptBR
-- API endpoint names still use "barbearias" for backward compatibility
-- Query invalidation: always use generated `getList*QueryKey()` functions from api-client-react, NOT manual string keys
-- Role enum "barbeiro" kept in DB/API for backward compatibility; `getRoleLabel()` maps to "profissional" in UI
-- Stripe webhook route MUST be registered BEFORE `express.json()` middleware in app.ts
-- Products are created via Stripe API (seed script), never via SQL INSERT into stripe.* tables
-- Platform config (pricing_mode) stored in platform_config table, queried by checkout/pricing-config endpoint
+## External Dependencies
+- **Stripe:** For payment processing, subscription management, and billing.
+- **PostgreSQL:** Primary database.
+- **Google Sign-In API:** For user authentication.
+- **ViaCEP:** For address auto-fill functionality during onboarding.
+- **Recharts:** For data visualization in dashboards and reports.
+- **Orval:** For API client code generation from OpenAPI specifications.
+- **jspdf & jspdf-autotable:** For PDF generation.
+- **xlsx:** For Excel file generation.
