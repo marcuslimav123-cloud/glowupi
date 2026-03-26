@@ -40,6 +40,15 @@ import notificacoesRouter from "./notificacoes.js";
 import perfisAcessoRouter from "./perfisAcesso.js";
 import emailTemplatesRouter from "./emailTemplates.js";
 import storageRouter from "./storage.js";
+import caixaDiarioRouter from "./caixaDiario.js";
+import comissoesRouter from "./comissoesRoutes.js";
+import contasProfissionalRouter from "./contasProfissionalRoutes.js";
+import pesquisaRouter from "./pesquisaRoutes.js";
+import anamneseRouter from "./anamneseRoutes.js";
+import documentosRouter from "./documentosRoutes.js";
+import clubeVantagensRouter from "./clubeVantagensRoutes.js";
+import fornecedoresRouter from "./fornecedoresRoutes.js";
+import remuneracoesRouter from "./remuneracoesRoutes.js";
 
 const router: IRouter = Router();
 
@@ -100,6 +109,15 @@ router.use("/barbearias/:barbeariaId/notificacoes", notificacoesRouter);
 router.use("/barbearias/:barbeariaId/perfis-acesso", perfisAcessoRouter);
 router.use("/email-templates", emailTemplatesRouter);
 router.use(storageRouter);
+router.use("/barbearias/:barbeariaId/caixa-diario", caixaDiarioRouter);
+router.use("/barbearias/:barbeariaId/comissoes", comissoesRouter);
+router.use("/barbearias/:barbeariaId/contas-profissional", contasProfissionalRouter);
+router.use("/barbearias/:barbeariaId/pesquisas", pesquisaRouter);
+router.use("/barbearias/:barbeariaId/anamnese", anamneseRouter);
+router.use("/barbearias/:barbeariaId/documentos", documentosRouter);
+router.use("/barbearias/:barbeariaId/clube-vantagens", clubeVantagensRouter);
+router.use("/barbearias/:barbeariaId/fornecedores", fornecedoresRouter);
+router.use("/barbearias/:barbeariaId/rh", remuneracoesRouter);
 
 router.get("/lgpd/terms", async (_req, res) => {
   try {
