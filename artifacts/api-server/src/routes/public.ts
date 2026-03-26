@@ -45,11 +45,14 @@ function getBarbeariaScheduleForDate(barbearia: any, dateStr: string): { aberto:
   return result;
 }
 
-function getProfScheduleForDate(prof: any, dateStr: string): { inicio: number; fim: number } | null {
+function getProfScheduleForDate(prof: any, dateStr: string, barbSchedule?: { inicio: number; fim: number } | null): { inicio: number; fim: number } | null {
   const date = new Date(dateStr + "T12:00:00");
   const diaSemana = DIAS_SEMANA[date.getDay()];
   const horarios = prof.horarios as any;
-  if (!horarios) return { inicio: 8 * 60, fim: 20 * 60 };
+  if (!horarios) {
+    if (barbSchedule) return { inicio: barbSchedule.inicio, fim: barbSchedule.fim };
+    return { inicio: 8 * 60, fim: 20 * 60 };
+  }
   if (horarios.porDia && horarios.porDia[diaSemana]) {
     const dia = horarios.porDia[diaSemana];
     if (dia.folga) return null;
@@ -58,6 +61,7 @@ function getProfScheduleForDate(prof: any, dateStr: string): { inicio: number; f
   if (horarios.inicio && horarios.fim) {
     return { inicio: timeToMinutes(horarios.inicio), fim: timeToMinutes(horarios.fim) };
   }
+  if (barbSchedule) return { inicio: barbSchedule.inicio, fim: barbSchedule.fim };
   return { inicio: 8 * 60, fim: 20 * 60 };
 }
 
@@ -183,10 +187,6 @@ router.get("/:slug/slots", async (req, res) => {
 
     const slotSizeParam = params["agenda_tamanho_slots"] || "30min";
     const intervalo = slotSizeParam === "1h" ? 60 : (parseInt(slotSizeParam) || 30);
-    const agendaInicio = params["agenda_horario_inicio"] || "08:00";
-    const agendaFim = params["agenda_horario_fim"] || "20:00";
-    const globalInicio = timeToMinutes(agendaInicio);
-    const globalFim = timeToMinutes(agendaFim);
     const limiteAntecedenciaRaw = params["agenda_limite_antecedencia"];
     const limiteAntecedencia = limiteAntecedenciaRaw !== undefined ? parseFloat(limiteAntecedenciaRaw) : 0.5;
     const limiteFuturoDias = parseInt(params["agenda_limite_futuro_dias"] || "30");
@@ -212,11 +212,11 @@ router.get("/:slug/slots", async (req, res) => {
       return res.json([]);
     }
 
-    const effectiveGlobalInicio = barbSchedule ? Math.max(barbSchedule.inicio, globalInicio) : globalInicio;
-    const effectiveGlobalFim = barbSchedule ? Math.min(barbSchedule.fim, globalFim) : globalFim;
+    const effectiveGlobalInicio = barbSchedule ? barbSchedule.inicio : 8 * 60;
+    const effectiveGlobalFim = barbSchedule ? barbSchedule.fim : 20 * 60;
 
     for (const prof of profissionais) {
-      const schedule = getProfScheduleForDate(prof, data as string);
+      const schedule = getProfScheduleForDate(prof, data as string, barbSchedule);
       if (!schedule) continue;
       const inicioTrabalho = Math.max(schedule.inicio, effectiveGlobalInicio);
       const fimTrabalho = Math.min(schedule.fim, effectiveGlobalFim);

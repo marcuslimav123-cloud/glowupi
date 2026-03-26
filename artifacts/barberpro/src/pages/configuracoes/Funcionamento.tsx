@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, Save } from "lucide-react";
+import { Save, Users } from "lucide-react";
 
 const DIAS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 const DEFAULT_HORARIOS = DIAS.map((d, i) => ({
@@ -24,6 +26,10 @@ export default function Funcionamento() {
   const { toast } = useToast();
   const [horarios, setHorarios] = useState(DEFAULT_HORARIOS);
   const [loading, setLoading] = useState(true);
+  const [showProfDialog, setShowProfDialog] = useState(false);
+  const [profissionais, setProfissionais] = useState<any[]>([]);
+  const [selectedProfIds, setSelectedProfIds] = useState<number[]>([]);
+  const [selectAll, setSelectAll] = useState(true);
   const BASE = import.meta.env.BASE_URL;
 
   useEffect(() => { if (barbeariaId) fetchBarbearia(); }, [barbeariaId]);
@@ -41,15 +47,72 @@ export default function Funcionamento() {
     finally { setLoading(false); }
   };
 
+  const fetchProfissionais = async () => {
+    try {
+      const res = await fetch(`${BASE}api/barbearias/${barbeariaId}/profissionais`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setProfissionais(data);
+        setSelectedProfIds(data.map((p: any) => p.id));
+        setSelectAll(true);
+      }
+    } catch (e) { console.error(e); }
+  };
+
   const save = async () => {
     try {
       const res = await fetch(`${BASE}api/barbearias/me`, {
         method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({ horarioFuncionamento: horarios }),
       });
-      if (res.ok) toast({ title: "Horários salvos com sucesso!" });
-      else toast({ title: "Erro ao salvar", variant: "destructive" });
+      if (res.ok) {
+        toast({ title: "Horários salvos com sucesso!" });
+        await fetchProfissionais();
+        setShowProfDialog(true);
+      } else toast({ title: "Erro ao salvar", variant: "destructive" });
     } catch { toast({ title: "Erro ao salvar", variant: "destructive" }); }
+  };
+
+  const handleSyncProfs = async () => {
+    if (selectedProfIds.length === 0) {
+      setShowProfDialog(false);
+      return;
+    }
+    try {
+      const allIds = profissionais.map((p: any) => p.id);
+      const isAll = selectedProfIds.length === allIds.length;
+      const res = await fetch(`${BASE}api/barbearias/${barbeariaId}/profissionais/bulk-horarios`, {
+        method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "include",
+        body: JSON.stringify({
+          resetToDefault: true,
+          profissionalIds: isAll ? undefined : selectedProfIds,
+        }),
+      });
+      if (res.ok) {
+        toast({ title: `Horários de ${selectedProfIds.length} profissional(is) atualizados!` });
+      } else {
+        toast({ title: "Erro ao atualizar profissionais", variant: "destructive" });
+      }
+    } catch { toast({ title: "Erro ao atualizar", variant: "destructive" }); }
+    setShowProfDialog(false);
+  };
+
+  const toggleProfId = (id: number) => {
+    setSelectedProfIds(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      setSelectAll(next.length === profissionais.length);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selectAll) {
+      setSelectedProfIds([]);
+      setSelectAll(false);
+    } else {
+      setSelectedProfIds(profissionais.map((p: any) => p.id));
+      setSelectAll(true);
+    }
   };
 
   const update = (index: number, field: string, value: any) => {
@@ -101,6 +164,43 @@ export default function Funcionamento() {
           </Card>
         ))}
       </div>
+
+      <Dialog open={showProfDialog} onOpenChange={setShowProfDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Users className="h-5 w-5" />Atualizar horários dos profissionais?</DialogTitle>
+            <DialogDescription>
+              Os horários de funcionamento foram atualizados. Deseja sincronizar os profissionais que usam o horário padrão do estabelecimento?
+            </DialogDescription>
+          </DialogHeader>
+          {profissionais.length > 0 ? (
+            <div className="space-y-3 max-h-64 overflow-y-auto">
+              <div className="flex items-center gap-2 pb-2 border-b">
+                <Checkbox checked={selectAll} onCheckedChange={toggleAll} id="select-all" />
+                <label htmlFor="select-all" className="text-sm font-medium cursor-pointer">Selecionar todos</label>
+              </div>
+              {profissionais.map((p: any) => {
+                const hasCustom = !!p.horarios;
+                return (
+                  <div key={p.id} className="flex items-center gap-2">
+                    <Checkbox checked={selectedProfIds.includes(p.id)} onCheckedChange={() => toggleProfId(p.id)} id={`prof-${p.id}`} />
+                    <label htmlFor={`prof-${p.id}`} className="text-sm cursor-pointer flex-1">{p.nomeExibicao}</label>
+                    {hasCustom && <span className="text-[11px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Horário personalizado</span>}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Nenhum profissional cadastrado.</p>
+          )}
+          <div className="flex gap-2 justify-end mt-2">
+            <Button variant="outline" onClick={() => setShowProfDialog(false)} className="rounded-xl">Não atualizar</Button>
+            <Button onClick={handleSyncProfs} disabled={selectedProfIds.length === 0} className="rounded-xl">
+              Atualizar {selectedProfIds.length > 0 ? `(${selectedProfIds.length})` : ""}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

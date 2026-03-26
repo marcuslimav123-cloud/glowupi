@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -158,6 +158,7 @@ export default function Agenda() {
   const [cupomErro, setCupomErro] = useState("");
 
   const [bloqueios, setBloqueios] = useState<Bloqueio[]>([]);
+  const [barbHorarioFunc, setBarbHorarioFunc] = useState<any[] | null>(null);
 
   const weekDates = useMemo(() => getWeekDates(date), [date]);
   const monthDates = useMemo(() => getMonthDates(date), [date]);
@@ -182,7 +183,29 @@ export default function Agenda() {
   const updateMutation = useUpdateAgendamento();
   const checkoutMutation = useCheckoutAgendamento();
 
-  const timeSlots = generateTimeSlots("08:00", "20:00", 30);
+  const BASE = import.meta.env.BASE_URL;
+  useEffect(() => {
+    if (!barbeariaId) return;
+    fetch(`${BASE}api/barbearias/me`, { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.horarioFuncionamento && Array.isArray(d.horarioFuncionamento)) setBarbHorarioFunc(d.horarioFuncionamento); })
+      .catch(() => {});
+  }, [barbeariaId]);
+
+  const DIAS_FUNC_INDEX = [6, 0, 1, 2, 3, 4, 5];
+  const daySchedule = useMemo(() => {
+    if (!barbHorarioFunc || !Array.isArray(barbHorarioFunc)) return { aberto: true, abertura: "08:00", fechamento: "20:00" };
+    const d = new Date(date + "T12:00:00");
+    const idx = DIAS_FUNC_INDEX[d.getDay()];
+    const dia = barbHorarioFunc[idx];
+    if (!dia || !dia.ativo) return { aberto: false, abertura: "08:00", fechamento: "20:00" };
+    return { aberto: true, abertura: dia.abertura || "08:00", fechamento: dia.fechamento || "20:00" };
+  }, [date, barbHorarioFunc]);
+
+  const timeSlots = useMemo(() => {
+    if (!daySchedule.aberto) return [];
+    return generateTimeSlots(daySchedule.abertura, daySchedule.fechamento, 30);
+  }, [daySchedule]);
 
   const availableTimeSlots = useMemo(() => {
     if (!formProfId || bloqueios.length === 0) return timeSlots;
@@ -415,6 +438,17 @@ export default function Agenda() {
   const renderDayView = () => {
     const profs = selectedProfId === "all" ? profissionais as any[] : (profissionais as any[]).filter((p: any) => String(p.id) === selectedProfId);
     const dayAgends = filteredAgendamentos.filter(a => a.data === date);
+
+    if (!daySchedule.aberto) {
+      return (
+        <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg flex flex-col h-[calc(100vh-260px)] min-h-[400px] items-center justify-center">
+          <Lock className="h-10 w-10 text-muted-foreground/40 mb-3" />
+          <p className="text-lg font-semibold text-muted-foreground">Estabelecimento fechado</p>
+          <p className="text-sm text-muted-foreground/60 mt-1">Esse dia não tem horário de funcionamento configurado</p>
+        </div>
+      );
+    }
+
     return (
       <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg flex flex-col h-[calc(100vh-260px)] min-h-[400px]">
         <div className="flex border-b border-border bg-muted/30">

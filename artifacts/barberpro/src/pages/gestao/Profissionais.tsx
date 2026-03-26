@@ -242,7 +242,7 @@ function ProfForm({
         </div>
         {showSchedule && <ScheduleEditor value={horarios} onChange={setHorarios} />}
         {!showSchedule && (
-          <p className="text-xs text-muted-foreground">Usando horário padrão (08:00 – 20:00, todos os dias)</p>
+          <p className="text-xs text-muted-foreground">Usando horário de funcionamento do estabelecimento</p>
         )}
       </div>
 

@@ -72,6 +72,23 @@ router.post("/", requireAuth, requireRole("dono", "gerente"), async (req, res) =
   return res.status(201).json({ ...formatProf(prof), servicoIds: validatedIds });
 });
 
+router.put("/bulk-horarios", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const { profissionalIds, resetToDefault } = req.body;
+  if (!resetToDefault) return res.status(400).json({ error: "Operação inválida" });
+
+  let whereClause;
+  if (Array.isArray(profissionalIds) && profissionalIds.length > 0) {
+    whereClause = and(eq(profissionaisTable.barbeariaId, barbeariaId), inArray(profissionaisTable.id, profissionalIds.map(Number)));
+  } else {
+    whereClause = eq(profissionaisTable.barbeariaId, barbeariaId);
+  }
+
+  await db.update(profissionaisTable).set({ horarios: null, updatedAt: new Date() }).where(whereClause);
+  return res.json({ success: true });
+});
+
 router.get("/:profissionalId", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
