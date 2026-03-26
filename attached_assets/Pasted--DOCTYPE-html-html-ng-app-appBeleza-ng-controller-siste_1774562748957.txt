@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html ng-app="appBeleza" ng-controller="sistemaCtrl">
+
+    <head>
+        <meta charset="utf-8">
+        <title ng-bind="header"></title>
+        	<meta charset="UTF-8">
+	<title></title>
+
+	<meta Http-Equiv="Cache-Control" Content="no-cache">
+	<meta Http-Equiv="Pragma" Content="no-cache">
+	<meta Http-Equiv="Expires" Content="0">
+
+	<meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
+	
+	<link href="https://d3verit7xckkza.cloudfront.net/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"/>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.0/css/ionicons.min.css" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/daterangepicker/daterangepicker.css" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/iCheck/all.css" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/fullcalendar/fullcalendar2.css" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/fullcalendar/fullcalendar.print.css" rel="stylesheet" type="text/css" media='print'/>
+	<link href="https://d3verit7xckkza.cloudfront.net/js/plugins/intltelinput/intlTelInput.css" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/autocomplete/jquery.autocomplete.css" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/timepicker/jquery.timepicker.css" rel="stylesheet" type="text/css"/>
+	<link href="//cdnjs.cloudflare.com/ajax/libs/x-editable/1.5.0/bootstrap3-editable/css/bootstrap-editable.css" rel="stylesheet" type="text/css"/>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.3.1/components/flag.min.css" rel="stylesheet"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/timepicker/bootstrap-timepicker.min.css" rel="stylesheet"/>
+	<link href="https://unpkg.com/bootstrap-table@1.15.5/dist/bootstrap-table.min.css" rel="stylesheet" type="text/css">
+
+	<link href="https://unpkg.com/bootstrap-table@1.15.5/dist/bootstrap-table.min.css" rel="stylesheet" type="text/css">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter&family=Dosis&family=Mulish&family=Didact+Gothic&family=Modern+Antiqua&display=swap" rel="stylesheet">
+
+	
+
+	<link href="https://d3verit7xckkza.cloudfront.net/css/font-quicksand.css" id="font-style" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/style.css" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/titatoggle/titatoggle.css" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/skins/_all-skins.min.css" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/select2/select2.min.css" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/jstree/default/style.min.css" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/contextmenu/jquery.contextMenu.min.css" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/cropper/cropper.min.css" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/jQuery-Impromptu-master/jquery-impromptu.min.css" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/bootstrap-select/bootstrap-select1.13.10.min.css" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/nicelabel/jquery-nicelabel.css" rel="stylesheet" type="text/css"/>
+
+	<!-- DATA TABLES -->
+	<link href="https://d3verit7xckkza.cloudfront.net/css/datatables/datatables.min.css" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/datatables/dataTables.bootstrap.min.css" rel="stylesheet" type="text/css"/>
+
+	<link href="https://d3verit7xckkza.cloudfront.net/css/sweetalert/sweet-alert.css" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/datepicker/datepicker.css" rel="stylesheet" type="text/css"/>
+	<link href="https://d3verit7xckkza.cloudfront.net/css/bootstrap-multiselect/bootstrap-multiselect.css" rel="stylesheet" type="text/css"/>
+	<!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap-fileinput@5.1.5/css/fileinput.min.css" rel="stylesheet" type="text/css" /> -->
+	<link href="https://d3verit7xckkza.cloudfront.net/css/fileinput/fileinput.min.css" rel="stylesheet" type="text/css"/>
+	<!-- <link href="https://d3verit7xckkza.cloudfront.net/css/bootstrap-fileinput/fileinput....
