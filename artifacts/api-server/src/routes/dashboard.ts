@@ -115,7 +115,7 @@ router.get("/", requireAuth, async (req, res) => {
   });
   const topServicos = Object.values(servicoMap).map(s => ({
     ...s,
-    percentual: faturamentoTotal > 0 ? (s.valor / faturamentoTotal) * 100 : 0
+    percentual: faturamentoTotal > 0 ? Math.round((s.valor / faturamentoTotal) * 1000) / 10 : 0
   })).sort((a, b) => b.valor - a.valor).slice(0, 5);
 
   const profMap: Record<number, { profissionalId: number; nome: string; faturamento: number; comissao: number; atendimentos: number }> = {};
@@ -132,7 +132,7 @@ router.get("/", requireAuth, async (req, res) => {
   const totalSlots = profissionais.length * 20;
   const rankingProfissionais = Object.values(profMap).map(p => ({
     ...p,
-    ocupacao: totalSlots > 0 ? Math.min((p.atendimentos / 20) * 100, 100) : 0,
+    ocupacao: totalSlots > 0 ? Math.round(Math.min((p.atendimentos / 20) * 100, 100) * 10) / 10 : 0,
   })).sort((a, b) => b.faturamento - a.faturamento);
 
   const alertas: any[] = [];

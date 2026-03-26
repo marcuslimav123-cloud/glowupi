@@ -60,7 +60,7 @@ router.get("/faturamento", requireAuth, requireRole("dono", "gerente"), async (r
     totalLiquido: Math.round(totalLiquido * 100) / 100,
     totalComissoes: Math.round(totalComissoes * 100) / 100,
     porDia: Object.values(dias).sort((a, b) => a.data.localeCompare(b.data)),
-    porServico: Object.values(servicoMap).map(s => ({ ...s, percentual: totalBruto > 0 ? (s.valor / totalBruto) * 100 : 0 })).sort((a, b) => b.valor - a.valor),
+    porServico: Object.values(servicoMap).map(s => ({ ...s, percentual: totalBruto > 0 ? Math.round((s.valor / totalBruto) * 1000) / 10 : 0 })).sort((a, b) => b.valor - a.valor),
     porFormaPagamento: Object.entries(pagMap).map(([metodo, valor]) => ({ metodo, valor })),
   });
 });
@@ -90,7 +90,7 @@ router.get("/comissoes", requireAuth, requireRole("dono", "gerente"), async (req
 
   return res.json(Object.values(profMap).map(p => ({
     ...p,
-    percentualMedio: p.faturamentoBruto > 0 ? (p.comissaoTotal / p.faturamentoBruto) * 100 : 0,
+    percentualMedio: p.faturamentoBruto > 0 ? Math.round((p.comissaoTotal / p.faturamentoBruto) * 1000) / 10 : 0,
   })));
 });
 

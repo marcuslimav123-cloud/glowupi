@@ -36,6 +36,15 @@ import {
   ChevronRight,
   Shield,
   Mail,
+  Receipt,
+  History,
+  ArrowUpDown,
+  Percent,
+  Wallet,
+  FileText,
+  Clock,
+  ShieldAlert,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { APP_NAME, getRoleLabel } from "@/lib/utils";
@@ -54,11 +63,8 @@ const NAV_ITEMS: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { 
     name: "Agenda",
+    href: "/agenda",
     icon: CalendarDays,
-    children: [
-      { name: "Agenda", href: "/agenda", icon: CalendarDays },
-      { name: "Horários de Pico", href: "/agenda/picos", icon: BarChart3, roles: ["dono", "gerente"] },
-    ]
   },
   { 
     name: "Cadastros", 
@@ -68,40 +74,98 @@ const NAV_ITEMS: NavItem[] = [
       { name: "Clientes", href: "/gestao/clientes", icon: Users },
       { name: "Profissionais", href: "/gestao/profissionais", icon: Users },
       { name: "Serviços", href: "/gestao/servicos", icon: Heart },
-      { name: "Produtos", href: "/gestao/produtos", icon: Package },
-      { name: "Tipos / Categorias", href: "/cadastros/tipos", icon: Tag },
-      { name: "Cupons de Desconto", href: "/cadastros/cupons", icon: Ticket },
-      { name: "Mensagens", href: "/mensagens", icon: MessageSquare },
-      { name: "Lembretes", href: "/cadastros/lembretes", icon: Bell },
-      { name: "Avaliações", href: "/avaliacoes", icon: Star },
-      { name: "Clube de Fidelidade", href: "/clube", icon: Award },
-      { name: "Clubes de Assinatura", href: "/cadastros/clubes", icon: Crown },
-    ]
+    ],
+    subgroups: [
+      {
+        label: "Pacotes",
+        items: [
+          { name: "Meus Pacotes", href: "/pacotes", icon: Boxes },
+          { name: "Venda de Pacotes", href: "/pacotes/vendas", icon: ShoppingCart },
+        ],
+      },
+      {
+        label: "Tipos",
+        items: [
+          { name: "Categorias", href: "/cadastros/tipos", icon: Tag },
+          { name: "Tipo Pagamentos", href: "/cadastros/tipos?cat=pagamento", icon: CreditCardIcon },
+          { name: "Despesas", href: "/cadastros/tipos?cat=despesa", icon: TrendingUp },
+          { name: "Receitas", href: "/cadastros/tipos?cat=receita", icon: DollarSign },
+          { name: "Subcontas", href: "/cadastros/tipos?cat=subconta", icon: ClipboardList },
+          { name: "Equipamentos", href: "/cadastros/tipos?cat=equipamento", icon: Settings },
+          { name: "Fornecedores", href: "/cadastros/tipos?cat=fornecedor", icon: Package },
+          { name: "Tipo Anamnese", href: "/cadastros/tipos?cat=anamnese", icon: FileText },
+          { name: "Bandeiras", href: "/cadastros/tipos?cat=bandeira", icon: Tag },
+          { name: "Remunerações", href: "/cadastros/tipos?cat=remuneracao", icon: DollarSign },
+          { name: "Deduções", href: "/cadastros/tipos?cat=deducao", icon: Percent },
+          { name: "Mensagens", href: "/cadastros/tipos?cat=mensagem", icon: MessageSquare },
+        ],
+      },
+      {
+        label: "Comunicação",
+        items: [
+          { name: "Mensagens", href: "/mensagens", icon: MessageSquare },
+          { name: "Notícias", href: "/cadastros/noticias", icon: Newspaper },
+          { name: "Grupos de Clientes", href: "/cadastros/grupos", icon: UsersRound },
+          { name: "Pesquisa Satisfação", href: "/cadastros/pesquisa", icon: ClipboardList },
+        ],
+      },
+      {
+        label: "Fidelização",
+        items: [
+          { name: "Lembretes", href: "/cadastros/lembretes", icon: Bell },
+          { name: "Produtos / Estoque", href: "/gestao/produtos", icon: Package },
+          { name: "Clube de Vantagens", href: "/cadastros/clube-vantagens", icon: Gift },
+          { name: "Cupom de Desconto", href: "/cadastros/cupons", icon: Ticket },
+          { name: "Clube de Fidelidade", href: "/clube", icon: Award },
+        ],
+      },
+      {
+        label: "Assinaturas",
+        items: [
+          { name: "Planos de Assinatura", href: "/cadastros/clubes", icon: Crown },
+          { name: "Assinantes", href: "/cadastros/assinantes", icon: Users },
+        ],
+      },
+    ],
   },
-  { 
-    name: "Pacotes", 
-    icon: Boxes,
+  {
+    name: "Comandas",
+    icon: Receipt,
     roles: ["dono", "gerente"],
     children: [
-      { name: "Meus Pacotes", href: "/pacotes", icon: Boxes },
-      { name: "Venda de Pacotes", href: "/pacotes/vendas", icon: ShoppingCart },
-    ]
+      { name: "Comandas Abertas", href: "/comandas/abertas", icon: Receipt },
+      { name: "Histórico", href: "/comandas/historico", icon: History },
+    ],
+  },
+  { 
+    name: "Financeiro", 
+    icon: DollarSign,
+    roles: ["dono", "gerente"],
+    children: [
+      { name: "Caixa", href: "/financeiro/caixa", icon: DollarSign },
+      { name: "Histórico Caixa", href: "/financeiro/historico", icon: History },
+      { name: "Entrada/Saída", href: "/financeiro/movimentacoes", icon: ArrowUpDown },
+      { name: "Comissões", href: "/financeiro/comissoes", icon: Percent },
+      { name: "Conta do Cliente", href: "/financeiro/conta-cliente", icon: Users },
+      { name: "Estoque", href: "/gestao/produtos", icon: Package },
+      { name: "Fluxo de Caixa", href: "/financeiro/fluxo", icon: TrendingUp },
+      { name: "Conta Profissional", href: "/financeiro/conta-profissional", icon: UsersRound },
+      { name: "Caixinha", href: "/financeiro/caixinha", icon: Wallet },
+    ],
   },
   {
     name: "Relatórios",
     icon: BarChart3,
     roles: ["dono", "gerente"],
-    children: [
-      { name: "Resumo", href: "/relatorios/resumo", icon: LayoutDashboard },
-    ],
     subgroups: [
       {
         label: "Agendamentos",
         items: [
-          { name: "Agendamentos", href: "/relatorios/agendamentos", icon: CalendarDays },
+          { name: "Geral", href: "/relatorios/agendamentos", icon: CalendarDays },
+          { name: "Clientes", href: "/relatorios/perfil-cliente", icon: Users },
+          { name: "Profissionais", href: "/relatorios/rankings", icon: Star },
+          { name: "Informações", href: "/relatorios/resumo", icon: LayoutDashboard },
           { name: "Aniversariantes", href: "/relatorios/aniversariantes", icon: Gift },
-          { name: "Perfil Cliente", href: "/relatorios/perfil-cliente", icon: Users },
-          { name: "Rankings", href: "/relatorios/rankings", icon: Star },
         ],
       },
       {
@@ -113,30 +177,66 @@ const NAV_ITEMS: NavItem[] = [
           { name: "Comandas Itens", href: "/relatorios/comandas-itens", icon: Newspaper },
           { name: "Estoque", href: "/relatorios/estoque", icon: Package },
           { name: "Pacotes", href: "/relatorios/pacotes", icon: Boxes },
+          { name: "Rankings", href: "/relatorios/rankings-gerencial", icon: Star },
+        ],
+      },
+      {
+        label: "Outros",
+        items: [
+          { name: "Programa Fidelidade", href: "/clube", icon: Award },
         ],
       },
     ],
   },
-  { name: "Caixa", href: "/caixa", icon: DollarSign, roles: ["dono", "gerente"] },
-  { name: "Financeiro", href: "/financeiro", icon: TrendingUp, roles: ["dono"] },
-  { name: "Lista de Espera", href: "/lista-espera", icon: ClipboardList, roles: ["dono", "gerente"] },
   {
     name: "Configurações",
     icon: Settings,
     roles: ["dono", "gerente"],
     children: [
       { name: "Parâmetros", href: "/configuracoes/parametros", icon: Settings },
+      { name: "Rodízio", href: "/configuracoes/rodizio", icon: UsersRound },
       { name: "Perfis de Acesso", href: "/configuracoes/acessos", icon: Shield, roles: ["dono"] },
-      { name: "Templates de E-mail", href: "/configuracoes/templates", icon: Mail, roles: ["dono"] },
-      { name: "Rodízio de Profissionais", href: "/configuracoes/rodizio", icon: UsersRound },
-      { name: "Ordem de Chegada", href: "/configuracoes/ordem-chegada", icon: ClipboardList },
-      { name: "Lista de Espera", href: "/configuracoes/lista-espera", icon: Users },
-      { name: "Alertas", href: "/configuracoes/alertas", icon: Bell },
+      { name: "Templates E-mail", href: "/configuracoes/templates", icon: Mail, roles: ["dono"] },
+    ],
+    subgroups: [
+      {
+        label: "Fila de Espera",
+        items: [
+          { name: "Ordem de Chegada", href: "/configuracoes/ordem-chegada", icon: ClipboardList },
+          { name: "Lista de Espera", href: "/lista-espera", icon: Users },
+        ],
+      },
+      {
+        label: "Anamnese",
+        items: [
+          { name: "Formulários", href: "/configuracoes/anamnese-formularios", icon: FileText },
+          { name: "Clientes", href: "/configuracoes/anamnese-clientes", icon: Users },
+        ],
+      },
+      {
+        label: "Documentos",
+        items: [
+          { name: "Meus Documentos", href: "/configuracoes/documentos", icon: FileText },
+          { name: "Clientes", href: "/configuracoes/documentos-clientes", icon: Users },
+          { name: "Profissionais", href: "/configuracoes/documentos-profissionais", icon: UsersRound },
+        ],
+      },
+      {
+        label: "Outros",
+        items: [
+          { name: "Avaliações", href: "/avaliacoes", icon: Star },
+          { name: "Lista de Restrições", href: "/configuracoes/restricoes", icon: ShieldAlert },
+          { name: "Funcionamento", href: "/configuracoes/funcionamento", icon: Clock },
+          { name: "Alertas", href: "/configuracoes/alertas", icon: Bell },
+        ],
+      },
     ],
   },
   { name: "Meu Estúdio", href: "/empresa", icon: Building2, roles: ["dono"] },
   { name: "Equipe", href: "/equipe", icon: UsersRound, roles: ["dono"] },
 ];
+
+function CreditCardIcon(props: any) { return <DollarSign {...props} />; }
 
 const HREF_TO_PERMISSION: Record<string, string> = {
   "/dashboard": "dashboard",
@@ -153,8 +253,23 @@ const HREF_TO_PERMISSION: Record<string, string> = {
   "/avaliacoes": "avaliacoes",
   "/clube": "clube",
   "/cadastros/clubes": "clubes_assinatura",
+  "/cadastros/assinantes": "clubes_assinatura",
+  "/cadastros/noticias": "noticias",
+  "/cadastros/grupos": "noticias",
+  "/cadastros/pesquisa": "pesquisa",
+  "/cadastros/clube-vantagens": "clube",
   "/pacotes": "pacotes",
   "/pacotes/vendas": "venda_pacotes",
+  "/comandas/abertas": "comandas",
+  "/comandas/historico": "comandas",
+  "/financeiro/caixa": "caixa",
+  "/financeiro/historico": "caixa",
+  "/financeiro/movimentacoes": "caixa",
+  "/financeiro/comissoes": "financeiro",
+  "/financeiro/conta-cliente": "financeiro",
+  "/financeiro/fluxo": "financeiro",
+  "/financeiro/conta-profissional": "financeiro",
+  "/financeiro/caixinha": "financeiro",
   "/relatorios": "relatorios",
   "/relatorios/resumo": "relatorios",
   "/relatorios/aniversariantes": "relatorios",
@@ -162,6 +277,7 @@ const HREF_TO_PERMISSION: Record<string, string> = {
   "/relatorios/financeiro": "relatorios",
   "/relatorios/canceladas": "relatorios",
   "/relatorios/rankings": "relatorios",
+  "/relatorios/rankings-gerencial": "relatorios",
   "/relatorios/perfil-cliente": "relatorios",
   "/relatorios/estoque": "relatorios",
   "/relatorios/pacotes": "relatorios",
@@ -174,17 +290,23 @@ const HREF_TO_PERMISSION: Record<string, string> = {
   "/configuracoes/templates": "configuracoes",
   "/configuracoes/rodizio": "configuracoes",
   "/configuracoes/ordem-chegada": "configuracoes",
-  "/configuracoes/lista-espera": "configuracoes",
+  "/configuracoes/anamnese-formularios": "configuracoes",
+  "/configuracoes/anamnese-clientes": "configuracoes",
+  "/configuracoes/documentos": "configuracoes",
+  "/configuracoes/documentos-clientes": "configuracoes",
+  "/configuracoes/documentos-profissionais": "configuracoes",
+  "/configuracoes/restricoes": "configuracoes",
+  "/configuracoes/funcionamento": "configuracoes",
   "/configuracoes/alertas": "configuracoes",
   "/empresa": "empresa",
   "/equipe": "equipe",
-  "/comandas": "comandas",
 };
 
 function hasPermission(href: string | undefined, perms: string[] | null): boolean {
   if (!perms) return true;
   if (!href) return true;
-  const key = HREF_TO_PERMISSION[href];
+  const cleanHref = href.split("?")[0];
+  const key = HREF_TO_PERMISSION[cleanHref];
   if (!key) return true;
   return perms.includes(key);
 }
@@ -192,15 +314,15 @@ function hasPermission(href: string | undefined, perms: string[] | null): boolea
 function filterNavByRole(items: NavItem[], role: string, perfilPermissoes?: string[] | null): NavItem[] {
   return items.reduce<NavItem[]>((acc, item) => {
     if (item.roles && !item.roles.includes(role)) return acc;
-    if (item.children) {
-      const filteredChildren = item.children.filter(
+    if (item.children || item.subgroups) {
+      const filteredChildren = (item.children || []).filter(
         child => (!child.roles || child.roles.includes(role)) && hasPermission(child.href, perfilPermissoes ?? null)
       );
-      if (filteredChildren.length > 0) {
-        const filteredSubgroups = item.subgroups?.map(sg => ({
-          ...sg,
-          items: sg.items.filter(sub => hasPermission(sub.href, perfilPermissoes ?? null)),
-        })).filter(sg => sg.items.length > 0);
+      const filteredSubgroups = item.subgroups?.map(sg => ({
+        ...sg,
+        items: sg.items.filter(sub => hasPermission(sub.href, perfilPermissoes ?? null)),
+      })).filter(sg => sg.items.length > 0);
+      if (filteredChildren.length > 0 || (filteredSubgroups && filteredSubgroups.length > 0)) {
         acc.push({ ...item, children: filteredChildren, subgroups: filteredSubgroups });
       }
     } else {
@@ -213,8 +335,9 @@ function filterNavByRole(items: NavItem[], role: string, perfilPermissoes?: stri
 }
 
 function isGroupActive(item: NavItem, location: string): boolean {
-  if (item.children?.some(c => c.href && (location === c.href || location.startsWith(c.href + '/')))) return true;
-  if (item.subgroups?.some(sg => sg.items.some(s => s.href && (location === s.href || location.startsWith(s.href + '/'))))) return true;
+  const loc = location.split("?")[0];
+  if (item.children?.some(c => c.href && (loc === c.href.split("?")[0] || loc.startsWith(c.href.split("?")[0] + '/')))) return true;
+  if (item.subgroups?.some(sg => sg.items.some(s => s.href && (loc === s.href.split("?")[0] || loc.startsWith(s.href.split("?")[0] + '/'))))) return true;
   return false;
 }
 
@@ -233,9 +356,7 @@ function CollapsibleGroup({ item, location, onNavigate, mainRef }: { item: NavIt
     }
   };
 
-  const allItems: NavItem[] = [
-    ...(item.children || []),
-  ];
+  const loc = location.split("?")[0];
 
   return (
     <div>
@@ -258,13 +379,13 @@ function CollapsibleGroup({ item, location, onNavigate, mainRef }: { item: NavIt
 
       <div className={cn(
         "overflow-hidden transition-all duration-200",
-        open ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
+        open ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
       )}>
         <div className="ml-2 pl-3 border-l border-black/[0.06] mt-0.5 space-y-0.5">
-          {allItems.map(child => (
-            <Link key={child.name} href={child.href!} className={cn(
+          {(item.children || []).map(child => (
+            <Link key={child.name + (child.href || '')} href={child.href!} className={cn(
               "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150",
-              location === child.href
+              loc === child.href?.split("?")[0]
                 ? "bg-foreground text-white"
                 : "text-foreground/45 hover:text-foreground hover:bg-black/[0.03]"
             )} onClick={handleLinkClick}>
@@ -279,9 +400,9 @@ function CollapsibleGroup({ item, location, onNavigate, mainRef }: { item: NavIt
                 {sg.label}
               </div>
               {sg.items.map(sub => (
-                <Link key={sub.name} href={sub.href!} className={cn(
+                <Link key={sub.name + (sub.href || '')} href={sub.href!} className={cn(
                   "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150",
-                  location === sub.href
+                  loc === sub.href?.split("?")[0]
                     ? "bg-foreground text-white"
                     : "text-foreground/45 hover:text-foreground hover:bg-black/[0.03]"
                 )} onClick={handleLinkClick}>
@@ -410,7 +531,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5 sidebar-scroll">
           {filteredNav.map((item) => (
             <div key={item.name}>
-              {item.children ? (
+              {(item.children || item.subgroups) ? (
                 <CollapsibleGroup
                   item={item}
                   location={location}

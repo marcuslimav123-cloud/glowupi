@@ -165,7 +165,8 @@ router.get("/:slug/slots", async (req, res) => {
     const agendaFim = params["agenda_horario_fim"] || "20:00";
     const globalInicio = timeToMinutes(agendaInicio);
     const globalFim = timeToMinutes(agendaFim);
-    const limiteAntecedencia = parseInt(params["agenda_limite_antecedencia"] || "2");
+    const limiteAntecedenciaRaw = params["agenda_limite_antecedencia"];
+    const limiteAntecedencia = limiteAntecedenciaRaw !== undefined ? parseFloat(limiteAntecedenciaRaw) : 0.5;
     const limiteFuturoDias = parseInt(params["agenda_limite_futuro_dias"] || "30");
 
     const slots: any[] = [];
@@ -233,7 +234,8 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       return res.status(400).json({ error: `Agendamento limitado a ${limiteFuturoDias} dias no futuro` });
     }
 
-    const limiteAntecedencia = parseInt(params["agenda_limite_antecedencia"] || "2");
+    const limiteAntecedenciaRaw2 = params["agenda_limite_antecedencia"];
+    const limiteAntecedencia = limiteAntecedenciaRaw2 !== undefined ? parseFloat(limiteAntecedenciaRaw2) : 0.5;
     const agendDataObj = new Date(data + "T" + horaInicio + ":00");
     const diffMs = agendDataObj.getTime() - new Date().getTime();
     const diffHoras = diffMs / (1000 * 60 * 60);

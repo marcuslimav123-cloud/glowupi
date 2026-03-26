@@ -38,9 +38,26 @@ import Tipos from "@/pages/cadastros/Tipos";
 import Cupons from "@/pages/cadastros/Cupons";
 import Lembretes from "@/pages/cadastros/Lembretes";
 import ClubesAssinatura from "@/pages/cadastros/Clubes";
+import Noticias from "@/pages/cadastros/Noticias";
+import GruposClientes from "@/pages/cadastros/GruposClientes";
+import Pesquisa from "@/pages/cadastros/Pesquisa";
+import ClubeVantagens from "@/pages/cadastros/ClubeVantagens";
 import VendaPacotes from "@/pages/VendaPacotes";
 import PublicBooking from "@/pages/PublicBooking";
 import PublicStorefront from "@/pages/PublicStorefront";
+
+import ComandasAbertas from "@/pages/comandas/ComandasAbertas";
+import ComandasHistorico from "@/pages/comandas/ComandasHistorico";
+
+import CaixaDiario from "@/pages/financeiro/CaixaDiario";
+import HistoricoCaixa from "@/pages/financeiro/HistoricoCaixa";
+import MovCaixa from "@/pages/financeiro/MovCaixa";
+import ComissoesPage from "@/pages/financeiro/Comissoes";
+import ContaCliente from "@/pages/financeiro/ContaCliente";
+import FluxoCaixa from "@/pages/financeiro/FluxoCaixa";
+import ContaProfissional from "@/pages/financeiro/ContaProfissional";
+import CaixinhaPage from "@/pages/financeiro/Caixinha";
+
 import Resumo from "@/pages/relatorios/Resumo";
 import Aniversariantes from "@/pages/relatorios/Aniversariantes";
 import AgendamentosReport from "@/pages/relatorios/AgendamentosReport";
@@ -51,10 +68,16 @@ import PerfilCliente from "@/pages/relatorios/PerfilCliente";
 import EstoqueReport from "@/pages/relatorios/EstoqueReport";
 import PacotesReport from "@/pages/relatorios/PacotesReport";
 import ComandasItensReport from "@/pages/relatorios/ComandasItensReport";
+
 import Parametros from "@/pages/configuracoes/Parametros";
 import PerfisAcesso from "@/pages/configuracoes/PerfisAcesso";
 import { RodizioPage, OrdemChegadaPage, ListaEsperaConfigPage, AlertasPage } from "@/pages/configuracoes/PlaceholderConfig";
 import EmailTemplates from "@/pages/configuracoes/EmailTemplates";
+import { AnamneseFormularios, AnamneseClientes } from "@/pages/configuracoes/Anamnese";
+import { DocumentosPage, DocumentosClientePage, DocumentosProfissionalPage } from "@/pages/configuracoes/Documentos";
+import RestricaoCliente from "@/pages/configuracoes/RestricaoCliente";
+import Funcionamento from "@/pages/configuracoes/Funcionamento";
+
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminTenants from "@/pages/admin/AdminTenants";
@@ -84,30 +107,52 @@ function Router() {
       <Route path="/gestao/produtos" component={Produtos} />
       <Route path="/gestao/clientes" component={Clientes} />
 
+      <Route path="/comandas/abertas" component={ComandasAbertas} />
+      <Route path="/comandas/historico" component={ComandasHistorico} />
+
+      <Route path="/financeiro/caixa" component={CaixaDiario} />
+      <Route path="/financeiro/historico" component={HistoricoCaixa} />
+      <Route path="/financeiro/movimentacoes" component={MovCaixa} />
+      <Route path="/financeiro/comissoes" component={ComissoesPage} />
+      <Route path="/financeiro/conta-cliente" component={ContaCliente} />
+      <Route path="/financeiro/fluxo" component={FluxoCaixa} />
+      <Route path="/financeiro/conta-profissional" component={ContaProfissional} />
+      <Route path="/financeiro/caixinha" component={CaixinhaPage} />
+
       <Route path="/relatorios/resumo" component={Resumo} />
       <Route path="/relatorios/aniversariantes" component={Aniversariantes} />
       <Route path="/relatorios/agendamentos" component={AgendamentosReport} />
       <Route path="/relatorios/financeiro" component={FinanceiroReport} />
       <Route path="/relatorios/canceladas" component={ComandasCanceladas} />
       <Route path="/relatorios/rankings" component={RankingsReport} />
+      <Route path="/relatorios/rankings-gerencial" component={RankingsReport} />
       <Route path="/relatorios/perfil-cliente" component={PerfilCliente} />
       <Route path="/relatorios/estoque" component={EstoqueReport} />
       <Route path="/relatorios/pacotes" component={PacotesReport} />
       <Route path="/relatorios/comandas-itens" component={ComandasItensReport} />
       <Route path="/relatorios" component={Relatorios} />
+
       <Route path="/caixa" component={Caixa} />
       <Route path="/financeiro" component={Financeiro} />
       <Route path="/pacotes" component={Pacotes} />
       <Route path="/pacotes/vendas" component={VendaPacotes} />
+
       <Route path="/cadastros/tipos" component={Tipos} />
       <Route path="/cadastros/cupons" component={Cupons} />
       <Route path="/cadastros/lembretes" component={Lembretes} />
       <Route path="/cadastros/clubes" component={ClubesAssinatura} />
+      <Route path="/cadastros/assinantes" component={ClubesAssinatura} />
+      <Route path="/cadastros/noticias" component={Noticias} />
+      <Route path="/cadastros/grupos" component={GruposClientes} />
+      <Route path="/cadastros/pesquisa" component={Pesquisa} />
+      <Route path="/cadastros/clube-vantagens" component={ClubeVantagens} />
+
       <Route path="/lista-espera" component={ListaEspera} />
       <Route path="/avaliacoes" component={Avaliacoes} />
       <Route path="/mensagens" component={Mensagens} />
       <Route path="/equipe" component={Equipe} />
       <Route path="/convite/:token" component={AcceptInvite} />
+
       <Route path="/configuracoes/parametros" component={Parametros} />
       <Route path="/configuracoes/rodizio" component={RodizioPage} />
       <Route path="/configuracoes/ordem-chegada" component={OrdemChegadaPage} />
@@ -115,6 +160,14 @@ function Router() {
       <Route path="/configuracoes/alertas" component={AlertasPage} />
       <Route path="/configuracoes/acessos" component={PerfisAcesso} />
       <Route path="/configuracoes/templates" component={EmailTemplates} />
+      <Route path="/configuracoes/anamnese-formularios" component={AnamneseFormularios} />
+      <Route path="/configuracoes/anamnese-clientes" component={AnamneseClientes} />
+      <Route path="/configuracoes/documentos" component={DocumentosPage} />
+      <Route path="/configuracoes/documentos-clientes" component={DocumentosClientePage} />
+      <Route path="/configuracoes/documentos-profissionais" component={DocumentosProfissionalPage} />
+      <Route path="/configuracoes/restricoes" component={RestricaoCliente} />
+      <Route path="/configuracoes/funcionamento" component={Funcionamento} />
+
       <Route path="/empresa" component={Empresa} />
       <Route path="/clube" component={Clube} />
 

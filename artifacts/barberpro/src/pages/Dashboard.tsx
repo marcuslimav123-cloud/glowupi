@@ -175,7 +175,7 @@ export default function Dashboard() {
                     <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
                     <span className="text-foreground/50">{servico.nome}</span>
                   </div>
-                  <span className="font-semibold text-foreground">{servico.percentual}%</span>
+                  <span className="font-semibold text-foreground">{typeof servico.percentual === 'number' ? servico.percentual.toFixed(1) : servico.percentual}%</span>
                 </div>
               ))}
             </div>

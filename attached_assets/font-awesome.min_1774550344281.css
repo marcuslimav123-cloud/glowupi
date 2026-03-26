@@ -1,0 +1,359 @@
+<!DOCTYPE html><html><head>
+	<meta charset="UTF-8">
+		<title>AppBeleza | Agendamento Online</title>
+	<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+	<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css">
+	<link href="css/font-awesome.min.css" rel="stylesheet" type="text/css">
+	<link href="css/sweet-alert.css" rel="stylesheet" type="text/css">
+
+	<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+	<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+	<!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+			<script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+        <![endif]-->
+
+	
+		<link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+		<link rel="icon" href="images/favicon.ico" type="image/x-icon">
+		<link rel="apple-touch-icon" sizes="57x57" href="images/apple-icon-57x57.png">
+		<link rel="apple-touch-icon" sizes="60x60" href="images/apple-icon-60x60.png">
+		<link rel="apple-touch-icon" sizes="72x72" href="images/apple-icon-72x72.png">
+		<link rel="apple-touch-icon" sizes="76x76" href="images/apple-icon-76x76.png">
+		<link rel="apple-touch-icon" sizes="114x114" href="images/apple-icon-114x114.png">
+		<link rel="apple-touch-icon" sizes="120x120" href="images/apple-icon-120x120.png">
+		<link rel="apple-touch-icon" sizes="144x144" href="images/apple-icon-144x144.png">
+		<link rel="apple-touch-icon" sizes="152x152" href="images/apple-icon-152x152.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="images/apple-icon-180x180.png">
+		<link rel="icon" type="image/png" sizes="192x192" href="images/android-icon-192x192.png">
+		<link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="96x96" href="images/favicon-96x96.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png">
+		<link rel="manifest" href="https://d3verit7xckkza.cloudfront.net/imgsystem/icon/manifest.json">
+		<meta name="msapplication-TileColor" content="#ffffff">
+		<meta name="msapplication-TileImage" content="https://d3verit7xckkza.cloudfront.net/imgsystem/icon/ms-icon-144x144.png">
+
+	
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Quicksand:400,700"><style>.ajax_loader{background:url(images/ring-alt.gif.pagespeed.ce.H7OSpLBmUi.gif) no-repeat contain center center transparent;width:100%;height:100%}*{box-sizing:border-box}*:focus{outline:none}body{font-family:'Quicksand',sans-serif;background:url(images/bg-beleza-1.png) no-repeat center center fixed;background-repeat:no-repeat;-webkit-background-size:cover;-moz-background-size:cover;-o-background-size:cover;background-size:cover;padding:50px}.login{margin:50px auto;width:300px}.login-screen{background-color:#fff;padding:20px;border-radius:10px}.app-title{text-align:center;color:#777}.login-form{text-align:center}.control-group{margin-bottom:10px}.login-field{text-align:center;background-color:#ecf0f1;border:2px solid transparent;border-radius:5px;font-size:16px;font-weight:200;padding:10px 0;width:250px;transition:border .5s}.login-field:focus{border:2px solid #600239;box-shadow:none}.btnLogin{border:2px solid transparent;background:#600239;color:#fff;font-size:16px;line-height:25px;padding:10px 0;text-decoration:none;text-shadow:none;text-transform:uppercase;border-radius:3px;box-shadow:none;transition:.25s;display:block;width:250px;margin:0 auto}.btnLogin:hover{background-color:#801249;color:#fff}.btnWhats{border:2px solid transparent;background-color:green!important;color:#fff!important;font-size:16px;line-height:25px;padding:10px 0;text-decoration:none;text-shadow:none;text-transform:uppercase;border-radius:3px;box-shadow:none;transition:.25s;display:block;width:250px;margin:0 auto}.btnWhats:hover{background-color:#07b507!important;color:#fff!important}.login-link{font-size:16px;color:#801249;display:block;margin-top:12px}.login-link:hover{color:#801249;text-decoration:none}.appblz-modal-sm .modal-dialog{width:30%}.logo{margin-bottom:4px}.capslock{color:red!important;text-transform:uppercase}@media (max-width:767px){.appblz-modal-sm .modal-dialog{width:95%}}.grecaptcha-badge{width:70px!important;overflow:hidden!important;transition:all .3s ease!important;left:0!important}.grecaptcha-badge:hover{width:256px!important}</style>
+</head>
+
+<body>
+	<div class="login">
+		<div class="login-screen">
+			<div class="app-title">
+				<script type="text/javascript" id="zsiqscript" defer="" src="https://salesiq.zoho.com/widget"></script><script data-pagespeed-no-defer="">//<![CDATA[
+(function(){for(var g="function"==typeof Object.defineProperties?Object.defineProperty:function(b,c,a){if(a.get||a.set)throw new TypeError("ES3 does not support getters and setters.");b!=Array.prototype&&b!=Object.prototype&&(b[c]=a.value)},h="undefined"!=typeof window&&window===this?this:"undefined"!=typeof global&&null!=global?global:this,k=["String","prototype","repeat"],l=0;l<k.length-1;l++){var m=k[l];m in h||(h[m]={});h=h[m]}var n=k[k.length-1],p=h[n],q=p?p:function(b){var c;if(null==this)throw new TypeError("The 'this' value for String.prototype.repeat must not be null or undefined");c=this+"";if(0>b||1342177279<b)throw new RangeError("Invalid count value");b|=0;for(var a="";b;)if(b&1&&(a+=c),b>>>=1)c+=c;return a};q!=p&&null!=q&&g(h,n,{configurable:!0,writable:!0,value:q});var t=this;function u(b,c){var a=b.split("."),d=t;a[0]in d||!d.execScript||d.execScript("var "+a[0]);for(var e;a.length&&(e=a.shift());)a.length||void 0===c?d[e]?d=d[e]:d=d[e]={}:d[e]=c};function v(b){var c=b.length;if(0<c){for(var a=Array(c),d=0;d<c;d++)a[d]=b[d];return a}return[]};function w(b){var c=window;if(c.addEventListener)c.addEventListener("load",b,!1);else if(c.attachEvent)c.attachEvent("onload",b);else{var a=c.onload;c.onload=function(){b.call(this);a&&a.call(this)}}};var x;function y(b,c,a,d,e){this.h=b;this.j=c;this.l=a;this.f=e;this.g={height:window.innerHeight||document.documentElement.clientHeight||document.body.clientHeight,width:window.innerWidth||document.documentElement.clientWidth||document.body.clientWidth};this.i=d;this.b={};this.a=[];this.c={}}function z(b,c){var a,d,e=c.getAttribute("data-pagespeed-url-hash");if(a=e&&!(e in b.c))if(0>=c.offsetWidth&&0>=c.offsetHeight)a=!1;else{d=c.getBoundingClientRect();var f=document.body;a=d.top+("pageYOffset"in window?window.pageYOffset:(document.documentElement||f.parentNode||f).scrollTop);d=d.left+("pageXOffset"in window?window.pageXOffset:(document.documentElement||f.parentNode||f).scrollLeft);f=a.toString()+","+d;b.b.hasOwnProperty(f)?a=!1:(b.b[f]=!0,a=a<=b.g.height&&d<=b.g.width)}a&&(b.a.push(e),b.c[e]=!0)}y.prototype.checkImageForCriticality=function(b){b.getBoundingClientRect&&z(this,b)};u("pagespeed.CriticalImages.checkImageForCriticality",function(b){x.checkImageForCriticality(b)});u("pagespeed.CriticalImages.checkCriticalImages",function(){A(x)});function A(b){b.b={};for(var c=["IMG","INPUT"],a=[],d=0;d<c.length;++d)a=a.concat(v(document.getElementsByTagName(c[d])));if(a.length&&a[0].getBoundingClientRect){for(d=0;c=a[d];++d)z(b,c);a="oh="+b.l;b.f&&(a+="&n="+b.f);if(c=!!b.a.length)for(a+="&ci="+encodeURIComponent(b.a[0]),d=1;d<b.a.length;++d){var e=","+encodeURIComponent(b.a[d]);131072>=a.length+e.length&&(a+=e)}b.i&&(e="&rd="+encodeURIComponent(JSON.stringify(B())),131072>=a.length+e.length&&(a+=e),c=!0);C=a;if(c){d=b.h;b=b.j;var f;if(window.XMLHttpRequest)f=new XMLHttpRequest;else if(window.ActiveXObject)try{f=new ActiveXObject("Msxml2.XMLHTTP")}catch(r){try{f=new ActiveXObject("Microsoft.XMLHTTP")}catch(D){}}f&&(f.open("POST",d+(-1==d.indexOf("?")?"?":"&")+"url="+encodeURIComponent(b)),f.setRequestHeader("Content-Type","application/x-www-form-urlencoded"),f.send(a))}}}function B(){var b={},c;c=document.getElementsByTagName("IMG");if(!c.length)return{};var a=c[0];if(!("naturalWidth"in a&&"naturalHeight"in a))return{};for(var d=0;a=c[d];++d){var e=a.getAttribute("data-pagespeed-url-hash");e&&(!(e in b)&&0<a.width&&0<a.height&&0<a.naturalWidth&&0<a.naturalHeight||e in b&&a.width>=b[e].o&&a.height>=b[e].m)&&(b[e]={rw:a.width,rh:a.height,ow:a.naturalWidth,oh:a.naturalHeight})}return b}var C="";u("pagespeed.CriticalImages.getBeaconData",function(){return C});u("pagespeed.CriticalImages.Run",function(b,c,a,d,e,f){var r=new y(b,c,a,e,f);x=r;d&&w(function(){window.setTimeout(function(){A(r)},0)})});})();pagespeed.CriticalImages.Run('/mod_pagespeed_beacon','https://sistema.appbeleza.com.br/login.php','2L-ZMDIrHf',true,false,'hIbXoOGItA4');
+//]]></script><img class="logo" src="images/logo-appbeleza-login.png" data-pagespeed-url-hash="1374982341" onload="pagespeed.CriticalImages.checkImageForCriticality(this);">
+			</div>
+			<form id="frmLogin">
+				<div class="login-form">
+					<div class="control-group">
+						<input type="text" class="login-field" placeholder="E-mail" name="userid" id="login-name">
+						<label class="login-field-icon fui-user" for="login-name"></label>
+					</div>
+
+					<div class="control-group">
+						<input type="password" class="login-field" placeholder="Senha" name="password" id="login-pass">
+						<label class="login-field-icon fui-lock" for="login-pass"></label>
+						<p class="help-block capslock"></p>
+					</div>
+					<button class="btn btnLogin btn-large btn-block" type="submit">Acessar</button>
+					<hr class="hr-divider">
+					<a class="login-link" data-toggle="modal" data-target="#esqueceu-senha-modal" href="#">Esqueceu a Senha?</a>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<div class="modal fade appblz-modal-sm" id="esqueceu-senha-modal" tabindex="-1" role="dialog" aria-hidden="true">
+		<div class="modal-dialog modal-sm">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+					<h4 class="modal-title" style="color:black;"> Esqueceu a Senha </h4>
+				</div>
+
+				<div class="modal-body">
+					<div class="box-body">
+						<div class="row">
+							<div class="col-md-12">
+								<div class="form-group">
+									<input type="email" id="email" class="form-control" placeholder="E-mail">
+								</div>
+								<button id="btnEsqueceuSenha" type="button" class="btn btnLogin btn-block btn-flat">Enviar</button>
+							</div>
+						</div>
+					</div>
+				</div>
+
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade appblz-modal-sm" id="esqueceu-senha-usuarios" tabindex="-1" role="dialog" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+					<h4 class="modal-title" style="color:black;"> Selecione Usuário </h4>
+				</div>
+
+				<div class="modal-body">
+					<div class="box-body">
+						<div class="row">
+							<div class="col-md-6">
+								<div class="form-group">
+									<div class="input-group">
+										<div id="divUsuarios"></div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<button id="btnEsqueceuUsuario" type="button" class="btn btnLogin btn-block btn-flat">Enviar</button>
+				</div>
+
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade appblz-modal-sm" id="login-usuarios" tabindex="-1" role="dialog" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+					<h4 class="modal-title" style="color:black;"> Selecione o Estabelecimento </h4>
+				</div>
+				<div class="modal-body">
+					<div class="box-body">
+						<div class="row">
+							<div class="col-md-12">
+								<div id="divUsuariosLogin" align="center"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade appblz-modal-sm" id="contrato" tabindex="-1" role="dialog" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h4 class="modal-title" style="color:black;"> Contratar </h4>
+				</div>
+				<form method="post" action="/contratar/">
+					<div class="modal-body">
+						<div class="box-body">
+							<div class="row">
+								<div class="col-md-12">
+									<div class="form-group">
+										<div class="input-group">
+											<input type="hidden" id="pescodigo" name="pescodigo">
+											<input type="hidden" id="id" name="id">
+										</div>
+										<p style="text-align:center;">Infelizmente seu plano do AppBeleza expirou,<br>mas gostaríamos de ter você conosco.<br>Confira os nossos planos clicando em <b>Contratar</b>.</p>
+									</div>
+								</div>
+							</div>
+						</div>
+						<button type="submit" class="btn btnLogin btn-block btn-flat" href="/contratar/">Contratar</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade appblz-modal-sm" id="contratado-expiracao" tabindex="-1" role="dialog" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h4 class="modal-title" style="color:black;"> Renovar Plano </h4>
+				</div>
+
+				<div class="modal-body">
+					<div class="box-body">
+						<div class="row">
+							<div class="col-md-12">
+								<div class="form-group">
+									<div class="input-group">
+										<input type="hidden" id="pescodigo" name="pescodigo">
+										<input type="hidden" id="id" name="id">
+									</div>
+									<p style="text-align:center;">Infelizmente seu plano do AppBeleza expirou,<br>mas gostaríamos de ter você conosco.<br>Efetue a renovação do seu plano clicando em <b>Renovar Plano</b>.</p>
+									
+								</div>
+							</div>
+						</div>
+					</div>
+					<p><a class="btn btnLogin btn-block btn-flat" href="/payment/">Renovar Plano</a></p>
+					<p style="text-align:center;" id="divFalarComAnalista"></p>
+				</div>
+
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade appblz-modal-sm" id="naoconfirmado-modal" tabindex="-1" role="dialog" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h4 class="modal-title" style="color:black;">Confirme seu cadastro </h4>
+				</div>
+
+				<div class="modal-body">
+					<div class="box-body">
+						<div class="row">
+							<div class="col-md-12">
+								<div class="form-group">
+									<div class="input-group">
+										<input type="hidden" id="emailresend" name="emailresend">
+										<input type="hidden" id="idresend" name="idresend">
+									</div>
+									
+									<h4 style="text-align:center;">Seu cadastro no AppBeleza ainda não foi confirmado, confira seu e-mail e realize a confirmação.</h4>
+									<br>
+									<p style="text-align:center;" id="resendMailMessage">Não recebeu o e-mail? <a style="cursor:pointer;" id="retryConfirmationMail">clique aqui</a> e enviaremos novamente!</p>
+									<p style="text-align:center;display:none" id="resendMailMessageLoader"><i class="fa fa-spinner fa-pulse"></i> Enviando...</p>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+				</div>
+
+			</div>
+		</div>
+	</div>
+
+	<script src="js/jquery.min.js"></script>
+	<script src="js/bootstrap.min.js" type="text/javascript"></script>
+	<script src="js/sweet-alert.min.js" type="text/javascript"></script>
+	<script src="js/api.js"></script>
+
+	<script type="text/javascript">var showOrNotShowInfoDates=(localStorage.getItem('notShowInfoDates')!=undefined&&localStorage.getItem('notShowInfoDates')=='true')?"notShow":"show";$("#frmLogin").submit(function(event){event.preventDefault();grecaptcha.ready(function(){grecaptcha.execute('6LdVO78aAAAAAPCYO_iegSATfVfd9bEAX25U_czl',{action:'submit'}).then(function(token){var formLogin=$('#frmLogin').get(0);var dataInsere=new FormData(formLogin);dataInsere.append('origem',location.host);dataInsere.append("showOrNotShowInfoDates",showOrNotShowInfoDates);dataInsere.append('token',token);login(dataInsere);});});return true;});$("#btnEsqueceuSenha").click(function(){grecaptcha.ready(function(){grecaptcha.execute('6LdVO78aAAAAAPCYO_iegSATfVfd9bEAX25U_czl',{action:'password_reset'}).then(function(token){$("#btnEsqueceuSenha").html('<i class="fa fa-spinner fa-pulse"></i> Enviando...');$("#btnEsqueceuSenha").attr("disabled",true);$.ajax({type:"POST",url:"php/esqueceuSenha_v2.php",data:{email:$("#email").val(),token:token},dataType:"json",success:function(result){$("#btnEsqueceuSenha").html("Enviar");$("#btnEsqueceuSenha").attr("disabled",false);if(result.buscaEsqueceuSenha_v2[0].erro=="0"){swal(result.buscaEsqueceuSenha_v2[0].resultado,"","success");$("#esqueceu-senha-modal").modal("hide");}else if(result.buscaEsqueceuSenha_v2[0].erro=="2"){var html="";$("#divUsuarios").html("");for(var i=0;i<result.buscaEsqueceuSenha_v2.length;i++){html+='<label class="radio">';html+='<input type="radio" name="usuEsquece" value="'+result.buscaEsqueceuSenha_v2[i].resultado+'">'+result.buscaEsqueceuSenha_v2[i].resultado+'';html+='</label>';}$("#divUsuarios").html(html);$("#esqueceu-senha-modal").modal("hide");$("#esqueceu-senha-usuarios").modal();}else{swal(result.buscaEsqueceuSenha_v2[0].resultado,"","error");}},error:function(result){$("#btnEsqueceuSenha").html("Enviar");$("#btnEsqueceuSenha").attr("disabled",false);swal("Falha na conexão.","","error");}});});});return true;});$('#login-pass').on('keypress',function(e){kc=e.keyCode?e.keyCode:e.which;sk=e.shiftKey?e.shiftKey:((kc==16)?true:false);if(((kc>=65&&kc<=90)&&!sk)||(kc>=97&&kc<=122)&&sk){$('.capslock').html('CapsLock ativado.');}else{$('.capslock').html('');}});$("#btnEsqueceuUsuario").click(function(){$("#btnEsqueceuUsuario").html('<i class="fa fa-spinner fa-pulse"></i> Enviando...');$("#btnEsqueceuUsuario").attr("disabled",true);$.ajax({type:"POST",url:"php/esqueceuSenhaUsuario_v2.php",data:{email:$("#email").val(),usuario:$("[name='usuEsquece']:checked").val()},dataType:"json",success:function(result){$("#btnEsqueceuUsuario").html("Enviar");$("#btnEsqueceuUsuario").attr("disabled",false);if(result.buscaEsqueceuSenhaLogin_v2[0].erro=="0"){swal(result.buscaEsqueceuSenhaLogin_v2[0].resultado,"","success");$("#esqueceu-senha-usuarios").modal("hide");}else{swal(result.buscaEsqueceuSenhaLogin_v2[0].resultado,"","error");}},error:function(result){$("#btnEsqueceuUsuario").html("Enviar");$("#btnEsqueceuUsuario").attr("disabled",false);swal("Falha na conexão.","","error");}});return true;});$("#retryConfirmationMail").click(function(){$("#resendMailMessage").hide();$("#resendMailMessageLoader").show();$.ajax({type:"POST",url:"php/sendMailConfirmacao.php",data:{confirmation_token:$("#idresend").val()},dataType:"json",success:function(result){$("#resendMailMessage").show();$("#resendMailMessageLoader").hide();if(result.data.error==false){swal("E-mail enviado com sucesso","","success");}else{swal(result.data.message,"","error");}},error:function(result){$("#resendMailMessage").show();$("#resendMailMessageLoader").hide();swal("Falha na conexão.","","error");}});return true;})</script>
+
+	<script>
+		function login(form) {
+
+			$.ajax({
+				type: "POST",
+				url: "php/logar.php",
+				data: form,
+				dataType: "json",
+				processData: false,
+				contentType: false,
+				success: function(result) {
+
+					if (typeof(result.login) != "undefined") {
+						var dados = result.login;
+					} else {
+						var dados = result.result;
+					}
+					if (dados[0].erro == "0") {
+						window.location.assign(dados[0].resultado);
+					} else if (dados[0].erro == "2") {
+						$("#divUsuariosLogin").html("");
+						var html = '';
+						for (var i = 0; i < dados.length; i++) {
+							html += '<button type="button" class="btn btn-flat btn-block" onclick="loginEmpresa(' + dados[i].pesCodigoEmpresa + ');" >' + dados[i].resultado + '</button>';
+						}
+						$("#divUsuariosLogin").html(html);
+						$("#login-usuarios").modal();
+					} else if (dados[0].erro == "4") {
+						var pescodigo = dados[0].pesCodigo;
+						var id = dados[0].id;
+						$("#id").val(id);
+						$("#pescodigo").val(pescodigo);
+						$("#contrato").modal();
+					} else if (dados[0].erro == "5") {
+						$("#divFalarComAnalista").html("");
+						var pescodigo = dados[0].pesCodigo;
+						var id = dados[0].id;
+						var empresa = dados[0].empresa;
+						var usuNome = dados[0].usuNome;
+						var txtFinanceiro = "";
+						if (empresa != "" && usuNome != ""){
+							txtFinanceiro = `Olá equipe AppBarber/AppBeleza, aqui é o *${usuNome}* do(a) *${empresa}* e gostaria de estar regularizando/renovando meu plano. Podem me auxiliar?`;
+						} else {
+							txtFinanceiro = `Olá equipe AppBarber/AppBeleza, gostaria de estar regularizando/renovando meu plano. Podem me auxiliar?`;
+						}
+						var isMobile = false;
+						if (/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|ipad|iris|kindle|Android|Silk|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(navigator.userAgent) ||
+							/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(navigator.userAgent.substr(0, 4)))
+							isMobile = true;
+
+						var encodeMessage = window.encodeURIComponent(txtFinanceiro);
+
+						var protocol = localStorage.getItem('wppDefaultProtocol');
+						var phone = "";
+						var analista = "";
+						if (pescodigo % 2 === 0) {
+							phone = "5551997203412";
+							analista = "Jheni";
+						} else {
+							phone = "5571996257131";
+							analista = "Ana Paula";
+						}
+						
+						var urlWhats = "";
+						if(protocol != undefined && protocol != ''){
+							urlWhats = protocol+"send?phone=" + phone + "&text=" + encodeMessage;
+						}else{
+							
+							if (isMobile) {
+								urlWhats = "https://wa.me/" + phone + "?l=pt_br&text=" + encodeMessage;
+							} else {
+								urlWhats = "https://web.whatsapp.com/send?phone=" + phone + "&text=" + encodeMessage;
+							}
+						}
+
+						var htmlFalarComAnalista = `<a href="${urlWhats}" target="_blank" type="button" class="btn btnWhats btn-block"><i class="fa fa-whatsapp"></i> Fale com a ${analista}</a>`;
+
+						$("#divFalarComAnalista").html(htmlFalarComAnalista)
+
+						$("#id").val(id);
+						$("#pescodigo").val(pescodigo);
+						$("#contratado-expiracao").modal();
+					} else if (dados[0].erro == "6") {
+						var email = dados[0].emailusuario;
+						var id = dados[0].id;
+						$("#idresend").val(id);
+						$("#emailresend").val(email);
+						$("#naoconfirmado-modal").modal();
+					} else {
+						swal("", dados[0].resultado, "error");
+					}
+				},
+				error: function(result) {
+					swal("Falha na conexão.", "", "error");
+				}
+			});
+		}
+
+		function loginEmpresa(pescodigo) {
+			grecaptcha.ready(function() {
+				grecaptcha.execute('6LdVO78aAAAAAPCYO_iegSATfVfd9bEAX25U_czl', {
+					action: 'submit'
+				}).then(function(token) {
+
+					var dataInsere2 = new FormData(document.querySelector('#frmLogin'));
+					dataInsere2.append('origem', location.host);
+					dataInsere2.append('pescodigoempresa', pescodigo);
+					dataInsere2.append("showOrNotShowInfoDates", showOrNotShowInfoDates);
+					dataInsere2.append('token', token);
+					login(dataInsere2);
+				});
+			});
+			
+		}
+	</script>
+
+	<script type="text/javascript" id="zsiqchat">var $zoho=$zoho||{};$zoho.salesiq=$zoho.salesiq||{widgetcode:"585c47126a4e188889804e981bd3525c32b7303c2fe9ea6c3327f9c45073d0887d07e3c3c334f4ffbc4621bb7d2959eb",values:{},ready:function(){}};var d=document;s=d.createElement("script");s.type="text/javascript";s.id="zsiqscript";s.defer=true;s.src="https://salesiq.zoho.com/widget";t=d.getElementsByTagName("script")[0];t.parentNode.insertBefore(s,t);</script>
+
+	<script>$zoho.salesiq.ready=function(){$zoho.salesiq.chat.waittime(900);}</script>
+
+
+
+</body></html>

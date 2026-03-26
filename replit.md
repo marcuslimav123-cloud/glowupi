@@ -50,3 +50,26 @@ The design follows a "luxury clinic aesthetic" with a color palette of warm gold
 - **Orval:** For API client code generation from OpenAPI specifications.
 - **jspdf & jspdf-autotable:** For PDF generation.
 - **xlsx:** For Excel file generation.
+
+## AppBeleza Clone Overhaul (Tasks #20-22)
+The system is being fully restructured to clone all AppBeleza functionality. Key additions:
+
+**New DB Tables (14 schema files):**
+- `caixa_diario`, `movimentacoes_caixa` — daily cash register open/close
+- `categorias_servico` — service categories
+- `fornecedores`, `equipamentos` — suppliers and equipment
+- `tipo_anamnese`, `anamnese_formularios`, `anamnese_clientes` — anamnesis forms
+- `bandeiras` — card brands/flags with fees
+- `remuneracoes`, `deducoes` — remunerations and deductions
+- `mensagens_padrao` — standard message templates
+- `pesquisa_satisfacao`, `respostas_pesquisa` — satisfaction surveys
+- `rodizio` — professional rotation rules
+- `documentos`, `restricoes_cliente` — documents and client restrictions
+- `clube_vantagens` — advantages club
+- `comissoes` — individual commission tracking
+- `contas_profissional` — professional accounts
+
+**Sidebar Structure (AppBeleza clone):**
+Dashboard → Agenda → Cadastros (Clientes, Profissionais, Serviços, Pacotes sub, Tipos 12 sub-items, Comunicação sub, Fidelização sub, Assinaturas sub) → Comandas (Abertas, Histórico) → Financeiro (Caixa, Histórico, Mov, Comissões, Conta Cliente, Estoque, Fluxo, Conta Prof, Caixinha) → Relatórios (Agendamentos sub, Gerencial sub) → Configurações (Parâmetros, Rodízio, Acessos, Templates, Fila sub, Anamnese sub, Documentos sub, Outros sub) → Meu Estúdio → Equipe
+
+**DB Schema Path:** `lib/db/src/schema/` (each table in its own file, exported from `index.ts`)
