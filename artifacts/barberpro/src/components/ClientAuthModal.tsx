@@ -18,7 +18,20 @@ interface ClientAuthModalProps {
 
 const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, "/");
 
+function getContrastColor(hex: string): string {
+  let c = hex.replace("#", "");
+  if (c.length === 3) c = c[0]+c[0]+c[1]+c[1]+c[2]+c[2];
+  if (c.length !== 6 || !/^[0-9a-fA-F]{6}$/.test(c)) return "#ffffff";
+  const r = parseInt(c.substring(0, 2), 16) / 255;
+  const g = parseInt(c.substring(2, 4), 16) / 255;
+  const b = parseInt(c.substring(4, 6), 16) / 255;
+  const toLinear = (v: number) => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  const L = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+  return L > 0.4 ? "#000000" : "#ffffff";
+}
+
 export default function ClientAuthModal({ open, onClose, onAuthenticated, accentColor = "#C4943C" }: ClientAuthModalProps) {
+  const accentTextColor = getContrastColor(accentColor);
   const [tab, setTab] = useState<"login" | "register">("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -160,15 +173,15 @@ export default function ClientAuthModal({ open, onClose, onAuthenticated, accent
           <div className="flex bg-white/5 rounded-full p-1 mb-6">
             <button
               onClick={() => { setTab("login"); setError(""); }}
-              className={`flex-1 py-2 text-sm font-medium rounded-full transition-all ${tab === "login" ? "text-white" : "text-white/40"}`}
-              style={tab === "login" ? { backgroundColor: accentColor } : {}}
+              className={`flex-1 py-2 text-sm font-medium rounded-full transition-all ${tab === "login" ? "" : "text-white/40"}`}
+              style={tab === "login" ? { backgroundColor: accentColor, color: accentTextColor } : {}}
             >
               Entrar
             </button>
             <button
               onClick={() => { setTab("register"); setError(""); }}
-              className={`flex-1 py-2 text-sm font-medium rounded-full transition-all ${tab === "register" ? "text-white" : "text-white/40"}`}
-              style={tab === "register" ? { backgroundColor: accentColor } : {}}
+              className={`flex-1 py-2 text-sm font-medium rounded-full transition-all ${tab === "register" ? "" : "text-white/40"}`}
+              style={tab === "register" ? { backgroundColor: accentColor, color: accentTextColor } : {}}
             >
               Cadastrar
             </button>
@@ -212,8 +225,8 @@ export default function ClientAuthModal({ open, onClose, onAuthenticated, accent
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-xl text-white font-semibold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                style={{ backgroundColor: accentColor }}
+                className="w-full py-3 rounded-xl font-semibold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                style={{ backgroundColor: accentColor, color: accentTextColor }}
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Entrar"}
               </button>
@@ -272,8 +285,8 @@ export default function ClientAuthModal({ open, onClose, onAuthenticated, accent
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-xl text-white font-semibold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                style={{ backgroundColor: accentColor }}
+                className="w-full py-3 rounded-xl font-semibold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                style={{ backgroundColor: accentColor, color: accentTextColor }}
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Criar conta"}
               </button>

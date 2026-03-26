@@ -16,6 +16,27 @@ function minutesToTime(m: number): string {
 }
 
 const DIAS_SEMANA = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"];
+const DIAS_FUNC_INDEX = [6, 0, 1, 2, 3, 4, 5];
+
+function getBarbeariaScheduleForDate(hf: any, dateStr: string): { aberto: boolean; inicio: number; fim: number; intervaloInicio?: number; intervaloFim?: number } | null {
+  if (!hf || !Array.isArray(hf) || hf.length === 0) return null;
+  const date = new Date(dateStr + "T12:00:00");
+  const jsDay = date.getDay();
+  const idx = DIAS_FUNC_INDEX[jsDay];
+  const dia = hf[idx];
+  if (!dia) return null;
+  if (!dia.ativo) return { aberto: false, inicio: 0, fim: 0 };
+  const result: any = {
+    aberto: true,
+    inicio: timeToMinutes(dia.abertura || "08:00"),
+    fim: timeToMinutes(dia.fechamento || "20:00"),
+  };
+  if (dia.intervaloInicio && dia.intervaloFim) {
+    result.intervaloInicio = timeToMinutes(dia.intervaloInicio);
+    result.intervaloFim = timeToMinutes(dia.intervaloFim);
+  }
+  return result;
+}
 
 function getProfScheduleForDate(prof: any, dateStr: string): { inicio: number; fim: number } | null {
   const date = new Date(dateStr + "T12:00:00");
@@ -74,6 +95,7 @@ router.get("/", async (req, res) => {
     )
   );
 
+  const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
   const params = await getParametros(barbeariaId);
 
   const slotSizeParam = params["agenda_tamanho_slots"] || "30min";
@@ -91,6 +113,11 @@ router.get("/", async (req, res) => {
     return res.json([]);
   }
 
+  const barbSchedule = barbearia ? getBarbeariaScheduleForDate(barbearia.horarioFuncionamento, data as string) : null;
+  if (barbSchedule && !barbSchedule.aberto) {
+    return res.json([]);
+  }
+
   const limiteAntecedencia = parseInt(params["agenda_limite_antecedencia"] || "2");
   const agora = new Date();
   const hojeStr = agora.toISOString().slice(0, 10);
@@ -101,15 +128,20 @@ router.get("/", async (req, res) => {
 
   const globalInicio = timeToMinutes(agendaInicio);
   const globalFim = timeToMinutes(agendaFim);
+  const effectiveGlobalInicio = barbSchedule ? Math.max(barbSchedule.inicio, globalInicio) : globalInicio;
+  const effectiveGlobalFim = barbSchedule ? Math.min(barbSchedule.fim, globalFim) : globalFim;
 
   for (const prof of profissionais) {
     const schedule = getProfScheduleForDate(prof, data as string);
     if (!schedule) continue;
 
-    const inicioTrabalho = Math.max(schedule.inicio, globalInicio);
-    const fimTrabalho = Math.min(schedule.fim, globalFim);
+    const inicioTrabalho = Math.max(schedule.inicio, effectiveGlobalInicio);
+    const fimTrabalho = Math.min(schedule.fim, effectiveGlobalFim);
 
     for (let t = inicioTrabalho; t + duracao <= fimTrabalho; t += intervalo) {
+      if (barbSchedule?.intervaloInicio != null && barbSchedule?.intervaloFim != null) {
+        if (!(t + duracao <= barbSchedule.intervaloInicio || t >= barbSchedule.intervaloFim)) continue;
+      }
       const horaInicio = minutesToTime(t);
       const horaFim = minutesToTime(t + duracao);
       const ocupado = agendamentos.some(a => {

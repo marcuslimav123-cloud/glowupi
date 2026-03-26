@@ -5,6 +5,18 @@ import ClientAuthModal from "@/components/ClientAuthModal";
 
 const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, "/");
 
+function getContrastColor(hex: string): string {
+  let c = hex.replace("#", "");
+  if (c.length === 3) c = c[0]+c[0]+c[1]+c[1]+c[2]+c[2];
+  if (c.length !== 6 || !/^[0-9a-fA-F]{6}$/.test(c)) return "#ffffff";
+  const r = parseInt(c.substring(0, 2), 16) / 255;
+  const g = parseInt(c.substring(2, 4), 16) / 255;
+  const b = parseInt(c.substring(4, 6), 16) / 255;
+  const toLinear = (v: number) => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  const L = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+  return L > 0.4 ? "#000000" : "#ffffff";
+}
+
 interface ClientUser {
   id: number;
   nome: string;
@@ -61,6 +73,7 @@ export default function PublicBooking() {
   const [observacao, setObservacao] = useState("");
 
   const accent = barbearia?.corPrimaria || "#C4943C";
+  const accentText = getContrastColor(accent);
 
   useEffect(() => {
     fetchBarbearia();
@@ -469,8 +482,8 @@ export default function PublicBooking() {
               <button
                 onClick={handleBooking}
                 disabled={bookingLoading}
-                className="w-full py-3.5 rounded-xl text-white font-semibold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                style={{ backgroundColor: accent }}
+                className="w-full py-3.5 rounded-xl font-semibold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                style={{ backgroundColor: accent, color: accentText }}
               >
                 {bookingLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar Agendamento"}
               </button>
