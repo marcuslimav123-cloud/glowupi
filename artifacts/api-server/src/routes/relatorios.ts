@@ -420,7 +420,8 @@ router.get("/lucro-produtos", requireAuth, requireRole("dono", "gerente"), async
     db.select().from(produtosTable).where(eq(produtosTable.barbeariaId, barbeariaId)),
   ]);
 
-  const produtoMap = Object.fromEntries(produtos.map(p => [p.nome, { custo: parseFloat(p.custo ?? "0") }]));
+  const produtoMapById = Object.fromEntries(produtos.map(p => [p.id, { nome: p.nome, custo: parseFloat(p.custo ?? "0") }]));
+  const produtoMapByName = Object.fromEntries(produtos.map(p => [p.nome, { custo: parseFloat(p.custo ?? "0") }]));
 
   const vendas: Record<string, { nome: string; qtd: number; receita: number; custo: number; comissao: number }> = {};
   comandas.forEach(c => {
@@ -428,20 +429,22 @@ router.get("/lucro-produtos", requireAuth, requireRole("dono", "gerente"), async
     const comissaoTotal = parseFloat(c.comissaoTotal as string) || 0;
     const valorTotal = parseFloat(c.valorTotal as string) || 0;
 
-    (prods as Array<{ nome: string; valor: number; quantidade?: number }>).forEach(p => {
+    (prods as Array<{ id?: number; nome: string; valor: number; quantidade?: number }>).forEach(p => {
       if (!p.nome) return;
-      if (!vendas[p.nome]) vendas[p.nome] = { nome: p.nome, qtd: 0, receita: 0, custo: 0, comissao: 0 };
+      const key = p.id != null ? String(p.id) : p.nome;
+      const info = p.id != null ? produtoMapById[p.id] : produtoMapByName[p.nome];
+      const displayName = info?.nome ?? p.nome;
+      if (!vendas[key]) vendas[key] = { nome: displayName, qtd: 0, receita: 0, custo: 0, comissao: 0 };
       const qty = p.quantidade ?? 1;
       const unitPrice = Number(p.valor) || 0;
       const lineTotal = unitPrice * qty;
-      vendas[p.nome].qtd += qty;
-      vendas[p.nome].receita += lineTotal;
-      const info = produtoMap[p.nome];
+      vendas[key].qtd += qty;
+      vendas[key].receita += lineTotal;
       if (info) {
-        vendas[p.nome].custo += info.custo * qty;
+        vendas[key].custo += info.custo * qty;
       }
       if (valorTotal > 0 && comissaoTotal > 0) {
-        vendas[p.nome].comissao += (lineTotal / valorTotal) * comissaoTotal;
+        vendas[key].comissao += (lineTotal / valorTotal) * comissaoTotal;
       }
     });
   });
