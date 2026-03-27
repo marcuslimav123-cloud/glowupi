@@ -25,15 +25,16 @@ async function calcPontosValidos(barbeariaId: number, clienteId: number, diasExp
   );
   const totalPontosGanhos = comandasValidas.reduce((sum, c) => sum + (c.pontosGanhos || 0), 0);
 
-  const resgatesFeitos = await db.select({
+  const resgatesNoWindow = await db.select({
     pontosUsados: resgatesTable.pontosUsados,
   }).from(resgatesTable).where(
     and(
       eq(resgatesTable.barbeariaId, barbeariaId),
       eq(resgatesTable.clienteId, clienteId),
+      gte(resgatesTable.createdAt, dataLimite),
     )
   );
-  const totalResgatado = resgatesFeitos.reduce((sum, r) => sum + r.pontosUsados, 0);
+  const totalResgatado = resgatesNoWindow.reduce((sum, r) => sum + r.pontosUsados, 0);
 
   return Math.max(0, totalPontosGanhos - totalResgatado);
 }
