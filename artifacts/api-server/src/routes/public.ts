@@ -221,8 +221,8 @@ router.get("/:slug/slots", async (req, res) => {
     if (!servico) return res.status(404).json({ error: "Serviço não encontrado" });
 
     let profissionais;
-    if (profissionalId) {
-      const pId = parseInt(profissionalId as string);
+    const pId = profissionalId ? parseInt(profissionalId as string) : 0;
+    if (profissionalId && pId !== 0) {
       profissionais = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, pId), eq(profissionaisTable.barbeariaId, barbearia.id), eq(profissionaisTable.ativo, true)));
       if (profissionais.length > 0) {
         const profLinks = await db.select().from(profissionalServicosTable).where(and(eq(profissionalServicosTable.profissionalId, pId), eq(profissionalServicosTable.barbeariaId, barbearia.id)));
