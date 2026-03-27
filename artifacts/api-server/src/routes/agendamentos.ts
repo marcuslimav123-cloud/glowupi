@@ -419,15 +419,7 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
     comissaoServico = Math.max(0, Number(req.body.comissaoCustom) || comissaoServico);
   }
 
-  if (req.body.cortesia && params["comissao_nao_gerar_cortesia"] === "Sim") {
-    comissaoServico = 0;
-  }
-
-  if (agend.pacoteClienteId && params["comissao_nao_gerar_pacote"] === "Habilitado") {
-    comissaoServico = 0;
-  }
-
-  if (params["comissao_valor_original_assinatura"] === "Sim" && agend.clienteId) {
+  if (params["comissao_valor_original_assinatura"] === "Sim" && req.body.assinaturaClube && agend.clienteId) {
     const [assinante] = await db.select().from(assinantesTable).where(
       and(
         eq(assinantesTable.barbeariaId, barbeariaId),
@@ -446,6 +438,14 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
           : comissaoPerc;
       }
     }
+  }
+
+  if (req.body.cortesia && params["comissao_nao_gerar_cortesia"] === "Sim") {
+    comissaoServico = 0;
+  }
+
+  if (agend.pacoteClienteId && params["comissao_nao_gerar_pacote"] === "Habilitado") {
+    comissaoServico = 0;
   }
 
   let valorProdutos = 0;

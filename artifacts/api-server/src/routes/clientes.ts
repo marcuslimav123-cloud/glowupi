@@ -33,7 +33,7 @@ router.get("/", requireAuth, async (req, res) => {
   return res.json(clientes.map(c => {
     const formatted = formatCliente(c);
     if (hidePhone) {
-      formatted.telefone = "***";
+      delete formatted.telefone;
     }
     return formatted;
   }));
@@ -215,7 +215,7 @@ router.get("/:clienteId", requireAuth, async (req, res) => {
   if (!cliente) return res.status(404).json({ error: "Cliente não encontrado" });
   const formatted = formatCliente(cliente);
   if (user.role === "colaborador" && params["cliente_nao_mostrar_telefone"] === "Sim") {
-    formatted.telefone = "***";
+    delete formatted.telefone;
   }
   return res.json(formatted);
 });
