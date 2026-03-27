@@ -286,14 +286,14 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       return res.status(400).json({ error: "Dados inválidos" });
     }
 
-    const { getParametros, getLocalNow: getLocalNow2 } = await import("../lib/parametros.js");
+    const { getParametros, getLocalNow } = await import("../lib/parametros.js");
     const params = await getParametros(barbearia.id);
-    const localNow2 = getLocalNow2(params);
+    const localNow = getLocalNow(params);
 
     const limiteFuturoDias = parseInt(params["agenda_limite_futuro_dias"] || "30");
     const dataAgend = new Date(data + "T12:00:00");
-    const hojeDate2 = new Date(localNow2.todayStr + "T12:00:00");
-    const diffDias = Math.ceil((dataAgend.getTime() - hojeDate2.getTime()) / (1000 * 60 * 60 * 24));
+    const hojeDate = new Date(localNow.todayStr + "T12:00:00");
+    const diffDias = Math.ceil((dataAgend.getTime() - hojeDate.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDias > limiteFuturoDias) {
       return res.status(400).json({ error: `Agendamento limitado a ${limiteFuturoDias} dias no futuro` });
     }
@@ -302,10 +302,9 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
     const limiteAntecedencia = limiteAntecedenciaRaw2 !== undefined ? parseFloat(limiteAntecedenciaRaw2) : 0.5;
     const [hI, mI] = horaInicio.split(":").map(Number);
     const slotMinutes = hI * 60 + mI;
-    const isBookingToday = data === localNow2.todayStr;
-    const diffMinutes = isBookingToday ? slotMinutes - localNow2.currentMinutes : Infinity;
-    const diffHoras = diffMinutes / 60;
-    if (isBookingToday && diffHoras < limiteAntecedencia && diffHoras >= 0) {
+    const totalMinutesFromNow = (diffDias * 24 * 60) + (slotMinutes - localNow.currentMinutes);
+    const diffHoras = totalMinutesFromNow / 60;
+    if (diffHoras >= 0 && diffHoras < limiteAntecedencia) {
       return res.status(400).json({ error: `Agendamento requer no mínimo ${limiteAntecedencia} hora(s) de antecedência` });
     }
 
