@@ -67,31 +67,31 @@ export default function CompleteProfile() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-[#fafafa]">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-b from-[#0f0f0f] via-[#141210] to-[#0f0f0f]">
       <div className="w-full max-w-[380px]">
         <div className="flex flex-col items-center mb-10">
           <div className="mb-5">
-            <img src="/logo-icon.png" alt="Glow Upi" className="h-14 w-14 object-contain" />
+            <img src="/logo-icon.png" alt="Glow Upi" className="h-20 w-20 object-contain" />
           </div>
-          <h1 className="text-[28px] font-bold text-foreground tracking-tight">Quase lá!</h1>
-          <p className="text-foreground/40 text-[14px] mt-1">
+          <h1 className="text-[28px] font-bold text-white tracking-tight">Quase lá!</h1>
+          <p className="text-white/40 text-[14px] mt-1">
             {userName ? `Olá, ${userName.split(" ")[0]}!` : ""} Complete seu cadastro
           </p>
         </div>
 
-        <div className="bg-white border border-black/[0.06] rounded-2xl p-7 shadow-xl shadow-black/[0.03]">
+        <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl p-7 shadow-xl shadow-black/20 backdrop-blur-sm">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1.5">
-              <Label htmlFor="telefone" className="text-[13px] text-foreground/60">WhatsApp</Label>
+              <Label htmlFor="telefone" className="text-[13px] text-white/60">WhatsApp</Label>
               <Input
                 id="telefone"
                 required
                 value={telefone}
                 onChange={e => setTelefone(formatPhone(e.target.value))}
                 placeholder="(99) 91234-5678"
-                className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]"
+                className="h-11 rounded-xl bg-white/[0.05] border-white/[0.1] focus:bg-white/[0.08] focus:border-primary/50 transition-colors text-[14px] text-white placeholder:text-white/25"
               />
-              <p className="text-[11px] text-foreground/30">Usaremos para notificações e lembretes</p>
+              <p className="text-[11px] text-white/30">Usaremos para notificações e lembretes</p>
             </div>
 
             <Button

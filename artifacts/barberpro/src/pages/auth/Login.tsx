@@ -133,22 +133,22 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-[#fafafa]">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-b from-[#0f0f0f] via-[#141210] to-[#0f0f0f]">
       <div className="w-full max-w-[380px]">
         <div className="flex flex-col items-center mb-10">
           <div className="mb-5">
-            <img src="/logo-icon.png" alt="Glow Upi" className="h-14 w-14 object-contain" />
+            <img src="/logo-icon.png" alt="Glow Upi" className="h-20 w-20 object-contain" />
           </div>
-          <h1 className="text-[28px] font-bold text-foreground tracking-tight">{APP_NAME}</h1>
-          <p className="text-foreground/40 text-[14px] mt-1">{APP_TAGLINE}</p>
+          <h1 className="text-[28px] font-bold text-white tracking-tight">{APP_NAME}</h1>
+          <p className="text-white/40 text-[14px] mt-1">{APP_TAGLINE}</p>
         </div>
 
-        <div className="bg-white border border-black/[0.06] rounded-2xl p-7 shadow-xl shadow-black/[0.03]">
+        <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl p-7 shadow-xl shadow-black/20 backdrop-blur-sm">
           {!googleFailed && (
             <div className="flex flex-col items-center gap-3 mb-5">
               <div id="google-signin-btn" className="flex justify-center min-h-[44px]" />
               {googleLoading && (
-                <div className="flex items-center gap-2 text-[13px] text-foreground/40">
+                <div className="flex items-center gap-2 text-[13px] text-white/40">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Autenticando com Google...
                 </div>
@@ -158,21 +158,21 @@ export default function Login() {
 
           <div className="relative my-5">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-black/[0.06]"></div>
+              <div className="w-full border-t border-white/[0.08]"></div>
             </div>
             <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
-              <span className="bg-white px-3 text-foreground/30">ou com e-mail</span>
+              <span className="bg-[#1a1714] px-3 text-white/30">ou com e-mail</span>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-[13px] text-foreground/60">E-mail</Label>
+              <Label htmlFor="email" className="text-[13px] text-white/60">E-mail</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="seu@email.com"
-                className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]"
+                className="h-11 rounded-xl bg-white/[0.05] border-white/[0.1] focus:bg-white/[0.08] focus:border-primary/50 transition-colors text-[14px] text-white placeholder:text-white/25"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -180,13 +180,13 @@ export default function Login() {
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="senha" className="text-[13px] text-foreground/60">Senha</Label>
+                <Label htmlFor="senha" className="text-[13px] text-white/60">Senha</Label>
                 <a href="#" className="text-[12px] text-primary hover:underline">Esqueceu?</a>
               </div>
               <Input
                 id="senha"
                 type="password"
-                className="h-11 rounded-xl bg-[#fafafa] border-black/[0.06] focus:bg-white transition-colors text-[14px]"
+                className="h-11 rounded-xl bg-white/[0.05] border-white/[0.1] focus:bg-white/[0.08] focus:border-primary/50 transition-colors text-[14px] text-white placeholder:text-white/25"
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 required
@@ -202,7 +202,7 @@ export default function Login() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-[13px] text-foreground/40">
+          <div className="mt-6 text-center text-[13px] text-white/40">
             Ainda não tem conta?{" "}
             <Link href="/cadastro" className="text-primary hover:underline font-medium">
               Teste 30 dias grátis
