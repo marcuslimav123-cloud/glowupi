@@ -56,28 +56,49 @@ export default function LoginScreen() {
     setError(null);
     setGoogleLoading(true);
     try {
-      const returnUrl = Linking.createURL("auth");
-      const authUrl = `${API_BASE}/api/auth/google/mobile?redirect_scheme=${APP_SCHEME}`;
+      if (Platform.OS === "web") {
+        const popupUrl = `${API_BASE}/api/auth/google/signin-popup`;
+        const popup = window.open(popupUrl, "google-signin", "width=450,height=600,left=200,top=100");
 
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, returnUrl);
+        const handleMessage = (event: MessageEvent) => {
+          if (event.data?.type === "google-auth-success" && event.data?.token) {
+            window.removeEventListener("message", handleMessage);
+            loginWithToken(event.data.token)
+              .catch((err: Error) => setError(err.message || "Erro ao fazer login"))
+              .finally(() => setGoogleLoading(false));
+          }
+        };
+        window.addEventListener("message", handleMessage);
 
-      if (result.type === "success" && result.url) {
-        const url = new URL(result.url);
-        const token = url.searchParams.get("token");
-        if (token) {
-          await loginWithToken(token);
-          if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        } else {
-          setError("Token não recebido do Google");
+        const checkClosed = setInterval(() => {
+          if (popup && popup.closed) {
+            clearInterval(checkClosed);
+            window.removeEventListener("message", handleMessage);
+            setGoogleLoading(false);
+          }
+        }, 500);
+      } else {
+        const returnUrl = Linking.createURL("auth");
+        const authUrl = `${API_BASE}/api/auth/google/mobile?redirect_scheme=${APP_SCHEME}`;
+
+        const result = await WebBrowser.openAuthSessionAsync(authUrl, returnUrl);
+
+        if (result.type === "success" && result.url) {
+          const url = new URL(result.url);
+          const token = url.searchParams.get("token");
+          if (token) {
+            await loginWithToken(token);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          } else {
+            setError("Token não recebido do Google");
+          }
         }
-      } else if (result.type === "cancel" || result.type === "dismiss") {
-        // user cancelled
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Erro ao fazer login com Google");
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
-      setGoogleLoading(false);
+      if (Platform.OS !== "web") setGoogleLoading(false);
     }
   };
 
