@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { agendamentosTable, profissionaisTable, servicosTable, barbeariasTable, bloqueiosHorarioTable, profissionalServicosTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
-import { getParametros } from "../lib/parametros.js";
+import { getParametros, getLocalNow } from "../lib/parametros.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -117,10 +117,10 @@ router.get("/", async (req, res) => {
   const intervalo = slotSizeParam === "1h" ? 60 : (parseInt(slotSizeParam) || 30);
 
   const limiteFuturoDias = parseInt(params["agenda_limite_futuro_dias"] || "30");
+  const localNow = getLocalNow(params);
   const dataReq = new Date((data as string) + "T12:00:00");
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-  const diffDias = Math.ceil((dataReq.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+  const hojeDate = new Date(localNow.todayStr + "T12:00:00");
+  const diffDias = Math.ceil((dataReq.getTime() - hojeDate.getTime()) / (1000 * 60 * 60 * 24));
   if (diffDias > limiteFuturoDias) {
     return res.json([]);
   }
@@ -131,9 +131,8 @@ router.get("/", async (req, res) => {
   }
 
   const limiteAntecedencia = parseInt(params["agenda_limite_antecedencia"] || "2");
-  const agora = new Date();
-  const hojeStr = agora.toISOString().slice(0, 10);
-  const agoraMinutos = agora.getHours() * 60 + agora.getMinutes();
+  const hojeStr = localNow.todayStr;
+  const agoraMinutos = localNow.currentMinutes;
 
   const slots: any[] = [];
   const duracaoPadrao = servico.duracaoMinutos;
