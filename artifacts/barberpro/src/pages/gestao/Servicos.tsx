@@ -20,6 +20,7 @@ import {
   ToggleLeft, ToggleRight, Star, RotateCcw, Globe, Award, Percent
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { ImageUpload } from "@/components/ImageUpload";
 
 type Servico = {
   id: number;
@@ -120,15 +121,13 @@ function ServicoForm({
           <Label>Descrição <span className="text-muted-foreground text-xs">(opcional)</span></Label>
           <Textarea value={desc} onChange={e => setDesc(e.target.value)} className="bg-background resize-none" rows={2} placeholder="Descreva o serviço..." />
         </div>
-        <div className="space-y-2">
-          <Label>URL da Imagem <span className="text-muted-foreground text-xs">(opcional)</span></Label>
-          <Input value={imagemUrl} onChange={e => setImagemUrl(e.target.value)} placeholder="https://exemplo.com/imagem.jpg" className="bg-background" />
-          {imagemUrl && (
-            <div className="mt-2 rounded-lg overflow-hidden border border-border w-20 h-20">
-              <img src={imagemUrl} alt="Preview" className="w-full h-full object-cover" onError={e => (e.currentTarget.style.display = "none")} />
-            </div>
-          )}
-        </div>
+        <ImageUpload
+          value={imagemUrl || null}
+          onChange={(url) => setImagemUrl(url ?? "")}
+          shape="square"
+          size="lg"
+          label="Imagem do Serviço"
+        />
       </div>
 
       <div className="border-t border-border pt-4 space-y-4">

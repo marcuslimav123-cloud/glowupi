@@ -67,24 +67,24 @@ router.put("/:servicoId", requireAuth, requireRole("dono", "gerente"), async (re
   const [existing] = await db.select().from(servicosTable).where(and(eq(servicosTable.id, id), eq(servicosTable.barbeariaId, barbeariaId))).limit(1);
   if (!existing) return res.status(404).json({ error: "Serviço não encontrado" });
 
-  const updateData: any = { updatedAt: new Date() };
-  if (nome !== undefined) updateData.nome = nome;
-  if (preco !== undefined) updateData.preco = String(preco);
-  if (duracaoMinutos !== undefined) updateData.duracaoMinutos = duracaoMinutos;
-  if (descricao !== undefined) updateData.descricao = descricao;
-  if (ativo !== undefined) updateData.ativo = ativo;
-  if (ordem !== undefined) updateData.ordem = ordem;
-  if (diasRetorno !== undefined) updateData.diasRetorno = diasRetorno;
-  if (mensagemRetorno !== undefined) updateData.mensagemRetorno = mensagemRetorno;
-  if (tipoPreco !== undefined) updateData.tipoPreco = tipoPreco;
-  if (imagemUrl !== undefined) updateData.imagemUrl = imagemUrl;
-  if (disponivelOnline !== undefined) updateData.disponivelOnline = disponivelOnline;
-  if (fidelidadeAtiva !== undefined) updateData.fidelidadeAtiva = fidelidadeAtiva;
-  if (pontosAcumular !== undefined) updateData.pontosAcumular = pontosAcumular;
-  if (pontosResgate !== undefined) updateData.pontosResgate = pontosResgate;
-  if (comissaoPorcentagem !== undefined) updateData.comissaoPorcentagem = comissaoPorcentagem !== null ? String(comissaoPorcentagem) : null;
-
-  const [updated] = await db.update(servicosTable).set(updateData).where(eq(servicosTable.id, id)).returning();
+  const [updated] = await db.update(servicosTable).set({
+    nome: nome ?? existing.nome,
+    preco: preco !== undefined ? String(preco) : existing.preco,
+    duracaoMinutos: duracaoMinutos ?? existing.duracaoMinutos,
+    descricao: descricao !== undefined ? descricao : existing.descricao,
+    ativo: ativo !== undefined ? ativo : existing.ativo,
+    ordem: ordem !== undefined ? ordem : existing.ordem,
+    diasRetorno: diasRetorno !== undefined ? diasRetorno : existing.diasRetorno,
+    mensagemRetorno: mensagemRetorno !== undefined ? mensagemRetorno : existing.mensagemRetorno,
+    tipoPreco: tipoPreco ?? existing.tipoPreco,
+    imagemUrl: imagemUrl !== undefined ? imagemUrl : existing.imagemUrl,
+    disponivelOnline: disponivelOnline !== undefined ? disponivelOnline : existing.disponivelOnline,
+    fidelidadeAtiva: fidelidadeAtiva !== undefined ? fidelidadeAtiva : existing.fidelidadeAtiva,
+    pontosAcumular: pontosAcumular !== undefined ? pontosAcumular : existing.pontosAcumular,
+    pontosResgate: pontosResgate !== undefined ? pontosResgate : existing.pontosResgate,
+    comissaoPorcentagem: comissaoPorcentagem !== undefined ? (comissaoPorcentagem !== null ? String(comissaoPorcentagem) : null) : existing.comissaoPorcentagem,
+    updatedAt: new Date(),
+  }).where(eq(servicosTable.id, id)).returning();
   return res.json(formatServico(updated));
 });
 
