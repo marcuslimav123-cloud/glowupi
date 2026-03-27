@@ -185,6 +185,14 @@ export interface UpdateProfissionalInput {
   horarios?: UpdateProfissionalInputHorarios;
 }
 
+export type ServicoTipoPreco =
+  (typeof ServicoTipoPreco)[keyof typeof ServicoTipoPreco];
+
+export const ServicoTipoPreco = {
+  fixo: "fixo",
+  a_partir_de: "a_partir_de",
+} as const;
+
 export interface Servico {
   id: number;
   barbeariaId: number;
@@ -192,23 +200,66 @@ export interface Servico {
   preco: number;
   duracaoMinutos: number;
   descricao?: string | null;
+  diasRetorno?: number | null;
+  mensagemRetorno?: string | null;
+  tipoPreco: ServicoTipoPreco;
+  imagemUrl?: string | null;
+  disponivelOnline: boolean;
+  fidelidadeAtiva: boolean;
+  pontosAcumular?: number | null;
+  pontosResgate?: number | null;
+  comissaoPorcentagem?: number | null;
   ativo: boolean;
   ordem: number;
   createdAt?: string;
 }
+
+export type CreateServicoInputTipoPreco =
+  (typeof CreateServicoInputTipoPreco)[keyof typeof CreateServicoInputTipoPreco];
+
+export const CreateServicoInputTipoPreco = {
+  fixo: "fixo",
+  a_partir_de: "a_partir_de",
+} as const;
 
 export interface CreateServicoInput {
   nome: string;
   preco: number;
   duracaoMinutos: number;
   descricao?: string | null;
+  diasRetorno?: number | null;
+  mensagemRetorno?: string | null;
+  tipoPreco?: CreateServicoInputTipoPreco;
+  imagemUrl?: string | null;
+  disponivelOnline?: boolean;
+  fidelidadeAtiva?: boolean;
+  pontosAcumular?: number;
+  pontosResgate?: number;
+  comissaoPorcentagem?: number | null;
 }
+
+export type UpdateServicoInputTipoPreco =
+  (typeof UpdateServicoInputTipoPreco)[keyof typeof UpdateServicoInputTipoPreco];
+
+export const UpdateServicoInputTipoPreco = {
+  fixo: "fixo",
+  a_partir_de: "a_partir_de",
+} as const;
 
 export interface UpdateServicoInput {
   nome?: string;
   preco?: number;
   duracaoMinutos?: number;
   descricao?: string | null;
+  diasRetorno?: number | null;
+  mensagemRetorno?: string | null;
+  tipoPreco?: UpdateServicoInputTipoPreco;
+  imagemUrl?: string | null;
+  disponivelOnline?: boolean;
+  fidelidadeAtiva?: boolean;
+  pontosAcumular?: number;
+  pontosResgate?: number;
+  comissaoPorcentagem?: number | null;
   ativo?: boolean;
   ordem?: number;
 }

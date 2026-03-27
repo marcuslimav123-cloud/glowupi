@@ -1965,6 +1965,31 @@ components:
         descricao:
           type: string
           nullable: true
+        diasRetorno:
+          type: integer
+          nullable: true
+        mensagemRetorno:
+          type: string
+          nullable: true
+        tipoPreco:
+          type: string
+          enum: [fixo, a_partir_de]
+        imagemUrl:
+          type: string
+          nullable: true
+        disponivelOnline:
+          type: boolean
+        fidelidadeAtiva:
+          type: boolean
+        pontosAcumular:
+          type: integer
+          nullable: true
+        pontosResgate:
+          type: integer
+          nullable: true
+        comissaoPorcentagem:
+          type: number
+          nullable: true
         ativo:
           type: boolean
         ordem:
@@ -1977,6 +2002,9 @@ components:
         - nome
         - preco
         - duracaoMinutos
+        - tipoPreco
+        - disponivelOnline
+        - fidelidadeAtiva
         - ativo
         - ordem
 
@@ -1991,6 +2019,29 @@ components:
           type: integer
         descricao:
           type: string
+          nullable: true
+        diasRetorno:
+          type: integer
+          nullable: true
+        mensagemRetorno:
+          type: string
+          nullable: true
+        tipoPreco:
+          type: string
+          enum: [fixo, a_partir_de]
+        imagemUrl:
+          type: string
+          nullable: true
+        disponivelOnline:
+          type: boolean
+        fidelidadeAtiva:
+          type: boolean
+        pontosAcumular:
+          type: integer
+        pontosResgate:
+          type: integer
+        comissaoPorcentagem:
+          type: number
           nullable: true
       required:
         - nome
@@ -2008,6 +2059,29 @@ components:
           type: integer
         descricao:
           type: string
+          nullable: true
+        diasRetorno:
+          type: integer
+          nullable: true
+        mensagemRetorno:
+          type: string
+          nullable: true
+        tipoPreco:
+          type: string
+          enum: [fixo, a_partir_de]
+        imagemUrl:
+          type: string
+          nullable: true
+        disponivelOnline:
+          type: boolean
+        fidelidadeAtiva:
+          type: boolean
+        pontosAcumular:
+          type: integer
+        pontosResgate:
+          type: integer
+        comissaoPorcentagem:
+          type: number
           nullable: true
         ativo:
           type: boolean

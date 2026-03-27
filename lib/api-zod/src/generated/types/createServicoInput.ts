@@ -5,10 +5,20 @@
  * Glow Up — SaaS para salões de beleza
  * OpenAPI spec version: 0.1.0
  */
+import type { CreateServicoInputTipoPreco } from "./createServicoInputTipoPreco";
 
 export interface CreateServicoInput {
   nome: string;
   preco: number;
   duracaoMinutos: number;
   descricao?: string | null;
+  diasRetorno?: number | null;
+  mensagemRetorno?: string | null;
+  tipoPreco?: CreateServicoInputTipoPreco;
+  imagemUrl?: string | null;
+  disponivelOnline?: boolean;
+  fidelidadeAtiva?: boolean;
+  pontosAcumular?: number;
+  pontosResgate?: number;
+  comissaoPorcentagem?: number | null;
 }

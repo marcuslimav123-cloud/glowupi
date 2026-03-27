@@ -10,10 +10,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Clock, DollarSign, Settings2, Edit2, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
+import {
+  Plus, Clock, DollarSign, Settings2, Edit2, Trash2,
+  ToggleLeft, ToggleRight, Star, RotateCcw, Globe, Award, Percent
+} from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 type Servico = {
@@ -23,6 +28,15 @@ type Servico = {
   preco: number;
   duracaoMinutos: number;
   ativo: boolean;
+  diasRetorno: number | null;
+  mensagemRetorno: string | null;
+  tipoPreco: string;
+  imagemUrl: string | null;
+  disponivelOnline: boolean;
+  fidelidadeAtiva: boolean;
+  pontosAcumular: number | null;
+  pontosResgate: number | null;
+  comissaoPorcentagem: number | null;
 };
 
 function ServicoForm({
@@ -37,28 +51,143 @@ function ServicoForm({
   const [preco, setPreco] = useState(String(initial?.preco ?? ""));
   const [duracao, setDuracao] = useState(String(initial?.duracaoMinutos ?? "30"));
   const [desc, setDesc] = useState(initial?.descricao ?? "");
+  const [tipoPreco, setTipoPreco] = useState(initial?.tipoPreco ?? "fixo");
+  const [comissao, setComissao] = useState(initial?.comissaoPorcentagem != null ? String(initial.comissaoPorcentagem) : "");
+  const [diasRetorno, setDiasRetorno] = useState(initial?.diasRetorno != null ? String(initial.diasRetorno) : "");
+  const [mensagemRetorno, setMensagemRetorno] = useState(initial?.mensagemRetorno ?? "");
+  const [disponivelOnline, setDisponivelOnline] = useState(initial?.disponivelOnline ?? true);
+  const [fidelidadeAtiva, setFidelidadeAtiva] = useState(initial?.fidelidadeAtiva ?? false);
+  const [pontosAcumular, setPontosAcumular] = useState(String(initial?.pontosAcumular ?? "1"));
+  const [pontosResgate, setPontosResgate] = useState(String(initial?.pontosResgate ?? "10"));
+  const [imagemUrl, setImagemUrl] = useState(initial?.imagemUrl ?? "");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({
+      nome,
+      preco: parseFloat(preco),
+      duracaoMinutos: parseInt(duracao),
+      descricao: desc || null,
+      tipoPreco,
+      comissaoPorcentagem: comissao !== "" ? parseFloat(comissao) : null,
+      diasRetorno: diasRetorno ? parseInt(diasRetorno) : null,
+      mensagemRetorno: mensagemRetorno || null,
+      disponivelOnline,
+      fidelidadeAtiva,
+      pontosAcumular: fidelidadeAtiva ? parseInt(pontosAcumular) || 1 : 1,
+      pontosResgate: fidelidadeAtiva ? parseInt(pontosResgate) || 10 : 10,
+      imagemUrl: imagemUrl || null,
+    });
+  };
 
   return (
-    <form onSubmit={e => { e.preventDefault(); onSave({ nome, preco: parseFloat(preco), duracaoMinutos: parseInt(duracao), descricao: desc || null }); }} className="space-y-4 mt-2">
-      <div className="space-y-2">
-        <Label>Nome do Serviço *</Label>
-        <Input value={nome} onChange={e => setNome(e.target.value)} required placeholder="Ex: Unha em Gel, Limpeza de Pele" className="bg-background" />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="space-y-5 mt-2 max-h-[70vh] overflow-y-auto pr-1">
+      <div className="space-y-4">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Informações Básicas</p>
         <div className="space-y-2">
-          <Label>Preço (R$) *</Label>
-          <Input type="number" step="0.01" min="0" value={preco} onChange={e => setPreco(e.target.value)} required placeholder="35.00" className="bg-background" />
+          <Label>Nome do Serviço *</Label>
+          <Input value={nome} onChange={e => setNome(e.target.value)} required placeholder="Ex: Unha em Gel, Limpeza de Pele" className="bg-background" />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Preço (R$) *</Label>
+            <Input type="number" step="0.01" min="0" value={preco} onChange={e => setPreco(e.target.value)} required placeholder="35.00" className="bg-background" />
+          </div>
+          <div className="space-y-2">
+            <Label>Tipo de Preço</Label>
+            <Select value={tipoPreco} onValueChange={setTipoPreco}>
+              <SelectTrigger className="bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fixo">Fixo</SelectItem>
+                <SelectItem value="a_partir_de">A partir de</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Duração (min) *</Label>
+            <Input type="number" min="5" step="5" value={duracao} onChange={e => setDuracao(e.target.value)} required placeholder="30" className="bg-background" />
+          </div>
+          <div className="space-y-2">
+            <Label>Comissão (%)</Label>
+            <Input type="number" step="0.5" min="0" max="100" value={comissao} onChange={e => setComissao(e.target.value)} placeholder="30" className="bg-background" />
+          </div>
         </div>
         <div className="space-y-2">
-          <Label>Duração (min) *</Label>
-          <Input type="number" min="5" step="5" value={duracao} onChange={e => setDuracao(e.target.value)} required placeholder="30" className="bg-background" />
+          <Label>Descrição <span className="text-muted-foreground text-xs">(opcional)</span></Label>
+          <Textarea value={desc} onChange={e => setDesc(e.target.value)} className="bg-background resize-none" rows={2} placeholder="Descreva o serviço..." />
+        </div>
+        <div className="space-y-2">
+          <Label>URL da Imagem <span className="text-muted-foreground text-xs">(opcional)</span></Label>
+          <Input value={imagemUrl} onChange={e => setImagemUrl(e.target.value)} placeholder="https://exemplo.com/imagem.jpg" className="bg-background" />
+          {imagemUrl && (
+            <div className="mt-2 rounded-lg overflow-hidden border border-border w-20 h-20">
+              <img src={imagemUrl} alt="Preview" className="w-full h-full object-cover" onError={e => (e.currentTarget.style.display = "none")} />
+            </div>
+          )}
         </div>
       </div>
-      <div className="space-y-2">
-        <Label>Descrição <span className="text-muted-foreground text-xs">(opcional)</span></Label>
-        <Textarea value={desc} onChange={e => setDesc(e.target.value)} className="bg-background resize-none" rows={2} placeholder="Descreva o serviço..." />
+
+      <div className="border-t border-border pt-4 space-y-4">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Retorno do Cliente</p>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Tempo de Retorno (dias)</Label>
+            <Input type="number" min="1" value={diasRetorno} onChange={e => setDiasRetorno(e.target.value)} placeholder="30" className="bg-background" />
+          </div>
+        </div>
+        {diasRetorno && (
+          <div className="space-y-2">
+            <Label>Mensagem de Retorno <span className="text-muted-foreground text-xs">(personalizada)</span></Label>
+            <Textarea
+              value={mensagemRetorno}
+              onChange={e => setMensagemRetorno(e.target.value)}
+              className="bg-background resize-none"
+              rows={2}
+              placeholder="Olá! Já faz um tempo desde a sua última visita. Que tal agendar novamente?"
+            />
+          </div>
+        )}
       </div>
-      <div className="flex gap-3 pt-2">
+
+      <div className="border-t border-border pt-4 space-y-4">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Programa de Fidelidade</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <Label className="text-sm">Incluir no Programa de Fidelidade</Label>
+            <p className="text-xs text-muted-foreground mt-0.5">Clientes acumulam pontos ao realizar este serviço</p>
+          </div>
+          <Switch checked={fidelidadeAtiva} onCheckedChange={setFidelidadeAtiva} />
+        </div>
+        {fidelidadeAtiva && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Pontos por Realização</Label>
+              <Input type="number" min="1" value={pontosAcumular} onChange={e => setPontosAcumular(e.target.value)} placeholder="1" className="bg-background" />
+            </div>
+            <div className="space-y-2">
+              <Label>Pontos para Resgate</Label>
+              <Input type="number" min="1" value={pontosResgate} onChange={e => setPontosResgate(e.target.value)} placeholder="10" className="bg-background" />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="border-t border-border pt-4 space-y-4">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Visibilidade</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <Label className="text-sm">Disponível para Agendamento Online</Label>
+            <p className="text-xs text-muted-foreground mt-0.5">Clientes podem agendar este serviço pelo app/site</p>
+          </div>
+          <Switch checked={disponivelOnline} onCheckedChange={setDisponivelOnline} />
+        </div>
+      </div>
+
+      <div className="flex gap-3 pt-2 border-t border-border">
         <Button type="submit" className="flex-1" disabled={isPending}>
           {isPending ? "Salvando..." : "Salvar Serviço"}
         </Button>
@@ -145,22 +274,56 @@ export default function Servicos() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {(servicos as Servico[]).map(s => (
             <div key={s.id} className={`group bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-lg transition-all relative ${!s.ativo ? "opacity-50" : ""}`}>
+              {s.imagemUrl && (
+                <div className="h-32 w-full overflow-hidden">
+                  <img src={s.imagemUrl} alt={s.nome} className="w-full h-full object-cover" onError={e => (e.currentTarget.parentElement!.style.display = "none")} />
+                </div>
+              )}
               <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-40 group-hover:opacity-100 transition-opacity" />
               <div className="p-5">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <h3 className="font-display font-bold text-lg text-foreground">{s.nome}</h3>
-                  <Badge variant={s.ativo ? "secondary" : "outline"} className="text-xs shrink-0">{s.ativo ? "Ativo" : "Inativo"}</Badge>
+                  <div className="flex gap-1 shrink-0">
+                    <Badge variant={s.ativo ? "secondary" : "outline"} className="text-xs">{s.ativo ? "Ativo" : "Inativo"}</Badge>
+                  </div>
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">{s.descricao || "Sem descrição."}</p>
                 <div className="flex items-center gap-5 mt-4">
                   <div className="flex items-center gap-1.5 text-primary font-bold">
                     <DollarSign className="h-4 w-4" />
+                    {s.tipoPreco === "a_partir_de" && <span className="text-xs font-normal text-muted-foreground mr-[-4px]">a partir de</span>}
                     {formatCurrency(s.preco)}
                   </div>
                   <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
                     <Clock className="h-4 w-4" />
                     {s.duracaoMinutos} min
                   </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {s.comissaoPorcentagem != null && (
+                    <Badge variant="outline" className="text-xs gap-1">
+                      <Percent className="h-3 w-3" />
+                      {s.comissaoPorcentagem}%
+                    </Badge>
+                  )}
+                  {s.diasRetorno && (
+                    <Badge variant="outline" className="text-xs gap-1">
+                      <RotateCcw className="h-3 w-3" />
+                      {s.diasRetorno}d retorno
+                    </Badge>
+                  )}
+                  {s.fidelidadeAtiva && (
+                    <Badge variant="outline" className="text-xs gap-1 text-amber-600 border-amber-300">
+                      <Award className="h-3 w-3" />
+                      Fidelidade
+                    </Badge>
+                  )}
+                  {!s.disponivelOnline && (
+                    <Badge variant="outline" className="text-xs gap-1 text-red-500 border-red-300">
+                      <Globe className="h-3 w-3" />
+                      Offline
+                    </Badge>
+                  )}
                 </div>
               </div>
               <div className="border-t border-border px-5 py-3 flex items-center justify-end gap-1">
@@ -180,7 +343,7 @@ export default function Servicos() {
       )}
 
       <Dialog open={modalOpen} onOpenChange={v => { setModalOpen(v); if (!v) setEditing(null); }}>
-        <DialogContent className="bg-card border-border sm:max-w-[460px]">
+        <DialogContent className="bg-card border-border sm:max-w-[520px]">
           <DialogHeader>
             <DialogTitle className="text-xl font-display">{editing ? "Editar Serviço" : "Novo Serviço"}</DialogTitle>
           </DialogHeader>
