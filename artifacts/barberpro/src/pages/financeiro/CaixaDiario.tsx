@@ -81,6 +81,7 @@ export default function CaixaDiario() {
         body: JSON.stringify({ valorFechamento: parseFloat(valorFechamento) || 0 }),
       });
       if (res.ok) { toast({ title: "Caixa fechado com sucesso!" }); setShowFechar(false); setCaixa(null); fetchCaixa(); }
+      else { const err = await res.json().catch(() => ({})); toast({ title: (err as any).error || "Erro ao fechar caixa", variant: "destructive" }); }
     } catch { toast({ title: "Erro ao fechar caixa", variant: "destructive" }); }
     finally { setSubmitting(false); }
   };

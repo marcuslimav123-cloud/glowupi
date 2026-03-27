@@ -141,7 +141,7 @@ export default function FluxoCaixa() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <p className="text-[12px] text-foreground/40 flex items-center gap-1"><DollarSign className="h-3 w-3" />Saldo do Período</p>
-                    <p className={`text-[20px] font-bold ${totalLiquido - totalContasPagar >= 0 ? "text-green-700" : "text-red-700"}`}>{formatCurrency(totalLiquido + totalContasReceber - totalContasPagar)}</p>
+                    <p className={`text-[20px] font-bold ${totalLiquido + totalContasReceber - totalContasPagar >= 0 ? "text-green-700" : "text-red-700"}`}>{formatCurrency(totalLiquido + totalContasReceber - totalContasPagar)}</p>
                   </div>
                 </CardContent>
               </Card>
