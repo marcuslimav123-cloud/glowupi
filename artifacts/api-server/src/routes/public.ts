@@ -213,7 +213,7 @@ router.get("/:slug/slots", async (req, res) => {
       and(eq(agendamentosTable.barbeariaId, barbearia.id), eq(agendamentosTable.data, data as string), eq(agendamentosTable.status, "confirmado"))
     );
 
-    const { getParametros } = await import("../lib/parametros.js");
+    const { getParametros, getLocalNow } = await import("../lib/parametros.js");
     const params = await getParametros(barbearia.id);
 
     const slotSizeParam = params["agenda_tamanho_slots"] || "30min";
@@ -225,7 +225,6 @@ router.get("/:slug/slots", async (req, res) => {
     const slots: any[] = [];
     const duracao = servico.duracaoMinutos;
 
-    const { getLocalNow } = await import("../lib/parametros.js");
     const localNow = getLocalNow(params);
     const todayStr = localNow.todayStr;
     const isToday = data === todayStr;
@@ -286,9 +285,9 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       return res.status(400).json({ error: "Dados inválidos" });
     }
 
-    const { getParametros, getLocalNow } = await import("../lib/parametros.js");
-    const params = await getParametros(barbearia.id);
-    const localNow = getLocalNow(params);
+    const { getParametros: getParams2, getLocalNow: getLocalNow2 } = await import("../lib/parametros.js");
+    const params = await getParams2(barbearia.id);
+    const localNow = getLocalNow2(params);
 
     const limiteFuturoDias = parseInt(params["agenda_limite_futuro_dias"] || "30");
     const dataAgend = new Date(data + "T12:00:00");
