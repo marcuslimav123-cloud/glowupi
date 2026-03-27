@@ -7,6 +7,18 @@ import { getParametros } from "../lib/parametros.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
+async function checkCaixaAccess(req: any, res: any, barbeariaId: number): Promise<boolean> {
+  const user = req.user;
+  if (user.role === "colaborador") {
+    const params = await getParametros(barbeariaId);
+    if (params["comanda_caixa_profissional_nao_gestor"] !== "Sim") {
+      res.status(403).json({ error: "Acesso ao caixa não permitido para seu perfil" });
+      return false;
+    }
+  }
+  return true;
+}
+
 function fmt(r: any) {
   return {
     ...r,
@@ -32,13 +44,7 @@ function fmtMov(r: any) {
 router.get("/atual", requireAuth, async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
-  const user = req.user;
-  if (user.role === "colaborador") {
-    const params = await getParametros(barbeariaId);
-    if (params["comanda_caixa_profissional_nao_gestor"] !== "Sim") {
-      return res.status(403).json({ error: "Acesso ao caixa não permitido para seu perfil" });
-    }
-  }
+  if (!(await checkCaixaAccess(req, res, barbeariaId))) return;
   const [caixa] = await db.select().from(caixaDiarioTable)
     .where(and(eq(caixaDiarioTable.barbeariaId, barbeariaId), eq(caixaDiarioTable.status, "aberto")))
     .orderBy(desc(caixaDiarioTable.dataAbertura)).limit(1);
@@ -52,13 +58,7 @@ router.get("/atual", requireAuth, async (req: any, res) => {
 router.get("/historico", requireAuth, async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
-  const user = req.user;
-  if (user.role === "colaborador") {
-    const params = await getParametros(barbeariaId);
-    if (params["comanda_caixa_profissional_nao_gestor"] !== "Sim") {
-      return res.status(403).json({ error: "Acesso ao caixa não permitido para seu perfil" });
-    }
-  }
+  if (!(await checkCaixaAccess(req, res, barbeariaId))) return;
   const { dataInicio, dataFim } = req.query;
   const conditions = [eq(caixaDiarioTable.barbeariaId, barbeariaId)];
   if (dataInicio) conditions.push(gte(caixaDiarioTable.dataAbertura, new Date(dataInicio as string)));
@@ -75,6 +75,7 @@ router.get("/historico", requireAuth, async (req: any, res) => {
 router.post("/abrir", requireAuth, async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  if (!(await checkCaixaAccess(req, res, barbeariaId))) return;
   const existing = await db.select().from(caixaDiarioTable)
     .where(and(eq(caixaDiarioTable.barbeariaId, barbeariaId), eq(caixaDiarioTable.status, "aberto"))).limit(1);
   if (existing.length > 0) return res.status(400).json({ error: "Já existe um caixa aberto" });
@@ -93,6 +94,7 @@ router.post("/abrir", requireAuth, async (req: any, res) => {
 router.put("/:caixaId/fechar", requireAuth, async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  if (!(await checkCaixaAccess(req, res, barbeariaId))) return;
   const caixaId = parseInt(req.params.caixaId);
   const [caixa] = await db.select().from(caixaDiarioTable)
     .where(and(eq(caixaDiarioTable.id, caixaId), eq(caixaDiarioTable.barbeariaId, barbeariaId))).limit(1);
@@ -119,6 +121,7 @@ router.put("/:caixaId/fechar", requireAuth, async (req: any, res) => {
 router.put("/:caixaId/reabrir", requireAuth, async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  if (!(await checkCaixaAccess(req, res, barbeariaId))) return;
   const user = req.user;
   if (user.role !== "dono" && user.role !== "gerente") {
     const params = await getParametros(barbeariaId);
@@ -143,6 +146,7 @@ router.put("/:caixaId/reabrir", requireAuth, async (req: any, res) => {
 router.get("/:caixaId/movimentacoes", requireAuth, async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  if (!(await checkCaixaAccess(req, res, barbeariaId))) return;
   const caixaId = parseInt(req.params.caixaId);
   const movs = await db.select().from(movimentacoesCaixaTable)
     .where(and(eq(movimentacoesCaixaTable.caixaId, caixaId), eq(movimentacoesCaixaTable.barbeariaId, barbeariaId)))
@@ -153,6 +157,7 @@ router.get("/:caixaId/movimentacoes", requireAuth, async (req: any, res) => {
 router.post("/:caixaId/movimentacoes", requireAuth, async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  if (!(await checkCaixaAccess(req, res, barbeariaId))) return;
   const caixaId = parseInt(req.params.caixaId);
   const [caixa] = await db.select().from(caixaDiarioTable)
     .where(and(eq(caixaDiarioTable.id, caixaId), eq(caixaDiarioTable.barbeariaId, barbeariaId))).limit(1);
@@ -177,6 +182,7 @@ router.post("/:caixaId/movimentacoes", requireAuth, async (req: any, res) => {
 router.post("/:caixaId/sangria", requireAuth, async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  if (!(await checkCaixaAccess(req, res, barbeariaId))) return;
   const caixaId = parseInt(req.params.caixaId);
   const [caixa] = await db.select().from(caixaDiarioTable)
     .where(and(eq(caixaDiarioTable.id, caixaId), eq(caixaDiarioTable.barbeariaId, barbeariaId))).limit(1);
@@ -196,6 +202,7 @@ router.post("/:caixaId/sangria", requireAuth, async (req: any, res) => {
 router.post("/:caixaId/vale", requireAuth, async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  if (!(await checkCaixaAccess(req, res, barbeariaId))) return;
   const caixaId = parseInt(req.params.caixaId);
   const [caixa] = await db.select().from(caixaDiarioTable)
     .where(and(eq(caixaDiarioTable.id, caixaId), eq(caixaDiarioTable.barbeariaId, barbeariaId))).limit(1);

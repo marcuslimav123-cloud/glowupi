@@ -6,7 +6,7 @@ import {
   bloqueiosHorarioTable, profissionalServicosTable,
   tiposTable, contasProfissionalTable, pesquisaSatisfacaoTable,
   respostasPesquisaTable, pacotesTable, pacotesClienteTable,
-  assinantesTable
+  assinantesTable, resgatesTable
 } from "@workspace/db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
@@ -483,6 +483,19 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
     gorjetaVal = { profissionalId: gorjetaProfId, valor: Number(gorjeta.valor) };
     valorTotal += gorjetaVal.valor;
   }
+  if (params["comissao_zerar_fidelidade"] === "Sim" && agend.clienteId && req.body.resgateId) {
+    const [resgate] = await db.select().from(resgatesTable).where(
+      and(
+        eq(resgatesTable.id, req.body.resgateId),
+        eq(resgatesTable.barbeariaId, barbeariaId),
+        eq(resgatesTable.clienteId, agend.clienteId)
+      )
+    ).limit(1);
+    if (resgate) {
+      comissaoServico = 0;
+    }
+  }
+
   const comissaoTotal = comissaoServico + comissaoProdutos;
   const now = new Date();
   const mesAno = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
