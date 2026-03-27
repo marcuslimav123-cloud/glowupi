@@ -16,7 +16,7 @@ export default function Pesquisa() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const [form, setForm] = useState({ titulo: "", perguntas: [{ texto: "", tipo: "nota" }], ativo: true });
+  const [form, setForm] = useState({ titulo: "", perguntas: [{ texto: "", tipo: "nota" }], ativo: true, envioAutomatico: false });
   const [viewRespostas, setViewRespostas] = useState<any>(null);
   const [respostas, setRespostas] = useState<any[]>([]);
   const [estatisticas, setEstatisticas] = useState<any>(null);
@@ -36,7 +36,7 @@ export default function Pesquisa() {
     const url = editId ? `${BASE}api/barbearias/${barbeariaId}/pesquisas/${editId}` : `${BASE}api/barbearias/${barbeariaId}/pesquisas`;
     try {
       const res = await fetch(url, { method: editId ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
-        body: JSON.stringify({ titulo: form.titulo, perguntas: form.perguntas.filter(p => p.texto), ativo: form.ativo }) });
+        body: JSON.stringify({ titulo: form.titulo, perguntas: form.perguntas.filter(p => p.texto), ativo: form.ativo, envioAutomatico: form.envioAutomatico }) });
       if (res.ok) { toast({ title: editId ? "Pesquisa atualizada!" : "Pesquisa criada!" }); resetForm(); fetchPesquisas(); }
       else {
         const data = await res.json().catch(() => ({}));
@@ -76,8 +76,8 @@ export default function Pesquisa() {
   const updatePergunta = (i: number, texto: string) => setForm(f => ({ ...f, perguntas: f.perguntas.map((p, j) => j === i ? { ...p, texto } : p) }));
   const updatePerguntaTipo = (i: number, tipo: string) => setForm(f => ({ ...f, perguntas: f.perguntas.map((p, j) => j === i ? { ...p, tipo } : p) }));
   const removePergunta = (i: number) => setForm(f => ({ ...f, perguntas: f.perguntas.filter((_, j) => j !== i) }));
-  const edit = (p: any) => { setForm({ titulo: p.titulo, perguntas: (p.perguntas as any[])?.length ? p.perguntas : [{ texto: "", tipo: "nota" }], ativo: p.ativo }); setEditId(p.id); setShowForm(true); };
-  const resetForm = () => { setShowForm(false); setEditId(null); setForm({ titulo: "", perguntas: [{ texto: "", tipo: "nota" }], ativo: true }); };
+  const edit = (p: any) => { setForm({ titulo: p.titulo, perguntas: (p.perguntas as any[])?.length ? p.perguntas : [{ texto: "", tipo: "nota" }], ativo: p.ativo, envioAutomatico: p.envioAutomatico || false }); setEditId(p.id); setShowForm(true); };
+  const resetForm = () => { setShowForm(false); setEditId(null); setForm({ titulo: "", perguntas: [{ texto: "", tipo: "nota" }], ativo: true, envioAutomatico: false }); };
 
   if (viewRespostas) {
     return (
@@ -195,6 +195,13 @@ export default function Pesquisa() {
               <Button variant="outline" size="sm" onClick={addPergunta} className="rounded-xl text-[12px]"><Plus className="h-3 w-3 mr-1" />Pergunta</Button>
             </div>
             <div className="flex items-center gap-2"><Switch checked={form.ativo} onCheckedChange={v => setForm(f => ({ ...f, ativo: v }))} /><Label>Ativa</Label></div>
+            <div className="flex items-center gap-2">
+              <Switch checked={form.envioAutomatico} onCheckedChange={v => setForm(f => ({ ...f, envioAutomatico: v }))} />
+              <div>
+                <Label>Envio Automático</Label>
+                <p className="text-xs text-muted-foreground">Envia automaticamente ao cliente após finalizar comanda/agendamento</p>
+              </div>
+            </div>
             <div className="flex gap-2"><Button onClick={save} className="rounded-xl">Salvar</Button><Button variant="ghost" onClick={resetForm} className="rounded-xl">Cancelar</Button></div>
           </CardContent>
         </Card>
@@ -216,7 +223,10 @@ export default function Pesquisa() {
                       <h3 className="text-[14px] font-semibold">{p.titulo}</h3>
                       <span className={`text-[11px] px-2 py-0.5 rounded-full ${p.ativo ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"}`}>{p.ativo ? "Ativa" : "Inativa"}</span>
                     </div>
-                    <p className="text-[12px] text-foreground/40 mt-0.5">{(p.perguntas as any[])?.length || 0} perguntas</p>
+                    <p className="text-[12px] text-foreground/40 mt-0.5">
+                      {(p.perguntas as any[])?.length || 0} perguntas
+                      {p.envioAutomatico && <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px]">Envio automático</span>}
+                    </p>
                     {p.ativo && (
                       <div className="flex items-center gap-1 mt-2">
                         <Link2 className="h-3 w-3 text-blue-400" />

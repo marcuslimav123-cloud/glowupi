@@ -1,0 +1,95 @@
+Como dar desconto para um cliente?
+Avatar Luiz Felipe Paim de Carvalho
+há 3 anos Atualizado
+Algo muito comum para qualquer estabelecimento são os descontos oferecidos para os clientes, mas como posso fazer isso no sistema?
+
+O desconto no sistema é feito na comanda do cliente, de maneira bem simples.
+
+Para isso, basta fazer o seguinte:
+
+Na  comanda, existe um botão específico para aplicar descontos para o cliente, ele está localizado próximo as opções de inserir novos produtos e serviços na agenda. Vamos mostrar aqui um exemplo
+
+mceclip0.png
+
+Clicando no botão de desconto uma nova janela vai se abrir, nela você pode inserir uma porcentagem de desconto para o seu cliente sobre o valor total da comanda.
+
+mceclip1.png
+
+Seguindo o nosso exemplo, foram dados 10% de desconto para o cliente , dessa forma a comanda dele, de R$ 30,00, passará a custar R$ 27,00.
+
+ 
+
+mceclip2.png
+
+ 
+
+Quero dar o desconto em forma de valor para o cliente, como posso fazer?
+
+Para dar o desconto em forma de valor e não porcentagem, você deve editar o valor dos itens da sua comanda, dessa forma você pode mudar o valor de cada item individualmente. Para isso você pode fazer o seguinte processo:
+
+Na comanda do cliente você pode clicar no botão com ícone de lápis, que fica mais a direita de cada item na comanda:
+
+mceclip3.png
+
+Ao clicar nessa opção, nos é apresentada a janela de edição do item, nela podemos editar o valor unitário do serviço/produto, para dar desconto para o cliente.
+
+mceclip4.png
+
+ 
+
+Seguindo nosso exemplo, o valor foi alterado de R$ 30,00 para R$ 25,00, dando assim R$ 5,00 de desconto para o cliente.
+
+ 
+
+Como posso dar descontos pelo aplicativo?
+Esse processo também pode ser feito pelo aplicativo do profissional (AppBarber PRO: Profissionais, ou AppBeleza PRO: Profissionais), para isso basta seguir os seguintes passos:
+
+No aplicativo, dentro da comanda clique sobre o item no qual será aplicado o desconto
+
+WhatsApp_Image_2023-02-09_at_18.04.41.jpeg
+
+Feito isso, edite o valor no campo Valor Unitário: 
+
+ 
+
+Na tela de edição você pode mudar o valor, assim como no sistema
+
+WhatsApp_Image_2023-02-09_at_18.04.42.jpeg
+
+Depois de dar o desconto, o que acontece com as comissões dos profissionais?
+
+Quando se da um desconto para um cliente, o desconto é aplicado também nas comissões, ou seja, a comissão vai acompanhar o desconto dado, para demonstrar o que acontece, vamos utilizar os dois exemplos acima:
+
+Nos dois casos a comissão repassada ao profissional é de 50%, então originalmente o profissional iria receber R$ 15,00 de comissão.
+
+No desconto por porcentagem, o valor do item foi de R$ 30,00 para R$ 27,00, nesse caso a comissão do profissional irá de R$ 15,00 para R$ 13,50.
+
+No desconto por valor, o item foi de R$ 30,00 para R$ 27,00 fazendo com que a comissão do profissional vá de R$ 15,00 para R$ 12,50.
+
+A comissão do profissional sempre será com base no item da comanda, dessa forma, se o valor do item for alterado, a comissão será alterada também.
+
+Mas não quero que a comissão seja alterada, o que devo fazer?
+
+Por padrão a comissão deve sempre acompanhar o valor do item da comanda, porém, caso o estabelecimento não repasse o desconto aos profissionais, a comissão pode ser alterada manualmente fazendo o mesmo processo de desconto por valor, porém mudando apenas o valor da comissão a receber, para isso, basta repetir os passos:
+
+Clicar no ícone do lápis mais a direita da comanda
+
+mceclip3.png
+
+Porém, agora na janela de edição vamos editar o valor da comissão:
+
+ 
+
+mceclip5.png
+
+Para a comissão não seguir o valor do item, você pode editá-la para que ela seja baseada no valor original. No nosso exemplo, o item tem o valor original de R$ 30,00 que foi alterado para R$ 25,00 dessa forma a comissão foi alterada para R$ 15,00 para ser baseada no valor original.
+
+Não consigo editar a comissão, o campo está bloqueado, o que devo fazer?
+
+Dentro do sistema existe um parâmetro que bloqueia a edição de comissões da comanda. Caso exista a necessidade de fazer alguma alteração no campo de comissão você pode desativá-lo indo no menu lateral em "Configurações > Parâmetros", na tela de parâmetros você pode editar o parâmetro:
+
+mceclip6.png
+
+ 
+
+Tranquilo, não? Essas são as formas de dar desconto nas comandas dos clientes dentro do sistema.

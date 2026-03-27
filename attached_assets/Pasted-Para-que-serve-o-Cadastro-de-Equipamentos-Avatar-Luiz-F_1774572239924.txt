@@ -1,0 +1,124 @@
+Para que serve o Cadastro de Equipamentos?
+Avatar Luiz Felipe Paim de Carvalho
+há 7 anos Atualizado
+O Cadastro de Equipamentos é uma funcionalidade caso o estabelecimento tenha a necessidade de limitar os agendamentos no mesmo horários (independente do Profissional), para serviços que dependam de um equipamento específico.
+
+Pode ser usado também para o conceito de Salas.
+
+ 
+
+Vamos dar dois exemplos, ao qual chamaremos de CENÁRIO 1 e CENÁRIO 2.
+
+ 
+
+CENÁRIO 1
+
+ 
+
+O Estabelecimento ABC possui 10 Profissionais e 5 salas para atendimento dos seguintes procedimentos:
+
+ 
+
+Procedimento A;
+
+Procedimento B;
+
+Procedimento C;
+
+ 
+
+Sendo assim, o estabelecimento ABC só consegue atender, nesses 3 procedimentos, até 5 procedimentos simultâneos (no mesmo horário). Sendo assim, é necessário limitar para que não haja o agendamento de 6 horários ao mesmo tempo e assim, ficar algum cliente sem sala para ser atendido (a).
+
+Para configurar esse cenário, faça os seguintes passos:
+
+ 
+
+1) Acesse Cadastros - Tipos - Equipamentos e clique em +EQUIPAMENTO;
+
+Captura_de_Tela_2018-11-01_a_s_16.46.02.png
+
+ 
+
+Captura_de_Tela_2018-11-01_a_s_16.46.36.png
+
+ 
+
+2) Preencha a descrição (exemplo: SALAS) e a quantidade máxima (nesse exemplo, quantidade de salas disponíveis) e clique em Cadastrar:
+
+Captura_de_Tela_2018-11-01_a_s_16.48.07.png
+
+ 
+
+3) Depois, na aba Serviços, adicione os serviços/procedimentos que utilizem essa sala e assim, entrarão na regra de limitação de agendamentos no mesmo horário. Para cada serviço selecionado, clique em +Associar:
+
+ 
+
+Captura_de_Tela_2018-11-01_a_s_16.50.02.png
+
+ 
+
+Sendo assim, ao tentar agendar algum dos serviços associados à este equipamento/Sala, e exceder o limite máximo, a seguinte tela será mostrada:
+
+ 
+
+EquipErro.png
+
+ 
+
+ 
+
+CENÁRIO 2
+
+ 
+
+O Estabelecimento XYZ tem a situação de ter vários serviços que dependam da disponibilidade de 3 equipamentos (independente de salas). Sendo assim, vamos exemplificar:
+
+ 
+
+Serviço A;
+
+Serviço B;
+
+ 
+
+Ambos necessitam de disponibilidade dos equipamentos, porém, o estabelecimento só possui 3. Então, vamos cadastrar o Equipamento e a quantidade, para que o sistema restrinja ao máximo 3 agendamentos no mesmo horário, dos serviços A e B (que precisam deste equipamento):
+
+ 
+
+1) Acesse Cadastros - Tipos - Equipamentos e clique em +EQUIPAMENTO;
+
+Captura_de_Tela_2018-11-01_a_s_16.46.02.png
+
+ 
+
+Captura_de_Tela_2018-11-01_a_s_16.46.36.png
+
+ 
+
+2) Cadastre o nome do Equipamento e a Quantidade e clique em Cadastrar:
+
+ 
+
+Captura_de_Tela_2018-11-01_a_s_16.48.07.png
+
+ 
+
+3) Depois de Cadastrar, vincule os serviços que precisam desse equipamento e clique em +Associar:
+
+ 
+
+Captura_de_Tela_2018-11-01_a_s_17.34.41.png
+
+ 
+
+Sendo assim, ao tentar agendar mais que 3 horários ao mesmo tempo, irá ocorrer a restrição de equipamento:
+
+ 
+
+EquipErro.png
+
+ 
+
+ 
+
+Maiores dúvidas sobre esse e demais processos do sistema pode chamar a equipe de suporte em nosso Chat Online (em horário de atendimento).

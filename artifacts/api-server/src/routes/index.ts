@@ -49,6 +49,7 @@ import documentosRouter from "./documentosRoutes.js";
 import clubeVantagensRouter from "./clubeVantagensRoutes.js";
 import fornecedoresRouter from "./fornecedoresRoutes.js";
 import remuneracoesRouter from "./remuneracoesRoutes.js";
+import equipamentosRouter from "./equipamentosRoutes.js";
 
 const router: IRouter = Router();
 
@@ -118,6 +119,7 @@ router.use("/barbearias/:barbeariaId/documentos", documentosRouter);
 router.use("/barbearias/:barbeariaId/clube-vantagens", clubeVantagensRouter);
 router.use("/barbearias/:barbeariaId/fornecedores", fornecedoresRouter);
 router.use("/barbearias/:barbeariaId/rh", remuneracoesRouter);
+router.use("/barbearias/:barbeariaId/equipamentos", equipamentosRouter);
 
 router.get("/lgpd/terms", async (_req, res) => {
   try {

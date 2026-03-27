@@ -1,0 +1,74 @@
+Como solicito a importação de dados?
+Avatar Luiz Felipe Paim de Carvalho
+há 8 meses Atualizado
+Quais dados consigo importar para o AppBarber/AppBeleza?
+Você pode solicitar a importação de clientes, serviços e produtos.
+
+OBS.: A importação pode ser feita exclusivamente dos dados citados acima.
+Não será realizada a importação de informações como agendamentos, relatórios, caixas, comissões, entre outros.
+
+Como solicito essa importação?
+1) Durante o período de teste gratuito:
+Você pode enviar a planilha com os dados a serem importados seguindo o caminho:
+
+Perfil > Conta
+
+mceclip0.png
+Depois, siga na aba Empresa e clique em Editar Informações.
+
+mceclip1.png
+Chegando nessa etapa, acesse a aba Importação.
+Ali você poderá:
+Selecionar o tipo de importação que deseja fazer (clientes, serviços ou produtos);
+
+Anexar o arquivo da planilha (nos formatos XLS, XLSX ou CSV).
+
+mceclip2.png
+2) Caso você já seja contratado e/ou não tenha conseguido solicitar pelo sistema:
+Basta enviar um e-mail para:
+
+atendimento@appbarber.com.br
+
+atendimento@appbeleza.com.br
+
+No e-mail, anexe a planilha no formato XLS, XLSX ou CSV, e descreva qual o tipo de importação deseja realizar.
+
+⚠️ Atenção: A solicitação deve ser enviada pelo e-mail titular da conta, localizado em:
+Perfil > Conta > Empresa
+
+✅ IMPORTANTE:
+Após o envio, nossa equipe abrirá um chamado e você receberá um retorno por e-mail assim que a importação for concluída.
+O prazo padrão para conclusão é de até 5 dias úteis.
+
+E se eu já utilizo o sistema e quero copiar os dados para uma nova unidade?
+Se você já utiliza o AppBarber/AppBeleza e possui uma base de dados cadastrada (como clientes, serviços e produtos), é possível solicitar a importação dessas informações para outra unidade vinculada à sua empresa.
+
+Essa funcionalidade é útil nos seguintes casos:
+
+Está abrindo uma nova barbearia/salão;
+
+Começou a utilizar o sistema em uma unidade que ainda não utilizava;
+
+Deseja manter o mesmo cadastro de serviços, produtos e/ou clientes entre duas ou mais unidades.
+
+Como solicitar essa cópia de dados entre unidades?
+Basta seguir os passos abaixo:
+
+Envie um e-mail para:
+
+atendimento@appbarber.com.br ou
+
+atendimento@appbeleza.com.br
+
+O e-mail deve ser enviado a partir do e-mail cadastrado da unidade matriz (a unidade que já possui os dados).
+
+No corpo do e-mail, informe:
+
+Quais dados deseja importar (clientes, serviços e/ou produtos);
+
+Nome da unidade de destino (a nova unidade que receberá os dados);
+
+Se possível, inclua também o e-mail titular da unidade de destino.
+
+✅ Assim como nas demais importações, nossa equipe abrirá um chamado e você será informado por e-mail assim que a cópia for concluída.
+O prazo padrão para esse processo é de até 5 dias úteis.

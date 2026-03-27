@@ -1,0 +1,157 @@
+Como funciona a Anamnese?
+Avatar Luiz Felipe Paim de Carvalho
+há 3 anos Atualizado
+No sistema você tem a possibilidade de criar os seus próprios formulários de anamnese e aplica-los com os seus clientes, legal né? 
+
+Mas como consigo fazer isso?
+
+1 - Siga em Configurações > Anamnese > Formulários e clique em mceclip0.pngCaptura_de_Tela_2018-10-02_a_s_13.15.57.png
+
+mceclip2.png
+
+2 - Aqui temos os seguinte campos:
+
+Titulo do Formulário: Aqui você vai dar um título para o seu formulário, uma descrição para identificá-lo posteriormente.
+
+Tipo de Anamnese: Esse é o tipo de Anamnese ao qual o seu formulário se refere, caso você ainda não tenha nenhum tipo cadastrado, basta clicar no botão +
+
+mceclip1.png
+
+mceclip1.png
+
+Preenchidos esses campos você pode clicar no botão Captura_de_Tela_2018-10-02_a_s_13.55.48.png para salvar. Ao salvar esse botão será substituído pelo botão Captura_de_Tela_2018-10-02_a_s_13.57.20.png, clicando nesse novo botão você salva as alterações que possam ser feitas no título.
+
+ 
+
+Depois de definirmos um título e um tipo para o nosso formulário, vamos cadastrar as questões que vão estar nesse formulário. No momento em que você salva o seu título, novos campos aparecem pra você logo abaixo dos anteriores:
+
+Captura_de_Tela_2018-10-02_a_s_14.02.16.png
+
+ Nesses campos vamos configurar nossas perguntas.
+
+Tipo de resposta: Esse é o campo no qual vamos escolher qual o tipo de resposta desejamos para uma determinada questão, dentre eles temos:
+
+Captura_de_Tela_2018-10-02_a_s_14.05.35.png
+
+Texto curto: Esse tipo disponibiliza pra você um campo de texto curto, de apenas uma linha, pode ser usada para respostas curtas e objetivas;
+Texto longo: Disponibiliza um campo para respostas longas ou observações, parecido com o anterior, porém contem um número maior de linhas;
+Sim/Não: Aqui serão disponibilizadas duas opções pra você, sim e não, onde só uma pode ser escolhida.
+Caixas de Seleção: Aqui você pode cadastrar varias opções para seleção, onde na hora de responder várias podem ser selecionadas ao mesmo tempo.
+Lista Suspensa: Você pode definir uma lista de opções dentre as quais apenas uma pode ser escolhida.
+ 
+
+Configurações da pergunta: Esse campo é onde vamos definir qual vai ser o enunciado da nossa questão, ou seja, qual vai ser a pergunta a ser feita ao cliente. Para os casos das Caixas de Seleção  e da Lista Suspensa, mais uma opção é adicionada a esse campo, como podemos ver a seguir:
+
+Captura_de_Tela_2018-10-02_a_s_14.25.44.png
+
+Esse novo campo será referente as opções de resposta que vamos disponibilizar no formulário, para adicioná-las basta digitar o texto da opção dentro do campo e clicar no botão Captura_de_Tela_2018-10-02_a_s_13.55.48.png, Feito isso uma opção será adicionada a direita desse mesmo campo para você poder visualizar.
+
+Ao terminar de preencher esses campos você pode clicar no botão Captura_de_Tela_2018-10-02_a_s_14.30.07.png para salvar o campo no formulário. Ao salvar,  novos campos para a inserção de uma nova resposta serão adicionados logo abaixo da anterior, assim como o botão de adicionar campo da ultima resposta que você inseriu será substituído por outros dois botões, sendo eles: 
+
+Captura_de_Tela_2018-10-02_a_s_14.39.56.png
+
+ Caso você tenha feito alguma alteração na questão após clicar em Adicionar Campo você pode clicar em Salvar Edição. Caso deseje remover uma questão que ja tenha cadastrado, você pode clicar em Remover Questão.
+
+Ao terminar de cadastrar as questões que achar necessárias você pode clicar no botão Captura_de_Tela_2018-10-02_a_s_15.01.07.png  para terminar de cadastrar o seu formulário.
+
+Parabéns, você tem o seu primeiro formulário cadastrado!
+
+Mas agora, como vejo como meu formulário ficou?
+
+Você pode visualizar todos os seu formulários nessa mesma tela, basta você seleciona-lo na lista no topo da tela e clicar em Mostrar
+
+Captura_de_Tela_2018-10-02_a_s_15.03.30.png
+
+Aqui você poderá visualizar o seu formulário com os campos que você colocou, temos aqui um exemplo:
+
+Captura_de_Tela_2018-10-02_a_s_15.24.22.png
+
+Na visualização temos a opção de impressão com o botão Captura_de_Tela_2018-10-02_a_s_15.25.49.png, clicando nele será gerada um documento de impressão para preenchimento manual, onde serão inseridos campos para preencher os dados do cliente, assim como um campo de assinatura.
+
+Aqui você também vai ter a opção de excluir um formulário Captura_de_Tela_2018-10-02_a_s_15.29.52.png, clicando aqui você pode excluir um formulário antigo.
+
+Já tenho respostas cadastradas para esse formulário, se eu excluir, vou perder as respostas?
+
+Não, todas as respostas podem ser conferidas, mesmo que o formulário tenha sido excluido.
+
+Não consigo editar um formulário que tenho cadastrado?
+
+Caso você edite um formulário, você pode perder respostas referentes a um campo que tenha excluido, ou pode ser que algumas respostas fiquem sem sentido dependendo das alterações realizadas, por isso a opção de edição não está disponível.
+
+ 
+
+Ok, agora como eu registro as respostas dos meus clientes?
+
+Show, agora que você possui um formulário você pode registrar as avaliações dos seus clientes, para fazer isso você pode, no menu lateral, ire até "Configurações > Anamnese > Clientes".
+
+Captura_de_Tela_2018-10-02_a_s_16.48.55.png
+
+Selecionando essa opção você será redirecionado para a tela de Clientes da Anamnese, nela você pode buscar pelas avaliações de um cliente selecionando ele na lista e clicando em Buscar Avaliações
+
+Captura_de_Tela_2018-10-02_a_s_17.05.22.png
+
+Nas avaliações do cliente você pode clicar no ícone + para mostrar as respostas e a opção para imprimir:
+
+Captura_de_Tela_2018-10-02_a_s_17.10.21.png
+
+ 
+
+Para registrar uma nova resposta de um formulário você deve fazer o seguinte processo:
+
+Você deve selecionar o cliente na lista de seleção na tela principal, e clicar + Nova Avaliação
+
+Captura_de_Tela_2018-10-02_a_s_17.13.12.png
+
+O próximo passo é selecionar o formulário que desejamos responder:
+
+Captura_de_Tela_2018-10-02_a_s_17.15.54.png
+
+Após selecionar o formulário desejado, os campos para resposta irão aparecer pra você, feito isso é só preenche-los e salvar:
+
+Captura_de_Tela_2018-10-02_a_s_17.18.18.png
+
+Assim que você salvar, a avaliação ja vai estar disponível para você na lista de avaliações.
+
+Você consegue acessar as anamneses de um cliente através do detalhes de um cliente na aba dashboard.
+
+Captura_de_Tela_2018-10-02_a_s_17.25.12.png
+
+ 
+
+ 
+
+Pronto, agora você tem os seus formulários de anamnese, e pode registras as avaliações dos seus clientes.
+
+ 
+
+Posso acessar os formulários diretamente pelo aplicativo?
+Sim! Pelo AppBeleza PRO: Profissionais ou AppBarber PRO: Profissionais você consegue registrar as repostas do(a) cliente, além de acessar os formulários já respondidos. Clique aqui para saber como.
+
+Facebook Twitter LinkedIn
+ 1
+Esse artigo foi útil?
+ 
+Usuários que acharam isso útil: 139 de 145
+Artigos visualizados recentemente
+A linha do horário atual está adiantada, o que fazer?
+Para que serve o Cadastro de Equipamentos?
+Como funciona o prontuário
+Como funciona o cadastro de Documentos?
+Como configurar e utilizar o módulo fiscal
+Artigos relacionados
+Lembretes via WhatsApp
+O que são Remunerações (salários)?
+O que significa cada Parâmetro do sistema:
+Anamnese: como posso coletar as respostas e a assinatura digital do(a) cliente?
+Como consigo alterar a Titularidade da minha conta?
+Comentários
+1 comentárioClassificar por
+Avatar
+Patricia Groth
+há 3 anos
+Seria interessante se pudéssemos enviar a ficha de anamnese para o cliente preencher antes do atendimento. Assim conseguimos avaliar se o cliente está apto a fazer o procedimento. Amo esse App. Abraços !
+
+0
+Ações de comentário
+Por favor, entre para comentar.
+AppBarber / AppBeleza

@@ -7,15 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Trash2, Tag } from "lucide-react";
+import { Plus, Edit2, Trash2, Tag, Settings, Wrench } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 
-type TabKey = "categoria_servico" | "forma_pagamento" | "tipo_despesa" | "tipo_receita" | "subconta" | "equipamento" | "fornecedor" | "anamnese" | "bandeira" | "remuneracao" | "deducao";
+type TabKey = "categoria_servico" | "categoria_profissional" | "categoria_produto" | "forma_pagamento" | "tipo_despesa" | "tipo_receita" | "subconta" | "equipamento" | "fornecedor" | "anamnese" | "bandeira" | "remuneracao" | "deducao";
 
 const TABS: { key: TabKey; label: string; queryParam: string }[] = [
   { key: "categoria_servico", label: "Categorias de Serviço", queryParam: "" },
+  { key: "categoria_profissional", label: "Categorias de Profissional", queryParam: "profissional" },
+  { key: "categoria_produto", label: "Categorias de Produto", queryParam: "produto" },
   { key: "forma_pagamento", label: "Formas de Pagamento", queryParam: "pagamento" },
   { key: "tipo_despesa", label: "Tipos de Despesa", queryParam: "despesa" },
   { key: "tipo_receita", label: "Tipos de Receita", queryParam: "receita" },
@@ -51,48 +54,120 @@ export default function Tipos() {
     if (cat) {
       const found = TABS.find(t => t.queryParam === cat);
       if (found) setTab(found.key);
+    } else {
+      setTab("categoria_servico");
     }
   }, [window.location.search]);
 
-  const path = `/barbearias/${barbeariaId}/tipos`;
-  const { data: tipos = [], isLoading } = useApiList("tipos", path, !!barbeariaId);
-  const createTipo = useApiCreate("tipos", path);
-  const updateTipo = useApiUpdate("tipos", path);
-  const deleteTipo = useApiDelete("tipos", path);
+  const isEquipamento = tab === "equipamento";
+  const tiposPath = `/barbearias/${barbeariaId}/tipos`;
+  const equipPath = `/barbearias/${barbeariaId}/equipamentos`;
 
-  const filtered = (tipos as any[]).filter(t => t.categoria === tab);
+  const { data: tipos = [], isLoading: tiposLoading } = useApiList("tipos", tiposPath, !!barbeariaId && !isEquipamento);
+  const { data: equipamentos = [], isLoading: equipLoading } = useApiList("equipamentos", equipPath, !!barbeariaId && isEquipamento);
+  const createTipo = useApiCreate("tipos", tiposPath);
+  const updateTipo = useApiUpdate("tipos", tiposPath);
+  const deleteTipo = useApiDelete("tipos", tiposPath);
+  const createEquip = useApiCreate("equipamentos", equipPath);
+  const updateEquip = useApiUpdate("equipamentos", equipPath);
+  const deleteEquip = useApiDelete("equipamentos", equipPath);
+
+  const filtered = isEquipamento
+    ? (equipamentos as any[])
+    : (tipos as any[]).filter(t => t.categoria === tab);
+  const isLoading = isEquipamento ? equipLoading : tiposLoading;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const data = { categoria: tab, nome: fd.get("nome") as string, descricao: fd.get("descricao") as string };
     try {
-      if (editing) {
-        await updateTipo.mutateAsync({ id: editing.id, ...data });
-        toast({ title: "Tipo atualizado" });
+      if (isEquipamento) {
+        await handleEquipSubmit(fd);
       } else {
-        await createTipo.mutateAsync(data);
-        toast({ title: "Tipo criado" });
+        const data = { categoria: tab, nome: fd.get("nome") as string, descricao: fd.get("descricao") as string };
+        if (editing) {
+          await updateTipo.mutateAsync({ id: editing.id, ...data });
+          toast({ title: "Tipo atualizado" });
+        } else {
+          await createTipo.mutateAsync(data);
+          toast({ title: "Tipo criado" });
+        }
       }
       setDialogOpen(false);
       setEditing(null);
     } catch { toast({ title: "Erro", variant: "destructive" }); }
   }
 
+  async function handleEquipSubmit(fd: FormData) {
+    const data = {
+      nome: fd.get("nome") as string,
+      descricao: fd.get("descricao") as string,
+      quantidadeMaxima: parseInt(fd.get("quantidadeMaxima") as string) || 1,
+      servicosIds: equipSelectedServices,
+    };
+    if (editing) {
+      await updateEquip.mutateAsync({ id: editing.id, ...data });
+      toast({ title: "Equipamento atualizado" });
+    } else {
+      await createEquip.mutateAsync(data);
+      toast({ title: "Equipamento criado" });
+    }
+  }
+
   async function handleToggle(item: any) {
     try {
-      await updateTipo.mutateAsync({ id: item.id, ativo: !item.ativo });
+      if (isEquipamento) {
+        await updateEquip.mutateAsync({ id: item.id, ativo: !item.ativo });
+      } else {
+        await updateTipo.mutateAsync({ id: item.id, ativo: !item.ativo });
+      }
     } catch { toast({ title: "Erro", variant: "destructive" }); }
   }
 
   async function handleDelete(id: number) {
     try {
-      await deleteTipo.mutateAsync(id);
-      toast({ title: "Tipo removido" });
+      if (isEquipamento) {
+        await deleteEquip.mutateAsync(id);
+        toast({ title: "Equipamento removido" });
+      } else {
+        await deleteTipo.mutateAsync(id);
+        toast({ title: "Tipo removido" });
+      }
     } catch { toast({ title: "Erro", variant: "destructive" }); }
   }
 
   const currentTabLabel = TABS.find(t => t.key === tab)?.label || "Tipo";
+
+  const [servicos, setServicos] = useState<any[]>([]);
+  const [equipSelectedServices, setEquipSelectedServices] = useState<number[]>([]);
+  const BASE = import.meta.env.BASE_URL;
+
+  useEffect(() => {
+    if (barbeariaId && isEquipamento) {
+      fetch(`${BASE}api/barbearias/${barbeariaId}/servicos`, { credentials: "include" })
+        .then(r => r.ok ? r.json() : [])
+        .then(setServicos)
+        .catch(() => {});
+    }
+  }, [barbeariaId, isEquipamento]);
+
+  function openEquipEdit(item: any) {
+    setEditing(item);
+    setEquipSelectedServices((item.servicosIds as number[]) || []);
+    setDialogOpen(true);
+  }
+
+  function openNew() {
+    setEditing(null);
+    setEquipSelectedServices([]);
+    setDialogOpen(true);
+  }
+
+  function toggleService(id: number) {
+    setEquipSelectedServices(prev =>
+      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+    );
+  }
 
   return (
     <AppLayout>
@@ -101,8 +176,8 @@ export default function Tipos() {
           <h1 className="text-3xl font-display font-bold text-foreground">Tipos / Categorias</h1>
           <p className="text-muted-foreground mt-1">Gerencie categorias e tipos do sistema</p>
         </div>
-        <Button onClick={() => { setEditing(null); setDialogOpen(true); }}>
-          <Plus className="h-4 w-4 mr-2" /> Novo Tipo
+        <Button onClick={openNew}>
+          <Plus className="h-4 w-4 mr-2" /> {isEquipamento ? "Novo Equipamento" : "Novo Tipo"}
         </Button>
       </div>
 
@@ -117,7 +192,38 @@ export default function Tipos() {
       {isLoading ? (
         <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />)}</div>
       ) : filtered.length === 0 ? (
-        <p className="text-center text-muted-foreground py-12">Nenhum tipo cadastrado nesta categoria.</p>
+        <p className="text-center text-muted-foreground py-12">
+          {isEquipamento ? "Nenhum equipamento cadastrado." : "Nenhum tipo cadastrado nesta categoria."}
+        </p>
+      ) : isEquipamento ? (
+        <div className="space-y-2">
+          {filtered.map((item: any) => (
+            <div key={item.id} className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Wrench className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm">{item.nome}</p>
+                {item.descricao && <p className="text-xs text-muted-foreground">{item.descricao}</p>}
+                <div className="flex items-center gap-3 mt-1">
+                  <Badge variant="outline" className="text-xs">Qtd máx: {item.quantidadeMaxima}</Badge>
+                  {item.servicosNomes?.length > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      Serviços: {item.servicosNomes.join(", ")}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <Switch checked={item.ativo} onCheckedChange={() => handleToggle(item)} />
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEquipEdit(item)}>
+                <Edit2 className="h-4 w-4" />
+              </Button>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400" onClick={() => handleDelete(item.id)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="space-y-2">
           {filtered.map((item: any) => (
@@ -142,12 +248,38 @@ export default function Tipos() {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{editing ? "Editar" : "Novo"} {currentTabLabel}</DialogTitle></DialogHeader>
+        <DialogContent className={isEquipamento ? "max-w-lg" : ""}>
+          <DialogHeader><DialogTitle>{editing ? "Editar" : "Novo"} {isEquipamento ? "Equipamento" : currentTabLabel}</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div><Label>Nome</Label><Input name="nome" required defaultValue={editing?.nome || ""} key={editing?.id || "new"} /></div>
             <div><Label>Descrição</Label><Input name="descricao" defaultValue={editing?.descricao || ""} key={(editing?.id || "new") + "_desc"} /></div>
-            <Button type="submit" className="w-full" disabled={createTipo.isPending || updateTipo.isPending}>
+            {isEquipamento && (
+              <>
+                <div>
+                  <Label>Quantidade Máxima (uso simultâneo)</Label>
+                  <Input name="quantidadeMaxima" type="number" min="1" defaultValue={editing?.quantidadeMaxima || 1} key={(editing?.id || "new") + "_qty"} className="mt-1" />
+                  <p className="text-xs text-muted-foreground mt-1">Quantos deste equipamento estão disponíveis para uso simultâneo</p>
+                </div>
+                <div>
+                  <Label className="mb-2 block">Serviços Associados</Label>
+                  <p className="text-xs text-muted-foreground mb-2">Selecione os serviços que utilizam este equipamento</p>
+                  <div className="max-h-40 overflow-y-auto border rounded-lg p-2 space-y-1">
+                    {servicos.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-2">Nenhum serviço cadastrado</p>
+                    ) : servicos.map((s: any) => (
+                      <label key={s.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 cursor-pointer text-sm">
+                        <Checkbox
+                          checked={equipSelectedServices.includes(s.id)}
+                          onCheckedChange={() => toggleService(s.id)}
+                        />
+                        {s.nome}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+            <Button type="submit" className="w-full" disabled={createTipo.isPending || updateTipo.isPending || createEquip.isPending || updateEquip.isPending}>
               {editing ? "Salvar" : "Criar"}
             </Button>
           </form>

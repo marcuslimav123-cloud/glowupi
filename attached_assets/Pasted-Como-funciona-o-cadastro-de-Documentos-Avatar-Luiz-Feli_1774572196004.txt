@@ -1,0 +1,92 @@
+Como funciona o cadastro de Documentos?
+Avatar Luiz Felipe Paim de Carvalho
+há 7 anos Atualizado
+No sistema você pode fazer o cadastro de documentos padrão para você pode utilizar posteriormente.
+
+Você pode fazer o cadastro dos mais diversos tipos de documentos, todos conforme a sua necessidade.
+
+Mas como isso é feito?
+
+Para cadastrar os seus documento você pode primeiramente acessar o menu lateral em "Configurações > Documentos > Meus Documentos":
+
+Captura_de_Tela_2019-05-02_a_s_14.31.14.png
+
+ 
+
+Ao acessar a tela de documentos temos a opção "+Documentos", clicando nela podemos cadastrar um novo documento.
+
+Captura_de_Tela_2019-05-02_a_s_14.46.28.png
+
+Clicando em +Documentos vamos ter as seguintes opções:
+
+Titulo do documento: Nesse campos podemos definir um título para o nosso formulário, ele será um campo padrão.
+
+Corpo do documento: Aqui podemos definir o corpo do nosso documento, o que colocar aqui fica ao seu critério, você pode definir uma descrição padrão que será utilizada em todas as referência a esse documento.
+
+No corpo do documento você terá opções padrão de edição de texto, como texto em negrito, itálico, sublinhado além de seleção de tamanho de títulos, listas ordenadas e os campos dinâmicos.
+
+O que são os campos dinâmicos?
+
+Os campos dinâmicos são campos que serão substituídos dependendo de onde você estará utilizando esses documentos. Por exemplo: caso você utilize um campo referente ao agendamento, ao utilizar o documento  no prontuário, esse campos será substituído pelas informações do agendamento ao qual aquele prontuário se refere.
+
+Ao serem adicionados, os campos dinâmicos serão colocados entre chaves "{{}}", caso o conteúdo entre essas chaves seja alterado o campo será considerado inválido e será substituído por uma linha que pode ser preenchida caso o documento seja impresso, ou que pode ser alterado manualmente depois. Caso uma das chaves do campo dinâmico seja removida o campo não será substituído e os caracteres ficarão aparentes no documento, portanto tenha cuidado ao alterar os campos dinâmicos, se quiser remover um campo dinâmico, o apague por completo, e não altere o conteúdo entre chaves do campo dinâmico.
+
+Na imagem a seguir temos o exemplo de um cadastro de documento, com o campo dinâmico circulado em vermelho:
+
+Captura_de_Tela_2019-05-02_a_s_18.26.55.png
+
+ 
+
+E depois de cadastrar um campo dinâmico, como posso utilizá-lo? 
+
+Você pode utilizar os documentos das seguintes formas:
+
+Pelo prontuário:
+
+Para utilizar um documento pelo prontuário do cliente você precisa primeiro ter um prontuário criado para um agendamento.
+
+Feito isso, dentro dos detalhes do prontuário teremos a opção de documentos:
+
+Captura_de_Tela_2019-05-02_a_s_16.29.47.png
+
+ 
+
+ 
+
+Dentro de cada prontuário podemos ter mais de um documento, portanto ao clicarmos em "Documentos", nos será mostrada a lista de documentos desse prontuário e a opção de adicionar mais documentos.
+
+ 
+
+Captura_de_Tela_2019-05-02_a_s_16.50.14.png
+
+Para adicionar um novo documento vamos clicar em "+Documento", dessa forma nos será apresentada a janela para adicionar um novo documento a esse prontuário, nela temos as seguintes opções:
+
+Documento:
+
+Aqui podemos selecionar entre um dos nossos documentos cadastrados, ao selecionar esse campo, os campos dinâmicos serão  alterados automaticamente conforme os dados do agendamento, nesse caso as categorias de campos dinâmicos que são substituídos  serão: Cliente, Profissional e Agendamento.
+
+Corpo do Documento:
+
+Aqui será mostrado o corpo do documento padrão, já com os campos substituídos, ele também será editável, caso seja necessária alguma alteração. Também serão adicionadas opções de impressão e exportação para PDF.
+
+Na imagem abaixo temos o nosso exemplo de cadastro, porém agora com o campo dinâmico preenchido:
+
+Captura_de_Tela_2019-05-03_a_s_09.54.40.png
+
+ Ao clicar em "Cadastrar" o documento será inserido na lista de documentos do prontuário junto com as opções de visualização, impressão e exportação para PDF.
+
+Captura_de_Tela_2019-05-03_a_s_09.55.07.png
+
+Pelo Cadastro de Documentos:
+
+Você também pode inserir um documento avulso através do menu lateral em "Configurações > Documentos > Clientes"
+
+Captura_de_Tela_2019-05-03_a_s_10.02.56.png
+
+Aqui você pode visualizar todos os documentos de um cliente, para isso, você pode selecionar o cliente e clicar em "Buscar Documentos":
+
+Captura_de_Tela_2019-05-03_a_s_11.05.09.png
+
+Assim como na lista do prontuário temos a opção de visualizar, imprimir e exportar o documento para PDF.
+
+Para adicionar o novo documento para o cliente, basta selecioná-lo na lista de clientes e clicar em "+Novo Documento", com isso basta seguir o mesmo processo de novo documento do prontuário, descrito logo acima nesse artigo. A única diferença entre esses processos é que, pelo documento avulso, apenas os campos referentes o cliente são substituídos, e as outras categorias são substituídas por campos de preenchimento.

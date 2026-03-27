@@ -70,6 +70,19 @@ The system is being fully restructured to clone all AppBeleza functionality. Key
 - `contas_profissional` — professional accounts
 
 **Sidebar Structure (AppBeleza clone):**
-Dashboard → Agenda → Cadastros (Clientes, Profissionais, Serviços, Pacotes sub, Tipos 12 sub-items, Comunicação sub, Fidelização sub, Assinaturas sub) → Comandas (Abertas, Histórico) → Financeiro (Caixa, Histórico, Mov, Comissões, Conta Cliente, Estoque, Fluxo, Conta Prof, Caixinha) → Relatórios (Agendamentos sub, Gerencial sub) → Configurações (Parâmetros, Rodízio, Acessos, Templates, Fila sub, Anamnese sub, Documentos sub, Outros sub) → Meu Estúdio → Equipe
+Dashboard → Agenda → Cadastros (Clientes, Profissionais, Serviços, Pacotes sub, Tipos 13 sub-items incl. Cat. Serviço/Profissional/Produto, Comunicação sub, Fidelização sub, Assinaturas sub) → Comandas (Abertas, Histórico) → Financeiro (Caixa, Histórico, Mov, Comissões, Conta Cliente, Estoque, Fluxo, Conta Prof, Caixinha) → Relatórios (Agendamentos sub, Gerencial sub) → Configurações (Parâmetros, Rodízio, Acessos, Templates, Fila sub, Anamnese sub, Documentos sub, Outros sub) → Meu Estúdio → Equipe
+
+**Equipamentos (Tutorial Compliance):**
+- Dedicated `equipamentos` table with `quantidade_maxima` (simultaneous usage limit) + `servicos_ids` (jsonb array of associated service IDs)
+- Dedicated API routes at `/barbearias/:id/equipamentos` with tenant-scoped service validation
+- UI in Tipos page → Equipamentos tab with custom form (quantity + service association checkboxes)
+
+**Pesquisa de Satisfação (Tutorial Compliance):**
+- `envio_automatico` boolean field for auto-send after comanda finalization
+- `profissional_id` / `profissional_nome` on `respostas_pesquisa` for per-professional ratings
+- UI toggle in survey form + badge indicator in survey list
+
+**Categorias (Tutorial Compliance):**
+- 3 subtypes: Cat. Serviço, Cat. Profissional, Cat. Produto (all stored in `tipos` table with different `categoria` values)
 
 **DB Schema Path:** `lib/db/src/schema/` (each table in its own file, exported from `index.ts`)

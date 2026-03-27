@@ -10,6 +10,7 @@ export const pesquisaSatisfacaoTable = pgTable("pesquisa_satisfacao", {
   titulo: text("titulo").notNull(),
   perguntas: jsonb("perguntas").notNull().default([]),
   ativo: boolean("ativo").notNull().default(true),
+  envioAutomatico: boolean("envio_automatico").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -19,6 +20,8 @@ export const respostasPesquisaTable = pgTable("respostas_pesquisa", {
   pesquisaId: integer("pesquisa_id").notNull().references(() => pesquisaSatisfacaoTable.id),
   clienteId: integer("cliente_id").references(() => clientesTable.id),
   clienteNome: text("cliente_nome"),
+  profissionalId: integer("profissional_id"),
+  profissionalNome: text("profissional_nome"),
   respostas: jsonb("respostas").notNull().default({}),
   nota: integer("nota"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

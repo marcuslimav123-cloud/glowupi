@@ -1,0 +1,48 @@
+Como eu crio Cupons de Desconto?
+Avatar Luiz Felipe Paim de Carvalho
+há 1 ano Atualizado
+No sistema você pode criar Cupons de Desconto para presentear um cliente ou usar isso para promover seu estabelecimento, como uma campanha para incentivo a utilização do agendamento online ou para novos clientes, por exemplo.
+
+Para criar um Cupom, você deve ir no Menu Principal: Cadastros > Cupons de Desconto > +CUPOM
+
+
+
+Ao abrir a janela do Novo Cupom você deverá:
+
+
+
+1. Descrição: Campo onde você digita uma breve descrição do cupom, que ajuda a identificar o propósito ou a promoção associada ao mesmo.
+
+2. Código do Cupom: Este é o código que os clientes usarão para aplicar o cupom. Deve ser único e fácil de lembrar para que os clientes consigam usar com praticidade.
+
+3. Serviço: Permite selecionar para quais serviços o cupom pode ser aplicado, seja um serviço específico ou todos os serviços oferecidos pelo estabelecimento.
+
+4. Desconto: O desconto em porcentagem que o cupom oferece.
+
+5. Quantidade por Cliente: Limita quantas vezes um único cliente pode usar este cupom.
+
+6. Data de Vencimento: A data final em que o cupom pode ser usado.
+
+7. Tipo de Cupom: Opções para definir a quem o cupom se aplica, podendo ser todos os clientes, exclusivo para um cliente específico, ou exclusivo para um grupo de clientes.
+
+ 
+
+Exclusivo para cliente: basta selecionar essa opção, e depois selecionar o nome do cliente que poderá usar o cupom.
+ 
+Exclusivo para grupo: nesse caso, deve ter cadastrado previamente um grupo de clientes para que possa selecionar nessa opção. Para cadastrar o grupo de clientes, basta ir em Cadastros > Cupons de desconto e clicar no botão . Feito isso, você poderá selecionar o grupo de clientes no cadastro do cupom.
+ 
+Para todos os clientes: qualquer cliente poderá utilizar esse cupom.
+ 
+8. Período de Uso: Define se o cupom tem um uso limitado a determinados dias (especificados nas opções de "Data de Início" e "Data de Fim") ou é de uso "Livre", o que permite que o cupom seja usado a qualquer momento dentro do prazo de validade.
+
+9. Dias da Semana: Permite especificar em quais dias da semana o cupom pode ser utilizado, útil para promoções que ocorrem em dias específicos.
+
+ 
+
+ATENÇÃO: O campo Data de Vencimento serve para definir até que dia o cliente pode USAR o Cupom e não até que data ele pode CADASTRAR um Agendamento. Por exemplo: O cliente Lucas pode cadastrar o Agendamento dele somente para o mês seguinte. Mas inserindo o cupom HOJE ele será validado normalmente independente da data que vai ocorrer o Serviço.
+ 
+Ao criar o Cupom de Desconto você deve acessar o Aplicativo (com o login do profissional), acessando Menu > Cupom, clicando sobre o botão WhatsApp_Image_2023-01-25_at_16.31.38__1_.jpeg
+WhatsApp_Image_2023-01-25_at_16.31.37.jpegWhatsApp_Image_2023-01-25_at_16.31.38.jpeg
+
+O cupom será utilizado (válido) no momento em que o cliente agendar pelo Aplicativo e digitar o código do CUPOM, ao clicar em VALIDAR o aplicativo irá verificar se o cupom está correto e após o agendamento mostrará o valor qual foi descontado do serviço
+

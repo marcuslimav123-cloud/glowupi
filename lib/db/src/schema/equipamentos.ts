@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer, boolean, numeric } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, boolean, numeric, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { barbeariasTable } from "./barbearias";
@@ -14,6 +14,8 @@ export const equipamentosTable = pgTable("equipamentos", {
   dataCompra: text("data_compra"),
   valorCompra: numeric("valor_compra", { precision: 10, scale: 2 }),
   proximaManutencao: text("proxima_manutencao"),
+  quantidadeMaxima: integer("quantidade_maxima").notNull().default(1),
+  servicosIds: jsonb("servicos_ids").notNull().default([]),
   status: text("status").notNull().default("ativo"),
   ativo: boolean("ativo").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),

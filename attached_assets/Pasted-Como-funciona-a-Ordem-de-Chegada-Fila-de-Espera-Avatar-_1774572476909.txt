@@ -1,0 +1,34 @@
+Como funciona a Ordem de Chegada (Fila de Espera)
+Avatar Luiz Felipe Paim de Carvalho
+há 3 anos Atualizado
+A fila de espera é uma funcionalidade específica para barbearias que não trabalham com horário pré-estabelecido/agendado e sim por ordem de chegada no estabelecimento, ou seja, através de uma fila de espera.
+
+No AppBarber tratamos essa função pensando em organizar a fila de espera, associando o serviço, com o profissional e controlando o fluxo de caixa normalmente, ou seja, mesmo pela fila de espera, você pode fazer uma excelente gestão.
+
+Para utilizar a fila de espera você deve ir no Menu / Configurações / Ordem de  Chegada / Fila.
+
+ 
+
+    
+
+O primeiro passo é ABRIR uma nova fila!
+
+   mceclip0.png
+
+Ao abrir a fila de espera, você irá realizar o cadastro dos clientes por ordem de chegada, ou seja, quando um cliente chegar no estabelecimento você irá adicioná-lo na fila, para isso clique em Adicionar na Fila e após selecione o Cliente (se já possui cadastro) ou descreva o nome do cliente no campo - Observações -. Recomendamos sempre fazer um cadastro dos seus clientes para demais controles do sistema, é necessário somente uma vez (Vá em Cadastro / Cliente).
+
+mceclip1.png    
+
+mceclip2.png   
+
+Após adicionar os clientes na fila, você poderá mexer em diversas situações do Status de cada cliente. Você pode alterar a ordem de atendimento (seja qual for o motivo), pode cancelar caso cliente ir embora, colocar o status em atendimento para manter o controle de quem está sendo atendido (funciona muito bem em estabelecimentos que trabalham com mais profissionais), entre outras funcionalidades.
+
+mceclip3.png    
+
+Por fim, caso você queira visualizar o histórico da sua fila de espera, você pode ir Menu lateral à Fila de Espera à Histórico de Fila. Lá você consegue filtrar por data e visualizar detalhes do dia.
+
+mceclip4.png    
+
+Demais dúvidas podem ser esclarecidas no vídeo anexo no Menu principal / Ajuda / Vídeos.
+
+Facebook Twitter LinkedIn

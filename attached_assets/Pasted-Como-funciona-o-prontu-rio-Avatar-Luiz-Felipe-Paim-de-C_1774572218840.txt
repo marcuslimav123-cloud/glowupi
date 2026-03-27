@@ -1,0 +1,61 @@
+Como funciona o prontuário
+Avatar Luiz Felipe Paim de Carvalho
+há 2 anos Atualizado
+O prontuário do cliente é uma maneira fácil de você registrar quais foram os últimos procedimentos feitos, assim como registrar materiais observações e até fotos do atendimento de seu(a) cliente.
+
+Legal, e como posso fazer isso?
+
+O prontuário pode ser acessado de dentro dos detalhes do cliente. Existem diversas formas de acessar os detalhes do cliente. As maneiras mais fáceis são através do cadastro de clientes e da comanda.
+
+Pelo cadastro de clientes:
+
+Para acessar pelo cadastro de clientes basta ir ao menu lateral em "Cadastros > Clientes"e clicar no botão Info no cliente que desejar.
+
+Captura_de_Tela_2019-03-22__s_16.17.19.png
+
+Captura_de_Tela_2019-03-22__s_16.18.43.png
+
+Pela comanda:
+
+Pela comanda do cliente, temos acesso as informações através do botão "i" localizado logo ao lado do nome do cliente.
+
+Captura_de_Tela_2019-03-22__s_16.24.21.png
+
+Nas informações do cliente podemos selecionar a aba Prontuário
+
+Captura_de_Tela_2019-03-22__s_16.32.36.png
+
+Na aba de prontuário temos os últimos atendimentos do cliente que selecionamos. Em cada agendamento temos a possibilidade de cadastrar as informações sobre o atendimento. Para fazer isso vamos clicar em Captura_de_Tela_2019-03-22__s_16.58.22.png ao lado do do agendamento.
+
+Na janela que abrir podemos inserir os seguintes campos:
+
+Material utilizado: Aqui podemos registrar se utilizamos algum material em específico;
+
+Tipo de procedimento: Aqui podemos registrar qual foi o procedimento que adotamos nesse agendamento.
+
+Observação: Aqui você pode registrar informações diversas sobre o atendimento
+
+Você também pode inserir até três imagens referentes ao atendimento no campo Imagens do Agendamento.
+
+Após salvarmos as informações, a lista de prontuários será atualizada e vamos poder conferir os dados cadastrados através da própria tabela clicando no "+" ao lado direito de cada prontuário.
+
+Podemos também imprimir os prontuários do cliente clicando no botão da impressora mais a esquerda de cada prontuário.
+
+ Captura_de_Tela_2019-03-22_a_s_17.10.47.png
+
+ 
+
+Como acesso o prontuário pelo meu aplicativo no celular?
+Com o aplicativo do AppBeleza PRO:Profissionais/AppBarber PRO:Profissionais, o prontuário fica ainda mais prático de ser utilizado. 
+
+1) Clique sobre o agendamento do(a) cliente na agenda.
+
+2) Role sua tela um pouco para baixo, até encontrar a opção PRONTUÁRIO:
+
+WhatsApp Image 2023-07-27 at 09.30.40.jpeg
+
+3) Clicando nessa opção, aparecerá um histórico de atendimentos do(a) cliente. Clique sobre o agendamento que você quer registrar e insira as informações como material utilizado, tipo de serviço, observação e imagens do procedimento realizado. As imagens podem ser tiradas na hora ou importadas da sua galeria. 
+
+WhatsApp Image 2023-07-27 at 09.30.51.jpegWhatsApp Image 2023-07-27 at 09.30.56.jpeg
+
+Facebook Twitter LinkedIn

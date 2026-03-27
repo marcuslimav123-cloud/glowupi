@@ -1,0 +1,108 @@
+Como configurar e utilizar o módulo fiscal
+Avatar Luiz Felipe Paim de Carvalho
+há 2 anos Atualizado
+Após a assinatura do contrato do módulo fiscal, algumas configurações serão ativadas para você no sistema automaticamente, possibilitando você a emissão de nota fiscal de serviço e produto.
+
+Para a nota de serviço não existe a necessidade de nenhuma configuração adicional, dessa forma as notas de serviços já podem emitidas diretamente após a ativação do módulo fiscal.
+
+Para a nota de produto, é necessário o cadastro de algumas informações adicionais para a emissão.
+
+Para adicionar as informação nos produtos você pode acessar o menu lateral em "Cadastros > Produtos":
+
+ 
+
+mceclip0.png
+
+ 
+
+Na sua lista de produtos você pode clicar em "Editar" para mostrar as configuração do produto.
+
+ 
+
+mceclip1.png
+
+ 
+
+Caso a nota fiscal de produtos esteja ativa, uma nova aba fica disponível pra você para que seja possível as configuração dos produtos para nota fiscal. A nova aba disponível é a aba "Emissão".
+
+ 
+
+mceclip2.png
+
+Na tela de configuração de emissões você tem as seguintes opções:
+
+NCM  - Nomenclatura Comum do Mercosul.
+
+ICMS - Imposto Sobre Circulação De Mercadorias e Serviços.
+
+PIS - Programa de Integração Social.
+
+Cofins - Contribuição para o Financiamento da Seguridade Social.
+
+CFOP - Código Fiscal de Operações e Prestações das entradas e saídas de mercadorias.
+
+Cada produto cadastrado precisa dessas informações para a emissão de nota. Algumas dessas informações podem ser obtidas na própria nota fiscal de compra do produto como o NCM. Porém o ideal é que você confira com a sua contabilidade o que deve ser informado em cada produto para emissão.
+
+ 
+
+Após a configuração fiscais no produto, a emissão já pode ser realizada.
+
+ 
+
+Para a emissão, tanto de produto quanto de serviço, só é necessário que você finalize um comanda tendo o módulo fiscal ativo, dessa forma uma nova janela vai aparecer para você. A janela de emissão possui alguns campos para que você pode preencher para adicionar informações a nota, grande parte deles são informações do cliente. As informações obrigatórias variam de cidade para cidade, portanto, alguns campos podem ser obrigatórios para você, esses campos vão estar destacados com um * nesses casos.
+
+As notas de produto e serviço são emitidas separadamente portando na finalização da comanda podem aparecer duas janelas para você, sendo elas as janelas de emissão de produto e serviço.
+
+Emissão de Produto:
+
+mceclip3.png
+
+ 
+
+Emissão Serviço:
+
+mceclip4.png
+
+ 
+
+As janelas de emissão de produto e serviço possuem algumas informações distintas entre elas.
+
+A janela de emissão de produtos apresenta o valor total a ser emitido pela nota, assim como uma lista com todos os produtos da nota.
+
+A janela de emissão de serviço também vai apresentar o valor e o nome dos serviços prestados, porém irá mostrar também um campo "Operação", essas operações serão cadastradas junto ao seu cadastro no módulo fiscal, portanto de ver ser informado junto aos dados solicitados no momento do seu cadastro.
+
+O restante dos campos são informações do cliente, como Nome, CPF, CEP e afins, assim como o campo "Enviar via Email?" para caso você deseje enviar a nota via e-mail diretamente para o seu cliente (a nota será enviada para o e-mail informado na emissão da nota).
+
+Caso a comanda seja para um cliente já cadastrado no sistema, os campos serão preenchidos automaticamente caso as informações necessárias estejam salvas nas informações do cliente.
+
+A emissão da nota pode ser feita em dois momentos distintos, a primeira é na finalização da comanda, onde caso o módulo fiscal ativo as janelas de emissão serão apresentadas automaticamente.
+
+A segunda forma é caso você deseje emitir a nota posteriormente, para isso você pode acessar o menu lateral em "Comandas > Histórico de comandas"
+
+mceclip5.png
+
+No Histórico de comandas, caso o módulo fiscal esteja ativo, uma nova opção ficará disponível em cada comanda.
+
+mceclip6.png
+
+Ao clicar na opção fiscal no histórico de comanda, uma janela com todas as emissões da comanda ficará disponível, caso nenhuma emissão tenha sido feita ficarão disponíveis as opções de emissão nessa janela.
+
+mceclip7.png
+
+Ao clicar nas opções de emissão, novamente as janelas de emissão de produto e serviço serão apresentadas, da mesma forma que na finalização da comanda.
+
+ 
+
+Após a solicitação de emissão você deve aguardar alguns minutos para que sua nota seja aprovada pela prefeitura. As informações da emissão, assim como seu status ficam disponíveis na lista de emissões através do histórico de comandas.
+
+mceclip8.png
+
+ Ao ser autorizada ou negada, o registo na lista é automaticamente atualizado, sendo assim, caso a nota seja autorizada, ficarão disponíveis os documentos em XML e PDF para você, assim como a opção para o cancelamento da nota. Caso a nota tenha sido negada pela prefeitura, a coluna "Motivo" vai apresentar para você a causa pela qual nota foi negada.
+
+Abaixo temos o exemplo de uma nota aprovada:
+
+mceclip9.png
+
+Dentro do sistema esse é o processo necessário para a configuração e emissão de notas fiscais.
+
+ 

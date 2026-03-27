@@ -1,0 +1,444 @@
+O que significa cada Parâmetro do sistema:
+Avatar Luiz Felipe Paim de Carvalho
+há 11 meses Atualizado
+Segue explicação do que significa cada parâmetro em sequência:
+
+ 
+
+1 - Dias para Data de Expiração de Pontos.
+
+Explicação: Dias para que os pontos acumulados pelos seus clientes, no Programa de Fidelidade, expirem...a partir da data da geração desses pontos (que é a data da finalização da comanda).
+
+Exemplo: 365 dias. Então se um cliente realizar um serviço em 10/10/2017 e que faça ele acumular 1 ponto...esse ponto irá expirar em 10/10/2018.
+
+ 
+
+2 - Limite de tolerância de cancelamento de horário pelo cliente (aplicativo)
+
+Explicação: Tempo de tolerância para que o cliente consiga cancelar um agendamento dele pelo Aplicativo.
+
+Exemplo: 1 hora. Então, se o cliente tem um agendamento em 10/10/2017 17:00, ele só poderá cancelar um horário (pelo app) até 10/10/2017 16:00. Esse parâmetro é para evitar que clientes que cancelem em cima da hora pelo App.
+
+ 
+
+3 - Tempo (em minutos) Padrão para o Agendamento
+
+Explicação: Esse é o parâmetro mais importante do sistema. É o Tempo (em minutos) padrão da agenda e ele será o valor ao qual os tempos dos serviços e horário de trabalho serão múltiplos.
+
+Exemplo 1:  15 minutos. Sendo assim, os serviços poderão ser configurados em tempos múltiplos de 15 minutos. Então pode ser 15 minutos, 30 minutos, 45 minutos, 60 minutos e assim por diante.
+
+Exemplo 2:  20 minutos. Sendo assim, os serviços poderão ser configurados em tempos múltiplos de 20 minutos. Então pode ser 20 minutos, 40 minutos, 60 minutos, 80 minutos e assim por diante.
+
+Exemplo 3:  30 minutos. Sendo assim, os serviços poderão ser configurados em tempos múltiplos de 30 minutos. Então pode ser 30 minutos, 60 minutos, 90 minutos, 120 minutos e assim por diante.
+
+ 
+
+Observação: Qualquer alteração nesse parâmetro poderá impactar nos tempos de serviços e configurações dos horários de trabalho. Deve ser feita a verificação se o valor alterado neste parâmetro é compatível/múltiplo com os tempos dos serviços e horários de trabalho.
+
+ 
+
+4 - Tema/Layout WebAdmin
+
+Explicação: Tema de cor e layout do WebAdmin, caso queira deixar mais próximo de uma cor do seu estabelecimento.
+
+ 
+
+5 - Limite de Antecedência para Agendamento de Horário Pelo App
+
+Explicação: Tempo limite de antecedência para agendamento de um horário pelo cliente via Aplicativo.
+
+Exemplo:  30 minutos. O cliente só conseguirá agendar em horários disponíveis maiores que 30 minutos da data atual. Digamos que o cliente faça a busca de horários disponíveis no aplicativo em 10/10/2017 17:32. Sendo assim, só irá aparecer horários disponíveis a partir de 18:30, pois o horário das 18:00 está fora do limite de antecedência (que é de 30min).
+
+ 
+
+6 - Habilitar Envio de Mensagem quando Cliente Agendar/Cancelar pelo Aplicativo
+
+Explicação: Habilitar ou não o envio de mensagem para o Profissional quando o Cliente, via app, fizer um agendamento ou cancelar o agendamento. Como padrão, esse parâmetro vem HABILITADO.
+
+Exemplo:  Caso estiver habilitado, o profissional receberá no aplicativo (caso estiver logado com seu email e senha) ou no Webadmin uma mensagem parecida com: "Novo Agendamento - Cliente: Luiz Silva Data: 26/04/2018 10:00 Serviço: Corte Masculino Profissional: Diana Antunes"
+
+ 
+
+7 - Permitir Agendamento no mesmo Horário pelo Cliente (Aplicativo)
+
+Explicação: Permitir que o mesmo usuário do aplicativo consiga agendar, no mesmo horário, dois agendamentos com profissionais diferentes.
+
+Exemplo: Um cliente/usuário que é o Pai quer agendar com o Profissional A as 15:00. No mesmo horário (15:00), ele quer agendar com o Profissional B para o filho dele. Então este parâmetro deve estar habilitado para permitir isso.
+
+ 
+
+8 - Obrigatoriedade da Seleção da Bandeira na Comanda e na Venda de Pacotes
+
+Explicação: Obrigar o usuário do Webadmin selecionar a bandeira de cartão na finalização das comandas e na venda dos pacotes. Isso serve para estabelecimentos que querem controlar o Fluxo de Caixa das comandas e pacotes recebidos em Cartões e evitar que algum usuário esqueça de selecionar a informação da bandeira do cartão.
+
+ 
+
+9 - Limite de Agendamento Futuro pelo Cliente (em dias)
+
+Explicação: Limite de tempo (em dias) para que o cliente consiga realizar agendamentos futuros pelo aplicativo. 
+
+Exemplo: 30 dias. Digamos que a data atual seja 10/10/2017. Sendo assim, o cliente só conseguirá agendar, nesse exemplo, até 10/11/2017...pelo aplicativo.
+
+ 
+
+10 - Não Deixar Cancelar Horários pelo App Profissionais Não-Gestor
+
+Explicação: Deixando DESABILITADO esse parâmetro, o profissional vai conseguir cancelar horários normalmente em sua Agenda. 
+
+Para HABILITAR a função de não deixar cancelar, é possível escolher entre:
+
+App - não deixar cancelar horários pelo Aplicativo. 
+
+WebAdmin - não deixar cancelar horários pelo módulo web.
+
+App/WebAdmin - não deixar cancelar horários de modo geral, no Aplicativo e no WebAdmin.
+
+Obs.: se aplica somente aos usuários não-gestores.
+
+ 
+
+11 - Aprovar Solicitação de Cadastro Automaticamente
+
+Explicação: Caso o estabelecimento queira automatizar o processo de aprovação de solicitação de cadastro de clientes, essa opção deve estar habilitada. Caso esteja desabilitada, o processo de aprovação deverá ser feita manualmente (via Webadmin ou aplicativo).
+
+Obs.: Como padrão, esse parâmetro vem HABILITADO.
+
+ 
+
+12 - No Aplicativo, mostrar Comandas Abertas SOMENTE para Profissionais Envolvidos e Gestores
+
+Explicação: Com este parâmetro habilitado, a sessão comandas do aplicativo dos profissionais só conterá comandas ao qual o profissional conectado está envolvido (ou ele tem algum serviço que irá fazer ou foi ele quem abriu a comanda). Usuários gestores sempre verão todas as comandas. Esse parâmetro é muito útil para estabelecimentos que não querem profissionais não-gestores mexendo/visualizando comandas de outros profissionais ou ao qual ele não tem motivo para tal.
+
+ 
+
+13 - Habilitar Fechamento de Comanda no Aplicativo para Usuários Não-Gestores
+
+Explicação: No aplicativo dos profissionais existe a opção de finalizar comandas, como no Webadmin. Porém, como padrão, usuários não-gestores não tem permissão para essa opção. Caso queria permitir a finalização de comandas por estes usuários, este parâmetro deve ser habilitado.
+
+ 
+
+14 - Permitir inserção de Comandas de Profissionais no Caixa (para profissionais que pagam comandas)
+
+Explicação: Como padrão, as comandas de consumo de Profissionais são DESCONTADAS das comissões do mesmo. Porém, alguns estabelecimentos podem ter também a opção do profissional PAGAR a comanda consumida (em alguns casos pode querer descontar e outros pode querer pagar). Para que essa situação seja permitida, este parâmetro deve ser habilitado.
+
+ 
+
+15 - Campo de Edição de Comissões na Comanda
+
+Explicação: O campo de comissão (já calculada automaticamente) no item da Comanda pode ser editado (caso o gestor queira dar uma comissão maior ou menor em um determinado atendimento, por exemplo). Nesse parâmetro você pode definir se:
+
+Mostrar - O campo vai ser apresentado na tela e fica permitida a edição de valor.
+
+Bloquear - O campo é apresentado na tela, mas fica bloqueado para ser alterado.
+
+Não-Mostrar - O campo de comissão não é mostrado quando o profissional clica em editar o item na Comanda.
+
+ 
+
+16 - Não Deixar Agendar Horários pelo App Profissionais Não-Gestor
+
+Explicação: Habilitando esse parâmetro, o usuário profissional não conseguirá, via Aplicativo, agendar horários na sua Agenda (somente usuários não-gestores).
+
+ 
+
+17 - Ativar Baixa Automática do Contas a Receber quando chegar o Vencimento
+
+Explicação: Habilitando esse parâmetro, as contas a receber (opção Financeiro - Entrada/Saída - aba Contas a Receber) serão baixadas automaticamente quando chegar o vencimento.
+
+ 
+
+18 - Ativar Controle de Clientes por número de Celular 
+
+Explicação: Habilite para NÃO permitir o cadastro de dois clientes diferentes com o mesmo número de celular.
+
+
+19 - Tempo (em horas) para envio de Lembrete automático para agendamentos feitos pelo Aplicativo
+
+Explicação: Quando o agendamento é realizado pelo aplicativo (seja do Cliente ou do Profissional), o sistema envia um lembrete automaticamente por Email e/ou Notificação no Aplicativo. Com este parâmetro, é possível definir quantas horas antes enviar este lembrete automático, para todo agendamento realizado pelo Aplicativo. Caso não seja definido, o valor padrão será de 1 hora antes.
+
+ 
+
+20 - Fonte WebAdmin
+
+Explicação: Alteração do Tipo de Fonte das escritas do módulo Webadmin.
+
+ 
+
+21 - Contabilizar pontos no programa de fidelidade apenas para agendamentos feitos pelo App do cliente
+
+
+Explicação: Caso queira que o sistema contabilize pontos do Programa de Fidelidade, ao finalizar os agendamentos/comandas, apenas para agendamentos CADASTRADOS pelo cliente via App (para incentivar o cliente a agendar pelo aplicativo).
+
+ 
+
+22 - Ativar envio automático de lembrete via SMS para agendamentos pelo aplicativo (caso tenha saldo de SMS)
+
+Explicação: Habilitar caso queria que envie SMS (caso tenha saldo) automaticamente para lembretes de agendamentos realizados pelo aplicativo.
+
+ 
+
+23 - Envio automático de mensagens de aniversário
+
+Explicação:  Habilitar caso queria que as mensagens de aniversário sejam enviadas automaticamente para os seus clientes. Clicando no botão ao lado (ícone "balãozinho"), você pode personalizar a mensagem que será enviada. Caso não fizer, será enviada uma mensagem padrão do sistema.
+
+ 
+
+24 - Não mostrar telefone do cliente no Aplicativo
+
+Explicação:  Habilitar caso queria que o telefone do cliente não apareça na solicitação de cadastro e nos detalhes do agendamento do cliente.
+
+ 
+
+25 - Limite de Dias Para Agendamento Passado
+
+Explicação:  Limite de dias para realizar agendamentos em datas passadas.
+
+Exemplo: 2 dias. Digamos que a data atual seja 25/08/2018, com o limite em 2 dias só será possível fazer agendamentos manualmente na agenda até o dia 23/08/2018.
+
+ 
+
+26 - Mostrar Lista de Clientes no App para Usuários Não-Gestores
+
+Explicação:  Habilitar para disponibilizar a lista de clientes para profissionais não-gestores no aplicativo.
+
+ 
+
+27 - Permitir o Cadastro de Novo Cliente no App para Usuários Não-Gestores
+
+Explicação:  Habilitar para disponibilizar o atalho para cadastrar clientes na hora do agendamento no aplicativo. 
+
+Atenção : Essa opção não disponibiliza a lista de clientes, apenas a opção de cadastrar um novo cliente.
+
+ 
+
+28 - Habilitar Alteração de Profissional da Agenda do App para Usuários Não-Gestores
+
+Explicação:  Habilitar para possibilitar aos profissionais não-gestores navegar entre as agendas de todos os profissionais.
+
+ 
+
+29 - Não Enviar Emails de Confirmação de Agendamento para o Cliente
+
+Explicação: Habilitar para NÃO enviar e-mails automáticos de Confirmação de Agendamento para o cliente (logo após a criação do agendamento - independente da plataforma).
+
+Exemplo: Foi realizado o agendamento para o cliente João da Silva, mas o estabelecimento não quer que envie e-mail de confirmação, pois o estabelecimento costuma fazer muita alteração de agendamento (devido a flexibilidade de agenda). Então, habilitando esse parâmetro, o e-mail de confirmação Não Será Enviado.
+
+ 
+
+30 - Não Permitir a Reabertura de Caixa por Profissionais Não-Gestores
+
+Explicação: Habilitar para NÃO permitir aos profissionais não-gestores reabrirem caixas no sistema. 
+
+ 
+
+31 - Não Permitir a Reabertura de Comandas por Profissionais Não-Gestores
+
+Explicação: Habilitar para NÃO permitir aos profissionais não-gestores reabrirem comandas no sistema. 
+
+ 
+
+32 - Enviar link de Confirmação de Agendamento para o Cliente no Lembrete via Email e SMS
+
+Explicação: Habilitar para enviar um link de confirmação de agendamento no email e sms de lembrete automático (necessita da ativação do parâmetro 19 para email, e 22 para sms). 
+
+ 
+
+33 - Não Deixar Bloquear Horários pelo App Profissionais Não-Gestor
+
+Explicação: Habilitando esse parâmetro, o usuário profissional não conseguirá, via Aplicativo, Bloquear horários na sua Agenda (somente usuários não-gestores). 
+
+ 
+
+34 - Habilitar configuração de auxiliar
+
+Explicação: Habilitando esse parâmetro, será possível utilizar a funcionalidade de auxiliares disponível no sistema. Para mais detalhes clique AQUI.
+
+ 
+
+35 -Ativar envio automático de mensagens de aniversário via SMS (caso tenha saldo de SMS)
+
+Explicação: Habilitar caso queria que envie SMS (caso tenha saldo) nas mensagens automáticas de aniversário  (necessita da ativação do parâmetro  23 para fazer o envio). 
+
+ 
+
+36 -Ativar envio automático de mensagens de retorno via SMS (caso tenha saldo de SMS)
+
+Explicação: Habilitar caso queria que envie SMS (caso tenha saldo) nas mensagens automáticas de retorno  (necessita da configuração de tempo de retorno nos seus serviços). 
+
+ 
+
+37 -Ativar Controle Jornada x Profissional x Serviço
+
+Explicação: Habilitar caso queria que determinados serviços de determinados profissionais só fiquem disponíveis em alguns dias da semana. Para mais informações sobre essa configuração clique AQUI
+
+ 
+
+38 - Mostrar a opção do sem preferência na lista de profissionais
+
+Explicação: Habilitar caso deseje que fique disponível a opção do sem preferência na lista de profissionais. Obs: Ao realizar o agendamento sem preferência vai ser direcionado ao profissional que tem menos agendamentos naquele dia. 
+
+ 
+
+39 -Habilitar Envio de Mensagem quando Agendar/Cancelar pelo Aplicativo para Todos os Gestores
+
+Explicação: Habilitar caso queria que os gestores recebam as notificações de agendamento de todos os profissionais. Caso desativado apenas o profissional envolvido no agendamento será notificado.
+
+ 
+
+40 - Habilitar Associação Automática do Pacote ao Agendamento
+
+Explicação: Habilitar para que os pacotes sejam associados automaticamente na comanda do cliente no momento da abertura. Para mais informações sobre o funcionamento dos pacotes clique AQUI
+
+ 
+
+41 - Habilitar Caixinha
+
+Explicação: Habilitar para disponibilizar a função "Caixinha" no sistema. Para mais informações sobre o caixinha clique AQUI.
+
+ 
+
+42 - Mostrar VER DIA no Caixa
+
+Explicação: Habilitar para mostrar uma nova opção no caixa, que mostra os valores movimentados no período em que o caixa está aberto, incluindo movimentações de cartão com dias corridos e seu valor líquido.
+
+ 
+
+43 - Zerar Comissão ao realizar Resgate do Programa de Fidelidade
+
+Explicação: Habilitar para zerar a comissão do profissional quando o serviço do cliente for um resgate do programa de fidelidade.
+
+ 
+
+44 - Não Permitir Agendamento sem Cliente por Profissionais Não-Gestores
+
+Explicação: Habilitar para não permitir que profissionais não-gestores realizem agendamentos sem selecionar o cliente.
+
+ 
+
+ 45 - Não Permitir a Criação de Encaixes por Profissionais Não-Gestores
+
+Explicação: Habilitar caso deseje que os profissionais não-gestores não agendem encaixes no sistema.
+
+ 
+
+46 - Não gerar comissão na comanda para serviços associados a pacotes comissionados
+
+Explicação: Habilitar caso deseje que ao associar um serviço a um pacote na comanda, o mesmo não gere comissão para os profissionais caso o pacote já tenha gerado comissão na venda.
+
+ 
+
+47 - Ativar envio automático de lembrete via WhatsApp para agendamentos (caso tenha saldo de WhatsApp)
+
+Explicação: Habilitar caso deseje que enviar automaticamente mensagens de lembrete via WhatsApp, caso possua o saldo de mensagens de WhatsApp para envio.
+
+ 
+
+48 - Limite de Agendamento Diários para o Cliente (Mesmo Serviço)
+
+Explicação: Limite de agendamentos que um mesmo cliente pode fazer para o mesmo serviço.
+
+Exemplo: Caso o parâmetro esteja como "1" o cliente João da Silva, não poderá agendar dois serviços "Corte" no mesmo dia, independente de profissional ou horário, para evitar que clientes realizem dois agendamentos para "garantir" um segundo horário caso não consiga comparecer ao primeiro agendamento.
+
+ 
+
+49 - Fuso horário
+
+Explicação: Seu fuso horário local, para ajudar a definir a hora atual na sua agenda.
+
+ 
+
+50 - Mostrar Produtos no Site
+
+Explicação: Habilitar caso deseje que os seus produtos fiquem disponíveis para visualização no seu site AppBarber/AppBeleza.
+
+ 
+
+51 - Ativar envio automático de Mensagens de Retorno via WhatsApp (caso tenha saldo de WhatsApp)
+
+Explicação: Habilitar caso deseje que as mensagens de retorno para serviços do sistema sejam enviadas automaticamente via WhatsApp para os seus clientes caso você tenha créditos disponíveis no sistema.
+
+ 
+
+52 - Ativar envio automático de Aniversário via WhatsApp (caso tenha saldo de WhatsApp)
+Explicação: Habilitar caso deseje que as mensagens de aniversário sejam encaminhadas automaticamente para seus clientes, é necessário que você tenha a data de nascimento do cliente configurada dentro do cadastro e créditos para envio disponíveis.
+
+ 
+
+53 - Desativar programa de fidelidade
+ 
+Explicação: Habilitar para desativar o programa de fidelidade do estabelecimento, com esse parâmetro habilitado seus clientes não conseguem mais resgatar itens e nem terão pontos gerados quando realizarem algum agendamento.
+ 
+54 - Início de horário da Agenda do Webadmin/App Pro
+ 
+Explicação: O horário padrão de início da Agenda no sistema é 07:00. Caso deseje alterar isso, pode configurar nessa opção.
+ 
+55 - Mostrar caixa no App Pro para profissionais não-gestores
+ 
+Explicação: Por padrão, profissionais não-gestores não conseguem visualizar o caixa pelo aplicativo AppBarber PRO/AppBeleza PRO. Altere o parâmetro para SIM caso deseje que os profissionais possam ter a aba Caixa no app. 
+ 
+56 - Nos agendamentos do clube de assinatura, gerar comissão com base no valor original do serviço (Sem desconto)
+ 
+Explicação: Habilitar caso deseje que a comissão do Clube de Assinaturas seja gerada em cima do valor que está originalmente cadastrado no serviço, independentemente do desconto cadastrado no Plano de Assinatura.
+ 
+57 - Não gerar comissões para itens que forem cortesias
+ 
+Explicação: Ao editar um item da comanda e marcar a opção "Cortesia", por padrão a comissão será gerada normalmente. Habilite esse parâmetro caso você queira que serviços/produtos marcados como cortesia não gerem comissão aos profissionais. 
+ 
+58 - Tamanho dos Slots da Agenda no Web
+ 
+Explicação: "Slots" são os espaços entre um horário e outro na agenda do sistema web.
+Alterando esse parâmetro você consegue escolher qual será o tamanho desses espaços.
+ 
+59 - Limite de Agendamentos Futuros em Aberto por Cliente
+ 
+Explicação: Limite de agendamentos que os clientes podem ter em aberto no estabelecimento ao mesmo tempo, independente de serviço ou profissional.
+ 
+60 - Ativar Envio automático de Aniversário via Email
+ 
+Explicação: Ativando esse parâmetro, ao chegar na data de nascimento do cliente (caso tenha sido informada no cadastro do cliente), ele receberá um e-mail de felicitações de aniversário. Para mais informações sobre as mensagens de aniversário, clique aqui.
+ 
+61 - Final dos horários na Agenda do WebAdmin/ App Pro 
+ 
+Explicação: Semelhante ao parâmetro 54. Por padrão, a agenda do seu sistema mostra o último horário como 23:30. Caso deseje alterar isso, basta configurar o horário desejado nesse parâmetro.
+ 
+62 - Enviar Notificação no Aplicativo quando o Cliente estiver com Pacote Expirando
+ 
+Explicação: Habilitando esse parâmetro, o cliente será notificado pelo app quando possuir um pacote A Expirar (caso o pacote adquirido possua dias para expiração). As notificações são enviadas toda segunda-feira avisando os clientes que possuem pacotes que estão perto da data de expiração. 
+
+63 - Bloquear Edição de Agendamento para Profissionais não-gestores
+
+Explicação: Ao ativar esse parâmetro, somente os profissionais com status de gestor poderão editar agendamentos. Ele pode ser filtrado entre os módulos do sistema, de acordo com a preferencia do estabelecimento.
+
+
+64 - Ativar envio automático de Avaliação do Atendimento via WhatsApp (caso tenha saldo de WhatsApp)
+
+Explicação: Com esse parâmetro ativado, após o término do atendimento, o cliente receberá automaticamente uma solicitação de avaliação via WhatsApp, se houver saldo disponível para envio de mensagens. Isso facilita o feedback dos clientes e melhora a qualidade do serviço ao permitir avaliações rápidas e eficientes.
+
+
+65 - Não permitir abertura de comanda por profissionais não gestores
+
+Explicação:  Quando habilitado, limita a abertura de novas comandas, deixando exclusivamente aos profissionais com status gestor . Este controle assegura uma gestão mais centralizada das comandas, enquanto ainda permite que profissionais não gestores possam realizar agendamentos.
+
+ 
+
+66 - Mostrar lista de Categorias para Seleção de profissionais na agenda
+
+Explicação: Ao habilitar esse parâmetro, vai apresentar um botão na agenda que permitirá filtrar os profissionais por Categorias, personalizando a visualização. Obs: Os profissionais e as categorias devem ser previamente configurados para que essa opção funcione corretamente.
+
+ 
+
+67 - Não mostrar opção de "Não quero conversar..." no app
+
+Explicação: Habilitar para não deixar disponível para o cliente a opção de "Não quero conversar no atendimento", que por padrão é habilitada em todos os estabelecimentos.
+
+ 
+
+68 - Mostrar opção de assinatura por dias da semana
+
+Explicação: Habilitar esse parâmetro permite que você restrinja a disponibilidade de determinados serviços de acordo com dias específicos da semana em um plano de assinatura
+
+Exemplo: Você tem uma assinatura de Corte Mensal em uma barbearia:
+
+Corte de Cabelo: Está incluído gratuitamente na assinatura se for agendado de segunda a sexta-feira.
+
+Fins de semana: Se você quiser agendar o corte de cabelo no sábado ou domingo, ele não é coberto pela assinatura e será cobrado como um serviço avulso.

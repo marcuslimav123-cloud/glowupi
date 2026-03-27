@@ -86,7 +86,9 @@ const NAV_ITEMS: NavItem[] = [
       {
         label: "Tipos",
         items: [
-          { name: "Categorias", href: "/cadastros/tipos", icon: Tag },
+          { name: "Cat. Serviço", href: "/cadastros/tipos", icon: Tag },
+          { name: "Cat. Profissional", href: "/cadastros/tipos?cat=profissional", icon: Tag },
+          { name: "Cat. Produto", href: "/cadastros/tipos?cat=produto", icon: Tag },
           { name: "Tipo Pagamentos", href: "/cadastros/tipos?cat=pagamento", icon: CreditCardIcon },
           { name: "Despesas", href: "/cadastros/tipos?cat=despesa", icon: TrendingUp },
           { name: "Receitas", href: "/cadastros/tipos?cat=receita", icon: DollarSign },

@@ -1,0 +1,47 @@
+Dimensões de Imagens no Sistema
+Avatar Luiz Felipe Paim de Carvalho
+há 8 meses Atualizado
+Entender as dimensões corretas das imagens é crucial para garantir que seu conteúdo apareça perfeitamente em todas as seções do nosso sistema. Preparamos este guia rápido para te ajudar!
+
+1. Por que as dimensões das imagens são importantes?
+Imagens com as dimensões corretas garantem que seu conteúdo seja exibido sem cortes, distorções ou perda de qualidade. Isso melhora a experiência visual para seus clientes e mantém a estética profissional do seu perfil e das suas publicações.
+
+2. Onde devo usar imagens no formato quadrado?
+Imagens quadradas são ideais para perfis e elementos que precisam de um destaque uniforme. Use o formato Quadrado para os seguintes cadastros:
+
+Cadastros de Serviços
+Pacotes
+Profissionais
+Clientes
+Produtos
+Prontuário
+Para esses campos, temos duas opções de tamanho que se adequam melhor:
+
+600x386 pixels
+280x180 pixels
+Recomendamos usar a dimensão maior (600x386) sempre que possível para garantir a melhor qualidade, e a dimensão menor (280x180) como uma alternativa para arquivos mais leves ou quando o espaço for mais limitado.
+
+3. Onde devo usar imagens no formato retangular?
+Imagens retangulares são perfeitas para banners, logotipos e conteúdo que requer mais largura. Temos duas categorias de imagens retangulares:
+
+3.1. Logo e Imagens do Estabelecimento
+Para a sua logo principal e outras imagens que representem o seu estabelecimento, utilize a seguinte dimensão:
+
+623x400 pixels
+Esta dimensão é ideal para manter a proporção e a clareza da sua marca em destaque.
+
+3.2. Notícias e Promoções
+Para suas Notícias e Promoções, que geralmente requerem mais espaço para impacto visual, use a dimensão:
+
+800x514 pixels
+Essa dimensão oferece um bom equilíbrio entre largura e altura para apresentar suas novidades e ofertas de forma atraente.
+
+4. Quais são os formatos de arquivo recomendados?
+Para garantir a melhor qualidade e compatibilidade, recomendamos os seguintes formatos de imagem:
+
+JPEG (.jpg ou .jpeg): Ideal para fotos e imagens com muitas cores, oferecendo bom equilíbrio entre qualidade e tamanho do arquivo.
+PNG (.png): Perfeito para imagens com transparência (como logotipos com fundo transparente) e gráficos com linhas nítidas.
+5. Existe um tamanho máximo de arquivo recomendado?
+Sim! Embora as dimensões sejam importantes, o tamanho do arquivo também impacta o tempo de carregamento da página. Procure manter suas imagens com o menor tamanho de arquivo possível, sem comprometer a qualidade visual. Imagens muito grandes podem deixar o sistema lento. Como regra geral, tente manter o tamanho de cada imagem abaixo de 2MB para um carregamento rápido, especialmente para imagens que serão visualizadas com frequência.
+
+Esperamos que este FAQ ajude a preparar e enviar as imagens perfeitas para o sistema! Se tiverem mais alguma dúvida, estamos à disposição.

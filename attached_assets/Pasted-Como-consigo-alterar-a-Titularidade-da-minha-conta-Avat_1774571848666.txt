@@ -1,0 +1,108 @@
+Como consigo alterar a Titularidade da minha conta?
+Avatar Luiz Felipe Paim de Carvalho
+há 2 meses Atualizado
+O Titular da Conta, é o DONO da conta do AppBarber/AppBeleza. Ao Titular que é gerada a documentação da contratação, nota fiscal e ao qual nosso termo de uso é aplicado. Isso significa que somente por este titular (email e documento) poderá solicitar algum chamado com a equipe de suporte e atendimento, além de outras informações da empresa.
+
+ 
+
+A titularidade da conta é através do número do documento de CNPJ (em caso de pessoa jurídica) ou CPF (em caso de pessoa física).
+
+ 
+
+Caso o titular portador do respectivo documento, precisar solicitar a troca de titularidade, por questão de segurança, é necessário enviar por email os seguintes dados:
+
+ 
+
+1) TROCA DE CNPJ PARA OUTRO CNPJ
+
+     Enviar documento de CNPJ do Titular Atual, por email, com os dados da empresa;
+     Enviar documento com foto do Sócio-Responsável vinculado à este CNPJ;
+     Enviar uma selfie segurando o documento de CPF do Titular Atual;
+     Enviar documento de CNPJ do  Novo Titular com os dados da empresa;
+     Enviar documento com foto do Novo Sócio-Responsável vinculado à este CNPJ;
+     Enviar uma selfie segurando o documento de CPF do Novo Sócio-Responsável;
+     O Email deve ser enviado para atendimento@appbarber.com.br (AppBarber) ou                                 atendimento@appbeleza.com.br  (AppBeleza), vindo do mesmo Email do TITULAR DA CONTA       ATUAL.
+2) TROCA DE UM CPF PARA CNPJ
+
+     Enviar documento contendo o CPF e com foto Titular Atual vinculado à este CPF;
+     Enviar uma selfie segurando o documento de CPF do Titular Atual;
+     Enviar documento de CNPJ do  Novo Titular com os dados da empresa;
+     Enviar documento com foto do Novo Sócio-Responsável vinculado à este CNPJ;
+     Enviar uma selfie segurando o documento de CPF do Novo Sócio-Responsável;
+     O Email deve ser enviado para atendimento@appbarber.com.br (AppBarber) ou                                 atendimento@appbeleza.com.br (AppBeleza), vindo do mesmo Email do TITULAR DA CONTA         ATUAL.
+3) TROCA DE UM CNPJ PARA CPF
+
+     Enviar documento de CNPJ do Titular Atual com os dados da empresa;     
+     Enviar uma selfie segurando o documento de CPF do Titular Atual;
+     Enviar documento com foto do Sócio-Responsável Atual vinculado à este CNPJ;
+     Enviar documento contendo o CPF e com foto do Novo Titular vinculado à este CPF;    
+     Enviar uma selfie segurando o documento de CPF do Novo Sócio-Responsável;
+     O Email deve ser enviado para atendimento@appbarber.com.br (AppBarber) ou                                 atendimento@appbeleza.com.br (AppBeleza), vindo do mesmo Email do TITULAR DA CONTA         ATUAL.
+4) TROCA DE UM CPF PARA CPF
+
+     Enviar documento contendo o CPF e com foto do Titular Atual vinculado à este CPF;
+     Enviar uma selfie segurando o documento de CPF do Titular Atual;
+     Enviar documento contendo o CPF e com foto do Novo Titular vinculado à este CPF;
+     Enviar uma selfie segurando o documento de CPF do Novo Sócio-Responsável;
+     O Email deve ser enviado para atendimento@appbarber.com.br (AppBarber) ou                                 atendimento@appbeleza.com.br (AppBeleza), vindo do mesmo Email do TITULAR DA CONTA         ATUAL.
+5) TROCA APENAS DE EMAIL DO TITULAR E/OU RAZÃO SOCIAL
+
+     Se a Titularidade da Conta for com CPF, enviar a solicitação com o documento contendo o CPF         e com foto do Titular vinculado à este CPF e com o email destino (que deve ficar do titular);
+     Se a Titularidade da Conta for com CNPJ, enviar documento de CNPJ do Titular Atual com os           dados da empresa e com o email destino (que deve ficar do titular) e/ou Razão Social.
+     O Email deve ser enviado para atendimento@appbarber.com.br (AppBarber) ou                                 atendimento@appbeleza.com.br (AppBeleza), vindo do mesmo Email do TITULAR DA CONTA         ATUAL.
+Enviar uma selfie segurando o documento de CPF do Titular;
+
+ 
+
+6) ALTERAÇÃO/INSERÇÃO DA INSCRIÇÃO ESTADUAL (IE)
+
+     Enviar em anexo o documento de CPF/CNPJ do Titular Atual com os dados da empresa e               informar o número da Inscrição Estadual (IE).
+     Enviar uma selfie segurando o documento de CPF do Titular;
+     O Email deve ser enviado para atendimento@appbarber.com.br (AppBarber) ou                                 atendimento@appbeleza.com.br (AppBeleza), vindo do mesmo Email do TITULAR DA CONTA        ATUAL.
+ 
+
+7) MODELO DE SOLICITAÇÃO DE TROCA DE TITULARIDADE 
+
+ 
+
+Ter um modelo padronizado realmente facilita a análise e agiliza os processos pela equipe responsável. Aqui vai uma sugestão de modelo claro, direto e adaptável para as solicitações de troca de titularidade. 
+
+ 
+
+Assunto: Solicitação de Troca de Titularidade
+
+Prezados,
+
+Venho por meio deste solicitar a troca de titularidade do cadastro referente ao estabelecimento abaixo:
+
+Nome do Estabelecimento: [Inserir nome do estabelecimento]
+
+Razão Social: [Inserir razão social]
+
+Contato do Titular Atual: [Nome da pessoa atualmente titular]
+
+E-mail: [E-mail novo]
+
+Documento (CNPJ): [Novo CNPJ]
+
+Em anexo, enviar a documentação necessária para a efetivação da troca.
+
+Observação importante: se envolver contratação de Módulo, favor mencionar no corpo do e-mail.
+
+ 
+
+Lembrando que ...
+
+Todas as solicitações devem vir do e-mail do Titular da Conta. O email referente ao Titular da Conta deve ser o que está no cadastro da empresa (na opção Perfil - Conta, aba Empresa - Editar Informações), conforme exemplo abaixo:
+
+ 
+
+Captura_de_Tela_2021-07-01_a_s_11.58.00.png
+
+ 
+
+OBS: A solicitação será recebida pela equipe e o prazo de retorno é de até 5 dias úteis.
+
+ 
+
+IMPORTANTE: Para maior agilidade do processo, o solicitante deve enviar o email com TODOS os dados solicitados e com qualidade, para melhor verificação da equipe. Todo este processo é por questão de segurança e integridade dos dados da conta.

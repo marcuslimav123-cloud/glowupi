@@ -1,0 +1,152 @@
+Como funciona o Clube de Clientes?
+Avatar Luiz Felipe Paim de Carvalho
+há 4 anos Atualizado
+No AppBarber/AppBeleza você tem a opção de criar um grupo que recebe determinados descontos em determinados serviços ou produtos, legal né? Vamos ver como isso funciona no sistema?
+
+Primeiro no menu lateral vamos até a opção Cube de Clientes, você encontra essa opção dentro do menu Cadastros.
+
+menuclube.PNG
+
+ 
+
+Na tela de clube de clientes você pode clicar na opção +Clube de Clientes para criar um novo clube.
+
+ 
+
+telaclube.PNG
+
+ 
+
+Agora vamos iniciar a configuração de um novo clube de clientes, primeiro vamos definir um nome para o nosso clube.
+
+ 
+
+nomeclube.PNG
+
+ 
+
+Depois de definirmos o nome do nosso grupo, vamos iniciar a configuração dos serviços/produtos para os membros do clube.
+
+Aqui temos duas opções, uma é configurar os serviços ou produtos individualmente, dessa forma podemos fazer a configuração através do valor do serviço/produto.
+
+A segunda opção (disponível apenas para serviços) é fazer uma configuração geral para todos os serviços, dessa forma devemos configurar uma porcentagem de desconto que será aplicada para TODOS  os seus serviços cadastrados.
+
+Vamos verificar cada um?
+
+Primeiro a configuração INDIVIDUAL
+
+ 
+
+mceclip0.png
+
+Tipo do Item: Esse campo vai determinar o que queremos inserir no nosso clube, se será um serviço ou um produto. Ao alterar esse campo algumas informações serão modificadas, dentre ela o campo onde selecionamos os serviços e produtos, e também a lista que será mostrada na sua tela, portanto, se a opção serviço estiver selecionada, o campo de seleção e a lista de itens mostrarão os serviços do clube, o mesmo se aplica para os produtos
+
+Serviço/Produto: Aqui vamos definir qual serviço ou produtos queremos colocar no clube, nesse tipo de configuração você deve selecionar um serviço/produto por vez.
+
+Valor do Serviço/Produto: Esse campo mostra pra você o valor original do seu serviço ou produto, ele não é editável, ele está aqui para ajudar a você a definir um novo valor.
+
+Valor para Membros: Esse será o novo valor do item, aqui você vai definir o valor que irá cobrar para os membros desse grupo.
+
+Desconto: Aqui você pode conferir a porcentagem de desconto que você está dando no item, ele não é editável e é calculado automaticamente conforme o valor informado por você no campo anterior.
+
+Gerar pontos do programa de fidelidade?: Aqui você pode definir se o item irá gerar pontos do programa de fidelidade para os membros do grupo, você pode colocar ele como "não", caso não deseje que os itens do clube gerem pontos por possuírem desconto.
+
+Depois de definir esses campos você pode clicar em +Adicionar para associar o item ao grupo, você pode repetir esse processo para novos serviços ou produtos que deseje inserir no grupo. Feito isso os serviços/produtos irão aparecer na lista logo abaixo dos campos (conforme a opção selecionada no campo tipo do item).
+
+ 
+
+Agora vamos dar uma olhada na opção de TODOS OS SERVIÇOS.
+
+mceclip1.png
+
+ 
+
+Na imagem acima podemos verificar os seguintes campos.
+
+Atenção: Essa opção irá adicionar todos os seus serviços ao grupo, caso queira que apenas alguns serviços estejam disponíveis para o grupo, utilize a opção anterior.
+
+Desconto: Aqui você vai definir uma porcentagem de desconto a ser aplicada a todos os seus serviços.
+
+Gerar pontos do programa de fidelidade?: Aqui você pode definir se os serviços irão gerar pontos do programa de fidelidade para os membros do grupo, você pode colocar ele como "não", caso não deseje que os serviços do clube gerem pontos por possuírem desconto.
+
+Preenchidos esses campos você pode clicar em +Adicionar para associar todos os serviços ao grupo. Feito isso os seus serviços irão aparecer na lista logo abaixo dos campos.
+
+ 
+
+Tranquilo né? Agora vamos clicar em Próximo e vamos definir quem são os membros do nosso grupo.
+
+ 
+
+clienteclube.PNG
+
+Na imagem acima temos o ultimo passo da configuração do clube, definir os clientes. Aqui temos um único campo, onde serão apresentados para você todos os seus clientes cadastrados, nele você pode selecionar vários clientes de uma vez só para associar todos de uma vez ao clube clicando em Salvar.
+
+Na hora de inserir os clientes apareceu que ocorreram falhas ao inserir, o que fazer?
+
+As falhas ao inserir podem ocorrer em dois casos:
+
+O primeiro é caso o cliente já seja membro de um outro clube de clientes no seu estabelecimento, pois um cliente estando em dois clubes ao mesmo tempo pode gerar confusões nas suas conferencias de comandas posteriormente.
+
+O segundo caso é quando o cliente faz parte de um Clube de Assinatura do seu estabelecimento, pois senão o seu cliente teria dois descontos a serem aplicados na comanda, dessa forma ele só pode fazer parte de um desses benefícios por vez. Para saber mais sobre o clube de assinaturas clique aqui.
+
+ 
+
+Pronto! Terminei minha configuração, e agora? O que acontece?
+
+Terminada a configuração, o sistema vai automaticamente aplicar os descontos as próximas comandas dos clientes que fazem parte do clube, sem a necessidade de você fazer nenhuma configuração extra, legal né?
+
+ATENÇÃO:  
+
+1. O Benefício do clube de clientes não é retroativo, ou seja, todas as comandas e agendamentos CADASTRADOS antes da configuração do clube não serão afetados pelo benefício.
+
+2. Vale lembrar que se um cliente possui Pacotes, o mesmo não poderá participar de um Clube de Clientes para receber descontos. Sendo possibilitado a ele somente um desses benefícios simultaneamente. O mesmo se aplica a situação inversa, se o cliente for associado a um Clube de Clientes ele não vai poder comprar Pacotes.
+
+E a comissão dos meus profissionais, como fica?
+
+A comissão dos seus profissionais irá seguir proporcionalmente o valor dos serviços configurados no grupo, assim como em qualquer outro desconto aplicado no sistema. Caso deseje manter a comissão normal do profissional, você deve fazer a alteração manualmente na comanda.
+
+Um cliente não faz mais parte do grupo, ou, não quero que determinado serviço tenha desconto para o grupo, como proceder? 
+
+Tranquilo, você consegue editar um clube e seus membros a qualquer momento clicando na opção editar que fica mais a direita do nome do clube na sua lista, vamos conferir?
+
+editagrupo.PNG
+
+ 
+
+Clicando no botão editar, o formulário de edição irá surgir pra você, nele você pode remover os serviços e clientes do grupo. Lembrando que você deve salvar após cada operação.
+
+mceclip2.png
+
+Aqui na tela de serviços, basta clicar no ícone da lixeira para remover o serviço do grupo, ou você pode clicar na lixeira ao lado de cada nome na lista de clientes.
+
+ 
+
+mceclip3.png
+
+Na tela de clientes basta desmarcar ou marcar clientes na lista para remover ou adicionar novos participantes.
+
+ 
+
+Meus clientes não ganham descontos no meu clube, mas sim uma cortesia, consigo fazer isso?
+
+Consegue sim! no seu clube de clientes você pode dar uma cortesia ao invés de um desconto, ou até mesmo combinar os dois caso necessite.
+
+Você pode adicionar um produto como cortesia junto a qualquer um dos seus serviços do clube, podendo assim variar o produto conforme o serviço, mas lembre-se o produto é associado a um dos serviços do clube, então se o seu cliente ganhar um produto, independente do serviço, repita esse processo para cada serviço do clube.
+
+Podemos adicionar uma cortesia tanto no cadastro quanto na edição de um serviço do clube, para isso, basta clicar na etiqueta presente ao lado de cada serviço do seu clube.
+
+mceclip4.png
+
+ 
+
+Ao clicar na etiqueta podemos selecionar qual produto queremos adicionar como cortesia para esse serviço, assim, toda vez que um cliente do clube agendar esse serviço, o produto será adicionado a comanda dele como cortesia.
+
+Quando um serviço tem um produto como cortesia, a etiqueta terá a cor verde ao invés de preta.
+
+mceclip5.png
+
+ 
+
+Sucesso! Agora você tem um clube de clientes para o seu estabelecimento.
+
+ 

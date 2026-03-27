@@ -1,0 +1,61 @@
+As categorias funcionam como divisões estratégicas para organizar e identificar os diferentes aspectos do seu estabelecimento. Compreender e utilizar corretamente as categorias é uma forma muito prática para manter a organização e eficiência dos serviços, produtos e profissionais.
+
+
+Tipos de Categorias e suas Funções
+Dentro do sistema, você pode cadastrar três tipos de categorias, cada uma com um propósito específico:
+
+
+Categoria de Profissional:
+Descrição: Utilizadas principalmente no Rodízio de Profissionais. Permitem a organização e o gerenciamento eficaz dos profissionais, facilitando a alocação de tarefas e a distribuição de serviços.
+
+
+
+Categoria de Serviço:
+Descrição: Usadas no cadastro de serviços, nos Rankings e na apresentação de serviços no aplicativo do cliente. Elas oferecem uma maneira de estruturar os serviços oferecidos, permitindo que os clientes filtrem e selecionem os serviços desejados com facilidade no aplicativo.
+
+
+
+Categoria de Produto:
+Descrição: Empregadas no cadastro de produtos e na elaboração de Rankings. As categorias de produtos ajudam a classificar e agrupar itens de maneira lógica, tornando a gestão de estoque e a análise de vendas mais intuitivas.
+
+ 
+
+Cadastro de Categorias
+Para cadastrar novas categorias:
+Navegue até Cadastros > Tipos > Categorias.
+Clique em +Categoria para adicionar uma nova categoria.
+
+
+
+Escolha o tipo de categoria que deseja criar: Profissional, Produto ou Serviço.
+Preencha os detalhes necessários e salve as alterações.
+
+Para uma configuração detalhada de cada tipo de categoria, consulte os tópicos específicos que abordam o cadastro correto e as práticas recomendadas para cada categoria.
+
+
+Categorias de Profissionais
+Depois de cadastradas, você pode associar profissionais a suas respectivas categorias acessando Cadastros > Profissionais > Editar > Categorias. Seu cadastro é particularmente útil no Rodízio de Profissionais, permitindo uma distribuição eficiente e organizada das tarefas.
+
+
+
+Para uma compreensão mais profunda de como utilizar o rodízio de profissionais, consulte este link.
+Rodízio de profissionais: como funciona?
+
+Categoria de Serviços
+As categorias de serviços podem ser utilizadas em opções de relatórios no sistema, entretanto, sua principal função seria aplicada para organizar os serviços oferecidos e são especialmente benéficas no aplicativo do cliente, permitindo que eles filtrem e escolham o serviço desejado com facilidade, como no exemplo a seguir:
+
+
+
+Para vincular uma categoria ao serviço, vá para Cadastros > Serviços > Editar e selecione a categoria apropriada. Uma vez associada, a categoria facilita para o cliente a navegação e o agendamento de serviços pelo aplicativo.
+
+
+
+
+
+Categoria de Produtos
+Em questão de gestão, o cadastro de categorias para produtos são essenciais para o estoque e análise de desempenho de vendas, as categorias de produtos podem ser utilizadas para rastrear qual máquina vende mais ou quais marcas de produtos são mais populares, por exemplo.
+
+
+
+Para adicionar uma categoria a um produto, acesse Cadastros > Produtos > Editar. Na tela principal do produto, você encontrará a opção de adicionar uma categoria. 
+
