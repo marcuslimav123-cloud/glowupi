@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { caixaDiarioTable, movimentacoesCaixaTable } from "@workspace/db/schema";
+import { caixaDiarioTable, movimentacoesCaixaTable, contasProfissionalTable, profissionaisTable } from "@workspace/db/schema";
 import { eq, and, desc, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
 
@@ -87,16 +87,18 @@ router.put("/:caixaId/fechar", requireAuth, async (req: any, res) => {
   const abertura = parseFloat(caixa.valorAbertura || "0");
   const entradas = parseFloat(caixa.totalEntradas || "0");
   const saidas = parseFloat(caixa.totalSaidas || "0");
-  const saldo = abertura + entradas - saidas;
+  const saldoEsperado = abertura + entradas - saidas;
+  const valorInformado = parseFloat(req.body.valorFechamento ?? saldoEsperado);
+  const diferenca = valorInformado - saldoEsperado;
   const [updated] = await db.update(caixaDiarioTable).set({
     status: "fechado",
     dataFechamento: new Date(),
-    valorFechamento: String(req.body.valorFechamento ?? saldo),
-    saldoFinal: String(saldo),
+    valorFechamento: String(valorInformado),
+    saldoFinal: String(saldoEsperado),
     fechadoPor: user?.name || user?.email || "Sistema",
     observacao: req.body.observacao || caixa.observacao,
   }).where(eq(caixaDiarioTable.id, caixaId)).returning();
-  res.json(fmt(updated));
+  res.json({ ...fmt(updated), saldoEsperado, valorInformado, diferenca });
 });
 
 router.get("/:caixaId/movimentacoes", requireAuth, async (req: any, res) => {
@@ -131,6 +133,65 @@ router.post("/:caixaId/movimentacoes", requireAuth, async (req: any, res) => {
     }).where(eq(caixaDiarioTable.id, caixaId));
   }
   res.status(201).json(fmtMov(mov));
+});
+
+router.post("/:caixaId/sangria", requireAuth, async (req: any, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const caixaId = parseInt(req.params.caixaId);
+  const [caixa] = await db.select().from(caixaDiarioTable)
+    .where(and(eq(caixaDiarioTable.id, caixaId), eq(caixaDiarioTable.barbeariaId, barbeariaId))).limit(1);
+  if (!caixa || caixa.status !== "aberto") return res.status(400).json({ error: "Caixa não está aberto" });
+  const { valor, motivo } = req.body;
+  if (!valor || valor <= 0) return res.status(400).json({ error: "Valor deve ser maior que zero" });
+  const [mov] = await db.insert(movimentacoesCaixaTable).values({
+    barbeariaId, caixaId, tipo: "saida", categoria: "sangria",
+    descricao: motivo || "Sangria de caixa", valor: String(valor), formaPagamento: "dinheiro",
+  }).returning();
+  await db.update(caixaDiarioTable).set({
+    totalSaidas: String(parseFloat(caixa.totalSaidas || "0") + parseFloat(String(valor))),
+  }).where(eq(caixaDiarioTable.id, caixaId));
+  res.status(201).json(fmtMov(mov));
+});
+
+router.post("/:caixaId/vale", requireAuth, async (req: any, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const caixaId = parseInt(req.params.caixaId);
+  const [caixa] = await db.select().from(caixaDiarioTable)
+    .where(and(eq(caixaDiarioTable.id, caixaId), eq(caixaDiarioTable.barbeariaId, barbeariaId))).limit(1);
+  if (!caixa || caixa.status !== "aberto") return res.status(400).json({ error: "Caixa não está aberto" });
+  const { valor, profissionalId, observacao } = req.body;
+  if (!valor || valor <= 0) return res.status(400).json({ error: "Valor deve ser maior que zero" });
+  if (!profissionalId) return res.status(400).json({ error: "Profissional é obrigatório" });
+  const [prof] = await db.select().from(profissionaisTable)
+    .where(and(eq(profissionaisTable.id, profissionalId), eq(profissionaisTable.barbeariaId, barbeariaId))).limit(1);
+  if (!prof) return res.status(404).json({ error: "Profissional não encontrado" });
+  const now = new Date();
+  const mesAno = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  await db.transaction(async (tx) => {
+    await tx.insert(movimentacoesCaixaTable).values({
+      barbeariaId, caixaId, tipo: "saida", categoria: "vale",
+      descricao: `Vale — ${prof.apelido || prof.nomeExibicao}${observacao ? ` (${observacao})` : ""}`,
+      valor: String(valor), formaPagamento: "dinheiro",
+      referencia: `prof:${profissionalId}`,
+    });
+    await tx.update(caixaDiarioTable).set({
+      totalSaidas: String(parseFloat(caixa.totalSaidas || "0") + parseFloat(String(valor))),
+    }).where(eq(caixaDiarioTable.id, caixaId));
+    await tx.insert(contasProfissionalTable).values({
+      barbeariaId,
+      profissionalId,
+      profissionalNome: prof.apelido || prof.nomeExibicao,
+      tipo: "debito",
+      descricao: `Vale/Adiantamento via caixa${observacao ? ` — ${observacao}` : ""}`,
+      valor: String(valor),
+      mesAno,
+      data: now.toISOString().slice(0, 10),
+      status: "pendente",
+    });
+  });
+  res.status(201).json({ ok: true, message: "Vale registrado com sucesso" });
 });
 
 export default router;

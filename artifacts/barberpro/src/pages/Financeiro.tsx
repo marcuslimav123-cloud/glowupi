@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { useGetRelatorioFaturamento, useGetRelatorioComissoes, useListContasFinanceiras, useCreateContaFinanceira, useUpdateContaFinanceira, useDeleteContaFinanceira } from "@workspace/api-client-react";
+import { useGetRelatorioFaturamento, useGetRelatorioComissoes, useListContasFinanceiras, useCreateContaFinanceira, useDeleteContaFinanceira } from "@workspace/api-client-react";
 import { useApiList } from "@/hooks/useCrudApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, apiUrl } from "@/lib/utils";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { format, subDays, subMonths } from "date-fns";
 import { TrendingUp, TrendingDown, DollarSign, Award, Plus, Trash2, Check, AlertCircle, Receipt } from "lucide-react";
@@ -30,6 +30,11 @@ export default function Financeiro() {
   const [mes] = useState(format(new Date(), "yyyy-MM"));
   const [mesPrev] = useState(format(subMonths(new Date(), 1), "yyyy-MM"));
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [baixaOpen, setBaixaOpen] = useState(false);
+  const [baixaConta, setBaixaConta] = useState<any>(null);
+  const [baixaData, setBaixaData] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [baixaForma, setBaixaForma] = useState("dinheiro");
+  const [submitting, setSubmitting] = useState(false);
   const [formTipo, setFormTipo] = useState<"pagar" | "receber">("pagar");
   const [formCategoria, setFormCategoria] = useState("");
 
@@ -45,7 +50,6 @@ export default function Financeiro() {
   const { data: comPrev } = useGetRelatorioComissoes(barbeariaId!, { mes: mesPrev }, { query: { enabled: !!barbeariaId } });
   const { data: contas = [] } = useListContasFinanceiras(barbeariaId!, { query: { enabled: !!barbeariaId } });
   const createConta = useCreateContaFinanceira();
-  const updateConta = useUpdateContaFinanceira();
   const deleteConta = useDeleteContaFinanceira();
 
   const totalComAtual = Array.isArray(com) ? com.reduce((s: number, p: any) => s + p.comissaoTotal, 0) : 0;
@@ -78,16 +82,34 @@ export default function Financeiro() {
     } catch { toast({ title: "Erro ao criar conta", variant: "destructive" }); }
   }
 
-  async function handleMarcarPaga(conta: any) {
+  function openBaixa(conta: any) {
+    setBaixaConta(conta);
+    setBaixaData(format(new Date(), "yyyy-MM-dd"));
+    setBaixaForma("dinheiro");
+    setBaixaOpen(true);
+  }
+
+  async function handleBaixa() {
+    if (!baixaConta) return;
+    setSubmitting(true);
     try {
-      await updateConta.mutateAsync({
-        barbeariaId: barbeariaId!,
-        contaId: conta.id,
-        data: { ...conta, status: "paga", dataPagamento: format(new Date(), "yyyy-MM-dd") }
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/financeiro/${baixaConta.id}/baixa`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ dataPagamento: baixaData, formaPagamento: baixaForma }),
       });
-      qc.invalidateQueries({ queryKey: getListContasFinanceirasQueryKey(barbeariaId!) });
-      toast({ title: "Conta marcada como paga" });
-    } catch { toast({ title: "Erro", variant: "destructive" }); }
+      if (res.ok) {
+        qc.invalidateQueries({ queryKey: getListContasFinanceirasQueryKey(barbeariaId!) });
+        setBaixaOpen(false);
+        setBaixaConta(null);
+        toast({ title: "Baixa realizada com sucesso!" });
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast({ title: err.error || "Erro ao dar baixa", variant: "destructive" });
+      }
+    } catch { toast({ title: "Erro ao dar baixa", variant: "destructive" }); }
+    finally { setSubmitting(false); }
   }
 
   async function handleDeleteConta(contaId: number) {
@@ -109,9 +131,11 @@ export default function Financeiro() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm">{c.descricao}</p>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <span className="text-xs text-muted-foreground">{c.categoria || "Geral"}</span>
                 {c.dataVencimento && <span className="text-xs text-muted-foreground">Venc: {c.dataVencimento}</span>}
+                {c.dataPagamento && <span className="text-xs text-green-500">Pago: {c.dataPagamento}</span>}
+                {c.formaPagamento && c.status === "paga" && <span className="text-xs text-muted-foreground">({c.formaPagamento})</span>}
               </div>
             </div>
             <div className="text-right">
@@ -122,8 +146,8 @@ export default function Financeiro() {
             </div>
             <div className="flex gap-1">
               {c.status === "pendente" && (
-                <Button size="icon" variant="ghost" className="h-8 w-8 text-green-400 hover:text-green-300" onClick={() => handleMarcarPaga(c)}>
-                  <Check className="h-4 w-4" />
+                <Button size="sm" variant="outline" className="h-8 text-[12px] text-green-600 border-green-200 hover:bg-green-50" onClick={() => openBaixa(c)}>
+                  <Check className="h-3.5 w-3.5 mr-1" />Dar Baixa
                 </Button>
               )}
               <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:text-red-300" onClick={() => handleDeleteConta(c.id)}>
@@ -278,6 +302,42 @@ export default function Financeiro() {
 
       {tab === "pagar" && renderContasList(contasPagar, "pagar")}
       {tab === "receber" && renderContasList(contasReceber, "receber")}
+
+      <Dialog open={baixaOpen} onOpenChange={v => { setBaixaOpen(v); if (!v) setBaixaConta(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Dar Baixa</DialogTitle></DialogHeader>
+          {baixaConta && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg bg-muted/30 text-sm">
+                <p className="font-semibold">{baixaConta.descricao}</p>
+                <p className="text-muted-foreground">{baixaConta.categoria} · Venc: {baixaConta.dataVencimento}</p>
+                <p className={`font-bold mt-1 ${baixaConta.tipo === "pagar" ? "text-red-500" : "text-green-500"}`}>{formatCurrency(baixaConta.valor)}</p>
+              </div>
+              <div>
+                <Label>Data de Pagamento</Label>
+                <Input type="date" value={baixaData} onChange={e => setBaixaData(e.target.value)} className="mt-1" />
+              </div>
+              <div>
+                <Label>Forma de Pagamento</Label>
+                <Select value={baixaForma} onValueChange={setBaixaForma}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                    <SelectItem value="pix">PIX</SelectItem>
+                    <SelectItem value="credito">Crédito</SelectItem>
+                    <SelectItem value="debito">Débito</SelectItem>
+                    <SelectItem value="transferencia">Transferência</SelectItem>
+                    <SelectItem value="boleto">Boleto</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleBaixa} className="w-full" disabled={submitting}>
+                {submitting ? "Processando..." : "Confirmar Baixa"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

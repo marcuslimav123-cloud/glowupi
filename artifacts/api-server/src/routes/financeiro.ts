@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { contasFinanceirasTable, barbeariasTable } from "@workspace/db/schema";
+import { contasFinanceirasTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccessDono as checkAccess } from "../lib/auth.js";
 
@@ -27,11 +27,27 @@ router.post("/", requireAuth, async (req: any, res) => {
   res.status(201).json(formatConta(conta));
 });
 
+router.put("/:contaId/baixa", requireAuth, async (req: any, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const contaId = parseInt(req.params.contaId);
+  const { dataPagamento, formaPagamento } = req.body;
+  if (!dataPagamento) return res.status(400).json({ error: "Data de pagamento é obrigatória" });
+  const [conta] = await db.update(contasFinanceirasTable).set({
+    status: "paga",
+    dataPagamento,
+    formaPagamento: formaPagamento || null,
+    updatedAt: new Date(),
+  }).where(and(eq(contasFinanceirasTable.id, contaId), eq(contasFinanceirasTable.barbeariaId, barbeariaId))).returning();
+  if (!conta) return res.status(404).json({ error: "Conta não encontrada" });
+  res.json(formatConta(conta));
+});
+
 router.put("/:contaId", requireAuth, async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const contaId = parseInt(req.params.contaId);
-  const { tipo, categoria, descricao, valor, dataVencimento, dataPagamento, status, recorrente, observacao } = req.body;
+  const { tipo, categoria, descricao, valor, dataVencimento, dataPagamento, formaPagamento, status, recorrente, observacao } = req.body;
   const updates: any = {};
   if (tipo !== undefined) updates.tipo = tipo;
   if (categoria !== undefined) updates.categoria = categoria;
@@ -39,11 +55,13 @@ router.put("/:contaId", requireAuth, async (req: any, res) => {
   if (valor !== undefined) updates.valor = String(valor);
   if (dataVencimento !== undefined) updates.dataVencimento = dataVencimento;
   if (dataPagamento !== undefined) updates.dataPagamento = dataPagamento;
+  if (formaPagamento !== undefined) updates.formaPagamento = formaPagamento;
   if (status !== undefined) updates.status = status;
   if (recorrente !== undefined) updates.recorrente = recorrente;
   if (observacao !== undefined) updates.observacao = observacao;
   updates.updatedAt = new Date();
   const [conta] = await db.update(contasFinanceirasTable).set(updates).where(and(eq(contasFinanceirasTable.id, contaId), eq(contasFinanceirasTable.barbeariaId, barbeariaId))).returning();
+  if (!conta) return res.status(404).json({ error: "Conta não encontrada" });
   res.json(formatConta(conta));
 });
 

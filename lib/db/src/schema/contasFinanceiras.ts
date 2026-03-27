@@ -12,6 +12,7 @@ export const contasFinanceirasTable = pgTable("contas_financeiras", {
   valor: numeric("valor", { precision: 10, scale: 2 }).notNull(),
   dataVencimento: text("data_vencimento").notNull(),
   dataPagamento: text("data_pagamento"),
+  formaPagamento: text("forma_pagamento"),
   status: text("status").notNull().default("pendente"),
   recorrente: boolean("recorrente").notNull().default(false),
   observacao: text("observacao"),
