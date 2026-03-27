@@ -28,6 +28,7 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.background } }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="login" options={{ gestureEnabled: false }} />
+      <Stack.Screen name="register" options={{ gestureEnabled: true }} />
     </Stack>
   );
 }

@@ -7,8 +7,33 @@ import { OAuth2Client } from "google-auth-library";
 
 const router: IRouter = Router();
 
-router.post("/register", async (_req, res) => {
-  return res.status(403).json({ error: "O cadastro é feito exclusivamente via Google. Use o botão 'Cadastrar com Google'." });
+router.post("/register", async (req, res) => {
+  try {
+    const { nome, email, senha } = req.body;
+    if (!nome || !email || !senha) {
+      return res.status(400).json({ error: "Nome, email e senha são obrigatórios" });
+    }
+    if (senha.length < 6) {
+      return res.status(400).json({ error: "A senha deve ter pelo menos 6 caracteres" });
+    }
+    const [existing] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+    if (existing) {
+      return res.status(409).json({ error: "Este email já está cadastrado" });
+    }
+    const [user] = await db.insert(usersTable).values({
+      nome,
+      email,
+      senhaHash: hashPassword(senha),
+      role: "dono",
+    }).returning();
+    const token = createSession(user.id);
+    res.cookie("session", token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: "lax" });
+    const { senhaHash: _, ...userWithoutPass } = user;
+    return res.json({ token, user: { ...userWithoutPass, createdAt: user.createdAt.toISOString() } });
+  } catch (e) {
+    console.error("register error:", e);
+    return res.status(500).json({ error: "Erro interno" });
+  }
 });
 
 router.post("/login", async (req, res) => {
@@ -124,7 +149,11 @@ router.get("/google/signin-popup", (req, res) => {
   const apiBase = `${protocol}://${host}`;
   const callbackUri = `${apiBase}/api/auth/google/mobile/callback`;
 
-  const state = Buffer.from(JSON.stringify({ redirect_scheme: "__popup__" })).toString("base64url");
+  const returnUrl = req.query.return_url as string | undefined;
+  const statePayload: Record<string, string> = returnUrl
+    ? { redirect_scheme: "__return_url__", return_url: returnUrl }
+    : { redirect_scheme: "__popup__" };
+  const state = Buffer.from(JSON.stringify(statePayload)).toString("base64url");
   const googleAuthUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   googleAuthUrl.searchParams.set("client_id", clientId);
   googleAuthUrl.searchParams.set("redirect_uri", callbackUri);
@@ -191,10 +220,11 @@ router.get("/google/mobile/callback", async (req, res) => {
     if (!clientId || !clientSecret) return res.status(500).send(errorPage("Erro de Configuração", "Google OAuth não configurado no servidor."));
 
     let redirectScheme = "mobile";
+    let stateData: Record<string, string> = {};
     if (state) {
       try {
-        const parsed = JSON.parse(Buffer.from(state as string, "base64url").toString());
-        redirectScheme = parsed.redirect_scheme || "mobile";
+        stateData = JSON.parse(Buffer.from(state as string, "base64url").toString());
+        redirectScheme = stateData.redirect_scheme || "mobile";
       } catch {}
     }
 
@@ -287,6 +317,26 @@ router.get("/google/mobile/callback", async (req, res) => {
           else{document.querySelector('p').textContent='Feche esta janela e volte ao app.'}
         </script></body></html>`;
       return res.send(successPage);
+    }
+
+    if (redirectScheme === "__return_url__" && stateData.return_url) {
+      try {
+        const returnUrl = new URL(stateData.return_url);
+        const allowedSchemes = ["exp:", "exps:", "mobile:", "http:", "https:"];
+        if (!allowedSchemes.includes(returnUrl.protocol)) {
+          return res.status(400).send(errorPage("Erro", "URL de retorno inválida."));
+        }
+        if (returnUrl.protocol === "https:" || returnUrl.protocol === "http:") {
+          const host = returnUrl.hostname;
+          if (!host.endsWith(".replit.dev") && !host.endsWith(".replit.app") && host !== "localhost") {
+            return res.status(400).send(errorPage("Erro", "URL de retorno não autorizada."));
+          }
+        }
+        returnUrl.searchParams.set("token", token);
+        return res.redirect(returnUrl.toString());
+      } catch {
+        return res.status(400).send(errorPage("Erro", "URL de retorno malformada."));
+      }
     }
 
     const appRedirect = `${redirectScheme}://auth?token=${encodeURIComponent(token)}`;

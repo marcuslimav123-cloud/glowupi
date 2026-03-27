@@ -33,6 +33,7 @@ interface AuthState {
 
 interface AuthContextType extends AuthState {
   login: (email: string, senha: string) => Promise<void>;
+  register: (nome: string, email: string, senha: string) => Promise<void>;
   loginWithGoogle: (credential: string) => Promise<void>;
   loginWithToken: (token: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -138,6 +139,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await handleAuthResponse(data);
   }, [handleAuthResponse]);
 
+  const register = useCallback(async (nome: string, email: string, senha: string) => {
+    const res = await fetch(`${API_BASE}/api/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nome, email, senha }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Erro ao criar conta");
+    await handleAuthResponse(data);
+  }, [handleAuthResponse]);
+
   const loginWithGoogle = useCallback(async (credential: string) => {
     const res = await fetch(`${API_BASE}/api/auth/google`, {
       method: "POST",
@@ -184,7 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [getToken]);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, loginWithGoogle, loginWithToken, logout, refreshUser }}>
+    <AuthContext.Provider value={{ ...state, login, register, loginWithGoogle, loginWithToken, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

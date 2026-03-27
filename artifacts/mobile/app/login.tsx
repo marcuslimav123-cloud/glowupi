@@ -9,7 +9,7 @@ import {
   Platform,
   Image,
 } from "react-native";
-import { Redirect } from "expo-router";
+import { Redirect, Link } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import * as Haptics from "expo-haptics";
@@ -79,13 +79,13 @@ export default function LoginScreen() {
         }, 500);
       } else {
         const returnUrl = Linking.createURL("auth");
-        const authUrl = `${API_BASE}/api/auth/google/mobile?redirect_scheme=${APP_SCHEME}`;
+        const authUrl = `${API_BASE}/api/auth/google/signin-popup?return_url=${encodeURIComponent(returnUrl)}`;
 
         const result = await WebBrowser.openAuthSessionAsync(authUrl, returnUrl);
 
         if (result.type === "success" && result.url) {
-          const url = new URL(result.url);
-          const token = url.searchParams.get("token");
+          const parsedUrl = Linking.parse(result.url);
+          const token = parsedUrl.queryParams?.token as string | undefined;
           if (token) {
             await loginWithToken(token);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -194,6 +194,15 @@ export default function LoginScreen() {
               </View>
             )}
           </TouchableOpacity>
+
+          <View style={styles.registerLink}>
+            <Text style={styles.registerText}>Não tem conta? </Text>
+            <Link href="/register" asChild>
+              <TouchableOpacity>
+                <Text style={styles.registerLinkText}>Criar conta</Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
         </View>
       </KeyboardAwareScrollViewCompat>
     </View>
@@ -313,5 +322,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Inter_500Medium",
     color: Colors.text,
+  },
+  registerLink: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  registerText: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: Colors.textMuted,
+  },
+  registerLinkText: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.accent,
   },
 });
