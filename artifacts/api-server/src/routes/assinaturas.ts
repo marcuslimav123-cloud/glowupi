@@ -23,13 +23,16 @@ function fmtAssinante(r: any) {
 router.get("/planos", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
-  const params = await getParametros(barbeariaId);
   const rows = await db.select().from(planosAssinaturaTable).where(eq(planosAssinaturaTable.barbeariaId, barbeariaId));
+  res.json(rows.map(fmtPlano));
+});
+
+router.get("/config", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const params = await getParametros(barbeariaId);
   res.json({
-    planos: rows.map(fmtPlano),
-    config: {
-      diasSemanaHabilitado: params["assinatura_dias_semana"] === "Sim",
-    },
+    diasSemanaHabilitado: params["assinatura_dias_semana"] === "Sim",
   });
 });
 
