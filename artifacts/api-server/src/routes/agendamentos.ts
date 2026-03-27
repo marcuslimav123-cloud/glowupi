@@ -32,22 +32,10 @@ async function notificarAgendamento(barbeariaId: number, params: Record<string, 
       const [cliente] = await db.select().from(clientesTable).where(eq(clientesTable.id, agendData.clienteId)).limit(1);
       if (cliente?.email) {
         const tempoLembrete = params["notif_tempo_lembrete"] || "24";
-        const incluirLink = (params["notif_link_confirmacao"] || "Sim") === "Sim";
-        const usaSms = params["notif_lembrete_sms"] === "Sim";
-        const usaWhatsapp = params["notif_lembrete_whatsapp"] === "Sim";
 
         let rodape = "";
         if (tipo === "criado") {
-          if (incluirLink) {
-            const domain = process.env.REPLIT_DEV_DOMAIN || "glowup.app";
-            const confirmUrl = `https://${domain}/confirmar/${agendData.agendamentoId || 0}`;
-            rodape += `<p style="margin-top:16px;"><a href="${confirmUrl}" style="display:inline-block;padding:10px 24px;background:#c4a46a;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">Confirmar Agendamento</a></p>`;
-          }
-          rodape += `<p style="font-size:12px;color:rgba(0,0,0,0.4);margin-top:12px;">Você receberá um lembrete ${tempoLembrete}h antes do horário</p>`;
-          const canaisExtra = [usaSms ? "SMS" : "", usaWhatsapp ? "WhatsApp" : ""].filter(Boolean);
-          if (canaisExtra.length > 0) {
-            rodape += `<p style="font-size:12px;color:rgba(0,0,0,0.4);">Lembrete também via: ${canaisExtra.join(" e ")}</p>`;
-          }
+          rodape += `<p style="font-size:12px;color:rgba(0,0,0,0.4);margin-top:12px;">Você receberá um lembrete ${tempoLembrete}h antes do horário.</p>`;
         }
         await sendEmail({
           to: [{ email: cliente.email, name: agendData.clienteNome }],

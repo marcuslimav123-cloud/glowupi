@@ -59,24 +59,23 @@ router.post("/", requireAuth, requireRole("dono", "gerente"), async (req: any, r
   }
 
   const diasExpiracao = parseInt(params["fidelidade_expiracao_pontos"] || "365");
+  let saldoEfetivo = cliente.pontosFidelidade;
   if (diasExpiracao > 0) {
-    const pontosValidos = await calcPontosValidos(barbeariaId, clienteId, diasExpiracao);
-    if (pontosValidos < pontosUsados) {
-      if (pontosValidos < cliente.pontosFidelidade) {
-        await db.update(clientesTable).set({ pontosFidelidade: pontosValidos }).where(eq(clientesTable.id, clienteId));
-      }
-      return res.status(400).json({
-        error: `Pontos válidos insuficientes. Você tem ${pontosValidos} ponto(s) não expirado(s) (pontos expiram após ${diasExpiracao} dias).`,
-        pontosValidos,
-      });
-    }
-  } else {
-    if (cliente.pontosFidelidade < pontosUsados) {
-      return res.status(400).json({ error: "Pontos insuficientes" });
+    saldoEfetivo = await calcPontosValidos(barbeariaId, clienteId, diasExpiracao);
+    if (saldoEfetivo !== cliente.pontosFidelidade) {
+      await db.update(clientesTable).set({ pontosFidelidade: saldoEfetivo }).where(eq(clientesTable.id, clienteId));
     }
   }
+  if (saldoEfetivo < pontosUsados) {
+    return res.status(400).json({
+      error: diasExpiracao > 0
+        ? `Pontos válidos insuficientes. Você tem ${saldoEfetivo} ponto(s) não expirado(s) (pontos expiram após ${diasExpiracao} dias).`
+        : "Pontos insuficientes",
+      pontosValidos: saldoEfetivo,
+    });
+  }
 
-  await db.update(clientesTable).set({ pontosFidelidade: cliente.pontosFidelidade - pontosUsados }).where(eq(clientesTable.id, clienteId));
+  await db.update(clientesTable).set({ pontosFidelidade: saldoEfetivo - pontosUsados }).where(eq(clientesTable.id, clienteId));
   const [resgate] = await db.insert(resgatesTable).values({
     barbeariaId, clienteId, clienteNome, recompensaId, recompensaNome, pontosUsados
   }).returning();
