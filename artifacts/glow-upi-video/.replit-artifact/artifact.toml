@@ -1,0 +1,31 @@
+kind = "video"
+previewPath = "/glow-upi-video/"
+title = "Glow Upi Landing Video"
+version = "1.0.0"
+id = "artifacts/glow-upi-video"
+router = "path"
+
+[[integratedSkills]]
+name = "video-js"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/glow-upi-video/" ]
+localPort = 21833
+
+[services.development]
+run = "pnpm --filter @workspace/glow-upi-video run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/glow-upi-video", "run", "build" ]
+publicDir = "artifacts/glow-upi-video/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21833"
+BASE_PATH = "/glow-upi-video/"

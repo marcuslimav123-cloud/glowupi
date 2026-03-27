@@ -161,50 +161,19 @@ function AnimatedSection({ children, className = "", delay = 0 }: { children: Re
   );
 }
 
-function DashboardMockup() {
+function HeroVideo() {
   return (
-    <div className="relative w-full max-w-[520px] mx-auto lg:mx-0">
-      <div className="absolute -inset-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-[32px] blur-2xl" />
-      <div className="relative rounded-2xl border border-black/[0.08] bg-white shadow-2xl shadow-black/[0.08] overflow-hidden">
-        <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-black/[0.04] bg-[#fafafa]">
-          <div className="h-2.5 w-2.5 rounded-full bg-red-400/60" />
-          <div className="h-2.5 w-2.5 rounded-full bg-yellow-400/60" />
-          <div className="h-2.5 w-2.5 rounded-full bg-green-400/60" />
-          <span className="ml-3 text-[10px] text-foreground/30 font-medium">Glow Upi — Dashboard</span>
-        </div>
-        <div className="p-4 space-y-3">
-          <div className="grid grid-cols-3 gap-2.5">
-            <div className="rounded-xl bg-gradient-to-br from-primary/8 to-primary/3 p-3 border border-primary/10">
-              <p className="text-[9px] text-foreground/40 mb-0.5">Hoje</p>
-              <p className="text-[18px] font-bold text-foreground">12</p>
-              <p className="text-[9px] text-primary font-medium">agendamentos</p>
-            </div>
-            <div className="rounded-xl bg-[#fafafa] p-3 border border-black/[0.04]">
-              <p className="text-[9px] text-foreground/40 mb-0.5">Semana</p>
-              <p className="text-[18px] font-bold text-foreground">67</p>
-              <p className="text-[9px] text-foreground/40 font-medium">clientes</p>
-            </div>
-            <div className="rounded-xl bg-[#fafafa] p-3 border border-black/[0.04]">
-              <p className="text-[9px] text-foreground/40 mb-0.5">Faturamento</p>
-              <p className="text-[18px] font-bold text-foreground">R$ 5k</p>
-              <p className="text-[9px] text-green-600 font-medium">+23%</p>
-            </div>
-          </div>
-          <div className="rounded-xl bg-[#fafafa] border border-black/[0.04] p-3">
-            <p className="text-[10px] font-semibold text-foreground/60 mb-2">Próximos Horários</p>
-            {[
-              { time: "09:00", client: "Ana Paula", service: "Corte + Escova" },
-              { time: "10:30", client: "Maria Clara", service: "Coloração" },
-              { time: "13:00", client: "Juliana Costa", service: "Manicure" },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-3 py-1.5 border-b border-black/[0.03] last:border-0">
-                <span className="text-[10px] font-medium text-primary w-10">{item.time}</span>
-                <span className="text-[10px] text-foreground font-medium flex-1">{item.client}</span>
-                <span className="text-[9px] text-foreground/40">{item.service}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+    <div className="relative w-full max-w-[580px] mx-auto lg:mx-0 aspect-video">
+      <div className="absolute -inset-6 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent rounded-[32px] blur-3xl" />
+      <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/20 border border-white/[0.08]">
+        <iframe
+          src="/glow-upi-video/"
+          className="w-full aspect-video border-0"
+          title="Glow Upi — Vídeo de Apresentação"
+          loading="eager"
+          allow="autoplay"
+          style={{ pointerEvents: 'none' }}
+        />
       </div>
     </div>
   );
@@ -282,9 +251,7 @@ export default function Landing() {
       }`}>
         <div className="max-w-[1200px] mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5 font-semibold text-[16px] tracking-tight text-foreground">
-            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-primary" />
-            </div>
+            <img src="/logo-icon.png" alt="Glow Upi" className="h-8 w-8 object-contain" />
             {APP_NAME}
           </div>
 
@@ -371,7 +338,7 @@ export default function Landing() {
             </AnimatedSection>
 
             <AnimatedSection delay={200} className="mt-8 lg:mt-0">
-              <DashboardMockup />
+              <HeroVideo />
             </AnimatedSection>
           </div>
         </div>
