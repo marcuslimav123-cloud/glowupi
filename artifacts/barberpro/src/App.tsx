@@ -45,6 +45,7 @@ import ClubeVantagens from "@/pages/cadastros/ClubeVantagens";
 import VendaPacotes from "@/pages/VendaPacotes";
 import PublicBooking from "@/pages/PublicBooking";
 import PublicStorefront from "@/pages/PublicStorefront";
+import PublicPesquisa from "@/pages/PublicPesquisa";
 
 import ComandasAbertas from "@/pages/comandas/ComandasAbertas";
 import ComandasHistorico from "@/pages/comandas/ComandasHistorico";
@@ -171,6 +172,7 @@ function Router() {
       <Route path="/empresa" component={Empresa} />
       <Route path="/clube" component={Clube} />
 
+      <Route path="/pesquisa/:barbeariaId/:pesquisaId" component={PublicPesquisa} />
       <Route path="/s/:slug" component={PublicStorefront} />
       <Route path="/agendar/:slug" component={PublicBooking} />
       <Route path="/politica-de-privacidade" component={PoliticaPrivacidade} />

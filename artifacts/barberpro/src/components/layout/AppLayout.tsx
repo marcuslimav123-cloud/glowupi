@@ -97,7 +97,6 @@ const NAV_ITEMS: NavItem[] = [
           { name: "Bandeiras", href: "/cadastros/tipos?cat=bandeira", icon: Tag },
           { name: "Remunerações", href: "/cadastros/tipos?cat=remuneracao", icon: DollarSign },
           { name: "Deduções", href: "/cadastros/tipos?cat=deducao", icon: Percent },
-          { name: "Mensagens", href: "/cadastros/tipos?cat=mensagem", icon: MessageSquare },
         ],
       },
       {
@@ -178,12 +177,6 @@ const NAV_ITEMS: NavItem[] = [
           { name: "Estoque", href: "/relatorios/estoque", icon: Package },
           { name: "Pacotes", href: "/relatorios/pacotes", icon: Boxes },
           { name: "Rankings", href: "/relatorios/rankings-gerencial", icon: Star },
-        ],
-      },
-      {
-        label: "Outros",
-        items: [
-          { name: "Programa Fidelidade", href: "/clube", icon: Award },
         ],
       },
     ],

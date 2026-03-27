@@ -18,6 +18,7 @@ export default function Noticias() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ titulo: "", conteudo: "", imagemUrl: "", ativo: true });
+  const [saving, setSaving] = useState(false);
   const BASE = import.meta.env.BASE_URL;
 
   useEffect(() => { if (barbeariaId) fetchNoticias(); }, [barbeariaId]);
@@ -31,19 +32,54 @@ export default function Noticias() {
   };
 
   const save = async () => {
+    if (!form.titulo.trim()) {
+      toast({ title: "Título é obrigatório", variant: "destructive" });
+      return;
+    }
+    if (!form.conteudo.trim()) {
+      toast({ title: "Conteúdo é obrigatório", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
     const url = editId ? `${BASE}api/barbearias/${barbeariaId}/noticias/${editId}` : `${BASE}api/barbearias/${barbeariaId}/noticias`;
     const method = editId ? "PUT" : "POST";
     try {
-      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, credentials: "include",
-        body: JSON.stringify({ ...form, publicadoEm: new Date().toISOString() }) });
-      if (res.ok) { toast({ title: editId ? "Notícia atualizada!" : "Notícia criada!" }); resetForm(); fetchNoticias(); }
-    } catch { toast({ title: "Erro ao salvar", variant: "destructive" }); }
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          titulo: form.titulo.trim(),
+          conteudo: form.conteudo.trim(),
+          imagemUrl: form.imagemUrl.trim() || null,
+          ativo: form.ativo,
+          publicadoEm: form.ativo ? new Date().toISOString() : null,
+        })
+      });
+      if (res.ok) {
+        toast({ title: editId ? "Notícia atualizada!" : "Notícia publicada!" });
+        resetForm();
+        fetchNoticias();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast({ title: "Erro ao salvar", description: data.error || `Status ${res.status}`, variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "Erro ao salvar", description: e?.message || "Verifique sua conexão", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const remove = async (id: number) => {
     if (!confirm("Excluir esta notícia?")) return;
-    await fetch(`${BASE}api/barbearias/${barbeariaId}/noticias/${id}`, { method: "DELETE", credentials: "include" });
-    fetchNoticias();
+    try {
+      await fetch(`${BASE}api/barbearias/${barbeariaId}/noticias/${id}`, { method: "DELETE", credentials: "include" });
+      fetchNoticias();
+      toast({ title: "Notícia removida" });
+    } catch {
+      toast({ title: "Erro ao excluir", variant: "destructive" });
+    }
   };
 
   const edit = (n: any) => { setForm({ titulo: n.titulo, conteudo: n.conteudo, imagemUrl: n.imagemUrl || "", ativo: n.ativo }); setEditId(n.id); setShowForm(true); };
@@ -63,11 +99,14 @@ export default function Noticias() {
         <Card className="mb-6 bg-white border-black/[0.04] shadow-none">
           <CardHeader><CardTitle className="text-[16px]">{editId ? "Editar" : "Nova"} Notícia</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div><Label>Título</Label><Input value={form.titulo} onChange={e => setForm(f => ({ ...f, titulo: e.target.value }))} className="mt-1" /></div>
-            <div><Label>Conteúdo</Label><Textarea value={form.conteudo} onChange={e => setForm(f => ({ ...f, conteudo: e.target.value }))} className="mt-1" rows={4} /></div>
-            <div><Label>URL da Imagem</Label><Input value={form.imagemUrl} onChange={e => setForm(f => ({ ...f, imagemUrl: e.target.value }))} className="mt-1" placeholder="https://..." /></div>
-            <div className="flex items-center gap-2"><Switch checked={form.ativo} onCheckedChange={v => setForm(f => ({ ...f, ativo: v }))} /><Label>Ativa</Label></div>
-            <div className="flex gap-2"><Button onClick={save} className="rounded-xl">Salvar</Button><Button variant="ghost" onClick={resetForm} className="rounded-xl">Cancelar</Button></div>
+            <div><Label>Título</Label><Input value={form.titulo} onChange={e => setForm(f => ({ ...f, titulo: e.target.value }))} className="mt-1" placeholder="Título da notícia" /></div>
+            <div><Label>Conteúdo</Label><Textarea value={form.conteudo} onChange={e => setForm(f => ({ ...f, conteudo: e.target.value }))} className="mt-1" rows={4} placeholder="Escreva o conteúdo..." /></div>
+            <div><Label>URL da Imagem (opcional)</Label><Input value={form.imagemUrl} onChange={e => setForm(f => ({ ...f, imagemUrl: e.target.value }))} className="mt-1" placeholder="https://..." /></div>
+            <div className="flex items-center gap-2"><Switch checked={form.ativo} onCheckedChange={v => setForm(f => ({ ...f, ativo: v }))} /><Label>Publicar imediatamente</Label></div>
+            <div className="flex gap-2">
+              <Button onClick={save} className="rounded-xl" disabled={saving}>{saving ? "Salvando..." : "Salvar"}</Button>
+              <Button variant="ghost" onClick={resetForm} className="rounded-xl">Cancelar</Button>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -86,7 +125,7 @@ export default function Noticias() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-[14px] font-semibold">{n.titulo}</h3>
-                      <span className={`text-[11px] px-2 py-0.5 rounded-full ${n.ativo ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"}`}>{n.ativo ? "Ativa" : "Inativa"}</span>
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full ${n.ativo ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"}`}>{n.ativo ? "Publicada" : "Rascunho"}</span>
                     </div>
                     <p className="text-[13px] text-foreground/60 line-clamp-2">{n.conteudo}</p>
                     <p className="text-[11px] text-foreground/30 mt-1">{n.publicadoEm ? new Date(n.publicadoEm).toLocaleDateString("pt-BR") : "—"}</p>

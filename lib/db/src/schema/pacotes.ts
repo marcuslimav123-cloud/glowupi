@@ -22,7 +22,7 @@ export const pacotesClienteTable = pgTable("pacotes_cliente", {
   id: serial("id").primaryKey(),
   barbeariaId: integer("barbearia_id").notNull().references(() => barbeariasTable.id),
   pacoteId: integer("pacote_id").notNull().references(() => pacotesTable.id),
-  clienteId: integer("cliente_id").notNull().references(() => clientesTable.id),
+  clienteId: integer("cliente_id").references(() => clientesTable.id),
   clienteNome: text("cliente_nome").notNull(),
   sessoesUsadas: integer("sessoes_usadas").notNull().default(0),
   sessoesTotal: integer("sessoes_total").notNull(),

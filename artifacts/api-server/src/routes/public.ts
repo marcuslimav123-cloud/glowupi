@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable, avaliacoesTable, recompensasTable, produtosTable, profissionalServicosTable } from "@workspace/db/schema";
+import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable, avaliacoesTable, recompensasTable, produtosTable, profissionalServicosTable, pesquisaSatisfacaoTable, respostasPesquisaTable } from "@workspace/db/schema";
 import { eq, and, desc, inArray } from "drizzle-orm";
 import { requireClient } from "../lib/auth.js";
 
@@ -64,6 +64,37 @@ function getProfScheduleForDate(prof: any, dateStr: string, barbSchedule?: { ini
   if (barbSchedule) return { inicio: barbSchedule.inicio, fim: barbSchedule.fim };
   return { inicio: 8 * 60, fim: 20 * 60 };
 }
+
+router.get("/pesquisa/:barbeariaId/:pesquisaId", async (req, res) => {
+  try {
+    const barbeariaId = parseInt(req.params.barbeariaId);
+    const pesquisaId = parseInt(req.params.pesquisaId);
+    if (isNaN(barbeariaId) || isNaN(pesquisaId)) return res.status(400).json({ error: "Parâmetros inválidos" });
+    const [pesquisa] = await db.select().from(pesquisaSatisfacaoTable).where(and(eq(pesquisaSatisfacaoTable.id, pesquisaId), eq(pesquisaSatisfacaoTable.barbeariaId, barbeariaId), eq(pesquisaSatisfacaoTable.ativo, true))).limit(1);
+    if (!pesquisa) return res.status(404).json({ error: "Pesquisa não encontrada ou inativa" });
+    const [barbearia] = await db.select({ nome: barbeariasTable.nome }).from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
+    res.json({ id: pesquisa.id, titulo: pesquisa.titulo, perguntas: pesquisa.perguntas, barbeariaNome: barbearia?.nome || "" });
+  } catch (e) {
+    console.error("public pesquisa get error:", e);
+    res.status(500).json({ error: "Erro ao carregar pesquisa" });
+  }
+});
+
+router.post("/pesquisa/:barbeariaId/:pesquisaId/responder", async (req, res) => {
+  try {
+    const barbeariaId = parseInt(req.params.barbeariaId);
+    const pesquisaId = parseInt(req.params.pesquisaId);
+    if (isNaN(barbeariaId) || isNaN(pesquisaId)) return res.status(400).json({ error: "Parâmetros inválidos" });
+    const [pesquisa] = await db.select().from(pesquisaSatisfacaoTable).where(and(eq(pesquisaSatisfacaoTable.id, pesquisaId), eq(pesquisaSatisfacaoTable.barbeariaId, barbeariaId), eq(pesquisaSatisfacaoTable.ativo, true))).limit(1);
+    if (!pesquisa) return res.status(404).json({ error: "Pesquisa não encontrada ou inativa" });
+    const { clienteNome, respostas, nota } = req.body;
+    const [row] = await db.insert(respostasPesquisaTable).values({ barbeariaId, pesquisaId, clienteNome: clienteNome || "Anônimo", respostas: respostas || {}, nota }).returning();
+    res.status(201).json({ success: true, id: row.id });
+  } catch (e) {
+    console.error("public pesquisa responder error:", e);
+    res.status(500).json({ error: "Erro ao enviar resposta" });
+  }
+});
 
 router.get("/:slug", async (req, res) => {
   const { slug } = req.params;

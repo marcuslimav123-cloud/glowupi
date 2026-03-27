@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApiList, useApiCreate, useApiUpdate, useApiDelete } from "@/hooks/useCrudApi";
@@ -12,21 +12,47 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 
-type TabKey = "categoria_servico" | "forma_pagamento" | "tipo_despesa" | "tipo_receita";
+type TabKey = "categoria_servico" | "forma_pagamento" | "tipo_despesa" | "tipo_receita" | "subconta" | "equipamento" | "fornecedor" | "anamnese" | "bandeira" | "remuneracao" | "deducao";
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "categoria_servico", label: "Categorias de Serviço" },
-  { key: "forma_pagamento", label: "Formas de Pagamento" },
-  { key: "tipo_despesa", label: "Tipos de Despesa" },
-  { key: "tipo_receita", label: "Tipos de Receita" },
+const TABS: { key: TabKey; label: string; queryParam: string }[] = [
+  { key: "categoria_servico", label: "Categorias de Serviço", queryParam: "" },
+  { key: "forma_pagamento", label: "Formas de Pagamento", queryParam: "pagamento" },
+  { key: "tipo_despesa", label: "Tipos de Despesa", queryParam: "despesa" },
+  { key: "tipo_receita", label: "Tipos de Receita", queryParam: "receita" },
+  { key: "subconta", label: "Subcontas", queryParam: "subconta" },
+  { key: "equipamento", label: "Equipamentos", queryParam: "equipamento" },
+  { key: "fornecedor", label: "Fornecedores", queryParam: "fornecedor" },
+  { key: "anamnese", label: "Tipo Anamnese", queryParam: "anamnese" },
+  { key: "bandeira", label: "Bandeiras", queryParam: "bandeira" },
+  { key: "remuneracao", label: "Remunerações", queryParam: "remuneracao" },
+  { key: "deducao", label: "Deduções", queryParam: "deducao" },
 ];
+
+function getInitialTab(): TabKey {
+  const params = new URLSearchParams(window.location.search);
+  const cat = params.get("cat");
+  if (cat) {
+    const found = TABS.find(t => t.queryParam === cat);
+    if (found) return found.key;
+  }
+  return "categoria_servico";
+}
 
 export default function Tipos() {
   const { barbeariaId } = useAuth();
   const { toast } = useToast();
-  const [tab, setTab] = useState<TabKey>("categoria_servico");
+  const [tab, setTab] = useState<TabKey>(getInitialTab);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const cat = params.get("cat");
+    if (cat) {
+      const found = TABS.find(t => t.queryParam === cat);
+      if (found) setTab(found.key);
+    }
+  }, [window.location.search]);
 
   const path = `/barbearias/${barbeariaId}/tipos`;
   const { data: tipos = [], isLoading } = useApiList("tipos", path, !!barbeariaId);
@@ -65,6 +91,8 @@ export default function Tipos() {
       toast({ title: "Tipo removido" });
     } catch { toast({ title: "Erro", variant: "destructive" }); }
   }
+
+  const currentTabLabel = TABS.find(t => t.key === tab)?.label || "Tipo";
 
   return (
     <AppLayout>
@@ -115,10 +143,10 @@ export default function Tipos() {
 
       <Dialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{editing ? "Editar Tipo" : "Novo Tipo"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? "Editar" : "Novo"} {currentTabLabel}</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div><Label>Nome</Label><Input name="nome" required defaultValue={editing?.nome || ""} /></div>
-            <div><Label>Descrição</Label><Input name="descricao" defaultValue={editing?.descricao || ""} /></div>
+            <div><Label>Nome</Label><Input name="nome" required defaultValue={editing?.nome || ""} key={editing?.id || "new"} /></div>
+            <div><Label>Descrição</Label><Input name="descricao" defaultValue={editing?.descricao || ""} key={(editing?.id || "new") + "_desc"} /></div>
             <Button type="submit" className="w-full" disabled={createTipo.isPending || updateTipo.isPending}>
               {editing ? "Salvar" : "Criar"}
             </Button>

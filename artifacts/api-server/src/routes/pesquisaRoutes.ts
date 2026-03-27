@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { pesquisaSatisfacaoTable, respostasPesquisaTable } from "@workspace/db/schema";
-import { eq, and } from "drizzle-orm";
+import { pesquisaSatisfacaoTable, respostasPesquisaTable, barbeariasTable } from "@workspace/db/schema";
+import { eq, and, avg, count } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
@@ -61,6 +61,20 @@ router.post("/:id/respostas", requireAuth, async (req: any, res) => {
   const { clienteId, clienteNome, respostas, nota } = req.body;
   const [row] = await db.insert(respostasPesquisaTable).values({ barbeariaId, pesquisaId, clienteId, clienteNome, respostas: respostas || {}, nota }).returning();
   res.status(201).json(fmt(row));
+});
+
+router.get("/:id/estatisticas", requireAuth, async (req: any, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const pesquisaId = parseInt(req.params.id);
+  const rows = await db.select().from(respostasPesquisaTable).where(and(eq(respostasPesquisaTable.pesquisaId, pesquisaId), eq(respostasPesquisaTable.barbeariaId, barbeariaId)));
+  const totalRespostas = rows.length;
+  const notasValidas = rows.filter(r => r.nota !== null && r.nota !== undefined);
+  const mediaNota = notasValidas.length > 0 ? notasValidas.reduce((sum, r) => sum + (r.nota || 0), 0) / notasValidas.length : 0;
+  const distribuicaoNotas: Record<number, number> = {};
+  for (let i = 1; i <= 5; i++) distribuicaoNotas[i] = 0;
+  notasValidas.forEach(r => { if (r.nota && distribuicaoNotas[r.nota] !== undefined) distribuicaoNotas[r.nota]++; });
+  res.json({ totalRespostas, mediaNota: Math.round(mediaNota * 10) / 10, distribuicaoNotas });
 });
 
 export default router;

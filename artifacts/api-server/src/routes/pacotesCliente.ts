@@ -23,11 +23,13 @@ router.post("/", requireAuth, requireRole("dono", "gerente"), async (req: any, r
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const { pacoteId, clienteId, clienteNome } = req.body;
+  if (!pacoteId) { res.status(400).json({ error: "pacoteId é obrigatório" }); return; }
+  if (!clienteNome) { res.status(400).json({ error: "Nome do cliente é obrigatório" }); return; }
   const [pacote] = await db.select().from(pacotesTable).where(and(eq(pacotesTable.id, pacoteId), eq(pacotesTable.barbeariaId, barbeariaId))).limit(1);
   if (!pacote) { res.status(404).json({ error: "Pacote não encontrado" }); return; }
   const dataValidade = pacote.validade ? new Date(Date.now() + pacote.validade * 86400000) : null;
   const [pc] = await db.insert(pacotesClienteTable).values({
-    barbeariaId, pacoteId, clienteId, clienteNome, sessoesTotal: pacote.sessoesTotal, dataValidade
+    barbeariaId, pacoteId, clienteId: clienteId || null, clienteNome, sessoesTotal: pacote.sessoesTotal, dataValidade
   }).returning();
   res.status(201).json(formatPC(pc, pacote.nome));
 });
