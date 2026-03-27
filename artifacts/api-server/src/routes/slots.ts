@@ -103,11 +103,10 @@ router.get("/", async (req, res) => {
   const profServicoLinks = await db.select().from(profissionalServicosTable).where(
     and(eq(profissionalServicosTable.barbeariaId, barbeariaId), eq(profissionalServicosTable.servicoId, servicoIdNum))
   );
-  const overrideByProf = new Map<number, { tempoOverride: number | null; precoOverride: string | null }>();
+  const overrideByProf = new Map<number, { tempoOverride: number | null }>();
   for (const link of profServicoLinks) {
     overrideByProf.set(link.profissionalId, {
       tempoOverride: link.tempoOverride,
-      precoOverride: link.precoOverride,
     });
   }
 

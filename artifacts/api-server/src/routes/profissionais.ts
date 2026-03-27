@@ -56,13 +56,16 @@ async function syncServicos(
   await db.insert(profissionalServicosTable).values(
     validatedIds.map((sId: number) => {
       const ov = overrideMap.get(sId);
+      const comissao = ov?.comissaoOverride != null ? Math.max(0, Math.min(100, Number(ov.comissaoOverride))) : null;
+      const tempo = ov?.tempoOverride != null ? Math.max(1, Math.floor(Number(ov.tempoOverride))) : null;
+      const preco = ov?.precoOverride != null ? Math.max(0, Number(ov.precoOverride)) : null;
       return {
         barbeariaId,
         profissionalId,
         servicoId: sId,
-        comissaoOverride: ov?.comissaoOverride != null ? String(ov.comissaoOverride) : null,
-        tempoOverride: ov?.tempoOverride ?? null,
-        precoOverride: ov?.precoOverride != null ? String(ov.precoOverride) : null,
+        comissaoOverride: comissao != null ? String(comissao) : null,
+        tempoOverride: tempo,
+        precoOverride: preco != null ? String(preco) : null,
       };
     })
   );
