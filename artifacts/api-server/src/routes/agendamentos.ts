@@ -392,20 +392,23 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
       if (bandeira && bandeira.taxaOperadora) {
         const taxa = (Number(pag.valor) * parseFloat(bandeira.taxaOperadora)) / 100;
         taxaCartaoTotal += taxa;
-        if (!dataCompensacao && bandeira.diasRecebimento) {
-          const comp = new Date(now);
-          const dias = bandeira.diasRecebimento;
-          if (bandeira.diasUteis) {
-            let added = 0;
-            while (added < dias) {
-              comp.setDate(comp.getDate() + 1);
-              const day = comp.getDay();
-              if (day !== 0 && day !== 6) added++;
-            }
-          } else {
-            comp.setDate(comp.getDate() + dias);
+      }
+      if (bandeira && bandeira.diasRecebimento) {
+        const comp = new Date(now);
+        const dias = bandeira.diasRecebimento;
+        if (bandeira.diasUteis) {
+          let added = 0;
+          while (added < dias) {
+            comp.setDate(comp.getDate() + 1);
+            const day = comp.getDay();
+            if (day !== 0 && day !== 6) added++;
           }
-          dataCompensacao = comp.toISOString().slice(0, 10);
+        } else {
+          comp.setDate(comp.getDate() + dias);
+        }
+        const compStr = comp.toISOString().slice(0, 10);
+        if (!dataCompensacao || compStr > dataCompensacao) {
+          dataCompensacao = compStr;
         }
       }
     }

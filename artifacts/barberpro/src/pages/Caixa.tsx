@@ -269,6 +269,7 @@ export default function Caixa() {
       const valor = servico ? parseFloat(servico.preco) : 0;
       const gorjetaValor = parseFloat(fd.get("gorjeta") as string) || 0;
       const gorjetaProfId = fd.get("gorjetaProfissionalId") as string;
+      const tipoComanda = fd.get("tipoComanda") as string || "cliente";
       const pagamento: Record<string, any> = { metodo, valor };
       if ((metodo === "credito" || metodo === "debito") && selectedBandeira) {
         pagamento.bandeira = selectedBandeira;
@@ -281,6 +282,7 @@ export default function Caixa() {
           pagamentos: [pagamento],
           observacao: fd.get("observacao") as string || null,
           gorjeta: gorjetaValor > 0 ? { valor: gorjetaValor, profissionalId: gorjetaProfId ? parseInt(gorjetaProfId) : profissionalId } : null,
+          tipoComanda,
         }),
       });
       if (!checkoutRes.ok) throw new Error("Erro ao fechar comanda");
@@ -625,6 +627,13 @@ export default function Caixa() {
                 {servicos.map((s: any) => (
                   <option key={s.id} value={s.id}>{s.nome} — {formatCurrency(parseFloat(s.preco))}</option>
                 ))}
+              </select>
+            </div>
+            <div>
+              <Label>Tipo de Comanda</Label>
+              <select name="tipoComanda" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
+                <option value="cliente">Cliente</option>
+                <option value="profissional">Profissional (débito)</option>
               </select>
             </div>
             <div>
