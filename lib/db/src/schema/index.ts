@@ -43,3 +43,4 @@ export * from "./documentos";
 export * from "./clubeVantagens";
 export * from "./comissoes";
 export * from "./contasProfissional";
+export * from "./pushTokens";

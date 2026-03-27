@@ -1,6 +1,7 @@
 import { runMigrations } from 'stripe-replit-sync';
 import { getStripeSync } from "./stripeClient.js";
 import { seedSuperAdmins } from "./lib/adminAuth.js";
+import { startReminderService } from "./lib/pushNotifications.js";
 import app from "./app.js";
 
 async function initStripe() {
@@ -60,4 +61,5 @@ await seedSuperAdmins().catch(err => console.error("Error seeding super admins:"
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
+  startReminderService();
 });

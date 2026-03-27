@@ -50,6 +50,7 @@ import clubeVantagensRouter from "./clubeVantagensRoutes.js";
 import fornecedoresRouter from "./fornecedoresRoutes.js";
 import remuneracoesRouter from "./remuneracoesRoutes.js";
 import equipamentosRouter from "./equipamentosRoutes.js";
+import pushTokensRouter from "./pushTokens.js";
 
 const router: IRouter = Router();
 
@@ -120,6 +121,7 @@ router.use("/barbearias/:barbeariaId/clube-vantagens", clubeVantagensRouter);
 router.use("/barbearias/:barbeariaId/fornecedores", fornecedoresRouter);
 router.use("/barbearias/:barbeariaId/rh", remuneracoesRouter);
 router.use("/barbearias/:barbeariaId/equipamentos", equipamentosRouter);
+router.use("/barbearias/:barbeariaId/push-tokens", pushTokensRouter);
 
 router.get("/lgpd/terms", async (_req, res) => {
   try {

@@ -1,10 +1,11 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   useListAgendamentos, useListProfissionais, useListServicos,
-  useCreateAgendamento, useUpdateAgendamento, useCheckoutAgendamento
+  useCreateAgendamento, useUpdateAgendamento, useCheckoutAgendamento,
+  useListClientes
 } from "@workspace/api-client-react";
 import { useApiList } from "@/hooks/useCrudApi";
 import { generateTimeSlots, formatCurrency, apiUrl } from "@/lib/utils";
@@ -16,13 +17,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight,
   CheckCircle, XCircle, Receipt, Star, PartyPopper, Lock, Zap,
-  List, Clock, Users, Scissors, ClipboardList, UserCheck
+  List, Clock, Users, Scissors, ClipboardList, UserCheck,
+  Eye, Phone, Search
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
 type Agendamento = {
   id: number;
+  clienteId?: number | null;
   clienteNome: string;
   clienteTelefone: string;
   profissionalId: number;
@@ -77,6 +80,15 @@ function getStatusColor(status: string, encaixe?: boolean) {
   }
 }
 
+function getStatusLabel(status: string) {
+  switch (status) {
+    case 'pago': return 'Pago';
+    case 'confirmado': return 'Confirmado';
+    case 'cancelado': return 'Cancelado';
+    default: return status;
+  }
+}
+
 function timeToMinutes(t: string) {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
@@ -118,14 +130,36 @@ function getMonthDates(dateStr: string) {
   return dates;
 }
 
+function getHorizontalCalendarDates(dateStr: string) {
+  const center = new Date(dateStr + "T12:00:00");
+  const dates: string[] = [];
+  for (let i = -3; i <= 10; i++) {
+    const dd = new Date(center);
+    dd.setDate(center.getDate() + i);
+    dates.push(dd.toISOString().split('T')[0]);
+  }
+  return dates;
+}
+
 const WEEKDAY_NAMES = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+const WEEKDAY_SHORT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+function useCurrentTime() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(timer);
+  }, []);
+  return now;
+}
 
 export default function Agenda() {
   const { barbeariaId } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [, navigate] = useLocation();
+  const now = useCurrentTime();
 
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [viewMode, setViewMode] = useState<ViewMode>("dia");
@@ -135,13 +169,18 @@ export default function Agenda() {
   const [isBlockOpen, setIsBlockOpen] = useState(false);
   const [checkoutAgend, setCheckoutAgend] = useState<Agendamento | null>(null);
   const [cancelAgend, setCancelAgend] = useState<Agendamento | null>(null);
+  const [detailAgend, setDetailAgend] = useState<Agendamento | null>(null);
 
+  const [newStep, setNewStep] = useState<"client" | "service" | "professional" | "time">("client");
+  const [clientSearch, setClientSearch] = useState("");
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [formNome, setFormNome] = useState("");
   const [formTelefone, setFormTelefone] = useState("");
   const [formProfId, setFormProfId] = useState("");
   const [formServId, setFormServId] = useState("");
   const [formHora, setFormHora] = useState("");
   const [formObs, setFormObs] = useState("");
+  const [useNewClient, setUseNewClient] = useState(false);
 
   const [blockProfId, setBlockProfId] = useState("");
   const [blockHoraInicio, setBlockHoraInicio] = useState("");
@@ -160,8 +199,11 @@ export default function Agenda() {
   const [bloqueios, setBloqueios] = useState<Bloqueio[]>([]);
   const [barbHorarioFunc, setBarbHorarioFunc] = useState<any[] | null>(null);
 
+  const calendarRef = useRef<HTMLDivElement>(null);
+
   const weekDates = useMemo(() => getWeekDates(date), [date]);
   const monthDates = useMemo(() => getMonthDates(date), [date]);
+  const horizontalDates = useMemo(() => getHorizontalCalendarDates(date), [date]);
 
   const dateRangeParams = useMemo(() => {
     if (viewMode === "dia") return { data: date };
@@ -172,6 +214,7 @@ export default function Agenda() {
 
   const { data: profissionais = [] } = useListProfissionais(barbeariaId!, { query: { enabled: !!barbeariaId } });
   const { data: servicos = [] } = useListServicos(barbeariaId!, { query: { enabled: !!barbeariaId } });
+  const { data: clientes = [] } = useListClientes(barbeariaId!, { search: clientSearch || undefined }, { query: { enabled: !!barbeariaId } });
 
   const tiposPath = `/barbearias/${barbeariaId}/tipos`;
   const { data: tipos = [] } = useApiList("tipos", tiposPath, !!barbeariaId);
@@ -268,6 +311,8 @@ export default function Agenda() {
   const resetForm = () => {
     setFormNome(""); setFormTelefone(""); setFormProfId("");
     setFormServId(""); setFormHora(""); setFormObs("");
+    setNewStep("client"); setSelectedClientId(null); setClientSearch("");
+    setUseNewClient(false);
   };
 
   const handleCreate = async (e: React.FormEvent, encaixe = false) => {
@@ -280,6 +325,7 @@ export default function Agenda() {
       await createMutation.mutateAsync({
         barbeariaId: barbeariaId!,
         data: {
+          clienteId: selectedClientId || undefined,
           clienteNome: formNome,
           clienteTelefone: formTelefone,
           profissionalId: Number(formProfId),
@@ -307,6 +353,7 @@ export default function Agenda() {
       await updateMutation.mutateAsync({ barbeariaId: barbeariaId!, agendamentoId: cancelAgend.id, data: { status: "cancelado" } });
       toast({ title: "Agendamento cancelado" });
       setCancelAgend(null);
+      setDetailAgend(null);
       refetch();
     } catch {
       toast({ title: "Erro ao cancelar", variant: "destructive" });
@@ -400,6 +447,7 @@ export default function Agenda() {
       }
       toast({ title: "Checkout realizado!", description: `${formatCurrency(valorFinal)} via ${paymentMethodsToUse.find(m => m.value === checkoutMetodo)?.label || checkoutMetodo}` });
       setCheckoutAgend(null);
+      setDetailAgend(null);
       setCheckoutObs("");
       setCheckoutDesconto("");
       setCheckoutParcelas(1);
@@ -426,6 +474,23 @@ export default function Agenda() {
     return idx === -1 ? 0 : idx * 56 + 1;
   };
 
+  const currentTimeStr = useMemo(() => {
+    const h = now.getHours().toString().padStart(2, "0");
+    const m = now.getMinutes().toString().padStart(2, "0");
+    return `${h}:${m}`;
+  }, [now]);
+
+  const currentTimeTop = useMemo(() => {
+    if (timeSlots.length === 0) return -1;
+    const nowMin = timeToMinutes(currentTimeStr);
+    const firstSlotMin = timeToMinutes(timeSlots[0]);
+    const lastSlotMin = timeToMinutes(timeSlots[timeSlots.length - 1]) + 30;
+    if (nowMin < firstSlotMin || nowMin > lastSlotMin) return -1;
+    return ((nowMin - firstSlotMin) / 30) * 56;
+  }, [currentTimeStr, timeSlots]);
+
+  const isToday = date === new Date().toISOString().split('T')[0];
+
   const dateDisplay = useMemo(() => {
     if (viewMode === "dia") return formatDateBR(date);
     if (viewMode === "semana") {
@@ -435,13 +500,114 @@ export default function Agenda() {
     return `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
   }, [viewMode, date, weekDates]);
 
+  const renderHorizontalCalendar = () => {
+    const today = new Date().toISOString().split('T')[0];
+    return (
+      <div className="mb-3">
+        <div ref={calendarRef} className="flex gap-1.5 overflow-x-auto pb-2 px-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {horizontalDates.map(d => {
+            const dd = new Date(d + "T12:00:00");
+            const dayName = WEEKDAY_SHORT[dd.getDay()];
+            const dayNum = dd.getDate();
+            const isSel = d === date;
+            const isTd = d === today;
+            const dayAgends = (agendamentos as Agendamento[]).filter(a => a.data === d);
+            return (
+              <button
+                key={d}
+                onClick={() => handleDateChange(d)}
+                className={`flex flex-col items-center min-w-[52px] px-2 py-2 rounded-xl transition-all shrink-0
+                  ${isSel ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" :
+                    isTd ? "bg-primary/10 text-primary border border-primary/30" :
+                    "bg-card border border-border text-foreground hover:border-primary/40"}`}
+              >
+                <span className={`text-[10px] font-medium ${isSel ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{dayName}</span>
+                <span className={`text-lg font-bold leading-tight ${isSel ? "" : ""}`}>{dayNum}</span>
+                {dayAgends.length > 0 && (
+                  <div className={`flex gap-0.5 mt-0.5`}>
+                    {dayAgends.length <= 3 ? dayAgends.map((_, i) => (
+                      <div key={i} className={`w-1 h-1 rounded-full ${isSel ? "bg-primary-foreground/60" : "bg-primary"}`} />
+                    )) : (
+                      <span className={`text-[8px] font-bold ${isSel ? "text-primary-foreground/80" : "text-primary"}`}>{dayAgends.length}</span>
+                    )}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderProfessionalAvatars = () => {
+    const profs = profissionais as any[];
+    if (profs.length === 0) return null;
+    return (
+      <div className="mb-3">
+        <div className="flex gap-2 overflow-x-auto pb-1 px-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <button
+            onClick={() => setSelectedProfId("all")}
+            className={`flex flex-col items-center gap-1 min-w-[56px] shrink-0 transition-all`}
+          >
+            <div className={`h-10 w-10 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all
+              ${selectedProfId === "all" ? "border-primary bg-primary text-primary-foreground" : "border-border bg-muted text-muted-foreground"}`}>
+              <Users className="h-4 w-4" />
+            </div>
+            <span className={`text-[10px] font-medium truncate max-w-[56px] ${selectedProfId === "all" ? "text-primary" : "text-muted-foreground"}`}>Todos</span>
+          </button>
+          {profs.map((prof: any) => {
+            const isSelected = selectedProfId === String(prof.id);
+            const dayAgends = filteredAgendamentos.filter(a => a.profissionalId === prof.id && a.data === date);
+            return (
+              <button
+                key={prof.id}
+                onClick={() => setSelectedProfId(isSelected ? "all" : String(prof.id))}
+                className="flex flex-col items-center gap-1 min-w-[56px] shrink-0 transition-all"
+              >
+                <div className={`h-10 w-10 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all relative
+                  ${isSelected ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/30" : "border-border bg-muted text-muted-foreground"}`}>
+                  {prof.fotoUrl ? (
+                    <img src={prof.fotoUrl} alt={prof.nomeExibicao} className="h-full w-full rounded-full object-cover" />
+                  ) : (
+                    prof.nomeExibicao.charAt(0).toUpperCase()
+                  )}
+                  {dayAgends.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[8px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                      {dayAgends.length}
+                    </span>
+                  )}
+                </div>
+                <span className={`text-[10px] font-medium truncate max-w-[56px] ${isSelected ? "text-primary" : "text-muted-foreground"}`}>
+                  {prof.apelido || prof.nomeExibicao.split(' ')[0]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderCurrentTimeBadge = () => {
+    if (!isToday || viewMode !== "dia") return null;
+    return (
+      <div className="flex items-center gap-2 mb-2">
+        <div className="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-md shadow-sm animate-pulse">
+          {currentTimeStr}
+        </div>
+        <div className="flex-1 h-px bg-red-500/30" />
+      </div>
+    );
+  };
+
   const renderDayView = () => {
     const profs = selectedProfId === "all" ? profissionais as any[] : (profissionais as any[]).filter((p: any) => String(p.id) === selectedProfId);
     const dayAgends = filteredAgendamentos.filter(a => a.data === date);
 
     if (!daySchedule.aberto) {
       return (
-        <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg flex flex-col h-[calc(100vh-260px)] min-h-[400px] items-center justify-center">
+        <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg flex flex-col h-[calc(100vh-380px)] min-h-[300px] items-center justify-center">
           <Lock className="h-10 w-10 text-muted-foreground/40 mb-3" />
           <p className="text-lg font-semibold text-muted-foreground">Estabelecimento fechado</p>
           <p className="text-sm text-muted-foreground/60 mt-1">Esse dia não tem horário de funcionamento configurado</p>
@@ -450,9 +616,9 @@ export default function Agenda() {
     }
 
     return (
-      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg flex flex-col h-[calc(100vh-260px)] min-h-[400px]">
+      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg flex flex-col h-[calc(100vh-380px)] min-h-[300px]">
         <div className="flex border-b border-border bg-muted/30">
-          <div className="w-16 shrink-0 border-r border-border p-3 flex items-center justify-center">
+          <div className="w-14 shrink-0 border-r border-border p-2 flex items-center justify-center">
             <Clock className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="flex-1 flex overflow-x-auto">
@@ -460,12 +626,12 @@ export default function Agenda() {
               const profAgends = dayAgends.filter(a => a.profissionalId === prof.id && a.status === "pago");
               const total = profAgends.reduce((s, a) => s + a.valor, 0);
               return (
-                <div key={prof.id} className="flex-1 min-w-[160px] p-3 text-center border-r border-border last:border-r-0">
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] border border-primary/20">
+                <div key={prof.id} className="flex-1 min-w-[140px] p-2 text-center border-r border-border last:border-r-0">
+                  <div className="flex items-center justify-center gap-1.5">
+                    <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[9px] border border-primary/20">
                       {prof.nomeExibicao.charAt(0)}
                     </div>
-                    <p className="font-semibold text-foreground truncate text-xs">{prof.nomeExibicao}</p>
+                    <p className="font-semibold text-foreground truncate text-[11px]">{prof.apelido || prof.nomeExibicao}</p>
                   </div>
                   <p className="text-[10px] text-primary mt-0.5 font-medium">{formatCurrency(total)}</p>
                 </div>
@@ -479,7 +645,7 @@ export default function Agenda() {
 
         <div className="flex-1 overflow-y-auto relative">
           <div className="flex min-h-max">
-            <div className="w-16 shrink-0 border-r border-border bg-card">
+            <div className="w-14 shrink-0 border-r border-border bg-card">
               {timeSlots.map(time => (
                 <div key={time} className="h-14 border-b border-border/40 flex items-start justify-center pt-1 text-[10px] text-muted-foreground font-medium">
                   {time}
@@ -488,11 +654,20 @@ export default function Agenda() {
             </div>
 
             <div className="flex-1 flex relative">
+              {isToday && currentTimeTop >= 0 && (
+                <div className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top: `${currentTimeTop}px` }}>
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 rounded-full bg-red-500 -ml-1" />
+                    <div className="flex-1 h-[2px] bg-red-500" />
+                  </div>
+                </div>
+              )}
+
               {profs.map((prof: any) => (
-                <div key={prof.id} className="flex-1 min-w-[160px] border-r border-border last:border-r-0 relative">
+                <div key={prof.id} className="flex-1 min-w-[140px] border-r border-border last:border-r-0 relative">
                   {timeSlots.map(time => (
                     <div key={time} className="h-14 border-b border-border/30 hover:bg-primary/5 transition-colors cursor-pointer"
-                      onClick={() => { resetForm(); setFormProfId(String(prof.id)); setFormHora(time); setIsNewOpen(true); }} />
+                      onClick={() => { resetForm(); setFormProfId(String(prof.id)); setFormHora(time); setNewStep("client"); setIsNewOpen(true); }} />
                   ))}
 
                   {bloqueios.filter(b => b.profissionalId === prof.id).map(b => {
@@ -523,7 +698,7 @@ export default function Agenda() {
                       key={agend.id}
                       className={`absolute left-0.5 right-0.5 rounded-lg border p-1.5 text-[10px] shadow-sm cursor-pointer z-10 flex flex-col justify-between group hover:shadow-md transition-all ${getStatusColor(agend.status, agend.encaixe)}`}
                       style={{ top: `${getSlotTop(agend)}px`, height: `${getSlotHeight(agend)}px` }}
-                      onClick={() => agend.status !== 'pago' && agend.status !== 'cancelado' && setCheckoutAgend(agend)}
+                      onClick={() => setDetailAgend(agend)}
                     >
                       <div className="flex items-start justify-between gap-1">
                         <div className="min-w-0 flex-1">
@@ -539,16 +714,6 @@ export default function Agenda() {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="opacity-70">{agend.horaInicio.slice(0,5)} – {agend.horaFim.slice(0,5)}</span>
-                        {agend.status === 'confirmado' && (
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="hover:text-green-500" title="Checkout" onClick={e => { e.stopPropagation(); setCheckoutAgend(agend); }}>
-                              <Receipt className="h-3 w-3" />
-                            </button>
-                            <button className="hover:text-red-500" title="Cancelar" onClick={e => { e.stopPropagation(); setCancelAgend(agend); }}>
-                              <XCircle className="h-3 w-3" />
-                            </button>
-                          </div>
-                        )}
                         {agend.status === 'pago' && <CheckCircle className="h-3 w-3" />}
                       </div>
                     </div>
@@ -564,24 +729,24 @@ export default function Agenda() {
 
   const renderWeekView = () => {
     return (
-      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg flex flex-col h-[calc(100vh-260px)] min-h-[400px]">
+      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg flex flex-col h-[calc(100vh-380px)] min-h-[300px]">
         <div className="flex border-b border-border bg-muted/30">
-          <div className="w-16 shrink-0 border-r border-border p-3 flex items-center justify-center">
+          <div className="w-14 shrink-0 border-r border-border p-2 flex items-center justify-center">
             <Clock className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="flex-1 flex">
             {weekDates.map((wd, i) => {
-              const isToday = wd === new Date().toISOString().split('T')[0];
+              const isTd = wd === new Date().toISOString().split('T')[0];
               const dayAgends = filteredAgendamentos.filter(a => a.data === wd);
               return (
                 <div
                   key={wd}
-                  className={`flex-1 min-w-[100px] p-2 text-center border-r border-border last:border-r-0 cursor-pointer hover:bg-primary/5 ${isToday ? "bg-primary/10" : ""}`}
+                  className={`flex-1 min-w-[80px] p-2 text-center border-r border-border last:border-r-0 cursor-pointer hover:bg-primary/5 ${isTd ? "bg-primary/10" : ""}`}
                   onClick={() => { setDate(wd); setViewMode("dia"); }}
                 >
-                  <p className={`text-[10px] font-medium ${isToday ? "text-primary" : "text-muted-foreground"}`}>{WEEKDAY_NAMES[i]}</p>
-                  <p className={`text-sm font-bold ${isToday ? "text-primary" : "text-foreground"}`}>{new Date(wd + "T12:00:00").getDate()}</p>
-                  {dayAgends.length > 0 && <p className="text-[9px] text-primary font-medium">{dayAgends.length} agend.</p>}
+                  <p className={`text-[10px] font-medium ${isTd ? "text-primary" : "text-muted-foreground"}`}>{WEEKDAY_NAMES[i]}</p>
+                  <p className={`text-sm font-bold ${isTd ? "text-primary" : "text-foreground"}`}>{new Date(wd + "T12:00:00").getDate()}</p>
+                  {dayAgends.length > 0 && <p className="text-[9px] text-primary font-medium">{dayAgends.length}</p>}
                 </div>
               );
             })}
@@ -590,7 +755,7 @@ export default function Agenda() {
 
         <div className="flex-1 overflow-y-auto relative">
           <div className="flex min-h-max">
-            <div className="w-16 shrink-0 border-r border-border bg-card">
+            <div className="w-14 shrink-0 border-r border-border bg-card">
               {timeSlots.map(time => (
                 <div key={time} className="h-12 border-b border-border/40 flex items-start justify-center pt-1 text-[10px] text-muted-foreground font-medium">
                   {time}
@@ -602,7 +767,7 @@ export default function Agenda() {
               {weekDates.map(wd => {
                 const dayAgends = filteredAgendamentos.filter(a => a.data === wd);
                 return (
-                  <div key={wd} className="flex-1 min-w-[100px] border-r border-border last:border-r-0 relative">
+                  <div key={wd} className="flex-1 min-w-[80px] border-r border-border last:border-r-0 relative">
                     {timeSlots.map(time => (
                       <div key={time} className="h-12 border-b border-border/30 hover:bg-primary/5 transition-colors cursor-pointer"
                         onClick={() => { setDate(wd); resetForm(); setFormHora(time); setIsNewOpen(true); }} />
@@ -637,7 +802,6 @@ export default function Agenda() {
   };
 
   const renderMonthView = () => {
-    const d = new Date(date + "T12:00:00");
     const today = new Date().toISOString().split('T')[0];
     return (
       <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg p-4">
@@ -648,9 +812,9 @@ export default function Agenda() {
         </div>
         <div className="grid grid-cols-7 gap-1">
           {monthDates.map((md, i) => {
-            if (!md) return <div key={`empty-${i}`} className="h-20" />;
+            if (!md) return <div key={`empty-${i}`} className="h-16 sm:h-20" />;
             const dayAgends = filteredAgendamentos.filter(a => a.data === md);
-            const isToday = md === today;
+            const isTd = md === today;
             const isSelected = md === date;
             const dayNum = new Date(md + "T12:00:00").getDate();
             const paidCount = dayAgends.filter(a => a.status === "pago").length;
@@ -658,22 +822,22 @@ export default function Agenda() {
             return (
               <div
                 key={md}
-                className={`h-20 rounded-lg border p-1.5 cursor-pointer transition-all hover:border-primary/50 ${isToday ? "border-primary bg-primary/5" : isSelected ? "border-primary/30 bg-primary/5" : "border-border/40"}`}
+                className={`h-16 sm:h-20 rounded-lg border p-1 cursor-pointer transition-all hover:border-primary/50 ${isTd ? "border-primary bg-primary/5" : isSelected ? "border-primary/30 bg-primary/5" : "border-border/40"}`}
                 onClick={() => { setDate(md); setViewMode("dia"); }}
               >
-                <p className={`text-xs font-bold ${isToday ? "text-primary" : "text-foreground"}`}>{dayNum}</p>
+                <p className={`text-xs font-bold ${isTd ? "text-primary" : "text-foreground"}`}>{dayNum}</p>
                 {dayAgends.length > 0 && (
-                  <div className="mt-1 space-y-0.5">
+                  <div className="mt-0.5 space-y-0.5">
                     {confirmedCount > 0 && (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-0.5">
                         <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                        <span className="text-[9px] text-primary font-medium">{confirmedCount}</span>
+                        <span className="text-[8px] text-primary font-medium">{confirmedCount}</span>
                       </div>
                     )}
                     {paidCount > 0 && (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-0.5">
                         <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                        <span className="text-[9px] text-green-600 font-medium">{paidCount}</span>
+                        <span className="text-[8px] text-green-600 font-medium">{paidCount}</span>
                       </div>
                     )}
                   </div>
@@ -702,19 +866,19 @@ export default function Agenda() {
           </button>
         </div>
         <div className="grid grid-cols-7 gap-0.5">
-          {["S", "T", "Q", "Q", "S", "S", "D"].map((d, i) => (
-            <div key={i} className="text-center text-[9px] font-medium text-muted-foreground py-0.5">{d}</div>
+          {["S", "T", "Q", "Q", "S", "S", "D"].map((dd, i) => (
+            <div key={i} className="text-center text-[9px] font-medium text-muted-foreground py-0.5">{dd}</div>
           ))}
           {miniMonthDates.map((md, i) => {
             if (!md) return <div key={`e-${i}`} />;
             const dayNum = new Date(md + "T12:00:00").getDate();
-            const isToday = md === today;
+            const isTd = md === today;
             const isSelected = md === date;
             return (
               <button
                 key={md}
                 className={`text-[10px] h-6 w-6 mx-auto rounded-full flex items-center justify-center font-medium transition-colors
-                  ${isSelected ? "bg-primary text-white" : isToday ? "bg-primary/20 text-primary" : "hover:bg-muted text-foreground"}`}
+                  ${isSelected ? "bg-primary text-white" : isTd ? "bg-primary/20 text-primary" : "hover:bg-muted text-foreground"}`}
                 onClick={() => handleDateChange(md)}
               >
                 {dayNum}
@@ -726,74 +890,297 @@ export default function Agenda() {
     );
   };
 
-  const renderAppointmentDialog = (isEncaixe: boolean) => (
-    <Dialog open={isEncaixe ? isEncaixeOpen : isNewOpen} onOpenChange={v => { if (isEncaixe) setIsEncaixeOpen(v); else setIsNewOpen(v); if (!v) resetForm(); }}>
-      <DialogContent className="bg-card border-border sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-display flex items-center gap-2">
-            {isEncaixe && <Zap className="h-5 w-5 text-amber-500" />}
-            {isEncaixe ? "Encaixe" : "Novo Agendamento"}
-          </DialogTitle>
-        </DialogHeader>
-        <form onSubmit={e => handleCreate(e, isEncaixe)} className="space-y-3 mt-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5 col-span-2">
-              <Label className="text-xs">Nome do Cliente *</Label>
-              <Input value={formNome} onChange={e => setFormNome(e.target.value)} required placeholder="Ex: Mariana Silva" className="bg-background h-9 text-sm" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">WhatsApp *</Label>
-              <Input value={formTelefone} onChange={e => setFormTelefone(e.target.value)} required placeholder="(11) 99999-9999" className="bg-background h-9 text-sm" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Profissional *</Label>
-              <Select value={formProfId} onValueChange={setFormProfId}>
-                <SelectTrigger className="bg-background h-9 text-sm"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>
-                  {(profissionais as any[]).map((p: any) => <SelectItem key={p.id} value={String(p.id)}>{p.nomeExibicao}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Serviço *</Label>
-              <Select value={formServId} onValueChange={setFormServId}>
-                <SelectTrigger className="bg-background h-9 text-sm"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>
-                  {(servicos as any[]).map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.nome} — {formatCurrency(s.preco)}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Horário *</Label>
-              <Select value={formHora} onValueChange={setFormHora}>
-                <SelectTrigger className="bg-background h-9 text-sm"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>
-                  {(isEncaixe ? timeSlots : availableTimeSlots).map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5 col-span-2">
-              <Label className="text-xs">Observação <span className="text-muted-foreground">(opcional)</span></Label>
-              <Input value={formObs} onChange={e => setFormObs(e.target.value)} placeholder="Ex: Trazer foto de referência" className="bg-background h-9 text-sm" />
-            </div>
+  const renderNewAppointmentStepFlow = (isEncaixe: boolean) => {
+    const filteredClients = (clientes as any[]).filter(c =>
+      !clientSearch || c.nome?.toLowerCase().includes(clientSearch.toLowerCase()) || c.telefone?.includes(clientSearch)
+    );
+
+    return (
+      <Dialog open={isEncaixe ? isEncaixeOpen : isNewOpen} onOpenChange={v => { if (isEncaixe) setIsEncaixeOpen(v); else setIsNewOpen(v); if (!v) resetForm(); }}>
+        <DialogContent className="bg-card border-border sm:max-w-[500px] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-display flex items-center gap-2">
+              {isEncaixe && <Zap className="h-5 w-5 text-amber-500" />}
+              {isEncaixe ? "Encaixe" : "Novo Agendamento"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex items-center gap-1 mb-3">
+            {(["client", "service", "professional", "time"] as const).map((step, idx) => (
+              <React.Fragment key={step}>
+                <button
+                  onClick={() => setNewStep(step)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all
+                    ${newStep === step ? "bg-primary text-primary-foreground" :
+                      idx < ["client", "service", "professional", "time"].indexOf(newStep) ? "bg-primary/20 text-primary" :
+                      "bg-muted text-muted-foreground"}`}
+                >
+                  <span className="font-bold">{idx + 1}</span>
+                  <span className="hidden sm:inline">{step === "client" ? "Cliente" : step === "service" ? "Serviço" : step === "professional" ? "Profissional" : "Horário"}</span>
+                </button>
+                {idx < 3 && <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />}
+              </React.Fragment>
+            ))}
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
-            <CalendarIcon className="h-3.5 w-3.5 text-primary shrink-0" />
-            <span>Data: <strong className="text-foreground">{new Date(date + "T12:00:00").toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</strong></span>
+
+          {newStep === "client" && (
+            <div className="space-y-3">
+              {!useNewClient ? (
+                <>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={clientSearch}
+                      onChange={e => setClientSearch(e.target.value)}
+                      placeholder="Buscar cliente por nome ou telefone..."
+                      className="pl-9 bg-background h-10 text-sm"
+                    />
+                  </div>
+                  <div className="max-h-[220px] overflow-y-auto space-y-1">
+                    {filteredClients.slice(0, 20).map((c: any) => (
+                      <button
+                        key={c.id}
+                        onClick={() => {
+                          setSelectedClientId(c.id);
+                          setFormNome(c.nome);
+                          setFormTelefone(c.telefone || "");
+                          setNewStep("service");
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all text-left
+                          ${selectedClientId === c.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                      >
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
+                          {c.nome?.charAt(0)?.toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{c.nome}</p>
+                          {c.telefone && <p className="text-[11px] text-muted-foreground">{c.telefone}</p>}
+                        </div>
+                        {c.vip && <Star className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
+                      </button>
+                    ))}
+                    {filteredClients.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">Nenhum cliente encontrado</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setUseNewClient(true)}
+                    className="w-full text-sm text-primary font-medium py-2 hover:bg-primary/5 rounded-lg transition-colors"
+                  >
+                    + Novo cliente (sem cadastro)
+                  </button>
+                </>
+              ) : (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Nome do Cliente *</Label>
+                    <Input value={formNome} onChange={e => setFormNome(e.target.value)} placeholder="Ex: Mariana Silva" className="bg-background h-9 text-sm" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">WhatsApp *</Label>
+                    <Input value={formTelefone} onChange={e => setFormTelefone(e.target.value)} placeholder="(11) 99999-9999" className="bg-background h-9 text-sm" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="text-xs" onClick={() => { setUseNewClient(false); setFormNome(""); setFormTelefone(""); }}>
+                      Voltar à lista
+                    </Button>
+                    <Button size="sm" className="text-xs flex-1" disabled={!formNome || !formTelefone}
+                      onClick={() => { setSelectedClientId(null); setNewStep("service"); }}>
+                      Continuar
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {newStep === "service" && (
+            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              {(servicos as any[]).filter((s: any) => s.ativo !== false).map((s: any) => (
+                <button
+                  key={s.id}
+                  onClick={() => { setFormServId(String(s.id)); setNewStep("professional"); }}
+                  className={`w-full flex items-center justify-between px-3 py-3 rounded-xl border transition-all text-left
+                    ${formServId === String(s.id) ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">{s.nome}</p>
+                    <p className="text-[11px] text-muted-foreground">{s.duracaoMinutos || 30} min</p>
+                  </div>
+                  <span className="text-sm font-bold text-primary">{formatCurrency(s.preco)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {newStep === "professional" && (
+            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              {(profissionais as any[]).filter((p: any) => p.ativo !== false).map((p: any) => (
+                <button
+                  key={p.id}
+                  onClick={() => { setFormProfId(String(p.id)); setNewStep("time"); }}
+                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl border transition-all text-left
+                    ${formProfId === String(p.id) ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                >
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                    {p.fotoUrl ? (
+                      <img src={p.fotoUrl} alt={p.nomeExibicao} className="h-full w-full rounded-full object-cover" />
+                    ) : (
+                      p.nomeExibicao.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">{p.nomeExibicao}</p>
+                    {p.especialidade && <p className="text-[11px] text-muted-foreground">{p.especialidade}</p>}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {newStep === "time" && (
+            <form onSubmit={e => handleCreate(e, isEncaixe)} className="space-y-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+                <CalendarIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span>Data: <strong className="text-foreground">{new Date(date + "T12:00:00").toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</strong></span>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-muted/30 border border-border text-xs space-y-1">
+                <div className="flex justify-between"><span className="text-muted-foreground">Cliente</span><span className="font-medium">{formNome}</span></div>
+                {formServId && <div className="flex justify-between"><span className="text-muted-foreground">Serviço</span><span className="font-medium">{(servicos as any[]).find((s: any) => String(s.id) === formServId)?.nome}</span></div>}
+                {formProfId && <div className="flex justify-between"><span className="text-muted-foreground">Profissional</span><span className="font-medium">{(profissionais as any[]).find((p: any) => String(p.id) === formProfId)?.nomeExibicao}</span></div>}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Horário *</Label>
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5 max-h-[180px] overflow-y-auto">
+                  {(isEncaixe ? timeSlots : availableTimeSlots).map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setFormHora(t)}
+                      className={`py-2 rounded-lg border text-xs font-medium transition-all
+                        ${formHora === t ? "bg-primary text-primary-foreground border-primary" : "border-border text-foreground hover:border-primary/50"}`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Observação <span className="text-muted-foreground">(opcional)</span></Label>
+                <Input value={formObs} onChange={e => setFormObs(e.target.value)} placeholder="Ex: Trazer foto de referência" className="bg-background h-9 text-sm" />
+              </div>
+
+              <Button type="submit" className="w-full h-10 text-sm font-medium" disabled={!formHora || createMutation.isPending}>
+                {createMutation.isPending ? "Agendando..." : isEncaixe ? "Confirmar Encaixe" : "Confirmar Agendamento"}
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  const renderDetailModal = () => {
+    if (!detailAgend) return null;
+    return (
+      <Dialog open={!!detailAgend} onOpenChange={v => { if (!v) setDetailAgend(null); }}>
+        <DialogContent className="bg-card border-border sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-display flex items-center gap-2">
+              <Eye className="h-5 w-5 text-primary" />
+              Detalhes do Agendamento
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3 mt-1">
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(detailAgend.status, detailAgend.encaixe)}`}>
+              {detailAgend.encaixe && <Zap className="h-3 w-3" />}
+              {getStatusLabel(detailAgend.status)}
+              {detailAgend.encaixe && " (Encaixe)"}
+            </div>
+
+            <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Cliente</span>
+                <span className="font-medium">{detailAgend.clienteNome}</span>
+              </div>
+              {detailAgend.clienteTelefone && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> Telefone</span>
+                  <span className="font-medium">{detailAgend.clienteTelefone}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground flex items-center gap-1.5"><Scissors className="h-3.5 w-3.5" /> Serviço</span>
+                <span className="font-medium">{detailAgend.servicoNome}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground flex items-center gap-1.5"><UserCheck className="h-3.5 w-3.5" /> Profissional</span>
+                <span className="font-medium">{detailAgend.profissionalNome}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground flex items-center gap-1.5"><CalendarIcon className="h-3.5 w-3.5" /> Data</span>
+                <span className="font-medium">{new Date(detailAgend.data + "T12:00:00").toLocaleDateString('pt-BR')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> Horário</span>
+                <span className="font-medium">{detailAgend.horaInicio} — {detailAgend.horaFim}</span>
+              </div>
+              <div className="flex justify-between border-t border-border pt-2 mt-1">
+                <span className="text-muted-foreground font-medium">Valor</span>
+                <span className="font-bold text-primary text-base">{formatCurrency(detailAgend.valor)}</span>
+              </div>
+              {detailAgend.observacao && (
+                <div className="pt-1 border-t border-border">
+                  <p className="text-xs text-muted-foreground">Obs: {detailAgend.observacao}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1">
+              {detailAgend.aniversario && (
+                <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 border border-yellow-200">
+                  <PartyPopper className="h-3 w-3" /> Aniversário
+                </span>
+              )}
+              {detailAgend.vip && (
+                <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                  <Star className="h-3 w-3" /> VIP
+                </span>
+              )}
+            </div>
+
+            {detailAgend.status === "confirmado" && (
+              <div className="flex gap-2 pt-1">
+                <Button
+                  className="flex-1 h-9 text-xs"
+                  onClick={() => { setCheckoutAgend(detailAgend); setDetailAgend(null); }}
+                >
+                  <Receipt className="h-3.5 w-3.5 mr-1" /> Checkout
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1 h-9 text-xs"
+                  onClick={() => { setCancelAgend(detailAgend); }}
+                >
+                  <XCircle className="h-3.5 w-3.5 mr-1" /> Cancelar
+                </Button>
+              </div>
+            )}
           </div>
-          <Button type="submit" className="w-full h-9 text-sm" disabled={createMutation.isPending}>
-            {createMutation.isPending ? "Agendando..." : isEncaixe ? "Confirmar Encaixe" : "Confirmar Agendamento"}
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
+        </DialogContent>
+      </Dialog>
+    );
+  };
 
   return (
     <AppLayout>
       <div className="flex flex-col lg:flex-row gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
             <div>
               <h1 className="text-2xl font-display font-bold text-foreground">Agenda</h1>
               <p className="text-muted-foreground text-sm">Gerencie seus horários</p>
@@ -814,7 +1201,7 @@ export default function Agenda() {
 
               <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-0.5">
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handlePrev}><ChevronLeft className="h-4 w-4"/></Button>
-                <button onClick={goToToday} className="px-2 py-1 text-xs font-medium text-foreground min-w-[120px] text-center hover:text-primary transition-colors">
+                <button onClick={goToToday} className="px-2 py-1 text-xs font-medium text-foreground min-w-[100px] text-center hover:text-primary transition-colors">
                   {dateDisplay}
                 </button>
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleNext}><ChevronRight className="h-4 w-4"/></Button>
@@ -822,18 +1209,11 @@ export default function Agenda() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 mb-3 flex-wrap">
-            <Select value={selectedProfId} onValueChange={setSelectedProfId}>
-              <SelectTrigger className="w-[180px] h-8 text-xs bg-card border-border">
-                <Users className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                <SelectValue placeholder="Profissional" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {(profissionais as any[]).map((p: any) => <SelectItem key={p.id} value={String(p.id)}>{p.nomeExibicao}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          {viewMode === "dia" && renderHorizontalCalendar()}
+          {renderProfessionalAvatars()}
+          {viewMode === "dia" && renderCurrentTimeBadge()}
 
+          <div className="hidden sm:flex items-center gap-2 mb-3 flex-wrap">
             <Button size="sm" className="h-8 text-xs shadow-md shadow-primary/20" onClick={() => { resetForm(); setIsNewOpen(true); }}>
               <Plus className="mr-1 h-3.5 w-3.5"/> Novo
             </Button>
@@ -855,7 +1235,7 @@ export default function Agenda() {
           {viewMode === "mes" && renderMonthView()}
         </div>
 
-        <div className="w-full lg:w-[240px] shrink-0 space-y-3">
+        <div className="hidden lg:block w-[240px] shrink-0 space-y-3">
           {renderMiniCalendar()}
 
           <div className="bg-card border border-border rounded-xl p-3 space-y-2">
@@ -881,9 +1261,6 @@ export default function Agenda() {
                 <Lock className="h-3.5 w-3.5 text-gray-500" /> Bloquear Horário
               </button>
             )}
-            <button onClick={() => setViewMode("dia")} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
-              <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" /> Horários Disponíveis
-            </button>
             <button onClick={() => navigate("/lista-espera")} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
               <ClipboardList className="h-3.5 w-3.5 text-muted-foreground" /> Lista de Espera
             </button>
@@ -892,9 +1269,6 @@ export default function Agenda() {
             </button>
             <button onClick={() => navigate("/gestao/profissionais")} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
               <UserCheck className="h-3.5 w-3.5 text-muted-foreground" /> Profissionais
-            </button>
-            <button onClick={() => navigate("/gestao/produtos")} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
-              <List className="h-3.5 w-3.5 text-muted-foreground" /> Produtos
             </button>
           </div>
 
@@ -920,9 +1294,21 @@ export default function Agenda() {
         </div>
       </div>
 
-      {renderAppointmentDialog(false)}
-      {renderAppointmentDialog(true)}
+      {/* FAB for mobile */}
+      <div className="fixed bottom-6 right-6 z-50 sm:hidden flex flex-col gap-2">
+        <button
+          onClick={() => { resetForm(); setIsNewOpen(true); }}
+          className="h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-xl shadow-primary/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+        >
+          <Plus className="h-6 w-6" />
+        </button>
+      </div>
 
+      {renderNewAppointmentStepFlow(false)}
+      {renderNewAppointmentStepFlow(true)}
+      {renderDetailModal()}
+
+      {/* Block dialog */}
       <Dialog open={isBlockOpen} onOpenChange={setIsBlockOpen}>
         <DialogContent className="bg-card border-border sm:max-w-[400px]">
           <DialogHeader>
@@ -968,33 +1354,39 @@ export default function Agenda() {
               <CalendarIcon className="h-3.5 w-3.5 text-primary shrink-0" />
               <span>Data: <strong className="text-foreground">{new Date(date + "T12:00:00").toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</strong></span>
             </div>
-            <Button type="submit" className="w-full h-9 text-sm">Bloquear Horário</Button>
+            <Button type="submit" className="w-full h-9 text-sm">Bloquear</Button>
           </form>
         </DialogContent>
       </Dialog>
 
+      {/* Cancel dialog */}
       <Dialog open={!!cancelAgend} onOpenChange={v => { if (!v) setCancelAgend(null); }}>
-        <DialogContent className="bg-card border-border sm:max-w-[360px]">
+        <DialogContent className="bg-card border-border sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle className="text-lg">Cancelar Agendamento?</DialogTitle>
+            <DialogTitle className="text-xl font-display text-destructive">Cancelar Agendamento</DialogTitle>
           </DialogHeader>
           {cancelAgend && (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Deseja cancelar o agendamento de <strong className="text-foreground">{cancelAgend.clienteNome}</strong>?</p>
+            <div className="space-y-3 mt-2">
+              <p className="text-sm text-muted-foreground">
+                Deseja cancelar o agendamento de <strong className="text-foreground">{cancelAgend.clienteNome}</strong> ({cancelAgend.servicoNome}) em {cancelAgend.data} às {cancelAgend.horaInicio}?
+              </p>
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setCancelAgend(null)}>Não</Button>
-                <Button variant="destructive" className="flex-1" onClick={handleCancel}>Sim, Cancelar</Button>
+                <Button variant="outline" className="flex-1 h-9 text-xs" onClick={() => setCancelAgend(null)}>Não</Button>
+                <Button variant="destructive" className="flex-1 h-9 text-xs" onClick={handleCancel} disabled={updateMutation.isPending}>
+                  {updateMutation.isPending ? "Cancelando..." : "Sim, cancelar"}
+                </Button>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!checkoutAgend} onOpenChange={v => { if (!v) { setCheckoutAgend(null); setCheckoutDesconto(""); setCheckoutParcelas(1); } }}>
-        <DialogContent className="bg-card border-border sm:max-w-[460px] max-h-[90vh] overflow-y-auto">
+      {/* Checkout dialog */}
+      <Dialog open={!!checkoutAgend} onOpenChange={v => { if (!v) { setCheckoutAgend(null); setCheckoutObs(""); setCheckoutDesconto(""); setCheckoutParcelas(1); setCupomCodigo(""); setCupomAplicado(null); setCupomErro(""); } }}>
+        <DialogContent className="bg-card border-border sm:max-w-[500px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-lg font-display flex items-center gap-2">
-              <Receipt className="h-5 w-5 text-primary" /> Finalizar Atendimento
+            <DialogTitle className="text-xl font-display flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-primary" /> Checkout
             </DialogTitle>
           </DialogHeader>
           {checkoutAgend && (
@@ -1025,7 +1417,7 @@ export default function Agenda() {
                 <div className="flex gap-2">
                   <Input value={cupomCodigo} onChange={e => { setCupomCodigo(e.target.value.toUpperCase()); if (cupomAplicado) { setCupomAplicado(null); setCheckoutDesconto(""); setCupomErro(""); } }} placeholder="CODIGO" className="bg-background flex-1 h-9 text-sm uppercase" />
                   <Button type="button" size="sm" variant={cupomAplicado ? "default" : "outline"} className="h-9 text-xs" onClick={handleAplicarCupom} disabled={!cupomCodigo.trim() || !!cupomAplicado}>
-                    {cupomAplicado ? "Aplicado ✓" : "Aplicar"}
+                    {cupomAplicado ? "Aplicado" : "Aplicar"}
                   </Button>
                 </div>
                 {cupomErro && <p className="text-xs text-red-500">{cupomErro}</p>}

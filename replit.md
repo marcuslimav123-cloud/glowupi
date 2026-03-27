@@ -136,4 +136,13 @@ Dashboard → Agenda → Cadastros (Clientes, Profissionais, Serviços, Pacotes 
 - Dark theme: graphite #0f0f0f background, gold accent #c4a46a, Inter font
 - Supports NativeTabs (liquid glass iOS 26+) with classic Tabs fallback
 
+**Push Notifications & Agenda (Task #47):**
+- `push_tokens` table: stores Expo/web push tokens per user per barbearia (userId, barbeariaId, token, plataforma, ativo)
+- API routes: `POST /push-tokens/register`, `POST /push-tokens/unregister`, `GET /push-tokens` (all require auth + barbearia access)
+- Push utility at `api-server/src/lib/pushNotifications.ts`: `sendPushToUser()`, `sendPushToBarbearia()` (tenant-scoped), `sendAgendamentoReminders()` (idempotent, handles day rollover)
+- Expo Push API integration (`https://exp.host/--/api/v2/push/send`) for ExponentPushToken tokens
+- Reminder service runs every 5 minutes, checks appointments within next 30 minutes, deduplicates via in-memory set
+- Push sent on appointment creation and cancellation (non-blocking via `.catch()`)
+- Enhanced `Agenda.tsx`: horizontal calendar strip, professional avatar filter with badges, red current-time indicator line, FAB (+) button, appointment detail modal (confirm/cancel/checkout actions), multi-step new appointment flow (client search → service → professional → time slot)
+
 **DB Schema Path:** `lib/db/src/schema/` (each table in its own file, exported from `index.ts`)

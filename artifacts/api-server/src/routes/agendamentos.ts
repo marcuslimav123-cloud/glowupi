@@ -12,6 +12,7 @@ import { eq, and, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
 import { sendEmail } from "../lib/brevo.js";
+import { sendPushToBarbearia } from "../lib/pushNotifications.js";
 
 async function notificarAgendamento(barbeariaId: number, params: Record<string, string>, agendData: { clienteNome: string; clienteTelefone?: string; profissionalNome: string; servicoNome: string; data: string; horaInicio: string; clienteId?: number | null; agendamentoId?: number }, tipo: "criado" | "cancelado") {
   try {
@@ -326,6 +327,12 @@ router.post("/", requireAuth, async (req, res) => {
     agendamentoId: agend.id,
   }, "criado");
 
+  sendPushToBarbearia(barbeariaId, {
+    title: "Novo Agendamento",
+    body: `${clienteNome} agendou ${servico.nome} com ${profissional.apelido || profissional.nomeExibicao} em ${data} às ${horaInicio}`,
+    data: { agendamentoId: agend.id, type: "new_appointment" },
+  }).catch(err => console.error("[Push] Error on new appointment:", err));
+
   return res.status(201).json({ ...formatAgend(agend), pacoteClienteId: pacoteClienteAssociado });
 });
 
@@ -428,6 +435,12 @@ router.delete("/:agendamentoId", requireAuth, async (req, res) => {
     horaInicio: agend.horaInicio,
     agendamentoId: agend.id,
   }, "cancelado");
+
+  sendPushToBarbearia(barbeariaId, {
+    title: "Agendamento Cancelado",
+    body: `${agend.clienteNome} cancelou ${agend.servicoNome} com ${agend.profissionalNome} em ${agend.data} às ${agend.horaInicio}`,
+    data: { agendamentoId: agend.id, type: "cancelled_appointment" },
+  }).catch(err => console.error("[Push] Error on cancelled appointment:", err));
 
   return res.json({ success: true, message: "Agendamento cancelado" });
 });
