@@ -116,13 +116,28 @@ router.get("/google/mobile", (req, res) => {
 });
 
 router.get("/google/mobile/callback", async (req, res) => {
+  const errorPage = (title: string, msg: string) => `
+    <!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>${title}</title>
+    <style>body{font-family:system-ui,sans-serif;background:#0f0f0f;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;text-align:center}
+    .card{background:#1a1a1a;border-radius:16px;padding:40px;max-width:400px;border:1px solid #333}
+    h1{color:#d4a853;font-size:24px;margin-bottom:16px}p{color:#aaa;font-size:16px;line-height:1.5}
+    .btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#d4a853;color:#000;border-radius:10px;text-decoration:none;font-weight:600}</style></head>
+    <body><div class="card"><h1>${title}</h1><p>${msg}</p><a class="btn" href="javascript:window.close()">Fechar</a></div></body></html>`;
+
   try {
-    const { code, state } = req.query;
-    if (!code) return res.status(400).send("Código de autorização não recebido");
+    const { code, state, error: oauthError } = req.query;
+
+    if (oauthError) {
+      console.error("Google OAuth error:", oauthError);
+      return res.status(400).send(errorPage("Erro no Google", "A autenticação com Google foi cancelada ou falhou. Feche esta janela e tente novamente."));
+    }
+
+    if (!code) return res.status(400).send(errorPage("Erro", "Código de autorização não recebido. Feche esta janela e tente novamente."));
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    if (!clientId || !clientSecret) return res.status(500).send("Google OAuth não configurado");
+    if (!clientId || !clientSecret) return res.status(500).send(errorPage("Erro de Configuração", "Google OAuth não configurado no servidor."));
 
     let redirectScheme = "mobile";
     if (state) {
@@ -148,17 +163,20 @@ router.get("/google/mobile/callback", async (req, res) => {
       }),
     });
 
-    const tokenData = await tokenRes.json() as { id_token?: string; error?: string };
+    const tokenData = await tokenRes.json() as { id_token?: string; error?: string; error_description?: string };
     if (!tokenRes.ok || !tokenData.id_token) {
       console.error("Google token exchange error:", tokenData);
-      return res.status(400).send("Erro ao trocar código por token");
+      const detail = tokenData.error === "redirect_uri_mismatch"
+        ? "A URL de callback não está registrada no Google Console. O administrador precisa adicionar a URL de redirecionamento nas configurações do Google OAuth."
+        : "Erro ao trocar código por token do Google. Tente novamente.";
+      return res.status(400).send(errorPage("Erro de Autenticação", detail));
     }
 
     const client = new OAuth2Client(clientId);
     const ticket = await client.verifyIdToken({ idToken: tokenData.id_token, audience: clientId });
     const payload = ticket.getPayload();
     if (!payload || !payload.email || !payload.email_verified) {
-      return res.status(400).send("Email do Google não verificado");
+      return res.status(400).send(errorPage("Email não verificado", "O email do Google não está verificado. Use outra conta."));
     }
 
     const googleId = payload.sub;
@@ -188,7 +206,7 @@ router.get("/google/mobile/callback", async (req, res) => {
     return res.redirect(appRedirect);
   } catch (e) {
     console.error("Google mobile callback error:", e);
-    return res.status(500).send("Erro na autenticação com Google");
+    return res.status(500).send(errorPage("Erro Interno", "Ocorreu um erro inesperado na autenticação. Feche esta janela e tente novamente."));
   }
 });
 
