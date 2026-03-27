@@ -60,7 +60,7 @@ async function notificarAgendamento(barbeariaId: number, params: Record<string, 
       for (const g of allGestores) {
         if (g.email) {
           await sendEmail({
-            to: [{ email: g.email, name: g.name || "Gestor" }],
+            to: [{ email: g.email, name: g.nome || "Gestor" }],
             subject: `${nomeEstab} — Agendamento ${tipo === "criado" ? "criado" : "cancelado"}: ${agendData.clienteNome}`,
             htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>${mensagem}</p><p style="color:rgba(0,0,0,0.5);font-size:12px;">Notificação automática para gestores</p></div>`,
           });

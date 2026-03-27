@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { clientesTable, barbeariasTable, agendamentosTable, comandasTable } from "@workspace/db/schema";
-import { eq, and, ilike, or, desc, sql, inArray } from "drizzle-orm";
+import { clientesTable, barbeariasTable, agendamentosTable, comandasTable, resgatesTable } from "@workspace/db/schema";
+import { eq, and, ilike, or, desc, sql, inArray, gte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
 
@@ -9,6 +9,47 @@ const router: IRouter = Router({ mergeParams: true });
 
 function formatCliente(c: any) {
   return { ...c, totalGasto: parseFloat(c.totalGasto), createdAt: c.createdAt?.toISOString?.() ?? c.createdAt, updatedAt: c.updatedAt?.toISOString?.() ?? c.updatedAt };
+}
+
+async function calcPontosValidos(barbeariaId: number, clienteId: number, diasExpiracao: number): Promise<number> {
+  const dataLimite = new Date();
+  dataLimite.setDate(dataLimite.getDate() - diasExpiracao);
+  const comandasValidas = await db.select({
+    pontosGanhos: comandasTable.pontosGanhos,
+  }).from(comandasTable).where(
+    and(
+      eq(comandasTable.barbeariaId, barbeariaId),
+      eq(comandasTable.clienteId, clienteId),
+      gte(comandasTable.createdAt, dataLimite)
+    )
+  );
+  const totalPontosGanhos = comandasValidas.reduce((sum, c) => sum + (c.pontosGanhos || 0), 0);
+  const resgatesFeitos = await db.select({
+    pontosUsados: resgatesTable.pontosUsados,
+  }).from(resgatesTable).where(
+    and(eq(resgatesTable.barbeariaId, barbeariaId), eq(resgatesTable.clienteId, clienteId))
+  );
+  const totalResgatado = resgatesFeitos.reduce((sum, r) => sum + r.pontosUsados, 0);
+  return Math.max(0, totalPontosGanhos - totalResgatado);
+}
+
+async function ajustarPontosExpiracao(clientes: any[], barbeariaId: number, params: Record<string, string>): Promise<any[]> {
+  const fidelidadeDesativada = params["fidelidade_desativar"] === "Sim";
+  const diasExpiracao = parseInt(params["fidelidade_expiracao_pontos"] || "365");
+  if (fidelidadeDesativada) {
+    return clientes.map(c => ({ ...c, pontosFidelidade: 0 }));
+  }
+  if (diasExpiracao <= 0) return clientes;
+  const result: any[] = [];
+  for (const c of clientes) {
+    if (c.pontosFidelidade > 0) {
+      const validos = await calcPontosValidos(barbeariaId, c.id, diasExpiracao);
+      result.push({ ...c, pontosFidelidade: validos });
+    } else {
+      result.push(c);
+    }
+  }
+  return result;
 }
 
 router.get("/", requireAuth, async (req, res) => {
@@ -28,6 +69,8 @@ router.get("/", requireAuth, async (req, res) => {
   } else {
     clientes = await db.select().from(clientesTable).where(eq(clientesTable.barbeariaId, barbeariaId));
   }
+
+  clientes = await ajustarPontosExpiracao(clientes, barbeariaId, params);
 
   const hidePhone = user.role === "colaborador" && params["cliente_nao_mostrar_telefone"] === "Sim";
   return res.json(clientes.map(c => {
@@ -81,9 +124,11 @@ router.get("/:clienteId/dashboard", requireAuth, requireRole("dono", "gerente"),
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const clienteId = parseInt(req.params.clienteId);
+  const params = await getParametros(barbeariaId);
 
-  const [cliente] = await db.select().from(clientesTable).where(and(eq(clientesTable.id, clienteId), eq(clientesTable.barbeariaId, barbeariaId))).limit(1);
-  if (!cliente) return res.status(404).json({ error: "Cliente não encontrado" });
+  const [clienteRaw] = await db.select().from(clientesTable).where(and(eq(clientesTable.id, clienteId), eq(clientesTable.barbeariaId, barbeariaId))).limit(1);
+  if (!clienteRaw) return res.status(404).json({ error: "Cliente não encontrado" });
+  const [cliente] = await ajustarPontosExpiracao([clienteRaw], barbeariaId, params);
 
   const agendamentos = await db.select().from(agendamentosTable).where(and(eq(agendamentosTable.barbeariaId, barbeariaId), eq(agendamentosTable.clienteId, clienteId))).orderBy(desc(agendamentosTable.data));
 
@@ -211,8 +256,9 @@ router.get("/:clienteId", requireAuth, async (req, res) => {
   }
 
   const id = parseInt(req.params.clienteId);
-  const [cliente] = await db.select().from(clientesTable).where(and(eq(clientesTable.id, id), eq(clientesTable.barbeariaId, barbeariaId))).limit(1);
-  if (!cliente) return res.status(404).json({ error: "Cliente não encontrado" });
+  const [clienteRaw] = await db.select().from(clientesTable).where(and(eq(clientesTable.id, id), eq(clientesTable.barbeariaId, barbeariaId))).limit(1);
+  if (!clienteRaw) return res.status(404).json({ error: "Cliente não encontrado" });
+  const [cliente] = await ajustarPontosExpiracao([clienteRaw], barbeariaId, params);
   const formatted = formatCliente(cliente);
   if (user.role === "colaborador" && params["cliente_nao_mostrar_telefone"] === "Sim") {
     delete formatted.telefone;

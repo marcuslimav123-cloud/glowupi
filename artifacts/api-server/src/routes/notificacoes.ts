@@ -176,6 +176,39 @@ router.get("/pacotes-expirando", requireAuth, async (req, res) => {
   })));
 });
 
+router.post("/pacotes-expirando/enviar", requireAuth, async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const params = await getParametros(barbeariaId);
+  if ((params["notif_pacote_expirando"] || "Sim") !== "Sim") {
+    return res.status(400).json({ error: "Notificação de pacote expirando está desabilitada" });
+  }
+  const { pacoteClienteId } = req.body;
+  if (!pacoteClienteId) return res.status(400).json({ error: "pacoteClienteId é obrigatório" });
+
+  const [pc] = await db.select().from(pacotesClienteTable).where(
+    and(eq(pacotesClienteTable.id, pacoteClienteId), eq(pacotesClienteTable.barbeariaId, barbeariaId))
+  ).limit(1);
+  if (!pc) return res.status(404).json({ error: "Pacote do cliente não encontrado" });
+
+  if (pc.clienteId) {
+    const [cliente] = await db.select().from(clientesTable).where(eq(clientesTable.id, pc.clienteId)).limit(1);
+    const [barb] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
+    const nomeEstab = barb?.nome || "Glow Up";
+    const pacotes = await db.select().from(pacotesTable).where(eq(pacotesTable.id, pc.pacoteId));
+    const pacoteNome = pacotes[0]?.nome || "Pacote";
+    if (cliente?.email) {
+      await sendEmail({
+        to: [{ email: cliente.email, name: pc.clienteNome }],
+        subject: `${nomeEstab} — Seu pacote está expirando`,
+        htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>Olá, ${pc.clienteNome}! Seu pacote <strong>${pacoteNome}</strong> está prestes a expirar em ${pc.dataValidade ? new Date(pc.dataValidade).toLocaleDateString("pt-BR") : "breve"}.</p><p>Sessões usadas: ${pc.sessoesUsadas}/${pc.sessoesTotal}. Agende suas sessões restantes!</p></div>`,
+      });
+      return res.json({ success: true, canal: "email", enviado: true });
+    }
+  }
+  return res.json({ success: true, canal: "email", enviado: false, message: "Cliente sem email cadastrado" });
+});
+
 router.post("/aniversario/enviar", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;

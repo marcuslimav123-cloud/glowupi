@@ -39,6 +39,10 @@ router.post("/", requireAuth, requireRole("dono", "gerente"), async (req: any, r
 router.put("/:recompensaId", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const params = await getParametros(barbeariaId);
+  if (params["fidelidade_desativar"] === "Sim") {
+    return res.status(400).json({ error: "Programa de fidelidade está desativado" });
+  }
   const recompensaId = parseInt(req.params.recompensaId);
   const updates: any = {};
   const { nome, descricao, pontosNecessarios, tipo, ativo } = req.body;
