@@ -410,6 +410,7 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       observacao: observacao || null,
       aniversario: false,
       vip: false,
+      origem: "site",
     }).returning();
 
     return res.status(201).json({
