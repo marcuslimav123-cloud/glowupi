@@ -7,6 +7,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Platform,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -151,13 +152,20 @@ export default function DashboardScreen() {
       }
     >
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>
-            Olá, {user?.nome?.split(" ")[0] ?? ""}
-          </Text>
-          <Text style={styles.barbeariaName}>
-            {barbearia?.nome ?? "Minha Barbearia"}
-          </Text>
+        <View style={styles.headerLeft}>
+          <Image
+            source={require("@/assets/images/logo.png")}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
+          <View>
+            <Text style={styles.greeting}>
+              Olá, {user?.nome?.split(" ")[0] ?? ""}
+            </Text>
+            <Text style={styles.barbeariaName}>
+              {barbearia?.nome ?? "Minha Barbearia"}
+            </Text>
+          </View>
         </View>
         <View style={styles.todayBadge}>
           <Text style={styles.todayText}>Hoje</Text>
@@ -292,6 +300,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 24,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  headerLogo: {
+    width: 44,
+    height: 44,
   },
   greeting: {
     fontSize: 14,

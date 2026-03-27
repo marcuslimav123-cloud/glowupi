@@ -34,6 +34,7 @@ interface AuthState {
 interface AuthContextType extends AuthState {
   login: (email: string, senha: string) => Promise<void>;
   loginWithGoogle: (credential: string) => Promise<void>;
+  loginWithToken: (token: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -148,6 +149,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await handleAuthResponse(data);
   }, [handleAuthResponse]);
 
+  const loginWithToken = useCallback(async (token: string) => {
+    await SecureStore.setItemAsync(TOKEN_KEY, token);
+    const meData = await fetchMe(token);
+    setState({
+      user: meData,
+      barbearia: meData.barbearia ?? null,
+      barbeariaId: meData.barbeariaId ?? null,
+      token,
+      isLoading: false,
+      isAuthenticated: true,
+    });
+  }, [fetchMe]);
+
   const logout = useCallback(async () => {
     const token = await getToken();
     if (token) {
@@ -170,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [getToken]);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, loginWithGoogle, logout, refreshUser }}>
+    <AuthContext.Provider value={{ ...state, login, loginWithGoogle, loginWithToken, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

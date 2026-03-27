@@ -54,6 +54,14 @@ export default function MenuScreen() {
         { paddingTop: webTopPadding + 16, paddingBottom: Platform.OS === "web" ? 118 : 100 },
       ]}
     >
+      <View style={styles.logoHeader}>
+        <Image
+          source={require("@/assets/images/logo.png")}
+          style={styles.headerLogo}
+          resizeMode="contain"
+        />
+      </View>
+
       <View style={styles.profileSection}>
         {user?.fotoUrl ? (
           <Image source={{ uri: user.fotoUrl }} style={styles.avatar} />
@@ -99,6 +107,14 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
+  },
+  logoHeader: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  headerLogo: {
+    width: 80,
+    height: 80,
   },
   profileSection: {
     flexDirection: "row",

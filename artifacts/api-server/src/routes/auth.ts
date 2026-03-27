@@ -92,6 +92,106 @@ router.post("/google", async (req, res) => {
   }
 });
 
+router.get("/google/mobile", (req, res) => {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) return res.status(500).json({ error: "Login com Google não configurado" });
+
+  const redirectScheme = (req.query.redirect_scheme as string) || "mobile";
+  const protocol = req.headers["x-forwarded-proto"] || "https";
+  const host = req.headers["x-forwarded-host"] || req.headers.host;
+  const redirectUri = `${protocol}://${host}/api/auth/google/mobile/callback`;
+
+  const state = Buffer.from(JSON.stringify({ redirect_scheme: redirectScheme })).toString("base64url");
+
+  const googleAuthUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+  googleAuthUrl.searchParams.set("client_id", clientId);
+  googleAuthUrl.searchParams.set("redirect_uri", redirectUri);
+  googleAuthUrl.searchParams.set("response_type", "code");
+  googleAuthUrl.searchParams.set("scope", "openid email profile");
+  googleAuthUrl.searchParams.set("state", state);
+  googleAuthUrl.searchParams.set("access_type", "offline");
+  googleAuthUrl.searchParams.set("prompt", "select_account");
+
+  return res.redirect(googleAuthUrl.toString());
+});
+
+router.get("/google/mobile/callback", async (req, res) => {
+  try {
+    const { code, state } = req.query;
+    if (!code) return res.status(400).send("Código de autorização não recebido");
+
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    if (!clientId || !clientSecret) return res.status(500).send("Google OAuth não configurado");
+
+    let redirectScheme = "mobile";
+    if (state) {
+      try {
+        const parsed = JSON.parse(Buffer.from(state as string, "base64url").toString());
+        redirectScheme = parsed.redirect_scheme || "mobile";
+      } catch {}
+    }
+
+    const protocol = req.headers["x-forwarded-proto"] || "https";
+    const host = req.headers["x-forwarded-host"] || req.headers.host;
+    const redirectUri = `${protocol}://${host}/api/auth/google/mobile/callback`;
+
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code: code as string,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code",
+      }),
+    });
+
+    const tokenData = await tokenRes.json() as { id_token?: string; error?: string };
+    if (!tokenRes.ok || !tokenData.id_token) {
+      console.error("Google token exchange error:", tokenData);
+      return res.status(400).send("Erro ao trocar código por token");
+    }
+
+    const client = new OAuth2Client(clientId);
+    const ticket = await client.verifyIdToken({ idToken: tokenData.id_token, audience: clientId });
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email || !payload.email_verified) {
+      return res.status(400).send("Email do Google não verificado");
+    }
+
+    const googleId = payload.sub;
+    const email = payload.email;
+    const nome = payload.name || email.split("@")[0];
+    const fotoUrl = payload.picture || null;
+
+    let [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+
+    if (user) {
+      if (!user.googleId) {
+        [user] = await db.update(usersTable).set({ googleId, fotoUrl: fotoUrl || user.fotoUrl }).where(eq(usersTable.id, user.id)).returning();
+      }
+    } else {
+      [user] = await db.insert(usersTable).values({
+        nome,
+        email,
+        googleId,
+        fotoUrl,
+        role: "dono",
+      }).returning();
+    }
+
+    const token = createSession(user.id);
+
+    const appRedirect = `${redirectScheme}://auth?token=${encodeURIComponent(token)}`;
+    return res.redirect(appRedirect);
+  } catch (e) {
+    console.error("Google mobile callback error:", e);
+    return res.status(500).send("Erro na autenticação com Google");
+  }
+});
+
 router.post("/complete-profile", requireAuth, async (req, res) => {
   try {
     const user = (req as any).user;

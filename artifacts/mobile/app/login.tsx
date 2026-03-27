@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -13,44 +13,22 @@ import { Redirect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import * as Haptics from "expo-haptics";
-import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 
-WebBrowser.maybeCompleteAuthSession();
-
-const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || "";
+const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+const APP_SCHEME = "mobile";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
-  const { login, loginWithGoogle, isAuthenticated } = useAuth();
+  const { login, loginWithToken, isAuthenticated } = useAuth();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const googleEnabled = !!GOOGLE_WEB_CLIENT_ID;
-
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest(
-    googleEnabled ? { clientId: GOOGLE_WEB_CLIENT_ID } : { clientId: "disabled" }
-  );
-
-  useEffect(() => {
-    if (!response) return;
-    if (response.type === "success") {
-      const { id_token } = response.params;
-      if (id_token) {
-        handleGoogleLogin(id_token);
-      }
-    } else if (response.type === "error") {
-      setError(response.error?.message || "Erro na autenticação com Google");
-      setGoogleLoading(false);
-    } else if (response.type === "dismiss" || response.type === "cancel") {
-      setGoogleLoading(false);
-    }
-  }, [response]);
 
   if (isAuthenticated) {
     return <Redirect href="/(tabs)" />;
@@ -74,12 +52,27 @@ export default function LoginScreen() {
     }
   };
 
-  const handleGoogleLogin = async (idToken: string) => {
+  const handleGoogleLogin = async () => {
     setError(null);
     setGoogleLoading(true);
     try {
-      await loginWithGoogle(idToken);
-      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      const returnUrl = Linking.createURL("auth");
+      const authUrl = `${API_BASE}/api/auth/google/mobile?redirect_scheme=${APP_SCHEME}`;
+
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, returnUrl);
+
+      if (result.type === "success" && result.url) {
+        const url = new URL(result.url);
+        const token = url.searchParams.get("token");
+        if (token) {
+          await loginWithToken(token);
+          if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } else {
+          setError("Token não recebido do Google");
+        }
+      } else if (result.type === "cancel" || result.type === "dismiss") {
+        // user cancelled
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Erro ao fazer login com Google");
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -158,39 +151,28 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
 
-          {googleEnabled && (
-            <>
-              <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>ou</Text>
-                <View style={styles.dividerLine} />
-              </View>
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>ou</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
-              <TouchableOpacity
-                style={[styles.googleButton, isLoading && styles.buttonDisabled]}
-                onPress={() => {
-                  setGoogleLoading(true);
-                  promptAsync();
-                }}
-                disabled={!request || isLoading}
-                activeOpacity={0.8}
-                testID="google-login-button"
-              >
-                {googleLoading ? (
-                  <ActivityIndicator color={Colors.text} size="small" />
-                ) : (
-                  <View style={styles.googleButtonContent}>
-                    <Image
-                      source={{ uri: "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" }}
-                      style={styles.googleIcon}
-                      resizeMode="contain"
-                    />
-                    <Text style={styles.googleButtonText}>Continuar com Google</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            </>
-          )}
+          <TouchableOpacity
+            style={[styles.googleButton, isLoading && styles.buttonDisabled]}
+            onPress={handleGoogleLogin}
+            disabled={isLoading}
+            activeOpacity={0.8}
+            testID="google-login-button"
+          >
+            {googleLoading ? (
+              <ActivityIndicator color={Colors.text} size="small" />
+            ) : (
+              <View style={styles.googleButtonContent}>
+                <Text style={styles.googleIconText}>G</Text>
+                <Text style={styles.googleButtonText}>Continuar com Google</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
       </KeyboardAwareScrollViewCompat>
     </View>
@@ -210,15 +192,15 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: "center",
-    marginBottom: 48,
+    marginBottom: 40,
   },
   logo: {
-    width: 140,
-    height: 140,
-    marginBottom: 16,
+    width: 220,
+    height: 220,
+    marginBottom: 12,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: "Inter_400Regular",
     color: Colors.textSecondary,
   },
@@ -301,9 +283,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  googleIcon: {
-    width: 20,
-    height: 20,
+  googleIconText: {
+    fontSize: 20,
+    fontFamily: "Inter_700Bold",
+    color: "#4285F4",
   },
   googleButtonText: {
     fontSize: 16,
