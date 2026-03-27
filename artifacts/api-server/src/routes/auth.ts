@@ -166,10 +166,32 @@ router.get("/google/mobile/callback", async (req, res) => {
     const tokenData = await tokenRes.json() as { id_token?: string; error?: string; error_description?: string };
     if (!tokenRes.ok || !tokenData.id_token) {
       console.error("Google token exchange error:", tokenData);
-      const detail = tokenData.error === "redirect_uri_mismatch"
-        ? "A URL de callback não está registrada no Google Console. O administrador precisa adicionar a URL de redirecionamento nas configurações do Google OAuth."
-        : "Erro ao trocar código por token do Google. Tente novamente.";
-      return res.status(400).send(errorPage("Erro de Autenticação", detail));
+      if (tokenData.error === "redirect_uri_mismatch") {
+        const mismatchPage = `
+          <!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+          <title>Configuração necessária</title>
+          <style>body{font-family:system-ui,sans-serif;background:#0f0f0f;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;text-align:center}
+          .card{background:#1a1a1a;border-radius:16px;padding:40px;max-width:550px;border:1px solid #333;text-align:left}
+          h1{color:#d4a853;font-size:22px;margin-bottom:16px;text-align:center}p{color:#aaa;font-size:15px;line-height:1.6;margin-bottom:12px}
+          code{background:#2a2a2a;padding:4px 8px;border-radius:6px;font-size:13px;color:#d4a853;word-break:break-all;display:inline-block;margin:4px 0}
+          ol{color:#ccc;font-size:14px;line-height:1.8;padding-left:20px}
+          .btn{display:inline-block;margin-top:16px;padding:12px 24px;background:#d4a853;color:#000;border-radius:10px;text-decoration:none;font-weight:600}</style></head>
+          <body><div class="card">
+          <h1>Configuração do Google Console</h1>
+          <p>A URL de redirecionamento abaixo precisa ser registrada no Google Cloud Console:</p>
+          <code>${redirectUri}</code>
+          <p><strong>Passos:</strong></p>
+          <ol>
+            <li>Acesse <a href="https://console.cloud.google.com/apis/credentials" style="color:#d4a853" target="_blank">Google Cloud Console → APIs & Services → Credentials</a></li>
+            <li>Clique no seu OAuth 2.0 Client ID</li>
+            <li>Em <strong>"Authorized redirect URIs"</strong>, adicione a URL acima</li>
+            <li>Salve e tente novamente após alguns minutos</li>
+          </ol>
+          <div style="text-align:center"><a class="btn" href="javascript:window.close()">Fechar</a></div>
+          </div></body></html>`;
+        return res.status(400).send(mismatchPage);
+      }
+      return res.status(400).send(errorPage("Erro de Autenticação", "Erro ao trocar código por token do Google. Tente novamente."));
     }
 
     const client = new OAuth2Client(clientId);
