@@ -9,7 +9,7 @@ import {
   User, LogOut, Palette, Shield, Settings, X, Check,
 } from "lucide-react";
 
-const THEMES = [
+export const THEMES = [
   { id: "blue", label: "Blue", color: "#3b82f6" },
   { id: "black", label: "Black", color: "#18181b" },
   { id: "purple", label: "Purple", color: "#8b5cf6" },
@@ -120,7 +120,7 @@ export function HeaderBar() {
 
   if (!user) return null;
 
-  const currentTema = (user as any).tema || "blue";
+  const currentTema = user?.tema || "blue";
 
   const iconBtn = "relative flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors cursor-pointer";
   const iconCls = "h-[18px] w-[18px] text-foreground/50";

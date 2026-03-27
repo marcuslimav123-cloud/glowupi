@@ -217,3 +217,7 @@
   color: hsl(var(--foreground));
   border-color: hsl(var(--border));
 }
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

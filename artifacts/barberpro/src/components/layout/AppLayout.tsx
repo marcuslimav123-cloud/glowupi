@@ -53,6 +53,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { APP_NAME, getRoleLabel } from "@/lib/utils";
 import { HeaderBar, applyTheme } from "./HeaderBar";
+import { MobileBottomBar } from "./MobileBottomBar";
 
 type NavItem = {
   name: string;
@@ -504,8 +505,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }, [user, isLoading, barbeariaId, location, role]);
 
   React.useEffect(() => {
-    if (user && (user as any).tema) {
-      applyTheme((user as any).tema);
+    if (user && user.tema) {
+      applyTheme(user.tema);
     }
   }, [user]);
 
@@ -744,11 +745,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
         )}
-        <div ref={mainContentRef} className="flex-1 overflow-y-auto p-5 md:p-8 z-10 main-scroll">
+        <div ref={mainContentRef} className="flex-1 overflow-y-auto p-5 md:p-8 pb-20 md:pb-8 z-10 main-scroll">
           {children}
         </div>
       </main>
       
+      <MobileBottomBar />
       {mobileMenuOpen && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden" onClick={() => setMobileMenuOpen(false)} />
       )}

@@ -23,6 +23,7 @@ import Relatorios from "@/pages/Relatorios";
 import Caixa from "@/pages/Caixa";
 import Financeiro from "@/pages/Financeiro";
 import Empresa from "@/pages/Empresa";
+import MenuPage from "@/pages/Menu";
 import Clube from "@/pages/Clube";
 import Pacotes from "@/pages/Pacotes";
 import ListaEspera from "@/pages/ListaEspera";
@@ -175,6 +176,7 @@ function Router() {
       <Route path="/configuracoes/restricoes" component={RestricaoCliente} />
       <Route path="/configuracoes/funcionamento" component={Funcionamento} />
 
+      <Route path="/menu" component={MenuPage} />
       <Route path="/empresa" component={Empresa} />
       <Route path="/clube" component={Clube} />
 

@@ -205,8 +205,8 @@ export default function Clientes() {
                   </div>
                   <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                     <span className="text-xs text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" />{c.telefone}</span>
-                    {c.email && <span className="text-xs text-muted-foreground flex items-center gap-1"><Mail className="h-3 w-3" />{c.email}</span>}
-                    {c.aniversario && <span className="text-xs text-muted-foreground flex items-center gap-1"><Cake className="h-3 w-3" />{c.aniversario.slice(5).split("-").reverse().join("/")}</span>}
+                    {c.ultimaVisita && <span className="text-xs text-muted-foreground flex items-center gap-1"><TrendingUp className="h-3 w-3" />Última: {c.ultimaVisita.split("-").reverse().join("/")}</span>}
+                    {c.aniversario && <span className="text-xs text-muted-foreground flex items-center gap-1 hidden sm:flex"><Cake className="h-3 w-3" />{c.aniversario.slice(5).split("-").reverse().join("/")}</span>}
                   </div>
                 </Link>
 
