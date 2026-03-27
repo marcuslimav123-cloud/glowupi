@@ -374,8 +374,16 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
     }
   }
   valorTotal = Math.max(0, valorTotal);
-  const gorjetaVal = gorjeta ? { profissionalId: gorjeta.profissionalId ?? agend.profissionalId, valor: Number(gorjeta.valor) || 0 } : null;
-  if (gorjetaVal && gorjetaVal.valor > 0) {
+  let gorjetaVal: { profissionalId: number; valor: number } | null = null;
+  if (gorjeta && Number(gorjeta.valor) > 0) {
+    const gorjetaProfId = gorjeta.profissionalId ?? agend.profissionalId;
+    if (gorjetaProfId !== agend.profissionalId) {
+      const [gp] = await db.select().from(profissionaisTable).where(
+        and(eq(profissionaisTable.id, gorjetaProfId), eq(profissionaisTable.barbeariaId, barbeariaId))
+      ).limit(1);
+      if (!gp) return res.status(400).json({ error: "Profissional da gorjeta não pertence a esta barbearia" });
+    }
+    gorjetaVal = { profissionalId: gorjetaProfId, valor: Number(gorjeta.valor) };
     valorTotal += gorjetaVal.valor;
   }
   const comissaoTotal = comissaoServico + comissaoProdutos;

@@ -41,19 +41,24 @@ router.put("/:tipoId", requireAuth, requireRole("dono", "gerente"), async (req: 
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const tipoId = parseInt(req.params.tipoId);
+  const [existing] = await db.select().from(tiposTable).where(and(eq(tiposTable.id, tipoId), eq(tiposTable.barbeariaId, barbeariaId))).limit(1);
+  if (!existing) return res.status(404).json({ error: "Tipo não encontrado" });
   const { nome, descricao, ativo, isCartao, multiplicadorPontos, taxaOperadora, tipoBandeira, diasRecebimento, diasUteis } = req.body;
   const updates: Record<string, any> = {};
   if (nome !== undefined) updates.nome = nome;
   if (descricao !== undefined) updates.descricao = descricao;
   if (ativo !== undefined) updates.ativo = ativo;
-  if (isCartao !== undefined) updates.isCartao = isCartao;
-  if (multiplicadorPontos !== undefined) updates.multiplicadorPontos = multiplicadorPontos != null ? String(multiplicadorPontos) : null;
-  if (taxaOperadora !== undefined) updates.taxaOperadora = taxaOperadora != null ? String(taxaOperadora) : null;
-  if (tipoBandeira !== undefined) updates.tipoBandeira = tipoBandeira;
-  if (diasRecebimento !== undefined) updates.diasRecebimento = diasRecebimento;
-  if (diasUteis !== undefined) updates.diasUteis = diasUteis;
-  const [row] = await db.update(tiposTable).set(updates).where(and(eq(tiposTable.id, tipoId), eq(tiposTable.barbeariaId, barbeariaId))).returning();
-  if (!row) return res.status(404).json({ error: "Tipo não encontrado" });
+  if (existing.categoria === "forma_pagamento") {
+    if (isCartao !== undefined) updates.isCartao = isCartao;
+    if (multiplicadorPontos !== undefined) updates.multiplicadorPontos = multiplicadorPontos != null ? String(multiplicadorPontos) : null;
+  }
+  if (existing.categoria === "bandeira") {
+    if (taxaOperadora !== undefined) updates.taxaOperadora = taxaOperadora != null ? String(taxaOperadora) : null;
+    if (tipoBandeira !== undefined) updates.tipoBandeira = tipoBandeira;
+    if (diasRecebimento !== undefined) updates.diasRecebimento = diasRecebimento;
+    if (diasUteis !== undefined) updates.diasUteis = diasUteis;
+  }
+  const [row] = await db.update(tiposTable).set(updates).where(eq(tiposTable.id, tipoId)).returning();
   res.json(fmt(row));
 });
 
