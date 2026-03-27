@@ -311,7 +311,8 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
   const [agend] = await db.select().from(agendamentosTable).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId))).limit(1);
   if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
   const [profissional] = await db.select().from(profissionaisTable).where(eq(profissionaisTable.id, agend.profissionalId)).limit(1);
-  const { produtosAdicionais = [], pagamentos, observacao, desconto: rawDesconto = 0, descontoTipo = "valor", parcelas: rawParcelas = 1, gorjeta, tipoComanda } = req.body;
+  const { produtosAdicionais = [], pagamentos, observacao, desconto: rawDesconto = 0, descontoTipo = "valor", parcelas: rawParcelas = 1, gorjeta, tipoComanda: rawTipoComanda } = req.body;
+  const tipoComanda = rawTipoComanda === "profissional" ? "profissional" : "cliente";
 
   if (params["comanda_obrigatoriedade_bandeira"] === "Sim") {
     if (Array.isArray(pagamentos) && pagamentos.length > 0) {
@@ -415,61 +416,59 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
   }
   const valorLiquido = valorTotal - taxaCartaoTotal;
 
-  const [comanda] = await db.insert(comandasTable).values({
-    barbeariaId,
-    agendamentoId: id,
-    clienteNome: agend.clienteNome,
-    profissionalId: agend.profissionalId,
-    profissionalNome: agend.profissionalNome,
-    mesAno,
-    servicos: [{ id: agend.servicoId, nome: agend.servicoNome, valor: valorServico, comissao: comissaoServico }],
-    produtos: prodItems,
-    pagamentos: pags,
-    gorjeta: gorjetaVal,
-    tipoComanda: tipoComanda ?? "cliente",
-    valorTotal: String(valorTotal),
-    valorLiquido: String(valorLiquido),
-    taxaCartao: taxaCartaoTotal > 0 ? String(taxaCartaoTotal) : null,
-    dataCompensacao,
-    comissaoTotal: String(comissaoTotal),
-    desconto: String(desconto),
-    descontoTipo,
-    parcelas,
-    status: "paga",
-    observacao: observacao || null,
-    cadastradoPor: profissional?.nomeExibicao || agend.profissionalNome,
-  }).returning();
-  await db.update(agendamentosTable).set({ status: "pago", pago: true, updatedAt: new Date() }).where(eq(agendamentosTable.id, id));
-  if (agend.clienteId) {
-    const [cli] = await db.select().from(clientesTable).where(eq(clientesTable.id, agend.clienteId)).limit(1);
-    if (cli) {
-      const pontos = await calcPontosFromPagamentos(barbeariaId, pags, valorTotal);
-      await db.update(clientesTable).set({
-        totalGasto: String(parseFloat(cli.totalGasto as string) + valorTotal),
-        pontosFidelidade: cli.pontosFidelidade + pontos,
-        ultimaVisita: now.toISOString().slice(0, 10),
-        updatedAt: new Date(),
-      }).where(eq(clientesTable.id, agend.clienteId));
+  const comanda = await db.transaction(async (tx) => {
+    const [cmd] = await tx.insert(comandasTable).values({
+      barbeariaId,
+      agendamentoId: id,
+      clienteNome: agend.clienteNome,
+      profissionalId: agend.profissionalId,
+      profissionalNome: agend.profissionalNome,
+      mesAno,
+      servicos: [{ id: agend.servicoId, nome: agend.servicoNome, valor: valorServico, comissao: comissaoServico }],
+      produtos: prodItems,
+      pagamentos: pags,
+      gorjeta: gorjetaVal,
+      tipoComanda,
+      valorTotal: String(valorTotal),
+      valorLiquido: String(valorLiquido),
+      taxaCartao: taxaCartaoTotal > 0 ? String(taxaCartaoTotal) : null,
+      dataCompensacao,
+      comissaoTotal: String(comissaoTotal),
+      desconto: String(desconto),
+      descontoTipo,
+      parcelas,
+      status: "paga",
+      observacao: observacao || null,
+      cadastradoPor: profissional?.nomeExibicao || agend.profissionalNome,
+    }).returning();
+    await tx.update(agendamentosTable).set({ status: "pago", pago: true, updatedAt: new Date() }).where(eq(agendamentosTable.id, id));
+    if (agend.clienteId) {
+      const [cli] = await tx.select().from(clientesTable).where(eq(clientesTable.id, agend.clienteId)).limit(1);
+      if (cli) {
+        const pontos = await calcPontosFromPagamentos(barbeariaId, pags, valorTotal);
+        await tx.update(clientesTable).set({
+          totalGasto: String(parseFloat(cli.totalGasto as string) + valorTotal),
+          pontosFidelidade: cli.pontosFidelidade + pontos,
+          ultimaVisita: now.toISOString().slice(0, 10),
+          updatedAt: new Date(),
+        }).where(eq(clientesTable.id, agend.clienteId));
+      }
     }
-  }
-
-  if ((tipoComanda ?? "cliente") === "profissional" && profissional) {
-    try {
-      await db.insert(contasProfissionalTable).values({
+    if (tipoComanda === "profissional" && profissional) {
+      await tx.insert(contasProfissionalTable).values({
         barbeariaId,
         profissionalId: agend.profissionalId,
         profissionalNome: profissional.apelido || profissional.nomeExibicao,
         tipo: "debito",
-        descricao: `Comanda profissional #${comanda.id} — ${agend.servicoNome}`,
+        descricao: `Comanda profissional #${cmd.id} — ${agend.servicoNome}`,
         valor: String(valorTotal),
         mesAno,
         data: now.toISOString().slice(0, 10),
         status: "pendente",
       });
-    } catch (e) {
-      console.error("[ContaProfissional] Error creating deduction:", e);
     }
-  }
+    return cmd;
+  });
 
   return res.status(201).json({
     ...comanda,
