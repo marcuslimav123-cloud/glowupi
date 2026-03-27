@@ -215,8 +215,11 @@ router.post("/", requireAuth, async (req, res) => {
       if (pc.dataValidade && new Date(pc.dataValidade) < new Date()) continue;
       const [pacote] = await db.select().from(pacotesTable).where(eq(pacotesTable.id, pc.pacoteId)).limit(1);
       if (!pacote) continue;
-      const itens = pacote.itens as any[];
-      if (Array.isArray(itens) && itens.some((it: any) => it.servicoId === servicoId || it.id === servicoId)) {
+      const itens = pacote.itens;
+      if (Array.isArray(itens) && itens.some((it: unknown) => {
+        const item = it as Record<string, unknown>;
+        return item.servicoId === servicoId || item.id === servicoId;
+      })) {
         pacoteClienteAssociado = pc.id;
         break;
       }
@@ -244,6 +247,7 @@ router.post("/", requireAuth, async (req, res) => {
       aniversario: isAniversario,
       vip: false,
       encaixe: encaixe ?? false,
+      pacoteClienteId: pacoteClienteAssociado,
     }).returning();
 
     if (pacoteClienteAssociado != null) {
@@ -303,7 +307,7 @@ router.put("/:agendamentoId", requireAuth, async (req, res) => {
         return res.status(403).json({ error: "Alteração de profissional bloqueada para não-gestores" });
       }
     }
-    const [prof] = await db.select().from(profissionaisTable).where(eq(profissionaisTable.id, profissionalId)).limit(1);
+    const [prof] = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, profissionalId), eq(profissionaisTable.barbeariaId, barbeariaId))).limit(1);
     if (prof) { updates.profissionalId = profissionalId; updates.profissionalNome = prof.apelido || prof.nomeExibicao; }
   }
   if (data) updates.data = data;
