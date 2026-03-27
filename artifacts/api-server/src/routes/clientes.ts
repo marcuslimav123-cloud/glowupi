@@ -17,7 +17,7 @@ router.get("/", requireAuth, async (req, res) => {
   const user = (req as any).user;
   const params = await getParametros(barbeariaId);
 
-  if (user.role === "colaborador" && params["cliente_mostrar_lista_app"] !== "Sim") {
+  if (user.role === "colaborador" && (params["cliente_mostrar_lista_app"] || "Sim") !== "Sim") {
     return res.status(403).json({ error: "Listagem de clientes não permitida para seu perfil" });
   }
 
@@ -206,7 +206,7 @@ router.get("/:clienteId", requireAuth, async (req, res) => {
   const user = (req as any).user;
   const params = await getParametros(barbeariaId);
 
-  if (user.role === "colaborador" && params["cliente_mostrar_lista_app"] !== "Sim") {
+  if (user.role === "colaborador" && (params["cliente_mostrar_lista_app"] || "Sim") !== "Sim") {
     return res.status(403).json({ error: "Acesso a clientes não permitido para seu perfil" });
   }
 
