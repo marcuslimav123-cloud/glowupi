@@ -367,11 +367,7 @@ router.get("/dias-sem-vir", requireAuth, requireRole("dono", "gerente"), async (
   const dataInicio = req.query.dataInicio as string | undefined;
   const dataFim = req.query.dataFim as string | undefined;
 
-  const clienteConditions = [eq(clientesTable.barbeariaId, barbeariaId)];
-  if (dataInicio) clienteConditions.push(sql`DATE(${clientesTable.createdAt}) >= ${dataInicio}`);
-  if (dataFim) clienteConditions.push(sql`DATE(${clientesTable.createdAt}) <= ${dataFim}`);
-
-  const clientes = await db.select().from(clientesTable).where(and(...clienteConditions));
+  const clientes = await db.select().from(clientesTable).where(eq(clientesTable.barbeariaId, barbeariaId));
   const agendamentos = await db.select({
     clienteId: agendamentosTable.clienteId,
     data: agendamentosTable.data,
@@ -396,7 +392,12 @@ router.get("/dias-sem-vir", requireAuth, requireRole("dono", "gerente"), async (
     }
     const diff = Math.floor((today.getTime() - new Date(ultima).getTime()) / (1000 * 60 * 60 * 24));
     return { id: c.id, nome: c.nome, telefone: c.telefone, email: c.email, ultimoAgendamento: ultima, diasSemVir: diff, vip: c.vip };
-  }).filter(c => c.diasSemVir >= diasMinimo).sort((a, b) => b.diasSemVir - a.diasSemVir);
+  }).filter(c => {
+    if (c.diasSemVir < diasMinimo) return false;
+    if (dataInicio && c.ultimoAgendamento && c.ultimoAgendamento < dataInicio) return false;
+    if (dataFim && c.ultimoAgendamento && c.ultimoAgendamento > dataFim) return false;
+    return true;
+  }).sort((a, b) => b.diasSemVir - a.diasSemVir);
 
   return res.json(result);
 });

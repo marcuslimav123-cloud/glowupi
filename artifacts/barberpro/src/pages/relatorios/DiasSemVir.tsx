@@ -77,7 +77,7 @@ export default function DiasSemVir() {
               <Input type="number" value={dias} onChange={e => setDias(e.target.value)} className="w-32" min="1" />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Cadastrado de</Label>
+              <Label className="text-xs">Último agendamento de</Label>
               <Input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} className="w-40" />
             </div>
             <div className="space-y-1">
