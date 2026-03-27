@@ -122,10 +122,19 @@ router.post("/", requireAuth, async (req, res) => {
   const [profissional] = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, profissionalId), eq(profissionaisTable.barbeariaId, barbeariaId))).limit(1);
   if (!profissional) return res.status(404).json({ error: "Profissional não encontrado" });
 
+  const [profServicoOverride] = await db.select().from(profissionalServicosTable).where(
+    and(
+      eq(profissionalServicosTable.profissionalId, profissionalId),
+      eq(profissionalServicosTable.servicoId, servicoId),
+      eq(profissionalServicosTable.barbeariaId, barbeariaId)
+    )
+  ).limit(1);
+
   const tempoPadraoStr = params["agenda_tempo_padrao"] || "30min";
   const tempoPadrao = tempoPadraoStr === "1h" ? 60 : (parseInt(tempoPadraoStr) || 30);
-  const duracaoFinal = servico.duracaoMinutos || tempoPadrao;
+  const duracaoFinal = profServicoOverride?.tempoOverride ?? servico.duracaoMinutos ?? tempoPadrao;
   const horaFim = addMinutesToTime(horaInicio, duracaoFinal);
+  const valorEfetivo = profServicoOverride?.precoOverride != null ? profServicoOverride.precoOverride : servico.preco;
   if (!encaixe) {
     const bloqueios = await db.select().from(bloqueiosHorarioTable).where(
       and(
@@ -161,7 +170,7 @@ router.post("/", requireAuth, async (req, res) => {
     horaInicio,
     horaFim,
     status: "confirmado",
-    valor: servico.preco,
+    valor: valorEfetivo,
     pago: false,
     semPreferencia: semPreferencia ?? false,
     observacao: observacao || null,

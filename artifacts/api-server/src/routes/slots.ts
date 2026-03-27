@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { agendamentosTable, profissionaisTable, servicosTable, barbeariasTable, bloqueiosHorarioTable } from "@workspace/db/schema";
+import { agendamentosTable, profissionaisTable, servicosTable, barbeariasTable, bloqueiosHorarioTable, profissionalServicosTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getParametros } from "../lib/parametros.js";
 
@@ -99,6 +99,18 @@ router.get("/", async (req, res) => {
     )
   );
 
+  const servicoIdNum = parseInt(servicoId as string);
+  const profServicoLinks = await db.select().from(profissionalServicosTable).where(
+    and(eq(profissionalServicosTable.barbeariaId, barbeariaId), eq(profissionalServicosTable.servicoId, servicoIdNum))
+  );
+  const overrideByProf = new Map<number, { tempoOverride: number | null; precoOverride: string | null }>();
+  for (const link of profServicoLinks) {
+    overrideByProf.set(link.profissionalId, {
+      tempoOverride: link.tempoOverride,
+      precoOverride: link.precoOverride,
+    });
+  }
+
   const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
   const params = await getParametros(barbeariaId);
 
@@ -125,7 +137,7 @@ router.get("/", async (req, res) => {
   const agoraMinutos = agora.getHours() * 60 + agora.getMinutes();
 
   const slots: any[] = [];
-  const duracao = servico.duracaoMinutos;
+  const duracaoPadrao = servico.duracaoMinutos;
 
   const effectiveGlobalInicio = barbSchedule ? barbSchedule.inicio : 8 * 60;
   const effectiveGlobalFim = barbSchedule ? barbSchedule.fim : 20 * 60;
@@ -133,6 +145,9 @@ router.get("/", async (req, res) => {
   for (const prof of profissionais) {
     const schedule = getProfScheduleForDate(prof, data as string, barbSchedule);
     if (!schedule) continue;
+
+    const override = overrideByProf.get(prof.id);
+    const duracao = override?.tempoOverride ?? duracaoPadrao;
 
     const inicioTrabalho = Math.max(schedule.inicio, effectiveGlobalInicio);
     const fimTrabalho = Math.min(schedule.fim, effectiveGlobalFim);
