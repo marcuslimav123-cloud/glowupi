@@ -22,7 +22,6 @@ export default function VideoTemplate() {
         background: 'linear-gradient(135deg, var(--color-bg-dark1) 0%, var(--color-bg-dark2) 100%)',
       }}
     >
-      {/* Background ambient gradient */}
       <motion.div 
         className="absolute inset-0 z-0 opacity-30"
         animate={{
@@ -43,7 +42,6 @@ export default function VideoTemplate() {
         {currentScene === 2 && <SceneSuccess key="success" />}
       </AnimatePresence>
       
-      {/* Persistent Logo in Corner (appears after Act 1) */}
       <AnimatePresence>
         {currentScene > 0 && (
           <motion.div
@@ -52,10 +50,11 @@ export default function VideoTemplate() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: -20 }}
             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute top-8 left-8 z-50 flex items-center gap-3"
+            className="absolute z-50 flex items-center"
+            style={{ top: '4vh', left: '4vw', gap: '1.5vw' }}
           >
-            <img src={`${import.meta.env.BASE_URL}logo-icon.png`} alt="Glow Upi Logo" className="w-10 h-10 object-contain" />
-            <span className="text-[var(--color-gold)] font-display text-2xl tracking-wide">Glow Upi</span>
+            <img src={`${import.meta.env.BASE_URL}logo-icon.png`} alt="Glow Upi Logo" style={{ width: '4vw', height: '4vw', minWidth: 20, minHeight: 20 }} className="object-contain" />
+            <span className="text-[var(--color-gold)] font-display tracking-wide" style={{ fontSize: 'clamp(12px, 2.5vw, 28px)' }}>Glow Upi</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -67,8 +66,6 @@ function SceneGenesis() {
   const [showSub, setShowSub] = useState(false);
   
   useEffect(() => {
-    // The particle system takes ~6s to fully form the text. 
-    // Let's bring in a subtle glow/subtitle right as it locks in.
     const timer = setTimeout(() => setShowSub(true), 6000);
     return () => clearTimeout(timer);
   }, []);
@@ -84,8 +81,13 @@ function SceneGenesis() {
           <motion.div
             initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
             animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            className="absolute mt-48 text-[var(--color-gold-light)] font-body tracking-widest uppercase text-sm md:text-xl"
-            style={{ textShadow: '0 0 20px rgba(196, 164, 106, 0.5)' }}
+            className="absolute font-body tracking-widest uppercase text-[var(--color-gold-light)]"
+            style={{ 
+              marginTop: '20vh',
+              fontSize: 'clamp(10px, 2vw, 20px)',
+              textShadow: '0 0 20px rgba(196, 164, 106, 0.5)',
+              letterSpacing: '0.3em',
+            }}
           >
             O Futuro da Beleza
           </motion.div>
@@ -108,13 +110,14 @@ function SceneProsperity() {
 
   return (
     <motion.div 
-      className="relative z-10 w-full h-full flex flex-col items-center justify-center text-center px-10"
+      className="relative z-10 w-full h-full flex flex-col items-center justify-center text-center"
+      style={{ padding: '0 8vw' }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, scale: 0.9, filter: 'blur(20px)' }}
       transition={{ duration: 1.2 }}
     >
-      <div className="max-w-4xl">
+      <div style={{ maxWidth: '85vw' }}>
         <AnimatePresence mode="wait">
           {step === 1 && (
             <motion.h2 
@@ -123,7 +126,8 @@ function SceneProsperity() {
               animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
               exit={{ opacity: 0, y: -40, filter: 'blur(10px)' }}
               transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-              className="text-4xl md:text-6xl lg:text-7xl font-display text-white leading-tight"
+              className="font-display text-white leading-tight"
+              style={{ fontSize: 'clamp(18px, 5vw, 64px)' }}
             >
               Transforme seu tempo em <span className="text-[var(--color-gold)]">prosperidade</span>
             </motion.h2>
@@ -135,7 +139,8 @@ function SceneProsperity() {
               animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
               exit={{ opacity: 0, y: -40, filter: 'blur(10px)' }}
               transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-              className="text-4xl md:text-6xl lg:text-7xl font-display text-white leading-tight"
+              className="font-display text-white leading-tight"
+              style={{ fontSize: 'clamp(18px, 5vw, 64px)' }}
             >
               Gestão <span className="text-[var(--color-gold)]">premium</span> para salões de beleza
             </motion.h2>
@@ -156,13 +161,14 @@ function SceneSuccess() {
 
   return (
     <motion.div 
-      className="relative z-10 w-full h-full flex items-center justify-between px-10 md:px-24"
+      className="relative z-10 w-full h-full flex items-center justify-between"
+      style={{ padding: '0 6vw' }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 1 }}
     >
-      <div className="w-1/2 flex flex-col justify-center max-w-2xl z-20">
+      <div className="flex flex-col justify-center z-20" style={{ width: '55%' }}>
         <AnimatePresence>
           {showTagline && (
             <motion.div
@@ -170,11 +176,11 @@ function SceneSuccess() {
               animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
               transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
             >
-              <h2 className="text-5xl md:text-7xl font-display text-white mb-6 leading-tight">
+              <h2 className="font-display text-white leading-tight" style={{ fontSize: 'clamp(14px, 4.5vw, 56px)', marginBottom: '2vh' }}>
                 Organize sua agenda e <span className="text-[var(--color-gold)]">fidelize suas clientes</span>
               </h2>
-              <div className="w-24 h-1 bg-[var(--color-gold)] mb-6 rounded-full" />
-              <p className="text-xl md:text-2xl text-[var(--color-gold-light)] font-body font-light opacity-90">
+              <div className="bg-[var(--color-gold)] rounded-full" style={{ width: '10vw', height: 'clamp(2px, 0.4vh, 4px)', marginBottom: '2vh' }} />
+              <p className="text-[var(--color-gold-light)] font-body font-light opacity-90" style={{ fontSize: 'clamp(10px, 2vw, 22px)' }}>
                 O sucesso do seu negócio em suas mãos.
               </p>
             </motion.div>
@@ -182,12 +188,13 @@ function SceneSuccess() {
         </AnimatePresence>
       </div>
 
-      <div className="w-1/2 h-full flex items-center justify-end relative z-10">
+      <div className="h-full flex items-center justify-end relative z-10" style={{ width: '40%' }}>
         <motion.div
           initial={{ opacity: 0, x: 100, scale: 0.9 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
           transition={{ duration: 2, ease: [0.16, 1, 0.3, 1] }}
-          className="relative h-[80%] aspect-square"
+          className="relative aspect-square"
+          style={{ height: '70%' }}
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(196,164,106,0.2)_0%,transparent_70%)] animate-pulse" />
           <img 

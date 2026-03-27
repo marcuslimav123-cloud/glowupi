@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
@@ -161,18 +161,160 @@ function AnimatedSection({ children, className = "", delay = 0 }: { children: Re
   );
 }
 
-function HeroVideo() {
+function GoldParticleCanvas({ width, height }: { width: number; height: number }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || width === 0 || height === 0) return;
+
+    canvas.width = width * 2;
+    canvas.height = height * 2;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.scale(2, 2);
+
+    const colors = ['#c4a46a', '#d4b882', '#a38550', '#e8d5a8'];
+    const particleCount = Math.min(Math.floor((width * height) / 600), 400);
+
+    const particles = Array.from({ length: particleCount }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      size: Math.random() * 2.5 + 0.5,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      alpha: Math.random() * 0.6 + 0.3,
+      pulse: Math.random() * Math.PI * 2,
+      pulseSpeed: Math.random() * 0.02 + 0.005,
+    }));
+
+    let animId: number;
+    const render = () => {
+      ctx.clearRect(0, 0, width, height);
+
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.pulse += p.pulseSpeed;
+
+        if (p.x < -5) p.x = width + 5;
+        if (p.x > width + 5) p.x = -5;
+        if (p.y < -5) p.y = height + 5;
+        if (p.y > height + 5) p.y = -5;
+
+        const alphaModulated = p.alpha * (0.6 + Math.sin(p.pulse) * 0.4);
+
+        ctx.globalAlpha = alphaModulated;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+
+        if (p.size > 1.8 && Math.sin(p.pulse) > 0.8) {
+          ctx.globalAlpha = alphaModulated * 0.3;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.fill();
+        }
+      });
+
+      ctx.globalAlpha = 1;
+      animId = requestAnimationFrame(render);
+    };
+
+    animId = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(animId);
+  }, [width, height]);
+
   return (
-    <div className="relative w-full max-w-[580px] mx-auto lg:mx-0 aspect-video">
+    <canvas
+      ref={canvasRef}
+      style={{ width, height }}
+      className="absolute inset-0 pointer-events-none"
+    />
+  );
+}
+
+function HeroVisual() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dims, setDims] = useState({ w: 0, h: 0 });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      const { width, height } = entries[0].contentRect;
+      setDims({ w: Math.round(width), h: Math.round(height) });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div className="relative w-full max-w-[540px] mx-auto lg:mx-0">
       <div className="absolute -inset-6 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent rounded-[32px] blur-3xl" />
-      <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/20 border border-white/[0.08]">
-        <iframe
-          src={`${window.location.origin}/glow-upi-video/`}
-          className="w-full aspect-video border-0"
-          title="Glow Upi — Vídeo de Apresentação"
-          loading="eager"
-          allow="autoplay"
-          style={{ pointerEvents: 'none' }}
+      <div
+        ref={containerRef}
+        className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/20 border border-white/[0.06]"
+        style={{
+          aspectRatio: '16/10',
+          background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1510 100%)',
+        }}
+      >
+        <GoldParticleCanvas width={dims.w} height={dims.h} />
+
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center">
+          <img
+            src="/logo-icon.png"
+            alt="Glow Upi"
+            className="w-12 h-12 sm:w-16 sm:h-16 object-contain mb-3 drop-shadow-[0_0_20px_rgba(196,164,106,0.4)]"
+          />
+          <h3
+            className="text-white font-bold tracking-tight leading-tight mb-2"
+            style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(20px, 4vw, 36px)' }}
+          >
+            {APP_NAME}
+          </h3>
+          <p
+            className="text-[#d4b882]/80 font-medium tracking-widest uppercase"
+            style={{ fontSize: 'clamp(8px, 1.5vw, 12px)', letterSpacing: '0.25em' }}
+          >
+            O Futuro da Beleza
+          </p>
+
+          <div className="mt-5 w-full max-w-[280px] space-y-1.5">
+            {[
+              { label: 'Agendamentos hoje', value: '12', accent: true },
+              { label: 'Clientes ativos', value: '234', accent: false },
+              { label: 'Faturamento', value: 'R$ 5.2k', accent: false },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between px-3 py-1.5 rounded-lg"
+                style={{
+                  background: 'rgba(196, 164, 106, 0.06)',
+                  border: '1px solid rgba(196, 164, 106, 0.1)',
+                }}
+              >
+                <span className="text-white/50" style={{ fontSize: 'clamp(9px, 1.3vw, 12px)' }}>{item.label}</span>
+                <span
+                  className={item.accent ? 'text-[#c4a46a] font-bold' : 'text-white/80 font-semibold'}
+                  style={{ fontSize: 'clamp(10px, 1.5vw, 14px)' }}
+                >
+                  {item.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div
+          className="absolute inset-0 pointer-events-none z-20"
+          style={{
+            background: 'radial-gradient(ellipse at 50% 30%, rgba(196, 164, 106, 0.08) 0%, transparent 60%)',
+          }}
         />
       </div>
     </div>
@@ -338,7 +480,7 @@ export default function Landing() {
             </AnimatedSection>
 
             <AnimatedSection delay={200} className="mt-8 lg:mt-0">
-              <HeroVideo />
+              <HeroVisual />
             </AnimatedSection>
           </div>
         </div>
