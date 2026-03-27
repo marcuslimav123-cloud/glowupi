@@ -49,7 +49,7 @@ export default function VendaPacotes() {
       setVendaOpen(false);
       toast({ title: "Pacote vendido" });
     } catch (err: any) {
-      const detail = err?.response?.data?.error || err?.message || "Erro desconhecido na venda";
+      const detail = err?.data?.error || err?.message || "Erro desconhecido na venda";
       toast({ title: "Erro na venda", description: detail, variant: "destructive" });
     }
   }

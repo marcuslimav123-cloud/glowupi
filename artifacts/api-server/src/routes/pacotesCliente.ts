@@ -20,18 +20,23 @@ router.get("/", requireAuth, requireRole("dono", "gerente"), async (req: any, re
 });
 
 router.post("/", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
-  const barbeariaId = await checkAccess(req, res);
-  if (!barbeariaId) return;
-  const { pacoteId, clienteId, clienteNome } = req.body;
-  if (!pacoteId) { res.status(400).json({ error: "pacoteId é obrigatório" }); return; }
-  if (!clienteNome) { res.status(400).json({ error: "Nome do cliente é obrigatório" }); return; }
-  const [pacote] = await db.select().from(pacotesTable).where(and(eq(pacotesTable.id, pacoteId), eq(pacotesTable.barbeariaId, barbeariaId))).limit(1);
-  if (!pacote) { res.status(404).json({ error: "Pacote não encontrado" }); return; }
-  const dataValidade = pacote.validade ? new Date(Date.now() + pacote.validade * 86400000) : null;
-  const [pc] = await db.insert(pacotesClienteTable).values({
-    barbeariaId, pacoteId, clienteId: clienteId || null, clienteNome, sessoesTotal: pacote.sessoesTotal, dataValidade
-  }).returning();
-  res.status(201).json(formatPC(pc, pacote.nome));
+  try {
+    const barbeariaId = await checkAccess(req, res);
+    if (!barbeariaId) return;
+    const { pacoteId, clienteId, clienteNome } = req.body;
+    if (!pacoteId) { return res.status(400).json({ error: "pacoteId é obrigatório" }); }
+    if (!clienteNome) { return res.status(400).json({ error: "Nome do cliente é obrigatório" }); }
+    const [pacote] = await db.select().from(pacotesTable).where(and(eq(pacotesTable.id, pacoteId), eq(pacotesTable.barbeariaId, barbeariaId))).limit(1);
+    if (!pacote) { return res.status(404).json({ error: "Pacote não encontrado" }); }
+    const dataValidade = pacote.validade ? new Date(Date.now() + pacote.validade * 86400000) : null;
+    const [pc] = await db.insert(pacotesClienteTable).values({
+      barbeariaId, pacoteId, clienteId: clienteId || null, clienteNome, sessoesTotal: pacote.sessoesTotal, dataValidade
+    }).returning();
+    return res.status(201).json(formatPC(pc, pacote.nome));
+  } catch (err: unknown) {
+    console.error("Erro ao vender pacote:", err);
+    return res.status(500).json({ error: "Erro interno ao processar venda" });
+  }
 });
 
 router.post("/:pacoteClienteId/usar", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {

@@ -4,11 +4,13 @@ import {
   agendamentosTable, barbeariasTable, profissionaisTable,
   servicosTable, clientesTable, comandasTable, produtosTable,
   bloqueiosHorarioTable, profissionalServicosTable,
-  tiposTable, contasProfissionalTable
+  tiposTable, contasProfissionalTable, pesquisaSatisfacaoTable,
+  respostasPesquisaTable
 } from "@workspace/db/schema";
 import { eq, and, sql, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
+import { sendEmail } from "../lib/brevo.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -477,6 +479,64 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
     }
     return cmd;
   });
+
+  try {
+    const pesquisasAtivas = await db.select().from(pesquisaSatisfacaoTable).where(
+      and(
+        eq(pesquisaSatisfacaoTable.barbeariaId, barbeariaId),
+        eq(pesquisaSatisfacaoTable.ativo, true),
+        eq(pesquisaSatisfacaoTable.envioAutomatico, true)
+      )
+    );
+    if (pesquisasAtivas.length > 0 && agend.clienteId) {
+      const pesquisa = pesquisasAtivas[0];
+      const [cliente] = await db.select().from(clientesTable)
+        .where(eq(clientesTable.id, agend.clienteId)).limit(1);
+      if (cliente?.email) {
+        const domain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(",")[0] || "";
+        const surveyUrl = `https://${domain}/pesquisa/${pesquisa.id}?cliente=${agend.clienteId}&prof=${agend.profissionalId}`;
+        const [barb] = await db.select().from(barbeariasTable)
+          .where(eq(barbeariasTable.id, barbeariaId)).limit(1);
+        const nomeEstab = barb?.nome || "Glow Up";
+        await sendEmail({
+          to: [{ email: cliente.email, name: agend.clienteNome }],
+          subject: `${nomeEstab} — Avalie seu atendimento`,
+          htmlContent: `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:'Inter',Arial,sans-serif;background:#fafafa;">
+  <div style="max-width:520px;margin:40px auto;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;">
+    <div style="padding:32px 32px 24px;text-align:center;background:linear-gradient(135deg,rgba(196,164,106,0.08),rgba(196,164,106,0.02));">
+      <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#1a1a1a;">${nomeEstab}</h1>
+      <p style="margin:0;font-size:13px;color:rgba(0,0,0,0.4);">Pesquisa de Satisfação</p>
+    </div>
+    <div style="padding:32px;">
+      <p style="font-size:15px;color:#1a1a1a;margin:0 0 16px;">Olá, ${agend.clienteNome}!</p>
+      <p style="font-size:14px;color:rgba(0,0,0,0.6);line-height:1.6;margin:0 0 24px;">
+        Gostaríamos de saber como foi sua experiência com <strong>${agend.profissionalNome}</strong>.
+        Sua opinião é muito importante para nós!
+      </p>
+      <div style="text-align:center;margin:24px 0;">
+        <a href="${surveyUrl}" style="display:inline-block;padding:12px 32px;background:#c4a46a;color:#fff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:600;">
+          Avaliar Atendimento
+        </a>
+      </div>
+      <p style="font-size:12px;color:rgba(0,0,0,0.3);text-align:center;margin:24px 0 0;">
+        Obrigado por ser nosso(a) cliente!
+      </p>
+    </div>
+    <div style="padding:16px 32px;border-top:1px solid rgba(0,0,0,0.04);text-align:center;">
+      <p style="margin:0;font-size:11px;color:rgba(0,0,0,0.25);">${nomeEstab} — Glow Up</p>
+    </div>
+  </div>
+</body></html>`,
+        });
+        console.log(`[Pesquisa] Email enviado para ${cliente.email} — pesquisa #${pesquisa.id}`);
+      }
+    }
+  } catch (pesquisaErr) {
+    console.error("Erro ao enviar pesquisa de satisfação automática:", pesquisaErr);
+  }
 
   return res.status(201).json({
     ...comanda,

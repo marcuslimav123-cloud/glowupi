@@ -3,6 +3,9 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscriptionGuard } from "@/hooks/useSubscriptionGuard";
 import { cn } from "@/lib/utils";
+import { LogoUpload } from "@/components/LogoUpload";
+import { useUpdateBarbearia, getGetCurrentUserQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { 
   LayoutDashboard, 
   CalendarDays, 
@@ -422,10 +425,21 @@ function CollapsibleGroup({ item, location, onNavigate, mainRef }: { item: NavIt
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { user, logout, isLoading, barbeariaId, role, perfilPermissoes } = useAuth();
+  const { user, logout, isLoading, barbeariaId, role, perfilPermissoes, logoUrl, barbeariaNome, isDono } = useAuth();
   const { canAccess, status, shouldShowUpgrade, trialDaysLeft } = useSubscriptionGuard();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const mainContentRef = React.useRef<HTMLDivElement>(null);
+  const updateBarbearia = useUpdateBarbearia();
+  const queryClient = useQueryClient();
+
+  const handleLogoChange = async (url: string | null) => {
+    try {
+      await updateBarbearia.mutateAsync({ data: { logoUrl: url } });
+      queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() });
+    } catch (err) {
+      console.error("Erro ao atualizar logo:", err);
+    }
+  };
 
   React.useEffect(() => {
     if (mainContentRef.current) {
@@ -524,10 +538,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="px-5 py-5 hidden md:flex items-center gap-2.5 font-semibold text-[15px] text-foreground tracking-tight shrink-0">
-          <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center">
-            <Sparkles className="h-4 w-4 text-primary" />
-          </div>
-          {APP_NAME}
+          {isDono ? (
+            <LogoUpload value={logoUrl} onChange={handleLogoChange} />
+          ) : (
+            <div className="h-8 w-8 rounded-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-primary/15 to-primary/5">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="h-full w-full object-cover" />
+              ) : (
+                <Sparkles className="h-4 w-4 text-primary" />
+              )}
+            </div>
+          )}
+          {barbeariaNome || APP_NAME}
         </div>
 
         <div className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5 sidebar-scroll">

@@ -1,0 +1,71 @@
+#35 - Upload de Logo com Crop no Sidebar
+What & Why
+Adicionar funcionalidade de upload de logo/foto do estabelecimento no canto superior esquerdo do sidebar, com ajuste (crop) antes de salvar — igual ao AppBeleza. O campo logoUrl já existe na tabela barbearias e o endpoint PUT /barbearias/me aceita atualizações. O object storage já está configurado com rotas de upload.
+
+Done looks like
+No sidebar, canto superior esquerdo, aparece a logo do estabelecimento (ou um placeholder com ícone de câmera se não houver logo)
+Ao clicar, abre um modal para selecionar imagem
+Após selecionar, aparece interface de crop (react-easy-crop, já instalado) para ajustar a área
+Ao confirmar, a imagem cropada é enviada via object storage e a URL salva no perfil da barbearia
+Logo atualiza imediatamente no sidebar sem precisar recarregar
+Out of scope
+Upload de múltiplas imagens/galeria
+Redimensionamento automático para diferentes tamanhos
+Upload de logo na página de configurações (apenas sidebar por agora)
+Tasks
+Componente LogoUpload — Criar componente com: área clicável mostrando logo ou placeholder, input file hidden, modal com react-easy-crop para ajuste, botão confirmar/cancelar.
+
+Integração com object storage — Ao confirmar crop, converter canvas cropado para blob, solicitar URL de upload via /api/storage/uploads/request-url, fazer upload PUT, e salvar o objectPath resultante via PUT /api/barbearias/me.
+
+Exibir no sidebar — Integrar o componente na área superior do AppLayout sidebar, buscando logoUrl do contexto de autenticação/barbearia.
+
+Relevant files
+artifacts/barberpro/src/components/layout/AppLayout.tsx
+artifacts/api-server/src/routes/storage.ts
+artifacts/api-server/src/routes/barbearias.ts
+lib/db/src/schema/barbearias.ts
+artifacts/barberpro/src/contexts/AuthContext.tsx
+#34 - Ajustes e Correções — Conformidade com Tutoriais AppBeleza
+What & Why
+Corrigir bugs ativos e ajustar funcionalidades para corresponder exatamente ao comportamento descrito nos tutoriais do AppBeleza. As capturas do sistema atual revelam erros em Mensagens e Venda de Pacotes, além de gaps no UI de Categorias (faltam abas de Profissional e Produto) e na integração de Equipamentos com o agendamento.
+
+Done looks like
+Criar mensagem (Retorno ou Promoção) funciona sem erro — salva rascunho e aparece na lista
+Venda de Pacote funciona sem erro — confirma venda e registra pacote para o cliente
+Categorias mostra 3 abas: "Categoria de Serviço", "Categoria de Profissional", "Categoria de Produto" (conforme tutorial)
+Equipamentos com quantidadeMaxima limita agendamentos simultâneos no mesmo horário para serviços vinculados
+Pesquisa de Satisfação: link automático enviado ao finalizar comanda (quando envio_automatico está ativo)
+Sidebar de Comunicação: Mensagens, Notícias, Grupos de Clientes, Pesquisa Satisfação organizados corretamente
+Out of scope
+Rodízio de profissionais (mencionado no tutorial de categorias, será tarefa futura)
+Importação de dados (CSV/XLS) — funcionalidade administrativa futura
+Redesign visual completo — apenas ajustes funcionais
+Tasks
+Fix Mensagens — Investigar e corrigir o erro ao criar/salvar mensagem (rascunho). Garantir que Retorno e Promoção salvam corretamente.
+
+Fix Venda de Pacotes — Investigar e corrigir o erro ao confirmar venda de pacote. Testar fluxo completo: selecionar cliente → selecionar pacote → confirmar.
+
+Categorias — 3 tipos no UI — Adicionar abas "Categoria de Profissional" e "Categoria de Produto" na página de Tipos/Categorias. Os dados já existem no DB (tipos com categoria_profissional e categoria_produto), mas o UI precisa exibir e gerenciar essas categorias separadamente.
+
+Equipamentos — Integrar com agendamento — Na lógica de slots do agendamento, verificar se o serviço tem equipamento associado e limitar horários simultâneos conforme quantidadeMaxima. Se já existem N agendamentos no mesmo horário para serviços que usam o mesmo equipamento, bloquear o slot.
+
+Pesquisa de Satisfação — Envio automático — Ao finalizar comanda, se existe pesquisa ativa com envio_automatico=true, incluir link da pesquisa no e-mail/notificação de finalização.
+
+Verificação geral — Testar criação de Notícias/Promoções, Grupos de Clientes, e navegação completa da sidebar de Comunicação.
+
+Relevant files
+artifacts/api-server/src/routes/mensagens.ts
+artifacts/api-server/src/routes/pacotesCliente.ts
+artifacts/api-server/src/routes/pacotes.ts
+artifacts/barberpro/src/pages/Mensagens.tsx
+artifacts/barberpro/src/pages/VendaPacotes.tsx
+artifacts/barberpro/src/pages/cadastros/Tipos.tsx
+lib/db/src/schema/tipos.ts
+lib/db/src/schema/equipamentos.ts
+artifacts/api-server/src/routes/equipamentosRoutes.ts
+artifacts/api-server/src/routes/slots.ts
+artifacts/api-server/src/routes/pesquisaRoutes.ts
+lib/db/src/schema/pesquisaSatisfacao.ts
+artifacts/api-server/src/routes/comandas.ts
+artifacts/barberpro/src/pages/cadastros/Pesquisa.tsx
+artifacts/barberpro/src/components/layout/AppLayout.tsx

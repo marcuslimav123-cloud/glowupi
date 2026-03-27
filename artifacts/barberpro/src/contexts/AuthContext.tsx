@@ -17,6 +17,8 @@ interface AuthContextType {
   isGerente: boolean;
   isColaborador: boolean;
   perfilPermissoes: string[] | null;
+  barbeariaNome: string | null;
+  logoUrl: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const userRole = user?.role || "dono";
   const typedUser = user as UserWithPerfilPermissoes | undefined;
   const perfilPermissoes = typedUser?.perfilPermissoes ?? null;
+  const barbearia = user?.barbearia ?? null;
   const value = {
     user: user || null,
     isLoading,
@@ -54,6 +57,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isGerente: userRole === "gerente",
     isColaborador: userRole === "colaborador",
     perfilPermissoes,
+    barbeariaNome: barbearia?.nome ?? null,
+    logoUrl: barbearia?.logoUrl ?? null,
     logout,
   };
 

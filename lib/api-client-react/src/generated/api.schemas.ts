@@ -117,6 +117,7 @@ export interface UpdateBarbeariaInput {
   cidade?: string | null;
   uf?: string | null;
   corPrimaria?: string | null;
+  logoUrl?: string | null;
   horarioFuncionamento?: UpdateBarbeariaInputHorarioFuncionamento;
 }
 

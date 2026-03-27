@@ -91,7 +91,7 @@ Dashboard → Agenda → Cadastros (Clientes, Profissionais, Serviços, Pacotes 
 - Checkout calculates bandeira tax automatically from tipos table, computes valorLiquido, dataCompensacao
 - Gorjeta support in checkout and nova comanda dialog
 - Pontos fidelidade multiplicador per forma de pagamento
-- Auto-send pesquisa de satisfação log after checkout when envioAutomatico is enabled
+- Auto-send pesquisa de satisfação email after checkout when envioAutomatico is enabled (sends branded email with survey link to client)
 - Frontend Tipos.tsx: extra fields for forma_pagamento (isCartao, multiplicadorPontos) and bandeira (taxaOperadora, tipoBandeira, diasRecebimento, diasUteis)
 - Frontend Caixa.tsx: gorjeta field, gorjeta/taxa columns, líquido calculation with taxa deduction
 
@@ -101,6 +101,17 @@ Dashboard → Agenda → Cadastros (Clientes, Profissionais, Serviços, Pacotes 
 - Caixa: sangria (cash withdrawal), vale (advance to professional w/ atomic debit in contas_profissional)
 - Fechar Caixa: conferência modal showing esperado/informado/diferença
 - FluxoCaixa: 3 tabs (Total Movimentado, Total Disponível, Total a Receber) with per-payment-entry calculations
+
+**Logo Upload com Crop (Task #35):**
+- `LogoUpload.tsx` component with react-easy-crop for circular crop + zoom slider
+- Integrated in AppLayout sidebar header (dono role only can upload/change)
+- Non-dono users see the logo but can't change it
+- Uses object storage presigned URL flow (same as ImageUpload)
+- `AuthContext` now exposes `logoUrl` and `barbeariaNome` from barbearia data
+- `UpdateBarbeariaInput` schema updated with `logoUrl` field
+
+**Equipamentos — Integração com Agendamento (Task #34):**
+- slots.ts now checks equipment capacity: for each equipment linked to the requested service, counts concurrent bookings for services in that equipment's `servicosIds`, blocks slot if count >= `quantidadeMaxima`
 
 **Clientes & Relatórios (Task #28):**
 - Client dashboard: `/gestao/clientes/:clienteId` page with summary cards (favorite service, favorite product, days since last appointment, total spent, loyalty points), tabs for agendamento history and comanda history

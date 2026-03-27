@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { agendamentosTable, profissionaisTable, servicosTable, barbeariasTable, bloqueiosHorarioTable, profissionalServicosTable } from "@workspace/db/schema";
+import { agendamentosTable, profissionaisTable, servicosTable, barbeariasTable, bloqueiosHorarioTable, profissionalServicosTable, equipamentosTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getParametros, getLocalNow } from "../lib/parametros.js";
 
@@ -111,6 +111,15 @@ router.get("/", async (req, res) => {
   }
 
   const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
+
+  const equipamentos = await db.select().from(equipamentosTable).where(
+    and(eq(equipamentosTable.barbeariaId, barbeariaId), eq(equipamentosTable.ativo, true))
+  );
+  const equipamentosDoServico = equipamentos.filter(equip => {
+    const ids = equip.servicosIds as number[];
+    return Array.isArray(ids) && ids.includes(servicoIdNum);
+  });
+
   const params = await getParametros(barbeariaId);
 
   const slotSizeParam = params["agenda_tamanho_slots"] || "30min";
@@ -173,12 +182,29 @@ router.get("/", async (req, res) => {
         tooSoon = t < agoraMinutos + limiteAntecedencia * 60;
       }
 
+      let equipamentoIndisponivel = false;
+      if (equipamentosDoServico.length > 0) {
+        for (const equip of equipamentosDoServico) {
+          const equipServicos = equip.servicosIds as number[];
+          const usosConcorrentes = agendamentos.filter(a => {
+            if (!equipServicos.includes(a.servicoId)) return false;
+            const ai = timeToMinutes(a.horaInicio);
+            const af = timeToMinutes(a.horaFim);
+            return !(t + duracao <= ai || t >= af);
+          }).length;
+          if (usosConcorrentes >= equip.quantidadeMaxima) {
+            equipamentoIndisponivel = true;
+            break;
+          }
+        }
+      }
+
       slots.push({
         horaInicio,
         horaFim,
         profissionalId: prof.id,
         profissionalNome: prof.apelido || prof.nomeExibicao,
-        disponivel: !ocupado && !bloqueado && !tooSoon,
+        disponivel: !ocupado && !bloqueado && !tooSoon && !equipamentoIndisponivel,
       });
     }
   }

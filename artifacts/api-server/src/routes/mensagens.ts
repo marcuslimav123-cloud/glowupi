@@ -18,14 +18,22 @@ router.get("/", requireAuth, requireRole("dono", "gerente"), async (req: any, re
 });
 
 router.post("/", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
-  const barbeariaId = await checkAccess(req, res);
-  if (!barbeariaId) return;
-  const { tipo, titulo, conteudo, destinatarios, status } = req.body;
-  const [msg] = await db.insert(mensagensTable).values({
-    barbeariaId, tipo, titulo, conteudo, destinatarios: destinatarios || [], status: status || "rascunho",
-    dataEnvio: status === "enviada" ? new Date() : null
-  }).returning();
-  res.status(201).json(formatMsg(msg));
+  try {
+    const barbeariaId = await checkAccess(req, res);
+    if (!barbeariaId) return;
+    const { tipo, titulo, conteudo, destinatarios, status } = req.body;
+    if (!tipo || !titulo || !conteudo) {
+      return res.status(400).json({ error: "Tipo, título e conteúdo são obrigatórios" });
+    }
+    const [msg] = await db.insert(mensagensTable).values({
+      barbeariaId, tipo, titulo, conteudo, destinatarios: destinatarios || [], status: status || "rascunho",
+      dataEnvio: status === "enviada" ? new Date() : null
+    }).returning();
+    res.status(201).json(formatMsg(msg));
+  } catch (err: unknown) {
+    console.error("Erro ao criar mensagem:", err);
+    return res.status(500).json({ error: "Erro interno ao criar mensagem" });
+  }
 });
 
 router.delete("/:mensagemId", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
