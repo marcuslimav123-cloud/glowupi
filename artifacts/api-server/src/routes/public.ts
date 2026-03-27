@@ -132,6 +132,9 @@ router.get("/:slug", async (req, res) => {
     categorias = cats.map(c => ({ id: c.id, nome: c.nome, ordem: c.ordem })).sort((a, b) => a.ordem - b.ordem);
   }
 
+  const mostrarProdutos = pubParams["outros_mostrar_produtos_app"] !== "Não";
+  const esconderNaoQueroConversar = pubParams["app_nao_quero_conversar"] === "Sim";
+
   return res.json({
     id: barbearia.id,
     nome: barbearia.nome,
@@ -152,6 +155,7 @@ router.get("/:slug", async (req, res) => {
     formasPagamento: barbearia.formasPagamento || [],
     redesSociais: barbearia.redesSociais || {},
     semPreferenciaHabilitado: showSemPreferencia,
+    naoQueroConversarOculto: esconderNaoQueroConversar,
     categorias,
     servicos: servicos.map(s => ({
       ...s,
@@ -199,11 +203,13 @@ router.get("/:slug", async (req, res) => {
       pontosNecessarios: r.pontosNecessarios,
       tipo: r.tipo,
     })),
-    produtos: produtos.map(p => ({
-      id: p.id,
-      nome: p.nome,
-      preco: parseFloat(p.preco as string),
-    })),
+    ...(mostrarProdutos ? {
+      produtos: produtos.map(p => ({
+        id: p.id,
+        nome: p.nome,
+        preco: parseFloat(p.preco as string),
+      })),
+    } : { produtos: [] }),
   });
 });
 

@@ -14,7 +14,26 @@ function formatAvaliacao(a: any) {
 router.get("/", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const params = await getParametros(barbeariaId);
   const avaliacoes = await db.select().from(avaliacoesTable).where(eq(avaliacoesTable.barbeariaId, barbeariaId));
+
+  if (params["avaliacao_individual"] === "Sim") {
+    const porProfissional: Record<string, { profissionalId: number | null; profissionalNome: string; avaliacoes: any[]; notaMedia: number; total: number }> = {};
+    for (const a of avaliacoes) {
+      const key = a.profissionalNome || "Geral";
+      if (!porProfissional[key]) {
+        porProfissional[key] = { profissionalId: a.profissionalId, profissionalNome: key, avaliacoes: [], notaMedia: 0, total: 0 };
+      }
+      porProfissional[key].avaliacoes.push(formatAvaliacao(a));
+      porProfissional[key].total++;
+    }
+    for (const key of Object.keys(porProfissional)) {
+      const g = porProfissional[key];
+      g.notaMedia = g.total > 0 ? Math.round((g.avaliacoes.reduce((s: number, a: any) => s + a.nota, 0) / g.total) * 10) / 10 : 0;
+    }
+    return res.json({ individual: true, grupos: Object.values(porProfissional), todas: avaliacoes.map(formatAvaliacao) });
+  }
+
   res.json(avaliacoes.map(formatAvaliacao));
 });
 

@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { contasFinanceirasTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccessDono as checkAccess } from "../lib/auth.js";
+import { getParametros } from "../lib/parametros.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -10,9 +11,28 @@ function formatConta(c: any) {
   return { ...c, valor: parseFloat(c.valor), createdAt: c.createdAt?.toISOString?.() ?? c.createdAt, updatedAt: c.updatedAt?.toISOString?.() ?? c.updatedAt };
 }
 
+async function processarBaixaAutomatica(barbeariaId: number) {
+  const params = await getParametros(barbeariaId);
+  if (params["financeiro_baixa_automatica"] !== "Habilitado") return;
+  const hoje = new Date().toISOString().slice(0, 10);
+  const contas = await db.select().from(contasFinanceirasTable).where(
+    and(eq(contasFinanceirasTable.barbeariaId, barbeariaId), eq(contasFinanceirasTable.tipo, "receber"), eq(contasFinanceirasTable.status, "pendente"))
+  );
+  for (const conta of contas) {
+    if (conta.dataVencimento && conta.dataVencimento <= hoje) {
+      await db.update(contasFinanceirasTable).set({
+        status: "paga",
+        dataPagamento: hoje,
+        updatedAt: new Date(),
+      }).where(eq(contasFinanceirasTable.id, conta.id));
+    }
+  }
+}
+
 router.get("/", requireAuth, async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  await processarBaixaAutomatica(barbeariaId);
   const contas = await db.select().from(contasFinanceirasTable).where(eq(contasFinanceirasTable.barbeariaId, barbeariaId));
   res.json(contas.map(formatConta));
 });

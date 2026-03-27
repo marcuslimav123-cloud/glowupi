@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { servicosTable, barbeariasTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
+import { getParametros } from "../lib/parametros.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -15,6 +16,16 @@ function formatServico(s: any) {
     updatedAt: s.updatedAt?.toISOString?.() ?? s.updatedAt,
   };
 }
+
+router.get("/config", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const params = await getParametros(barbeariaId);
+  return res.json({
+    auxiliarHabilitado: params["outros_habilitar_auxiliar"] === "Sim",
+    jornadaProfissionalServicoHabilitado: params["outros_jornada_profissional_servico"] === "Sim",
+  });
+});
 
 router.get("/", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);

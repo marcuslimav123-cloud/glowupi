@@ -5,7 +5,8 @@ import { useSubscriptionGuard } from "@/hooks/useSubscriptionGuard";
 import { cn } from "@/lib/utils";
 import { LogoUpload } from "@/components/LogoUpload";
 import { useUpdateBarbearia, getGetCurrentUserQueryKey } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { apiUrl } from "@/lib/utils";
 import { 
   LayoutDashboard, 
   CalendarDays, 
@@ -506,6 +507,65 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
+  const { data: layoutParams } = useQuery({
+    queryKey: ["parametros-layout", barbeariaId],
+    queryFn: async () => {
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/parametros`), { credentials: "include" });
+      const rows: { chave: string; valor: string }[] = await res.json();
+      const map: Record<string, string> = {};
+      for (const r of rows) map[r.chave] = r.valor;
+      return map;
+    },
+    enabled: !!barbeariaId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  React.useEffect(() => {
+    if (!layoutParams) return;
+    const tema = layoutParams["tema_layout"] || "Claro";
+    const html = document.documentElement;
+    html.classList.remove("dark");
+    if (tema === "Escuro") {
+      html.classList.add("dark");
+    } else if (tema === "Automático") {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (prefersDark) html.classList.add("dark");
+      const listener = (e: MediaQueryListEvent) => {
+        if (e.matches) html.classList.add("dark");
+        else html.classList.remove("dark");
+      };
+      const mq = window.matchMedia("(prefers-color-scheme: dark)");
+      mq.addEventListener("change", listener);
+      return () => mq.removeEventListener("change", listener);
+    }
+  }, [layoutParams]);
+
+  React.useEffect(() => {
+    if (!layoutParams) return;
+    const fonte = layoutParams["fonte_webadmin"] || "Inter";
+    const FONT_MAP: Record<string, string> = {
+      "Inter": "'Inter'",
+      "Quicksand": "'Quicksand'",
+      "Mulish": "'Mulish'",
+      "Dosis": "'Dosis'",
+      "Didact Gothic": "'Didact Gothic'",
+    };
+    const fontFamily = FONT_MAP[fonte] || "'Inter'";
+    if (fonte !== "Inter") {
+      const id = "dynamic-font-link";
+      let link = document.getElementById(id) as HTMLLinkElement | null;
+      if (!link) {
+        link = document.createElement("link");
+        link.id = id;
+        link.rel = "stylesheet";
+        document.head.appendChild(link);
+      }
+      link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fonte)}:wght@300;400;500;600;700&display=swap`;
+    }
+    document.documentElement.style.setProperty("--font-sans", `${fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`);
+    document.documentElement.style.setProperty("--font-display", `${fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`);
+  }, [layoutParams]);
+
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-[#fafafa]"><div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div></div>;
   }
@@ -563,8 +623,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const filteredNav = filterNavByRole(NAV_ITEMS, role, perfilPermissoes);
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col md:flex-row bg-[#fafafa]">
-      <div className="md:hidden flex items-center justify-between px-4 py-2.5 border-b border-black/[0.04] bg-white">
+    <div className="h-screen overflow-hidden flex flex-col md:flex-row bg-background">
+      <div className="md:hidden flex items-center justify-between px-4 py-2.5 border-b border-border bg-card">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="h-8 w-8 shrink-0">
             {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
@@ -577,7 +637,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-[240px] bg-white border-r border-black/[0.04] transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 flex flex-col",
+        "fixed inset-y-0 left-0 z-50 w-[240px] bg-card border-r border-border transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 flex flex-col",
         mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="hidden md:flex flex-col shrink-0">
@@ -650,7 +710,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden relative">
-        <div className="hidden md:flex items-center justify-end px-6 py-2.5 border-b border-black/[0.04] bg-white shrink-0">
+        <div className="hidden md:flex items-center justify-end px-6 py-2.5 border-b border-border bg-card shrink-0">
           <HeaderBar />
         </div>
         {shouldShowUpgrade && (
