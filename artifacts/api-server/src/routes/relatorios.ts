@@ -394,6 +394,7 @@ router.get("/dias-sem-vir", requireAuth, requireRole("dono", "gerente"), async (
     return { id: c.id, nome: c.nome, telefone: c.telefone, email: c.email, ultimoAgendamento: ultima, diasSemVir: diff, vip: c.vip };
   }).filter(c => {
     if (c.diasSemVir < diasMinimo) return false;
+    if ((dataInicio || dataFim) && !c.ultimoAgendamento) return false;
     if (dataInicio && c.ultimoAgendamento && c.ultimoAgendamento < dataInicio) return false;
     if (dataFim && c.ultimoAgendamento && c.ultimoAgendamento > dataFim) return false;
     return true;

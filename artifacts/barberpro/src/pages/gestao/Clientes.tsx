@@ -191,13 +191,15 @@ export default function Clientes() {
             const isAniversario = c.aniversario?.slice(5) === today;
             return (
               <div key={c.id} className={`flex items-center gap-4 p-4 hover:bg-muted/20 transition-colors ${i !== 0 ? "border-t border-border" : ""}`}>
-                <div className={`h-11 w-11 rounded-full flex items-center justify-center font-bold text-lg border shrink-0 ${c.vip ? "bg-amber-500/10 text-amber-500 border-amber-500/25" : "bg-primary/10 text-primary border-primary/20"}`}>
+                <Link href={`/gestao/clientes/${c.id}`} className="shrink-0">
+                <div className={`h-11 w-11 rounded-full flex items-center justify-center font-bold text-lg border cursor-pointer ${c.vip ? "bg-amber-500/10 text-amber-500 border-amber-500/25" : "bg-primary/10 text-primary border-primary/20"}`}>
                   {c.nome.charAt(0).toUpperCase()}
                 </div>
+                </Link>
 
-                <div className="flex-1 min-w-0">
+                <Link href={`/gestao/clientes/${c.id}`} className="flex-1 min-w-0 cursor-pointer">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-sm">{c.nome}</p>
+                    <p className="font-semibold text-sm hover:text-primary transition-colors">{c.nome}</p>
                     {c.vip && <Badge className="text-xs bg-amber-500/10 text-amber-500 border-amber-500/20"><Crown className="h-2.5 w-2.5 mr-1" />VIP</Badge>}
                     {isAniversario && <Badge className="text-xs bg-yellow-500/10 text-yellow-400 border-yellow-500/20"><Cake className="h-2.5 w-2.5 mr-1" />Aniversário!</Badge>}
                   </div>
@@ -206,7 +208,7 @@ export default function Clientes() {
                     {c.email && <span className="text-xs text-muted-foreground flex items-center gap-1"><Mail className="h-3 w-3" />{c.email}</span>}
                     {c.aniversario && <span className="text-xs text-muted-foreground flex items-center gap-1"><Cake className="h-3 w-3" />{c.aniversario.slice(5).split("-").reverse().join("/")}</span>}
                   </div>
-                </div>
+                </Link>
 
                 <div className="text-right hidden sm:block shrink-0">
                   <p className="text-sm font-bold text-primary">{formatCurrency(c.totalGasto)}</p>
