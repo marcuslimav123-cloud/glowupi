@@ -63,7 +63,10 @@ router.get("/", requireAuth, async (req, res) => {
     conditions.push(lte(comandasTable.dataFechamento, end));
   }
 
-  if (user.role === "colaborador" && params["comanda_somente_envolvidos"] === "Sim" && user.profissionalId) {
+  if (user.role === "colaborador" && params["comanda_somente_envolvidos"] === "Sim") {
+    if (!user.profissionalId) {
+      return res.json([]);
+    }
     conditions.push(eq(comandasTable.profissionalId, user.profissionalId));
   }
 
