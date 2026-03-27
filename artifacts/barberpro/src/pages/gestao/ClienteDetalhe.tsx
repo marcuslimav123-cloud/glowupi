@@ -117,12 +117,28 @@ export default function ClienteDetalhe() {
     enabled: !!barbeariaId && !!clienteId && tab === "resumo",
   });
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
       <AppLayout>
         <div className="space-y-4">
           <div className="h-8 w-48 bg-muted/30 rounded-lg animate-pulse" />
           <div className="grid grid-cols-2 gap-4">{[1,2,3,4].map(i => <div key={i} className="h-24 bg-muted/30 rounded-xl animate-pulse" />)}</div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!data) {
+    return (
+      <AppLayout>
+        <Link href="/gestao/clientes">
+          <Button variant="ghost" size="sm" className="mb-3 gap-1.5">
+            <ArrowLeft className="h-4 w-4" /> Voltar para Clientes
+          </Button>
+        </Link>
+        <div className="text-center py-16 bg-card rounded-2xl border border-border">
+          <p className="text-muted-foreground">Erro ao carregar dados do cliente.</p>
+          <Button className="mt-4" onClick={() => window.location.reload()}>Tentar novamente</Button>
         </div>
       </AppLayout>
     );
