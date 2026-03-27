@@ -5,7 +5,7 @@ import {
   servicosTable, clientesTable, comandasTable, produtosTable,
   bloqueiosHorarioTable, profissionalServicosTable,
   tiposTable, contasProfissionalTable, pesquisaSatisfacaoTable,
-  respostasPesquisaTable
+  respostasPesquisaTable, pacotesTable, pacotesClienteTable
 } from "@workspace/db/schema";
 import { eq, and, sql, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
@@ -91,6 +91,10 @@ router.post("/", requireAuth, async (req, res) => {
   }
   const params = await getParametros(barbeariaId);
 
+  if (params["agenda_nao_agendar_profissional"] === "Sim" && user.role === "colaborador") {
+    return res.status(403).json({ error: "Agendamento bloqueado para profissionais não-gestores" });
+  }
+
   const limiteFuturoDias = parseInt(params["agenda_limite_futuro_dias"] || "30");
   const dataAgend = new Date(data + "T12:00:00");
   const hoje = new Date();
@@ -98,6 +102,11 @@ router.post("/", requireAuth, async (req, res) => {
   const diffDias = Math.ceil((dataAgend.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
   if (diffDias > limiteFuturoDias) {
     return res.status(400).json({ error: `Agendamento não pode exceder ${limiteFuturoDias} dias no futuro` });
+  }
+
+  const limitePassadoDias = parseInt(params["agenda_limite_passado"] || "7");
+  if (diffDias < 0 && Math.abs(diffDias) > limitePassadoDias) {
+    return res.status(400).json({ error: `Agendamento não pode exceder ${limitePassadoDias} dias no passado` });
   }
 
   if (user.role === "colaborador") {
@@ -183,28 +192,70 @@ router.post("/", requireAuth, async (req, res) => {
       isAniversario = today.slice(5) === aniv;
     }
   }
-  const [agend] = await db.insert(agendamentosTable).values({
-    barbeariaId,
-    clienteId: clienteId || null,
-    clienteNome,
-    clienteTelefone,
-    profissionalId,
-    profissionalNome: profissional.apelido || profissional.nomeExibicao,
-    servicoId,
-    servicoNome: servico.nome,
-    data,
-    horaInicio,
-    horaFim,
-    status: "confirmado",
-    valor: valorEfetivo,
-    pago: false,
-    semPreferencia: semPreferencia ?? false,
-    observacao: observacao || null,
-    aniversario: isAniversario,
-    vip: false,
-    encaixe: encaixe ?? false,
-  }).returning();
-  return res.status(201).json(formatAgend(agend));
+  const paramHoraInicio = params["agenda_horario_inicio"];
+  const paramHoraFim = params["agenda_horario_fim"];
+  if (paramHoraInicio && horaInicio < paramHoraInicio) {
+    return res.status(400).json({ error: `Horário antes do início permitido (${paramHoraInicio})` });
+  }
+  if (paramHoraFim && horaFim > paramHoraFim) {
+    return res.status(400).json({ error: `Horário após o fim permitido (${paramHoraFim})` });
+  }
+
+  let pacoteClienteAssociado: number | null = null;
+  if (clienteId && params["agenda_associar_pacote_auto"] !== "Desabilitado") {
+    const pacotesCliente = await db.select().from(pacotesClienteTable).where(
+      and(
+        eq(pacotesClienteTable.barbeariaId, barbeariaId),
+        eq(pacotesClienteTable.clienteId, clienteId),
+        eq(pacotesClienteTable.status, "ativo")
+      )
+    );
+    for (const pc of pacotesCliente) {
+      if (pc.sessoesUsadas >= pc.sessoesTotal) continue;
+      if (pc.dataValidade && new Date(pc.dataValidade) < new Date()) continue;
+      const [pacote] = await db.select().from(pacotesTable).where(eq(pacotesTable.id, pc.pacoteId)).limit(1);
+      if (!pacote) continue;
+      const itens = pacote.itens as any[];
+      if (Array.isArray(itens) && itens.some((it: any) => it.servicoId === servicoId || it.id === servicoId)) {
+        pacoteClienteAssociado = pc.id;
+        break;
+      }
+    }
+  }
+
+  const agendResult = await db.transaction(async (tx) => {
+    const [agend] = await tx.insert(agendamentosTable).values({
+      barbeariaId,
+      clienteId: clienteId || null,
+      clienteNome,
+      clienteTelefone,
+      profissionalId,
+      profissionalNome: profissional.apelido || profissional.nomeExibicao,
+      servicoId,
+      servicoNome: servico.nome,
+      data,
+      horaInicio,
+      horaFim,
+      status: "confirmado",
+      valor: valorEfetivo,
+      pago: false,
+      semPreferencia: semPreferencia ?? false,
+      observacao: observacao || null,
+      aniversario: isAniversario,
+      vip: false,
+      encaixe: encaixe ?? false,
+    }).returning();
+
+    if (pacoteClienteAssociado != null) {
+      await tx.update(pacotesClienteTable)
+        .set({ sessoesUsadas: sql`${pacotesClienteTable.sessoesUsadas} + 1` })
+        .where(eq(pacotesClienteTable.id, pacoteClienteAssociado));
+    }
+
+    return agend;
+  });
+
+  return res.status(201).json({ ...formatAgend(agendResult), pacoteClienteId: pacoteClienteAssociado });
 });
 
 router.get("/:agendamentoId", requireAuth, async (req, res) => {
@@ -245,7 +296,13 @@ router.put("/:agendamentoId", requireAuth, async (req, res) => {
     pago: pago !== undefined ? pago : existing.pago,
     updatedAt: new Date(),
   };
-  if (profissionalId && user.role !== "colaborador") {
+  if (profissionalId && profissionalId !== existing.profissionalId) {
+    if (user.role === "colaborador") {
+      const paramsEdit = await getParametros(barbeariaId);
+      if (paramsEdit["agenda_alterar_profissional_nao_gestor"] !== "Sim") {
+        return res.status(403).json({ error: "Alteração de profissional bloqueada para não-gestores" });
+      }
+    }
     const [prof] = await db.select().from(profissionaisTable).where(eq(profissionaisTable.id, profissionalId)).limit(1);
     if (prof) { updates.profissionalId = profissionalId; updates.profissionalNome = prof.apelido || prof.nomeExibicao; }
   }

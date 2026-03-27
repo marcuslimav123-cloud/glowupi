@@ -143,11 +143,18 @@ router.get("/", async (req, res) => {
   const hojeStr = localNow.todayStr;
   const agoraMinutos = localNow.currentMinutes;
 
+  const paramInicio = params["agenda_horario_inicio"];
+  const paramFim = params["agenda_horario_fim"];
+  const paramInicioMin = paramInicio ? timeToMinutes(paramInicio) : null;
+  const paramFimMin = paramFim ? timeToMinutes(paramFim) : null;
+
   const slots: any[] = [];
   const duracaoPadrao = servico.duracaoMinutos;
 
-  const effectiveGlobalInicio = barbSchedule ? barbSchedule.inicio : 8 * 60;
-  const effectiveGlobalFim = barbSchedule ? barbSchedule.fim : 20 * 60;
+  let effectiveGlobalInicio = barbSchedule ? barbSchedule.inicio : 8 * 60;
+  let effectiveGlobalFim = barbSchedule ? barbSchedule.fim : 20 * 60;
+  if (paramInicioMin != null) effectiveGlobalInicio = Math.max(effectiveGlobalInicio, paramInicioMin);
+  if (paramFimMin != null) effectiveGlobalFim = Math.min(effectiveGlobalFim, paramFimMin);
 
   for (const prof of profissionais) {
     const schedule = getProfScheduleForDate(prof, data as string, barbSchedule);

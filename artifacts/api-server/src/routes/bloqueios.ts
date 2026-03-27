@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { bloqueiosHorarioTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
+import { getParametros } from "../lib/parametros.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -23,10 +24,21 @@ router.get("/", requireAuth, async (req, res) => {
   })));
 });
 
-router.post("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
-  const { profissionalId, data, horaInicio, horaFim, motivo } = req.body;
+  const user = (req as any).user;
+  if (user.role === "colaborador") {
+    const params = await getParametros(barbeariaId);
+    if (params["agenda_nao_bloquear_profissional"] === "Sim") {
+      return res.status(403).json({ error: "Bloqueio de horário não permitido para profissionais não-gestores" });
+    }
+    if (!user.profissionalId) {
+      return res.status(403).json({ error: "Profissional não vinculado" });
+    }
+  }
+  const { profissionalId: reqProfId, data, horaInicio, horaFim, motivo } = req.body;
+  const profissionalId = user.role === "colaborador" ? user.profissionalId : reqProfId;
   if (!profissionalId || !data || !horaInicio || !horaFim) {
     return res.status(400).json({ error: "Dados inválidos: profissionalId, data, horaInicio e horaFim são obrigatórios" });
   }

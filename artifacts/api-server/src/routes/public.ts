@@ -101,6 +101,9 @@ router.get("/:slug", async (req, res) => {
   const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.slug, slug)).limit(1);
   if (!barbearia) return res.status(404).json({ error: "Barbearia não encontrada" });
 
+  const { getParametros: getPublicParams } = await import("../lib/parametros.js");
+  const pubParams = await getPublicParams(barbearia.id);
+
   const [servicos, profissionais, avaliacoes, recompensas, produtos, profServicos] = await Promise.all([
     db.select().from(servicosTable).where(and(eq(servicosTable.barbeariaId, barbearia.id), eq(servicosTable.ativo, true))),
     db.select().from(profissionaisTable).where(and(eq(profissionaisTable.barbeariaId, barbearia.id), eq(profissionaisTable.ativo, true))),
@@ -117,6 +120,13 @@ router.get("/:slug", async (req, res) => {
   }
 
   const notaMedia = avaliacoes.length > 0 ? avaliacoes.reduce((sum, a) => sum + a.nota, 0) / avaliacoes.length : 0;
+
+  const showSemPreferencia = pubParams["agenda_sem_preferencia"] !== "Não";
+  const showCategorias = pubParams["agenda_categorias_selecao"] === "Sim";
+
+  const categorias = showCategorias
+    ? [...new Set(servicos.map(s => (s as any).categoria).filter(Boolean))]
+    : [];
 
   return res.json({
     id: barbearia.id,
@@ -137,6 +147,8 @@ router.get("/:slug", async (req, res) => {
     fotos: barbearia.fotos || [],
     formasPagamento: barbearia.formasPagamento || [],
     redesSociais: barbearia.redesSociais || {},
+    semPreferenciaHabilitado: showSemPreferencia,
+    categorias,
     servicos: servicos.map(s => ({
       ...s,
       preco: parseFloat(s.preco as string),
@@ -242,8 +254,15 @@ router.get("/:slug/slots", async (req, res) => {
       return res.json([]);
     }
 
-    const effectiveGlobalInicio = barbSchedule ? barbSchedule.inicio : 8 * 60;
-    const effectiveGlobalFim = barbSchedule ? barbSchedule.fim : 20 * 60;
+    const paramInicio = params["agenda_horario_inicio"];
+    const paramFim = params["agenda_horario_fim"];
+    const paramInicioMin = paramInicio ? timeToMinutes(paramInicio) : null;
+    const paramFimMin = paramFim ? timeToMinutes(paramFim) : null;
+
+    let effectiveGlobalInicio = barbSchedule ? barbSchedule.inicio : 8 * 60;
+    let effectiveGlobalFim = barbSchedule ? barbSchedule.fim : 20 * 60;
+    if (paramInicioMin != null) effectiveGlobalInicio = Math.max(effectiveGlobalInicio, paramInicioMin);
+    if (paramFimMin != null) effectiveGlobalFim = Math.min(effectiveGlobalFim, paramFimMin);
 
     for (const prof of profissionais) {
       const schedule = getProfScheduleForDate(prof, data as string, barbSchedule);
@@ -297,6 +316,11 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       return res.status(400).json({ error: `Agendamento limitado a ${limiteFuturoDias} dias no futuro` });
     }
 
+    const limitePassadoDias = parseInt(params["agenda_limite_passado"] || "7");
+    if (diffDias < 0 && Math.abs(diffDias) > limitePassadoDias) {
+      return res.status(400).json({ error: `Agendamento não pode exceder ${limitePassadoDias} dias no passado` });
+    }
+
     const limiteAntecedenciaRaw2 = params["agenda_limite_antecedencia"];
     const limiteAntecedencia = limiteAntecedenciaRaw2 !== undefined ? parseFloat(limiteAntecedenciaRaw2) : 0.5;
     const [hI, mI] = horaInicio.split(":").map(Number);
@@ -306,6 +330,9 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
     if (diffHoras >= 0 && diffHoras < limiteAntecedencia) {
       return res.status(400).json({ error: `Agendamento requer no mínimo ${limiteAntecedencia} hora(s) de antecedência` });
     }
+
+    const paramHoraInicio = params["agenda_horario_inicio"];
+    const paramHoraFim = params["agenda_horario_fim"];
 
     const [servico] = await db.select().from(servicosTable).where(and(eq(servicosTable.id, servicoId), eq(servicosTable.barbeariaId, barbearia.id))).limit(1);
     if (!servico) return res.status(404).json({ error: "Serviço não encontrado" });
@@ -334,6 +361,14 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
 
     const duracaoFinal = servico.duracaoMinutos || tempoPadrao;
     const horaFim = addMinutes(horaInicio, duracaoFinal);
+
+    if (paramHoraInicio && horaInicio < paramHoraInicio) {
+      return res.status(400).json({ error: `Horário antes do início permitido (${paramHoraInicio})` });
+    }
+    if (paramHoraFim && horaFim > paramHoraFim) {
+      return res.status(400).json({ error: `Horário após o fim permitido (${paramHoraFim})` });
+    }
+
     const [agend] = await db.insert(agendamentosTable).values({
       barbeariaId: barbearia.id,
       clienteId: cliente.id,
