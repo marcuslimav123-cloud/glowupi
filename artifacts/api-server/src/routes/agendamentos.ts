@@ -7,7 +7,7 @@ import {
   tiposTable, contasProfissionalTable, pesquisaSatisfacaoTable,
   respostasPesquisaTable, pacotesTable, pacotesClienteTable
 } from "@workspace/db/schema";
-import { eq, and, sql, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
 import { sendEmail } from "../lib/brevo.js";
@@ -231,40 +231,30 @@ router.post("/", requireAuth, async (req, res) => {
     }
   }
 
-  const agendResult = await db.transaction(async (tx) => {
-    const [agend] = await tx.insert(agendamentosTable).values({
-      barbeariaId,
-      clienteId: clienteId || null,
-      clienteNome,
-      clienteTelefone,
-      profissionalId,
-      profissionalNome: profissional.apelido || profissional.nomeExibicao,
-      servicoId,
-      servicoNome: servico.nome,
-      data,
-      horaInicio,
-      horaFim,
-      status: "confirmado",
-      valor: valorEfetivo,
-      pago: false,
-      semPreferencia: semPreferencia ?? false,
-      observacao: observacao || null,
-      aniversario: isAniversario,
-      vip: false,
-      encaixe: encaixe ?? false,
-      pacoteClienteId: pacoteClienteAssociado,
-    }).returning();
+  const [agend] = await db.insert(agendamentosTable).values({
+    barbeariaId,
+    clienteId: clienteId || null,
+    clienteNome,
+    clienteTelefone,
+    profissionalId,
+    profissionalNome: profissional.apelido || profissional.nomeExibicao,
+    servicoId,
+    servicoNome: servico.nome,
+    data,
+    horaInicio,
+    horaFim,
+    status: "confirmado",
+    valor: valorEfetivo,
+    pago: false,
+    semPreferencia: semPreferencia ?? false,
+    observacao: observacao || null,
+    aniversario: isAniversario,
+    vip: false,
+    encaixe: encaixe ?? false,
+    pacoteClienteId: pacoteClienteAssociado,
+  }).returning();
 
-    if (pacoteClienteAssociado != null) {
-      await tx.update(pacotesClienteTable)
-        .set({ sessoesUsadas: sql`${pacotesClienteTable.sessoesUsadas} + 1` })
-        .where(eq(pacotesClienteTable.id, pacoteClienteAssociado));
-    }
-
-    return agend;
-  });
-
-  return res.status(201).json({ ...formatAgend(agendResult), pacoteClienteId: pacoteClienteAssociado });
+  return res.status(201).json({ ...formatAgend(agend), pacoteClienteId: pacoteClienteAssociado });
 });
 
 router.get("/:agendamentoId", requireAuth, async (req, res) => {
