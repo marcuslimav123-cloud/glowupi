@@ -341,6 +341,59 @@ function isGroupActive(item: NavItem, location: string): boolean {
   return false;
 }
 
+function isSubgroupActive(sg: { label: string; items: NavItem[] }, location: string): boolean {
+  const loc = location.split("?")[0];
+  return sg.items.some(s => s.href && (loc === s.href.split("?")[0] || loc.startsWith(s.href.split("?")[0] + '/')));
+}
+
+function CollapsibleSubgroup({ sg, location, onLinkClick }: { sg: { label: string; items: NavItem[] }; location: string; onLinkClick: () => void }) {
+  const active = isSubgroupActive(sg, location);
+  const [open, setOpen] = React.useState(active);
+  const loc = location.split("?")[0];
+
+  React.useEffect(() => {
+    if (active) setOpen(true);
+  }, [active]);
+
+  return (
+    <div className="mt-1.5">
+      <button
+        onClick={() => setOpen(!open)}
+        className={cn(
+          "w-full flex items-center gap-1.5 px-3 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider transition-all duration-150 cursor-pointer",
+          active
+            ? "text-primary/60 hover:text-primary/80"
+            : "text-foreground/25 hover:text-foreground/40 hover:bg-black/[0.02]"
+        )}
+      >
+        <ChevronDown className={cn(
+          "h-2.5 w-2.5 transition-transform duration-200 shrink-0",
+          open ? "rotate-0" : "-rotate-90"
+        )} />
+        <span className="flex-1 text-left">{sg.label}</span>
+      </button>
+      <div className={cn(
+        "overflow-hidden transition-all duration-200",
+        open ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
+      )}>
+        <div className="space-y-0.5 mt-0.5">
+          {sg.items.map(sub => (
+            <Link key={sub.name + (sub.href || '')} href={sub.href!} className={cn(
+              "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150",
+              loc === sub.href?.split("?")[0]
+                ? "bg-foreground text-white"
+                : "text-foreground/45 hover:text-foreground hover:bg-black/[0.03]"
+            )} onClick={onLinkClick}>
+              <sub.icon className="h-[14px] w-[14px]" />
+              {sub.name}
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CollapsibleGroup({ item, location, onNavigate, mainRef }: { item: NavItem; location: string; onNavigate: () => void; mainRef: React.RefObject<HTMLDivElement | null> }) {
   const active = isGroupActive(item, location);
   const [open, setOpen] = React.useState(active);
@@ -400,22 +453,12 @@ function CollapsibleGroup({ item, location, onNavigate, mainRef }: { item: NavIt
           ))}
 
           {item.subgroups?.map(sg => (
-            <div key={sg.label} className="mt-1.5">
-              <div className="px-3 py-1 text-[10px] font-semibold text-foreground/25 uppercase tracking-wider">
-                {sg.label}
-              </div>
-              {sg.items.map(sub => (
-                <Link key={sub.name + (sub.href || '')} href={sub.href!} className={cn(
-                  "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150",
-                  loc === sub.href?.split("?")[0]
-                    ? "bg-foreground text-white"
-                    : "text-foreground/45 hover:text-foreground hover:bg-black/[0.03]"
-                )} onClick={handleLinkClick}>
-                  <sub.icon className="h-[14px] w-[14px]" />
-                  {sub.name}
-                </Link>
-              ))}
-            </div>
+            <CollapsibleSubgroup
+              key={sg.label}
+              sg={sg}
+              location={location}
+              onLinkClick={handleLinkClick}
+            />
           ))}
         </div>
       </div>
