@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { clientesTable, barbeariasTable, agendamentosTable, comandasTable } from "@workspace/db/schema";
-import { eq, and, ilike, or, desc, sql } from "drizzle-orm";
+import { eq, and, ilike, or, desc, sql, inArray } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
 
@@ -66,17 +66,18 @@ router.get("/:clienteId/dashboard", requireAuth, requireRole("dono", "gerente"),
   const [cliente] = await db.select().from(clientesTable).where(and(eq(clientesTable.id, clienteId), eq(clientesTable.barbeariaId, barbeariaId))).limit(1);
   if (!cliente) return res.status(404).json({ error: "Cliente não encontrado" });
 
-  const [agendamentos, comandas] = await Promise.all([
-    db.select().from(agendamentosTable).where(and(eq(agendamentosTable.barbeariaId, barbeariaId), eq(agendamentosTable.clienteId, clienteId))).orderBy(desc(agendamentosTable.data)),
-    db.select().from(comandasTable).where(and(eq(comandasTable.barbeariaId, barbeariaId), sql`${comandasTable.clienteNome} = ${cliente.nome}`)).orderBy(desc(comandasTable.dataFechamento)),
-  ]);
+  const agendamentos = await db.select().from(agendamentosTable).where(and(eq(agendamentosTable.barbeariaId, barbeariaId), eq(agendamentosTable.clienteId, clienteId))).orderBy(desc(agendamentosTable.data));
+
+  const agendamentoIds = agendamentos.map(a => a.id);
+  const comandas = agendamentoIds.length > 0
+    ? await db.select().from(comandasTable).where(and(eq(comandasTable.barbeariaId, barbeariaId), inArray(comandasTable.agendamentoId, agendamentoIds))).orderBy(desc(comandasTable.dataFechamento))
+    : [];
 
   const servicoCount: Record<string, number> = {};
   const produtoCount: Record<string, number> = {};
 
   agendamentos.forEach(a => {
-    const nome = a.servicoNome;
-    servicoCount[nome] = (servicoCount[nome] || 0) + 1;
+    servicoCount[a.servicoNome] = (servicoCount[a.servicoNome] || 0) + 1;
   });
 
   comandas.forEach(c => {
@@ -105,12 +106,68 @@ router.get("/:clienteId/dashboard", requireAuth, requireRole("dono", "gerente"),
     pontosFidelidade: cliente.pontosFidelidade,
     totalAgendamentos: agendamentos.length,
     totalComandas: comandas.length,
-    agendamentos: agendamentos.slice(0, 50).map(a => ({
+  });
+});
+
+router.get("/:clienteId/agendamentos", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const clienteId = parseInt(req.params.clienteId);
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+  const status = req.query.status as string | undefined;
+  const dataInicio = req.query.dataInicio as string | undefined;
+  const dataFim = req.query.dataFim as string | undefined;
+
+  const conditions = [eq(agendamentosTable.barbeariaId, barbeariaId), eq(agendamentosTable.clienteId, clienteId)];
+  if (status) conditions.push(eq(agendamentosTable.status, status));
+  if (dataInicio) conditions.push(sql`${agendamentosTable.data} >= ${dataInicio}`);
+  if (dataFim) conditions.push(sql`${agendamentosTable.data} <= ${dataFim}`);
+
+  const allRows = await db.select().from(agendamentosTable).where(and(...conditions)).orderBy(desc(agendamentosTable.data));
+  const total = allRows.length;
+  const offset = (page - 1) * limit;
+  const items = allRows.slice(offset, offset + limit);
+
+  return res.json({
+    items: items.map(a => ({
       id: a.id, data: a.data, horaInicio: a.horaInicio, horaFim: a.horaFim,
       servicoNome: a.servicoNome, profissionalNome: a.profissionalNome,
       status: a.status, valor: parseFloat(a.valor as string),
     })),
-    comandas: comandas.slice(0, 50).map(c => ({
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  });
+});
+
+router.get("/:clienteId/comandas", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const clienteId = parseInt(req.params.clienteId);
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+  const dataInicio = req.query.dataInicio as string | undefined;
+  const dataFim = req.query.dataFim as string | undefined;
+
+  const agendamentoIds = (await db.select({ id: agendamentosTable.id }).from(agendamentosTable)
+    .where(and(eq(agendamentosTable.barbeariaId, barbeariaId), eq(agendamentosTable.clienteId, clienteId)))).map(a => a.id);
+
+  if (agendamentoIds.length === 0) {
+    return res.json({ items: [], total: 0, page: 1, totalPages: 1 });
+  }
+
+  const conditions = [eq(comandasTable.barbeariaId, barbeariaId), inArray(comandasTable.agendamentoId, agendamentoIds)];
+  if (dataInicio) conditions.push(sql`DATE(${comandasTable.dataFechamento}) >= ${dataInicio}`);
+  if (dataFim) conditions.push(sql`DATE(${comandasTable.dataFechamento}) <= ${dataFim}`);
+
+  const allRows = await db.select().from(comandasTable).where(and(...conditions)).orderBy(desc(comandasTable.dataFechamento));
+  const total = allRows.length;
+  const offset = (page - 1) * limit;
+  const items = allRows.slice(offset, offset + limit);
+
+  return res.json({
+    items: items.map(c => ({
       id: c.id, dataFechamento: c.dataFechamento?.toISOString(),
       profissionalNome: c.profissionalNome,
       valorTotal: parseFloat(c.valorTotal as string),
@@ -118,6 +175,9 @@ router.get("/:clienteId/dashboard", requireAuth, requireRole("dono", "gerente"),
       servicos: c.servicos,
       produtos: c.produtos,
     })),
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
   });
 });
 

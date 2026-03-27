@@ -414,12 +414,12 @@ router.get("/lucro-produtos", requireAuth, requireRole("dono", "gerente"), async
 
   const produtoMap = Object.fromEntries(produtos.map(p => [p.nome, { custo: parseFloat(p.custo ?? "0") }]));
 
-  const vendas: Record<string, { nome: string; qtd: number; receita: number; custo: number; comissao: number }> = {};
+  const vendas: Record<string, { nome: string; qtd: number; receita: number; custo: number }> = {};
   comandas.forEach(c => {
     const prods = Array.isArray(c.produtos) ? c.produtos : [];
     (prods as Array<{ nome: string; valor: number; quantidade?: number }>).forEach(p => {
       if (!p.nome) return;
-      if (!vendas[p.nome]) vendas[p.nome] = { nome: p.nome, qtd: 0, receita: 0, custo: 0, comissao: 0 };
+      if (!vendas[p.nome]) vendas[p.nome] = { nome: p.nome, qtd: 0, receita: 0, custo: 0 };
       const qty = p.quantidade ?? 1;
       vendas[p.nome].qtd += qty;
       vendas[p.nome].receita += Number(p.valor) || 0;
@@ -432,8 +432,8 @@ router.get("/lucro-produtos", requireAuth, requireRole("dono", "gerente"), async
 
   const result = Object.values(vendas).map(v => ({
     ...v,
-    lucro: Math.round((v.receita - v.custo - v.comissao) * 100) / 100,
-    margem: v.receita > 0 ? Math.round(((v.receita - v.custo - v.comissao) / v.receita) * 1000) / 10 : 0,
+    lucro: Math.round((v.receita - v.custo) * 100) / 100,
+    margem: v.receita > 0 ? Math.round(((v.receita - v.custo) / v.receita) * 1000) / 10 : 0,
   })).sort((a, b) => b.lucro - a.lucro);
 
   return res.json(result);
