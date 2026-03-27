@@ -123,4 +123,15 @@ Dashboard → Agenda → Cadastros (Clientes, Profissionais, Serviços, Pacotes 
 - Report "Lucro por Produtos": `/relatorios/lucro-produtos` calculates revenue - cost = profit per product
 - Both new reports accessible from sidebar under Relatórios > Gerencial
 
+**Mobile App — Glow Upi Pro (Task #46):**
+- Expo mobile app at `artifacts/mobile` for owners (dono) and professionals (gerente/colaborador)
+- Auth: email/senha login via `/api/auth/login`, Bearer token stored in SecureStore, AuthContext with `setAuthTokenGetter`
+- `@workspace/api-client-react` extended with `setBaseUrl()` and `setAuthTokenGetter()` in `custom-fetch.ts`
+- Navigation: 5 tabs — Caixa (dashboard), Comandas, Agenda, Clientes, Menu
+- Dashboard: fetches `/api/barbearias/:id/dashboard?periodo=hoje` for daily metrics (faturamento, agendamentos, clientes, ticket médio, ocupação, top serviços, alertas)
+- Colaborador view: shows only personal agendamentos
+- Resolves barbeariaId from `/api/auth/me` (donos via donoId, profissionais via barbeariaId)
+- Dark theme: graphite #0f0f0f background, gold accent #c4a46a, Inter font
+- Supports NativeTabs (liquid glass iOS 26+) with classic Tabs fallback
+
 **DB Schema Path:** `lib/db/src/schema/` (each table in its own file, exported from `index.ts`)
