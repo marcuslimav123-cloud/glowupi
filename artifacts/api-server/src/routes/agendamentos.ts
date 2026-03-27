@@ -5,7 +5,8 @@ import {
   servicosTable, clientesTable, comandasTable, produtosTable,
   bloqueiosHorarioTable, profissionalServicosTable,
   tiposTable, contasProfissionalTable, pesquisaSatisfacaoTable,
-  respostasPesquisaTable, pacotesTable, pacotesClienteTable
+  respostasPesquisaTable, pacotesTable, pacotesClienteTable,
+  assinantesTable
 } from "@workspace/db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
@@ -95,6 +96,10 @@ router.post("/", requireAuth, async (req, res) => {
     return res.status(403).json({ error: "Você só pode criar agendamentos para si mesma" });
   }
   const params = await getParametros(barbeariaId);
+
+  if (encaixe && user.role === "colaborador" && params["comanda_encaixes_nao_gestor"] === "Sim") {
+    return res.status(403).json({ error: "Criação de encaixes não permitida para profissionais não-gestores" });
+  }
 
   if (params["agenda_nao_agendar_profissional"] === "Sim" && user.role === "colaborador") {
     return res.status(403).json({ error: "Agendamento bloqueado para profissionais não-gestores" });
@@ -381,6 +386,10 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
     }
   }
 
+  if (gorjeta && Number(gorjeta.valor) > 0 && params["comanda_habilitar_caixinha"] !== "Sim") {
+    return res.status(400).json({ error: "Caixinha/gorjeta não está habilitada" });
+  }
+
   const desconto = Math.max(0, Number(rawDesconto) || 0);
   const parcelas = Math.max(1, Math.floor(Number(rawParcelas) || 1));
   const valorServico = parseFloat(agend.valor as string);
@@ -409,6 +418,36 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
   } else if (comissaoEditavel === "Liberar" && req.body.comissaoCustom !== undefined) {
     comissaoServico = Math.max(0, Number(req.body.comissaoCustom) || comissaoServico);
   }
+
+  if (req.body.cortesia && params["comissao_nao_gerar_cortesia"] === "Sim") {
+    comissaoServico = 0;
+  }
+
+  if (agend.pacoteClienteId && params["comissao_nao_gerar_pacote"] === "Habilitado") {
+    comissaoServico = 0;
+  }
+
+  if (params["comissao_valor_original_assinatura"] === "Sim" && agend.clienteId) {
+    const [assinante] = await db.select().from(assinantesTable).where(
+      and(
+        eq(assinantesTable.barbeariaId, barbeariaId),
+        eq(assinantesTable.clienteId, agend.clienteId),
+        eq(assinantesTable.status, "ativo")
+      )
+    ).limit(1);
+    if (assinante) {
+      const [servicoOriginal] = await db.select().from(servicosTable).where(
+        and(eq(servicosTable.id, agend.servicoId), eq(servicosTable.barbeariaId, barbeariaId))
+      ).limit(1);
+      if (servicoOriginal) {
+        const valorOriginal = parseFloat(servicoOriginal.preco as string);
+        comissaoServico = (hasComissaoOverride || profissional?.comissaoTipo === "percentual")
+          ? (valorOriginal * comissaoPerc) / 100
+          : comissaoPerc;
+      }
+    }
+  }
+
   let valorProdutos = 0;
   let comissaoProdutos = 0;
   const prodItems: any[] = [];

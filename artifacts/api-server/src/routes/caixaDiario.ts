@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { caixaDiarioTable, movimentacoesCaixaTable, contasProfissionalTable, profissionaisTable } from "@workspace/db/schema";
 import { eq, and, desc, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
+import { getParametros } from "../lib/parametros.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -31,6 +32,13 @@ function fmtMov(r: any) {
 router.get("/atual", requireAuth, async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const user = req.user;
+  if (user.role === "colaborador") {
+    const params = await getParametros(barbeariaId);
+    if (params["comanda_caixa_profissional_nao_gestor"] !== "Sim") {
+      return res.status(403).json({ error: "Acesso ao caixa não permitido para seu perfil" });
+    }
+  }
   const [caixa] = await db.select().from(caixaDiarioTable)
     .where(and(eq(caixaDiarioTable.barbeariaId, barbeariaId), eq(caixaDiarioTable.status, "aberto")))
     .orderBy(desc(caixaDiarioTable.dataAbertura)).limit(1);
@@ -44,6 +52,13 @@ router.get("/atual", requireAuth, async (req: any, res) => {
 router.get("/historico", requireAuth, async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const user = req.user;
+  if (user.role === "colaborador") {
+    const params = await getParametros(barbeariaId);
+    if (params["comanda_caixa_profissional_nao_gestor"] !== "Sim") {
+      return res.status(403).json({ error: "Acesso ao caixa não permitido para seu perfil" });
+    }
+  }
   const { dataInicio, dataFim } = req.query;
   const conditions = [eq(caixaDiarioTable.barbeariaId, barbeariaId)];
   if (dataInicio) conditions.push(gte(caixaDiarioTable.dataAbertura, new Date(dataInicio as string)));
@@ -99,6 +114,30 @@ router.put("/:caixaId/fechar", requireAuth, async (req: any, res) => {
     observacao: req.body.observacao || caixa.observacao,
   }).where(eq(caixaDiarioTable.id, caixaId)).returning();
   res.json({ ...fmt(updated), saldoEsperado, valorInformado, diferenca });
+});
+
+router.put("/:caixaId/reabrir", requireAuth, async (req: any, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const user = req.user;
+  if (user.role !== "dono" && user.role !== "gerente") {
+    const params = await getParametros(barbeariaId);
+    if (params["comanda_reabertura_caixa_nao_gestor"] === "Sim") {
+      return res.status(403).json({ error: "Reabertura de caixa não permitida para seu perfil" });
+    }
+  }
+  const caixaId = parseInt(req.params.caixaId);
+  const [caixa] = await db.select().from(caixaDiarioTable)
+    .where(and(eq(caixaDiarioTable.id, caixaId), eq(caixaDiarioTable.barbeariaId, barbeariaId))).limit(1);
+  if (!caixa) return res.status(404).json({ error: "Caixa não encontrado" });
+  if (caixa.status !== "fechado") return res.status(400).json({ error: "Caixa não está fechado" });
+  const [updated] = await db.update(caixaDiarioTable).set({
+    status: "aberto",
+    dataFechamento: null,
+    valorFechamento: null,
+    fechadoPor: null,
+  }).where(eq(caixaDiarioTable.id, caixaId)).returning();
+  res.json(fmt(updated));
 });
 
 router.get("/:caixaId/movimentacoes", requireAuth, async (req: any, res) => {

@@ -371,11 +371,13 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       and(eq(clientesTable.barbeariaId, barbearia.id), eq(clientesTable.email, clienteUser.email))
     ).limit(1);
     if (!cliente) {
+      const autoAprovar = params["cliente_aprovar_cadastro_auto"] !== "Não";
       [cliente] = await db.insert(clientesTable).values({
         barbeariaId: barbearia.id,
         nome: clienteUser.nome,
         telefone: clienteUser.telefone || "",
         email: clienteUser.email,
+        status: autoAprovar ? "aprovado" : "pendente",
       }).returning();
     }
 

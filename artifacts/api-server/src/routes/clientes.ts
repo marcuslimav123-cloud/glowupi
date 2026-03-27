@@ -11,9 +11,16 @@ function formatCliente(c: any) {
   return { ...c, totalGasto: parseFloat(c.totalGasto), createdAt: c.createdAt?.toISOString?.() ?? c.createdAt, updatedAt: c.updatedAt?.toISOString?.() ?? c.updatedAt };
 }
 
-router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+router.get("/", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const user = (req as any).user;
+  const params = await getParametros(barbeariaId);
+
+  if (user.role === "colaborador" && params["cliente_mostrar_lista_app"] !== "Sim") {
+    return res.status(403).json({ error: "Listagem de clientes não permitida para seu perfil" });
+  }
+
   const search = req.query.search as string;
   let clientes;
   if (search) {
@@ -21,7 +28,15 @@ router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) =>
   } else {
     clientes = await db.select().from(clientesTable).where(eq(clientesTable.barbeariaId, barbeariaId));
   }
-  return res.json(clientes.map(formatCliente));
+
+  const hidePhone = user.role === "colaborador" && params["cliente_nao_mostrar_telefone"] === "Sim";
+  return res.json(clientes.map(c => {
+    const formatted = formatCliente(c);
+    if (hidePhone) {
+      formatted.telefone = "***";
+    }
+    return formatted;
+  }));
 });
 
 router.post("/", requireAuth, async (req, res) => {
@@ -46,6 +61,9 @@ router.post("/", requireAuth, async (req, res) => {
     }
   }
 
+  const autoAprovar = params["cliente_aprovar_cadastro_auto"] !== "Não";
+  const statusInicial = autoAprovar ? "aprovado" : "pendente";
+
   const [cliente] = await db.insert(clientesTable).values({
     barbeariaId,
     nome,
@@ -54,6 +72,7 @@ router.post("/", requireAuth, async (req, res) => {
     aniversario: aniversario || null,
     observacoes: observacoes || null,
     vip: vip ?? false,
+    status: statusInicial,
   }).returning();
   return res.status(201).json(formatCliente(cliente));
 });
@@ -181,13 +200,24 @@ router.get("/:clienteId/comandas", requireAuth, requireRole("dono", "gerente"), 
   });
 });
 
-router.get("/:clienteId", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+router.get("/:clienteId", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const user = (req as any).user;
+  const params = await getParametros(barbeariaId);
+
+  if (user.role === "colaborador" && params["cliente_mostrar_lista_app"] !== "Sim") {
+    return res.status(403).json({ error: "Acesso a clientes não permitido para seu perfil" });
+  }
+
   const id = parseInt(req.params.clienteId);
   const [cliente] = await db.select().from(clientesTable).where(and(eq(clientesTable.id, id), eq(clientesTable.barbeariaId, barbeariaId))).limit(1);
   if (!cliente) return res.status(404).json({ error: "Cliente não encontrado" });
-  return res.json(formatCliente(cliente));
+  const formatted = formatCliente(cliente);
+  if (user.role === "colaborador" && params["cliente_nao_mostrar_telefone"] === "Sim") {
+    formatted.telefone = "***";
+  }
+  return res.json(formatted);
 });
 
 router.put("/:clienteId", requireAuth, requireRole("dono", "gerente"), async (req, res) => {

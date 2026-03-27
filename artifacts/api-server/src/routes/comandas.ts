@@ -32,6 +32,10 @@ router.get("/config", requireAuth, async (req, res) => {
     comanda_ver_dia_caixa: params["comanda_ver_dia_caixa"] || "Sim",
     comanda_abertura_nao_gestor: params["comanda_abertura_nao_gestor"] || "Não",
     comanda_reabertura_nao_gestor: params["comanda_reabertura_nao_gestor"] || "Não",
+    comanda_habilitar_caixinha: params["comanda_habilitar_caixinha"] || "Não",
+    comanda_somente_envolvidos: params["comanda_somente_envolvidos"] || "Sim",
+    comanda_encaixes_nao_gestor: params["comanda_encaixes_nao_gestor"] || "Não",
+    comanda_caixa_profissional_nao_gestor: params["comanda_caixa_profissional_nao_gestor"] || "Não",
   });
 });
 
@@ -40,8 +44,9 @@ router.get("/", requireAuth, async (req, res) => {
   if (!barbeariaId) return;
   const user = (req as any).user;
 
+  const params = await getParametros(barbeariaId);
+
   if (user.role === "colaborador") {
-    const params = await getParametros(barbeariaId);
     if (params["comanda_inserir_profissionais_caixa"] !== "Sim") {
       return res.status(403).json({ error: "Visualização de caixa não permitida para seu perfil" });
     }
@@ -57,6 +62,11 @@ router.get("/", requireAuth, async (req, res) => {
     end.setHours(23, 59, 59, 999);
     conditions.push(lte(comandasTable.dataFechamento, end));
   }
+
+  if (user.role === "colaborador" && params["comanda_somente_envolvidos"] === "Sim" && user.profissionalId) {
+    conditions.push(eq(comandasTable.profissionalId, user.profissionalId));
+  }
+
   const comandas = await db.select().from(comandasTable).where(and(...conditions)).orderBy(comandasTable.dataFechamento);
   return res.json(comandas.map(formatComanda));
 });

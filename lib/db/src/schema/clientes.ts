@@ -15,6 +15,7 @@ export const clientesTable = pgTable("clientes", {
   pontosFidelidade: integer("pontos_fidelidade").notNull().default(0),
   totalGasto: numeric("total_gasto", { precision: 12, scale: 2 }).notNull().default("0"),
   ultimaVisita: text("ultima_visita"),
+  status: text("status").notNull().default("aprovado"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
