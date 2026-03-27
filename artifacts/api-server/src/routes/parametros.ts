@@ -1,10 +1,19 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { parametrosConfigTable } from "@workspace/db/schema";
+import { parametrosConfigTable, barbeariasTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, requireRole } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
+
+async function resolveUserBarbeariaId(user: { id: number; role: string; barbeariaId: number | null }): Promise<number | null> {
+  if (user.barbeariaId) return user.barbeariaId;
+  if (user.role === "dono") {
+    const [b] = await db.select({ id: barbeariasTable.id }).from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
+    return b?.id ?? null;
+  }
+  return null;
+}
 
 export type ParamDef = {
   chave: string;
@@ -108,7 +117,8 @@ router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) =>
   if (isNaN(barbeariaId)) return res.status(400).json({ error: "ID inválido" });
 
   const user = (req as any).user;
-  if (user.barbeariaId !== barbeariaId) return res.status(403).json({ error: "Sem permissão" });
+  const userBarbId = await resolveUserBarbeariaId(user);
+  if (userBarbId !== barbeariaId) return res.status(403).json({ error: "Sem permissão" });
 
   await ensureDefaults(barbeariaId);
 
@@ -136,7 +146,8 @@ router.put("/:chave", requireAuth, requireRole("dono", "gerente"), async (req, r
   if (isNaN(barbeariaId)) return res.status(400).json({ error: "ID inválido" });
 
   const user = (req as any).user;
-  if (user.barbeariaId !== barbeariaId) return res.status(403).json({ error: "Sem permissão" });
+  const userBarbId = await resolveUserBarbeariaId(user);
+  if (userBarbId !== barbeariaId) return res.status(403).json({ error: "Sem permissão" });
 
   const { chave } = req.params;
   const { valor } = req.body;
@@ -169,7 +180,8 @@ router.delete("/:chave", requireAuth, requireRole("dono", "gerente"), async (req
   if (isNaN(barbeariaId)) return res.status(400).json({ error: "ID inválido" });
 
   const user = (req as any).user;
-  if (user.barbeariaId !== barbeariaId) return res.status(403).json({ error: "Sem permissão" });
+  const userBarbId = await resolveUserBarbeariaId(user);
+  if (userBarbId !== barbeariaId) return res.status(403).json({ error: "Sem permissão" });
 
   const { chave } = req.params;
   const def = PARAMETROS_DEFAULTS.find(d => d.chave === chave);
