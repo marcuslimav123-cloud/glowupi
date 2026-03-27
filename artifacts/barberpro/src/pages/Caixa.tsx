@@ -268,6 +268,7 @@ export default function Caixa() {
       const servico = servicos.find((s: any) => s.id === servicoId);
       const valor = servico ? parseFloat(servico.preco) : 0;
       const gorjetaValor = parseFloat(fd.get("gorjeta") as string) || 0;
+      const gorjetaProfId = fd.get("gorjetaProfissionalId") as string;
       const pagamento: Record<string, any> = { metodo, valor };
       if ((metodo === "credito" || metodo === "debito") && selectedBandeira) {
         pagamento.bandeira = selectedBandeira;
@@ -279,7 +280,7 @@ export default function Caixa() {
         body: JSON.stringify({
           pagamentos: [pagamento],
           observacao: fd.get("observacao") as string || null,
-          gorjeta: gorjetaValor > 0 ? { valor: gorjetaValor, profissionalId } : null,
+          gorjeta: gorjetaValor > 0 ? { valor: gorjetaValor, profissionalId: gorjetaProfId ? parseInt(gorjetaProfId) : profissionalId } : null,
         }),
       });
       if (!checkoutRes.ok) throw new Error("Erro ao fechar comanda");
@@ -658,6 +659,15 @@ export default function Caixa() {
             <div>
               <Label>Gorjeta (R$)</Label>
               <Input name="gorjeta" type="number" step="0.01" min="0" placeholder="0,00 (opcional)" />
+            </div>
+            <div>
+              <Label>Profissional que recebe a gorjeta</Label>
+              <select name="gorjetaProfissionalId" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
+                <option value="">Mesmo do serviço</option>
+                {profissionais.map((p: any) => (
+                  <option key={p.id} value={p.id}>{p.apelido || p.nomeExibicao}</option>
+                ))}
+              </select>
             </div>
             <div>
               <Label>Observação</Label>

@@ -4,7 +4,7 @@ import {
   agendamentosTable, barbeariasTable, profissionaisTable,
   servicosTable, clientesTable, comandasTable, produtosTable,
   bloqueiosHorarioTable, profissionalServicosTable,
-  tiposTable, pesquisaSatisfacaoTable
+  tiposTable, contasProfissionalTable
 } from "@workspace/db/schema";
 import { eq, and, sql, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
@@ -450,17 +450,22 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
     }
   }
 
-  try {
-    const pesquisas = await db.select().from(pesquisaSatisfacaoTable).where(
-      and(eq(pesquisaSatisfacaoTable.barbeariaId, barbeariaId), eq(pesquisaSatisfacaoTable.ativo, true), eq(pesquisaSatisfacaoTable.envioAutomatico, true))
-    ).limit(1);
-    if (pesquisas.length > 0 && agend.clienteTelefone) {
-      const pesquisa = pesquisas[0];
-      const [barb] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
-      console.log(`[Pesquisa Auto] Survey ${pesquisa.id} would be sent to ${agend.clienteNome} (${agend.clienteTelefone}) for ${barb?.nome || "barbearia"}`);
+  if ((tipoComanda ?? "cliente") === "profissional" && profissional) {
+    try {
+      await db.insert(contasProfissionalTable).values({
+        barbeariaId,
+        profissionalId: agend.profissionalId,
+        profissionalNome: profissional.apelido || profissional.nomeExibicao,
+        tipo: "debito",
+        descricao: `Comanda profissional #${comanda.id} — ${agend.servicoNome}`,
+        valor: String(valorTotal),
+        mesAno,
+        data: now.toISOString().slice(0, 10),
+        status: "pendente",
+      });
+    } catch (e) {
+      console.error("[ContaProfissional] Error creating deduction:", e);
     }
-  } catch (e) {
-    console.error("[Pesquisa Auto] Error:", e);
   }
 
   return res.status(201).json({
