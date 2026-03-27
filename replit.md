@@ -127,7 +127,9 @@ Dashboard → Agenda → Cadastros (Clientes, Profissionais, Serviços, Pacotes 
 
 **Mobile App — Glow Upi Pro (Task #46):**
 - Expo mobile app at `artifacts/mobile` for owners (dono) and professionals (gerente/colaborador)
-- Auth: email/senha login via `/api/auth/login`, Bearer token stored in SecureStore, AuthContext with `setAuthTokenGetter`
+- Auth: email/senha login via `/api/auth/login` + Google Sign-In via `expo-auth-session` (sends ID token to `/api/auth/google`), Bearer token stored in SecureStore, AuthContext with `setAuthTokenGetter` and `loginWithGoogle`
+- Google client ID passed via `EXPO_PUBLIC_GOOGLE_CLIENT_ID` env var (sourced from `GOOGLE_CLIENT_ID` in dev script), button conditionally shown when configured
+- Logo: uses same Glow Upi golden logo (`assets/images/logo.png`) as web app
 - `@workspace/api-client-react` extended with `setBaseUrl()` and `setAuthTokenGetter()` in `custom-fetch.ts`
 - Navigation: 5 tabs — Caixa (dashboard), Comandas, Agenda, Clientes, Menu
 - Dashboard: fetches `/api/barbearias/:id/dashboard?periodo=hoje` for daily metrics (faturamento, agendamentos, clientes, ticket médio, ocupação, top serviços, alertas)

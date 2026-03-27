@@ -33,6 +33,7 @@ interface AuthState {
 
 interface AuthContextType extends AuthState {
   login: (email: string, senha: string) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -112,14 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshUser();
   }, [refreshUser]);
 
-  const login = useCallback(async (email: string, senha: string) => {
-    const res = await fetch(`${API_BASE}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, senha }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Erro ao fazer login");
+  const handleAuthResponse = useCallback(async (data: { token: string }) => {
     await SecureStore.setItemAsync(TOKEN_KEY, data.token);
     const meData = await fetchMe(data.token);
     setState({
@@ -131,6 +125,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: true,
     });
   }, [fetchMe]);
+
+  const login = useCallback(async (email: string, senha: string) => {
+    const res = await fetch(`${API_BASE}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, senha }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Erro ao fazer login");
+    await handleAuthResponse(data);
+  }, [handleAuthResponse]);
+
+  const loginWithGoogle = useCallback(async (credential: string) => {
+    const res = await fetch(`${API_BASE}/api/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Erro ao fazer login com Google");
+    await handleAuthResponse(data);
+  }, [handleAuthResponse]);
 
   const logout = useCallback(async () => {
     const token = await getToken();
@@ -154,7 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [getToken]);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout, refreshUser }}>
+    <AuthContext.Provider value={{ ...state, login, loginWithGoogle, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
