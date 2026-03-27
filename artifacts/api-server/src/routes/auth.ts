@@ -122,6 +122,18 @@ router.get("/google/signin-popup", (req, res) => {
   const protocol = req.headers["x-forwarded-proto"] || "https";
   const host = req.headers["x-forwarded-host"] || req.headers.host;
   const apiBase = `${protocol}://${host}`;
+  const callbackUri = `${apiBase}/api/auth/google/mobile/callback`;
+
+  const state = Buffer.from(JSON.stringify({ redirect_scheme: "__popup__" })).toString("base64url");
+  const googleAuthUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+  googleAuthUrl.searchParams.set("client_id", clientId);
+  googleAuthUrl.searchParams.set("redirect_uri", callbackUri);
+  googleAuthUrl.searchParams.set("response_type", "code");
+  googleAuthUrl.searchParams.set("scope", "openid email profile");
+  googleAuthUrl.searchParams.set("state", state);
+  googleAuthUrl.searchParams.set("access_type", "offline");
+  googleAuthUrl.searchParams.set("prompt", "select_account");
+  const directAuthUrl = googleAuthUrl.toString();
 
   const html = `<!DOCTYPE html>
 <html><head>
@@ -129,112 +141,25 @@ router.get("/google/signin-popup", (req, res) => {
 <title>Login com Google - Glow Upi</title>
 <style>
   body{font-family:system-ui,sans-serif;background:#0f0f0f;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;text-align:center}
-  .card{background:#1a1a1a;border-radius:16px;padding:40px 32px;max-width:420px;width:100%;border:1px solid #333}
-  h2{color:#d4a853;font-size:20px;margin:0 0 8px}
-  p{color:#aaa;font-size:14px;margin:0 0 24px}
+  .card{background:#1a1a1a;border-radius:16px;padding:40px 32px;max-width:380px;width:100%;border:1px solid #333}
+  h2{color:#d4a853;font-size:22px;margin:0 0 8px}
+  p{color:#aaa;font-size:14px;margin:0 0 28px}
+  .g-btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:14px 20px;background:#fff;color:#333;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:system-ui,sans-serif;transition:background .2s}
+  .g-btn:hover{background:#f0f0f0}
+  .g-btn svg{width:20px;height:20px}
   .spinner{display:none;margin:20px auto;width:32px;height:32px;border:3px solid #333;border-top:3px solid #d4a853;border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
-  .msg{font-size:14px;margin-top:16px;display:none;line-height:1.6}
-  .msg.error{color:#ef4444}
-  .msg.config{color:#facc15}
-  #google-btn{display:flex;justify-content:center}
-  code{background:#2a2a2a;padding:3px 6px;border-radius:4px;font-size:11px;color:#d4a853;word-break:break-all}
-  .steps{text-align:left;color:#aaa;font-size:13px;line-height:1.7;margin-top:12px}
-  .steps li{margin-bottom:4px}
-  .btn{display:inline-block;margin-top:16px;padding:10px 20px;background:#d4a853;color:#000;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;cursor:pointer;border:none}
 </style>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head><body>
 <div class="card">
   <h2>Glow Upi</h2>
-  <p>Faça login com sua conta Google</p>
-  <div id="google-btn"></div>
+  <p>Selecione sua conta Google para continuar</p>
+  <button class="g-btn" onclick="window.location.href='${directAuthUrl}'">
+    <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+    Continuar com Google
+  </button>
   <div class="spinner" id="spinner"></div>
-  <div class="msg" id="msg"></div>
-  <div id="config-info" style="display:none">
-    <div class="msg config" style="display:block">
-      Para ativar o login com Google, adicione este dominio no Google Cloud Console:
-    </div>
-    <p style="margin:8px 0"><code>${apiBase}</code></p>
-    <ol class="steps">
-      <li>Acesse <a href="https://console.cloud.google.com/apis/credentials" style="color:#d4a853" target="_blank">Google Cloud Console &rarr; Credentials</a></li>
-      <li>Clique no seu OAuth 2.0 Client ID</li>
-      <li>Em <strong>"Authorized JavaScript origins"</strong>, adicione a URL acima</li>
-      <li>Em <strong>"Authorized redirect URIs"</strong>, adicione:<br/><code>${apiBase}/api/auth/google/mobile/callback</code></li>
-      <li>Salve e aguarde ~5 minutos</li>
-    </ol>
-    <button class="btn" onclick="window.close()">Fechar</button>
-  </div>
 </div>
-<script>
-  var gsiLogOriginal = console.warn;
-  var originError = false;
-  console.warn = function() {
-    var msg = Array.from(arguments).join(' ');
-    if (msg.indexOf('not allowed for the given client') > -1) {
-      originError = true;
-      document.getElementById('google-btn').style.display = 'none';
-      document.getElementById('config-info').style.display = 'block';
-    }
-    gsiLogOriginal.apply(console, arguments);
-  };
-
-  function handleCredential(response) {
-    document.getElementById('spinner').style.display = 'block';
-    document.getElementById('google-btn').style.display = 'none';
-    var msgEl = document.getElementById('msg');
-    msgEl.style.display = 'none';
-
-    fetch('${apiBase}/api/auth/google', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ credential: response.credential })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.token) {
-        if (window.opener) {
-          window.opener.postMessage({ type: 'google-auth-success', token: data.token }, '*');
-          window.close();
-        } else {
-          msgEl.textContent = 'Login realizado! Feche esta janela.';
-          msgEl.className = 'msg';
-          msgEl.style.color = '#22c55e';
-          msgEl.style.display = 'block';
-          document.getElementById('spinner').style.display = 'none';
-        }
-      } else {
-        throw new Error(data.error || 'Erro no login');
-      }
-    })
-    .catch(function(err) {
-      document.getElementById('spinner').style.display = 'none';
-      document.getElementById('google-btn').style.display = 'flex';
-      msgEl.textContent = err.message || 'Erro ao fazer login';
-      msgEl.className = 'msg error';
-      msgEl.style.display = 'block';
-    });
-  }
-
-  window.onload = function() {
-    setTimeout(function() {
-      if (typeof google !== 'undefined' && !originError) {
-        google.accounts.id.initialize({
-          client_id: '${clientId}',
-          callback: handleCredential,
-          auto_select: false,
-          ux_mode: 'popup'
-        });
-        google.accounts.id.renderButton(
-          document.getElementById('google-btn'),
-          { theme: 'filled_black', size: 'large', width: 300, text: 'continue_with', locale: 'pt-BR' }
-        );
-      } else if (!originError) {
-        document.getElementById('config-info').style.display = 'block';
-      }
-    }, 1000);
-  };
-</script>
 </body></html>`;
 
   res.setHeader("Content-Type", "text/html");
@@ -349,6 +274,20 @@ router.get("/google/mobile/callback", async (req, res) => {
     }
 
     const token = createSession(user.id);
+
+    if (redirectScheme === "__popup__") {
+      const successPage = `<!DOCTYPE html><html><head><meta charset="utf-8">
+        <title>Login realizado</title>
+        <style>body{font-family:system-ui,sans-serif;background:#0f0f0f;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+        .card{background:#1a1a1a;border-radius:16px;padding:40px;text-align:center;border:1px solid #333}
+        h2{color:#22c55e;margin:0 0 8px}p{color:#aaa;font-size:14px}</style></head>
+        <body><div class="card"><h2>Login realizado!</h2><p>Fechando...</p></div>
+        <script>
+          if(window.opener){window.opener.postMessage({type:'google-auth-success',token:'${token}'},'*');setTimeout(function(){window.close()},500)}
+          else{document.querySelector('p').textContent='Feche esta janela e volte ao app.'}
+        </script></body></html>`;
+      return res.send(successPage);
+    }
 
     const appRedirect = `${redirectScheme}://auth?token=${encodeURIComponent(token)}`;
     return res.redirect(appRedirect);
