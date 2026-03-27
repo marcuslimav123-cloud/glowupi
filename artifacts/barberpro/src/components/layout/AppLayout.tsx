@@ -341,12 +341,17 @@ function isGroupActive(item: NavItem, location: string): boolean {
 function CollapsibleGroup({ item, location, onNavigate, mainRef }: { item: NavItem; location: string; onNavigate: () => void; mainRef: React.RefObject<HTMLDivElement | null> }) {
   const active = isGroupActive(item, location);
   const [open, setOpen] = React.useState(active);
+  const clickedRef = React.useRef(false);
 
   React.useEffect(() => {
-    if (active) setOpen(true);
-  }, [active]);
+    if (clickedRef.current && active) {
+      setOpen(true);
+      clickedRef.current = false;
+    }
+  }, [location, active]);
 
   const handleLinkClick = () => {
+    clickedRef.current = true;
     onNavigate();
     if (mainRef.current) {
       mainRef.current.scrollTo({ top: 0, behavior: "smooth" });
