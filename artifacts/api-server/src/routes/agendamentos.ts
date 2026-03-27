@@ -466,7 +466,7 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
   const [agend] = await db.select().from(agendamentosTable).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId))).limit(1);
   if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
   const [profissional] = await db.select().from(profissionaisTable).where(eq(profissionaisTable.id, agend.profissionalId)).limit(1);
-  const { produtosAdicionais = [], pagamentos, observacao, desconto: rawDesconto = 0, descontoTipo = "valor", parcelas: rawParcelas = 1, gorjeta, tipoComanda: rawTipoComanda } = req.body;
+  const { produtosAdicionais = [], servicosAdicionais = [], pagamentos, observacao, desconto: rawDesconto = 0, descontoTipo = "valor", parcelas: rawParcelas = 1, gorjeta, tipoComanda: rawTipoComanda, valorTotalOverride } = req.body;
   const tipoComanda = rawTipoComanda === "profissional" ? "profissional" : "cliente";
 
   if (params["comanda_obrigatoriedade_bandeira"] === "Sim") {
@@ -553,7 +553,36 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
       await db.update(produtosTable).set({ quantidade: prod.quantidade - p.quantidade, updatedAt: new Date() }).where(eq(produtosTable.id, prod.id));
     }
   }
-  let valorTotal = valorServico + valorProdutos;
+
+  let valorServicosAdicionais = 0;
+  let comissaoServicosAdicionais = 0;
+  const servicoItems: any[] = [{ id: agend.servicoId, nome: agend.servicoNome, valor: valorServico, comissao: null }];
+  for (const sa of servicosAdicionais) {
+    const [serv] = await db.select().from(servicosTable).where(and(eq(servicosTable.id, sa.servicoId), eq(servicosTable.barbeariaId, barbeariaId))).limit(1);
+    if (serv) {
+      const saValor = parseFloat(serv.preco as string);
+      const saProfId = sa.profissionalId || agend.profissionalId;
+      const [saProf] = await db.select().from(profissionaisTable).where(
+        and(eq(profissionaisTable.id, saProfId), eq(profissionaisTable.barbeariaId, barbeariaId))
+      ).limit(1);
+      const saComPerc = saProf ? parseFloat(saProf.comissaoValor as string) : 40;
+      const saComissao = (saProf?.comissaoTipo === "percentual")
+        ? (saValor * saComPerc) / 100
+        : saComPerc;
+      valorServicosAdicionais += saValor;
+      comissaoServicosAdicionais += saComissao;
+      servicoItems.push({
+        id: serv.id,
+        nome: serv.nome,
+        valor: saValor,
+        comissao: saComissao,
+        profissionalId: saProfId,
+        profissionalNome: saProf?.apelido || saProf?.nomeExibicao || agend.profissionalNome,
+      });
+    }
+  }
+
+  let valorTotal = valorServico + valorServicosAdicionais + valorProdutos;
   if (desconto > 0) {
     if (descontoTipo === "percentual") {
       const clampedPct = Math.min(desconto, 100);
@@ -563,16 +592,18 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
     }
   }
   valorTotal = Math.max(0, valorTotal);
-  let gorjetaVal: { profissionalId: number; valor: number } | null = null;
+  let gorjetaVal: { profissionalId: number; valor: number; profissionalNome?: string } | null = null;
   if (gorjeta && Number(gorjeta.valor) > 0) {
     const gorjetaProfId = gorjeta.profissionalId ?? agend.profissionalId;
+    let gorjetaProfNome = agend.profissionalNome;
     if (gorjetaProfId !== agend.profissionalId) {
       const [gp] = await db.select().from(profissionaisTable).where(
         and(eq(profissionaisTable.id, gorjetaProfId), eq(profissionaisTable.barbeariaId, barbeariaId))
       ).limit(1);
       if (!gp) return res.status(400).json({ error: "Profissional da gorjeta não pertence a esta barbearia" });
+      gorjetaProfNome = gp.apelido || gp.nomeExibicao || agend.profissionalNome;
     }
-    gorjetaVal = { profissionalId: gorjetaProfId, valor: Number(gorjeta.valor) };
+    gorjetaVal = { profissionalId: gorjetaProfId, valor: Number(gorjeta.valor), profissionalNome: gorjetaProfNome };
     valorTotal += gorjetaVal.valor;
   }
   if (params["comissao_zerar_fidelidade"] === "Sim" && agend.clienteId && req.body.resgateId) {
@@ -588,7 +619,12 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
     }
   }
 
-  const comissaoTotal = comissaoServico + comissaoProdutos;
+  servicoItems[0].comissao = comissaoServico;
+  const comissaoTotal = comissaoServico + comissaoServicosAdicionais + comissaoProdutos;
+
+  if (valorTotalOverride != null && !isNaN(Number(valorTotalOverride)) && Number(valorTotalOverride) >= 0) {
+    valorTotal = Number(valorTotalOverride);
+  }
   const now = new Date();
   const mesAno = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
@@ -634,7 +670,7 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
       profissionalId: agend.profissionalId,
       profissionalNome: agend.profissionalNome,
       mesAno,
-      servicos: [{ id: agend.servicoId, nome: agend.servicoNome, valor: valorServico, comissao: comissaoServico }],
+      servicos: servicoItems,
       produtos: prodItems,
       pagamentos: pags,
       gorjeta: gorjetaVal,

@@ -15,7 +15,7 @@ import {
   DollarSign, CreditCard, Smartphone, Banknote, Receipt, TrendingUp,
   Search, ChevronUp, ChevronDown, ChevronsUpDown, Plus,
   Download, FileText, Printer, Columns3, ChevronLeft, ChevronRight,
-  CalendarDays,
+  CalendarDays, RotateCcw, Users, Eye, Percent,
 } from "lucide-react";
 import {
   Select,
@@ -61,9 +61,11 @@ function todayStr() {
 }
 
 export default function Caixa() {
-  const { barbeariaId } = useAuth();
+  const { barbeariaId, role } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
+  const [showComissoes, setShowComissoes] = useState(false);
+  const [detailComanda, setDetailComanda] = useState<any>(null);
   const [dataInicio, setDataInicio] = useState(todayStr());
   const [dataFim, setDataFim] = useState(todayStr());
   const [searchDataInicio, setSearchDataInicio] = useState(todayStr());
@@ -170,6 +172,58 @@ export default function Caixa() {
   const totalTaxas = filtered.reduce((s: number, c: any) => s + (c.taxaCartao || 0), 0);
   const pagTotals: Record<string, number> = {};
   filtered.forEach((c: any) => (c.pagamentos as any[])?.forEach((p: any) => { pagTotals[p.metodo] = (pagTotals[p.metodo] || 0) + p.valor; }));
+
+  const comissoesPorProfissional = useMemo(() => {
+    const map: Record<string, { nome: string; total: number; count: number; gorjetas: number }> = {};
+    filtered.forEach((c: any) => {
+      const comandaProfIds = new Set<string>();
+      if (Array.isArray(c.servicos)) {
+        c.servicos.forEach((s: any) => {
+          const profKey = s.profissionalNome || c.profissionalNome || "Desconhecido";
+          if (!map[profKey]) map[profKey] = { nome: profKey, total: 0, count: 0, gorjetas: 0 };
+          map[profKey].total += s.comissao || 0;
+          comandaProfIds.add(profKey);
+        });
+      } else {
+        const key = c.profissionalNome || "Desconhecido";
+        if (!map[key]) map[key] = { nome: key, total: 0, count: 0, gorjetas: 0 };
+        map[key].total += c.comissaoTotal || 0;
+        comandaProfIds.add(key);
+      }
+      if (Array.isArray(c.produtos)) {
+        c.produtos.forEach((p: any) => {
+          const profKey = c.profissionalNome || "Desconhecido";
+          if (!map[profKey]) map[profKey] = { nome: profKey, total: 0, count: 0, gorjetas: 0 };
+          map[profKey].total += p.comissao || 0;
+        });
+      }
+      comandaProfIds.forEach(pk => { map[pk].count += 1; });
+      if (c.gorjeta?.valor) {
+        const gorjetaProf = c.gorjeta.profissionalNome || c.profissionalNome || "Desconhecido";
+        if (!map[gorjetaProf]) map[gorjetaProf] = { nome: gorjetaProf, total: 0, count: 0, gorjetas: 0 };
+        map[gorjetaProf].gorjetas += c.gorjeta.valor;
+      }
+    });
+    return Object.values(map).sort((a, b) => b.total - a.total);
+  }, [filtered]);
+
+  async function handleReabrir(comandaId: number) {
+    try {
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/comandas/${comandaId}/reabrir`), {
+        method: "PUT",
+        credentials: "include",
+      });
+      if (res.ok) {
+        toast({ title: "Comanda reaberta com sucesso!" });
+        qc.invalidateQueries({ queryKey: ["comandas"] });
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast({ title: err.error || "Erro ao reabrir comanda", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Erro ao reabrir comanda", variant: "destructive" });
+    }
+  }
 
   function toggleSort(key: SortKey) {
     if (sortKey !== key) { setSortKey(key); setSortDir("asc"); }
@@ -410,6 +464,70 @@ export default function Caixa() {
         ))}
       </div>
 
+      {Object.keys(pagTotals).length > 2 && (
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2"><CreditCard className="h-4 w-4" /> Recebimentos por Forma de Pagamento</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {Object.entries(pagTotals).map(([metodo, valor]) => (
+                <div key={metodo} className="flex items-center gap-2 p-3 rounded-lg bg-muted/30">
+                  <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">{METODO_ICON[metodo] || <CreditCard className="h-3.5 w-3.5" />}</div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{METODO_LABEL[metodo] ?? metodo}</p>
+                    <p className="font-semibold text-sm">{formatCurrency(valor)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {comissoesPorProfissional.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2"><Users className="h-4 w-4" /> Comissões por Profissional</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setShowComissoes(!showComissoes)} className="gap-1">
+                {showComissoes ? "Ocultar" : "Expandir"}
+                {showComissoes ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              </Button>
+            </div>
+          </CardHeader>
+          {showComissoes && (
+            <CardContent>
+              <div className="space-y-2">
+                {comissoesPorProfissional.map(prof => (
+                  <div key={prof.nome} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Users className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{prof.nome}</p>
+                        <p className="text-xs text-muted-foreground">{prof.count} comanda{prof.count !== 1 ? "s" : ""}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-green-600">{formatCurrency(prof.total)}</p>
+                      {prof.gorjetas > 0 && (
+                        <p className="text-xs text-muted-foreground">+{formatCurrency(prof.gorjetas)} gorjeta</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between pt-3 border-t border-border">
+                  <span className="text-sm font-medium text-muted-foreground">Total Comissões</span>
+                  <span className="text-lg font-bold text-green-600">{formatCurrency(totalComissoes)}</span>
+                </div>
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      )}
+
       <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -504,6 +622,7 @@ export default function Caixa() {
                       {visibleCols.has("servicos") && (
                         <th className="text-left py-3 px-3 font-medium text-muted-foreground">Serviços</th>
                       )}
+                      <th className="text-center py-3 px-3 font-medium text-muted-foreground w-20">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -560,6 +679,18 @@ export default function Caixa() {
                             {(c.servicos as any[])?.map((s: any) => s.nome).join(", ")}
                           </td>
                         )}
+                        <td className="py-3 px-3 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Ver detalhes" onClick={() => setDetailComanda(c)}>
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                            {(role === "dono" || role === "gerente") && (
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-orange-500 hover:text-orange-700" title="Reabrir" onClick={() => handleReabrir(c.id)}>
+                                <RotateCcw className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -598,6 +729,123 @@ export default function Caixa() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!detailComanda} onOpenChange={v => { if (!v) setDetailComanda(null); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Detalhes da Comanda #{detailComanda?.id}</DialogTitle></DialogHeader>
+          {detailComanda && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Receipt className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-[16px]">{detailComanda.clienteNome}</p>
+                  <p className="text-[13px] text-muted-foreground">
+                    {detailComanda.dataFechamento ? format(new Date(detailComanda.dataFechamento), "dd/MM/yyyy HH:mm") : "—"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground font-medium">Serviços</p>
+                {(detailComanda.servicos as any[])?.map((s: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                    <div>
+                      <p className="text-sm font-medium">{s.nome}</p>
+                      <p className="text-xs text-muted-foreground">Comissão: {formatCurrency(s.comissao || 0)}</p>
+                    </div>
+                    <span className="font-semibold">{formatCurrency(s.valor || 0)}</span>
+                  </div>
+                ))}
+              </div>
+
+              {(detailComanda.produtos as any[])?.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground font-medium">Produtos</p>
+                  {(detailComanda.produtos as any[]).map((p: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                      <div>
+                        <p className="text-sm font-medium">{p.nome}</p>
+                        <p className="text-xs text-muted-foreground">Qtd: {p.quantidade}</p>
+                      </div>
+                      <span className="font-semibold">{formatCurrency((p.valor || 0) * (p.quantidade || 1))}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {detailComanda.gorjeta?.valor > 0 && (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
+                  <span className="text-sm text-green-700 dark:text-green-400">Gorjeta</span>
+                  <span className="font-semibold text-green-700 dark:text-green-400">{formatCurrency(detailComanda.gorjeta.valor)}</span>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground font-medium">Pagamentos</p>
+                {(detailComanda.pagamentos as any[])?.map((p: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                    <div className="flex items-center gap-2">
+                      {METODO_ICON[p.metodo] || <CreditCard className="h-4 w-4" />}
+                      <span className="text-sm">{METODO_LABEL[p.metodo] ?? p.metodo}{p.bandeira ? ` (${p.bandeira})` : ""}</span>
+                    </div>
+                    <span className="font-semibold">{formatCurrency(p.valor || 0)}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-lg bg-muted/30 text-center">
+                  <p className="text-xs text-muted-foreground">Profissional</p>
+                  <p className="text-sm font-medium mt-0.5">{detailComanda.profissionalNome}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/30 text-center">
+                  <p className="text-xs text-muted-foreground">Comissão</p>
+                  <p className="text-sm font-semibold text-green-600 mt-0.5">{formatCurrency(detailComanda.comissaoTotal || 0)}</p>
+                </div>
+              </div>
+
+              {detailComanda.parcelas > 1 && (
+                <div className="p-3 rounded-lg bg-muted/30 text-center">
+                  <p className="text-xs text-muted-foreground">Parcelas</p>
+                  <p className="text-sm font-medium mt-0.5">{detailComanda.parcelas}x de {formatCurrency(detailComanda.valorTotal / detailComanda.parcelas)}</p>
+                </div>
+              )}
+
+              {detailComanda.observacao && (
+                <div className="p-3 rounded-lg bg-muted/30">
+                  <p className="text-xs text-muted-foreground mb-1">Observação</p>
+                  <p className="text-sm">{detailComanda.observacao}</p>
+                </div>
+              )}
+
+              <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Valor Total</span>
+                  <span className="text-xl font-bold text-primary">{formatCurrency(detailComanda.valorTotal || 0)}</span>
+                </div>
+                {detailComanda.valorLiquido != null && (
+                  <div className="flex justify-between items-center mt-1 text-xs text-muted-foreground">
+                    <span>Valor Líquido</span>
+                    <span>{formatCurrency(detailComanda.valorLiquido || 0)}</span>
+                  </div>
+                )}
+              </div>
+
+              {(role === "dono" || role === "gerente") && (
+                <Button
+                  variant="outline"
+                  className="w-full text-orange-600 border-orange-200 hover:bg-orange-50 gap-1.5"
+                  onClick={() => { handleReabrir(detailComanda.id); setDetailComanda(null); }}
+                >
+                  <RotateCcw className="h-4 w-4" /> Reabrir Comanda
+                </Button>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={novaComandaOpen} onOpenChange={setNovaComandaOpen}>
         <DialogContent className="max-w-md">
