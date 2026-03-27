@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable, avaliacoesTable, recompensasTable, produtosTable, profissionalServicosTable, pesquisaSatisfacaoTable, respostasPesquisaTable } from "@workspace/db/schema";
+import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable, avaliacoesTable, recompensasTable, produtosTable, profissionalServicosTable, pesquisaSatisfacaoTable, respostasPesquisaTable, categoriasServicoTable } from "@workspace/db/schema";
 import { eq, and, desc, inArray } from "drizzle-orm";
 import { requireClient } from "../lib/auth.js";
 
@@ -124,9 +124,13 @@ router.get("/:slug", async (req, res) => {
   const showSemPreferencia = pubParams["agenda_sem_preferencia"] !== "Não";
   const showCategorias = pubParams["agenda_categorias_selecao"] === "Sim";
 
-  const categorias = showCategorias
-    ? [...new Set(servicos.map(s => (s as any).categoria).filter(Boolean))]
-    : [];
+  let categorias: { id: number; nome: string; ordem: number }[] = [];
+  if (showCategorias) {
+    const cats = await db.select().from(categoriasServicoTable).where(
+      and(eq(categoriasServicoTable.barbeariaId, barbearia.id), eq(categoriasServicoTable.ativo, true))
+    );
+    categorias = cats.map(c => ({ id: c.id, nome: c.nome, ordem: c.ordem })).sort((a, b) => a.ordem - b.ordem);
+  }
 
   return res.json({
     id: barbearia.id,
@@ -155,13 +159,29 @@ router.get("/:slug", async (req, res) => {
       createdAt: s.createdAt?.toISOString(),
       updatedAt: s.updatedAt?.toISOString(),
     })),
-    profissionais: profissionais.map(p => ({
-      ...p,
-      comissaoValor: parseFloat(p.comissaoValor as string),
-      createdAt: p.createdAt?.toISOString(),
-      updatedAt: p.updatedAt?.toISOString(),
-      servicoIds: linksByProf[p.id] || [],
-    })),
+    profissionais: [
+      ...(showSemPreferencia ? [{
+        id: 0,
+        barbeariaId: barbearia.id,
+        nomeExibicao: "Sem preferência",
+        apelido: "Sem preferência",
+        imagemUrl: null,
+        ativo: true,
+        comissaoValor: 0,
+        createdAt: null,
+        updatedAt: null,
+        servicoIds: servicos.map(s => s.id),
+        semPreferencia: true,
+      }] : []),
+      ...profissionais.map(p => ({
+        ...p,
+        comissaoValor: parseFloat(p.comissaoValor as string),
+        createdAt: p.createdAt?.toISOString(),
+        updatedAt: p.updatedAt?.toISOString(),
+        servicoIds: linksByProf[p.id] || [],
+        semPreferencia: false,
+      })),
+    ],
     avaliacoes: avaliacoes.map(a => ({
       id: a.id,
       clienteNome: a.clienteNome,
