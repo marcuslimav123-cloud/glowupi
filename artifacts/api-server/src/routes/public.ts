@@ -382,10 +382,10 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
     const duracaoFinal = servico.duracaoMinutos || tempoPadrao;
     const horaFim = addMinutes(horaInicio, duracaoFinal);
 
-    if (paramHoraInicio && horaInicio < paramHoraInicio) {
+    if (paramHoraInicio && timeToMinutes(horaInicio) < timeToMinutes(paramHoraInicio)) {
       return res.status(400).json({ error: `Horário antes do início permitido (${paramHoraInicio})` });
     }
-    if (paramHoraFim && horaFim > paramHoraFim) {
+    if (paramHoraFim && timeToMinutes(horaFim) > timeToMinutes(paramHoraFim)) {
       return res.status(400).json({ error: `Horário após o fim permitido (${paramHoraFim})` });
     }
 

@@ -14,6 +14,11 @@ import { sendEmail } from "../lib/brevo.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
+function timeToMinutes(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
 async function calcPontosFromPagamentos(barbeariaId: number, pagamentos: any[], valorTotal: number): Promise<number> {
   const formasPagamento = await db.select().from(tiposTable).where(
     and(eq(tiposTable.barbeariaId, barbeariaId), eq(tiposTable.categoria, "forma_pagamento"))
@@ -194,10 +199,10 @@ router.post("/", requireAuth, async (req, res) => {
   }
   const paramHoraInicio = params["agenda_horario_inicio"];
   const paramHoraFim = params["agenda_horario_fim"];
-  if (paramHoraInicio && horaInicio < paramHoraInicio) {
+  if (paramHoraInicio && timeToMinutes(horaInicio) < timeToMinutes(paramHoraInicio)) {
     return res.status(400).json({ error: `Horário antes do início permitido (${paramHoraInicio})` });
   }
-  if (paramHoraFim && horaFim > paramHoraFim) {
+  if (paramHoraFim && timeToMinutes(horaFim) > timeToMinutes(paramHoraFim)) {
     return res.status(400).json({ error: `Horário após o fim permitido (${paramHoraFim})` });
   }
 
