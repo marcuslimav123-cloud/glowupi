@@ -28,6 +28,21 @@ router.post("/", requireAuth, requireRole("dono", "gerente"), async (req: any, r
 
   const params = await getParametros(barbeariaId);
 
+  if (params["fidelidade_desativar"] === "Sim") {
+    return res.status(400).json({ error: "Programa de fidelidade está desativado" });
+  }
+
+  const diasExpiracao = parseInt(params["fidelidade_expiracao_pontos"] || "365");
+  if (diasExpiracao > 0 && cliente.ultimaVisita) {
+    const ultimaVisitaDate = new Date(cliente.ultimaVisita);
+    const agora = new Date();
+    const diffDias = Math.ceil((agora.getTime() - ultimaVisitaDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDias > diasExpiracao) {
+      await db.update(clientesTable).set({ pontosFidelidade: 0 }).where(eq(clientesTable.id, clienteId));
+      return res.status(400).json({ error: `Pontos expirados. Os pontos vencem após ${diasExpiracao} dias sem visita.` });
+    }
+  }
+
   await db.update(clientesTable).set({ pontosFidelidade: cliente.pontosFidelidade - pontosUsados }).where(eq(clientesTable.id, clienteId));
   const [resgate] = await db.insert(resgatesTable).values({
     barbeariaId, clienteId, clienteNome, recompensaId, recompensaNome, pontosUsados

@@ -6,12 +6,81 @@ import {
   bloqueiosHorarioTable, profissionalServicosTable,
   tiposTable, contasProfissionalTable, pesquisaSatisfacaoTable,
   respostasPesquisaTable, pacotesTable, pacotesClienteTable,
-  assinantesTable, resgatesTable
+  assinantesTable, resgatesTable, usersTable
 } from "@workspace/db/schema";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, or, inArray } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
 import { sendEmail } from "../lib/brevo.js";
+
+async function notificarAgendamento(barbeariaId: number, params: Record<string, string>, agendData: { clienteNome: string; clienteTelefone?: string; profissionalNome: string; servicoNome: string; data: string; horaInicio: string; clienteId?: number | null }, tipo: "criado" | "cancelado") {
+  try {
+    if ((params["notif_mensagem_agendar_cancelar"] || "Habilitado") !== "Habilitado") return;
+    const [barb] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
+    const nomeEstab = barb?.nome || "Glow Up";
+    const assunto = tipo === "criado"
+      ? `${nomeEstab} — Agendamento Confirmado`
+      : `${nomeEstab} — Agendamento Cancelado`;
+    const mensagem = tipo === "criado"
+      ? `Seu agendamento de <strong>${agendData.servicoNome}</strong> com <strong>${agendData.profissionalNome}</strong> em ${agendData.data} às ${agendData.horaInicio} foi confirmado.`
+      : `Seu agendamento de <strong>${agendData.servicoNome}</strong> com <strong>${agendData.profissionalNome}</strong> em ${agendData.data} às ${agendData.horaInicio} foi cancelado.`;
+
+    if (tipo === "criado" && params["notif_nao_enviar_confirmacao"] === "Sim") {
+    } else if (agendData.clienteId) {
+      const [cliente] = await db.select().from(clientesTable).where(eq(clientesTable.id, agendData.clienteId)).limit(1);
+      if (cliente?.email) {
+        const incluirLink = (params["notif_link_confirmacao"] || "Sim") === "Sim";
+        const tempoLembrete = params["notif_tempo_lembrete"] || "24";
+        let rodape = "";
+        if (tipo === "criado" && incluirLink) {
+          rodape = `<p style="margin-top:16px;font-size:13px;color:rgba(0,0,0,0.5);">Link de confirmação disponível</p>`;
+        }
+        if (tipo === "criado") {
+          rodape += `<p style="font-size:12px;color:rgba(0,0,0,0.4);">Lembrete: ${tempoLembrete}h antes do horário</p>`;
+        }
+        const usaSms = params["notif_lembrete_sms"] === "Sim";
+        const usaWhatsapp = params["notif_lembrete_whatsapp"] === "Sim";
+        let canaisLembrete = "";
+        if (usaSms || usaWhatsapp) {
+          const canais = [usaSms ? "SMS" : "", usaWhatsapp ? "WhatsApp" : ""].filter(Boolean).join(" e ");
+          canaisLembrete = `<p style="font-size:12px;color:rgba(0,0,0,0.4);">Lembrete também via: ${canais}</p>`;
+        }
+        await sendEmail({
+          to: [{ email: cliente.email, name: agendData.clienteNome }],
+          subject: assunto,
+          htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>${mensagem}</p>${rodape}${canaisLembrete}</div>`,
+        });
+      }
+    }
+
+    if ((params["notif_mensagem_gestores"] || "Habilitado") === "Habilitado") {
+      const gestores = await db.select().from(usersTable).where(
+        and(
+          eq(usersTable.barbeariaId, barbeariaId),
+          or(eq(usersTable.role, "gerente"))
+        )
+      );
+      const donoUsers = await db.select().from(usersTable).where(eq(usersTable.role, "dono"));
+      const donosDaBarbearia = donoUsers.filter(u => !u.barbeariaId);
+      const allGestores = [...gestores];
+      for (const d of donosDaBarbearia) {
+        const [b] = await db.select({ id: barbeariasTable.id }).from(barbeariasTable).where(eq(barbeariasTable.donoId, d.id)).limit(1);
+        if (b?.id === barbeariaId) allGestores.push(d);
+      }
+      for (const g of allGestores) {
+        if (g.email) {
+          await sendEmail({
+            to: [{ email: g.email, name: g.name || "Gestor" }],
+            subject: `${nomeEstab} — Agendamento ${tipo === "criado" ? "criado" : "cancelado"}: ${agendData.clienteNome}`,
+            htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>${mensagem}</p><p style="color:rgba(0,0,0,0.5);font-size:12px;">Notificação automática para gestores</p></div>`,
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.error(`[Notif] Erro ao notificar agendamento ${tipo}:`, err);
+  }
+}
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -88,7 +157,7 @@ router.post("/", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const user = (req as any).user;
-  const { clienteId, clienteNome, clienteTelefone, profissionalId, servicoId, data, horaInicio, semPreferencia, observacao, encaixe } = req.body;
+  const { clienteId, clienteNome, clienteTelefone, profissionalId, servicoId, data, horaInicio, semPreferencia, observacao, encaixe, origem } = req.body;
   if (!clienteNome || !clienteTelefone || !profissionalId || !servicoId || !data || !horaInicio) {
     return res.status(400).json({ error: "Dados inválidos" });
   }
@@ -257,7 +326,14 @@ router.post("/", requireAuth, async (req, res) => {
     vip: false,
     encaixe: encaixe ?? false,
     pacoteClienteId: pacoteClienteAssociado,
+    origem: origem || "manual",
   }).returning();
+
+  notificarAgendamento(barbeariaId, params, {
+    clienteNome, clienteTelefone, clienteId,
+    profissionalNome: profissional.apelido || profissional.nomeExibicao,
+    servicoNome: servico.nome, data, horaInicio,
+  }, "criado");
 
   return res.status(201).json({ ...formatAgend(agend), pacoteClienteId: pacoteClienteAssociado });
 });
@@ -350,6 +426,17 @@ router.delete("/:agendamentoId", requireAuth, async (req, res) => {
   }
 
   await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId)));
+
+  notificarAgendamento(barbeariaId, params, {
+    clienteNome: agend.clienteNome,
+    clienteTelefone: agend.clienteTelefone || undefined,
+    clienteId: agend.clienteId,
+    profissionalNome: agend.profissionalNome,
+    servicoNome: agend.servicoNome,
+    data: agend.data,
+    horaInicio: agend.horaInicio,
+  }, "cancelado");
+
   return res.json({ success: true, message: "Agendamento cancelado" });
 });
 
@@ -563,7 +650,16 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
     if (agend.clienteId) {
       const [cli] = await tx.select().from(clientesTable).where(eq(clientesTable.id, agend.clienteId)).limit(1);
       if (cli) {
-        const pontos = await calcPontosFromPagamentos(barbeariaId, pags, valorTotal);
+        let pontos = 0;
+        const fidelidadeAtiva = params["fidelidade_desativar"] !== "Sim";
+        if (fidelidadeAtiva) {
+          const apenasAppSite = params["fidelidade_pontos_app_site"] === "Sim";
+          const origemAgend = agend.origem;
+          const isAppSite = origemAgend === "app" || origemAgend === "site";
+          if (!apenasAppSite || isAppSite) {
+            pontos = await calcPontosFromPagamentos(barbeariaId, pags, valorTotal);
+          }
+        }
         await tx.update(clientesTable).set({
           totalGasto: String(parseFloat(cli.totalGasto as string) + valorTotal),
           pontosFidelidade: cli.pontosFidelidade + pontos,

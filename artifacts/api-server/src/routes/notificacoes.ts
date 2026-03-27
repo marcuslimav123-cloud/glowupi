@@ -1,14 +1,43 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { clientesTable, mensagensTable, solicitacoesCadastroTable, usersTable } from "@workspace/db/schema";
+import { clientesTable, mensagensTable, solicitacoesCadastroTable, usersTable, pacotesClienteTable, pacotesTable, barbeariasTable } from "@workspace/db/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
+import { getParametros } from "../lib/parametros.js";
+import { sendEmail } from "../lib/brevo.js";
 
 const router: IRouter = Router({ mergeParams: true });
+
+router.get("/config", requireAuth, async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const params = await getParametros(barbeariaId);
+  return res.json({
+    notif_mensagem_agendar_cancelar: params["notif_mensagem_agendar_cancelar"] || "Habilitado",
+    notif_nao_enviar_confirmacao: params["notif_nao_enviar_confirmacao"] || "Não",
+    notif_tempo_lembrete: params["notif_tempo_lembrete"] || "24",
+    notif_lembrete_sms: params["notif_lembrete_sms"] || "Não",
+    notif_lembrete_whatsapp: params["notif_lembrete_whatsapp"] || "Não",
+    notif_link_confirmacao: params["notif_link_confirmacao"] || "Sim",
+    notif_mensagem_gestores: params["notif_mensagem_gestores"] || "Habilitado",
+    notif_aniversario_app: params["notif_aniversario_app"] || "Não",
+    notif_aniversario_email: params["notif_aniversario_email"] || "Não",
+    notif_aniversario_sms: params["notif_aniversario_sms"] || "Não",
+    notif_aniversario_whatsapp: params["notif_aniversario_whatsapp"] || "Não",
+    notif_retorno_sms: params["notif_retorno_sms"] || "Não",
+    notif_retorno_whatsapp: params["notif_retorno_whatsapp"] || "Não",
+    notif_avaliacao_whatsapp: params["notif_avaliacao_whatsapp"] || "Não",
+    notif_pacote_expirando: params["notif_pacote_expirando"] || "Sim",
+    fidelidade_desativar: params["fidelidade_desativar"] || "Não",
+    fidelidade_expiracao_pontos: params["fidelidade_expiracao_pontos"] || "365",
+    fidelidade_pontos_app_site: params["fidelidade_pontos_app_site"] || "Não",
+  });
+});
 
 router.get("/aniversariantes", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const params = await getParametros(barbeariaId);
   const hoje = new Date();
   const mesAtual = String(hoje.getMonth() + 1).padStart(2, "0");
   const diaAtual = String(hoje.getDate()).padStart(2, "0");
@@ -38,9 +67,17 @@ router.get("/aniversariantes", requireAuth, async (req, res) => {
     });
   }
 
+  const canais = {
+    app: params["notif_aniversario_app"] === "Sim",
+    email: params["notif_aniversario_email"] === "Sim",
+    sms: params["notif_aniversario_sms"] === "Sim",
+    whatsapp: params["notif_aniversario_whatsapp"] === "Sim",
+  };
+
   return res.json({
     hoje: aniversariantes.map(c => ({ id: c.id, nome: c.nome, telefone: c.telefone, aniversario: c.aniversario })),
     semana: proximos7dias.map(c => ({ id: c.id, nome: c.nome, telefone: c.telefone, aniversario: c.aniversario })),
+    canais,
   });
 });
 
@@ -106,6 +143,113 @@ router.put("/solicitacoes/:id", requireAuth, async (req, res) => {
     .where(eq(solicitacoesCadastroTable.id, id))
     .returning();
   return res.json({ ...updated, createdAt: updated.createdAt.toISOString(), updatedAt: updated.updatedAt.toISOString() });
+});
+
+router.get("/pacotes-expirando", requireAuth, async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const params = await getParametros(barbeariaId);
+  if ((params["notif_pacote_expirando"] || "Sim") !== "Sim") {
+    return res.json([]);
+  }
+  const ativos = await db.select().from(pacotesClienteTable).where(
+    and(eq(pacotesClienteTable.barbeariaId, barbeariaId), eq(pacotesClienteTable.status, "ativo"))
+  );
+  const hoje = new Date();
+  const diasAlerta = 7;
+  const expirando = ativos.filter(pc => {
+    if (!pc.dataValidade) return false;
+    const validade = new Date(pc.dataValidade);
+    const diffDias = Math.ceil((validade.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+    return diffDias >= 0 && diffDias <= diasAlerta;
+  });
+  const pacotes = await db.select().from(pacotesTable).where(eq(pacotesTable.barbeariaId, barbeariaId));
+  const pacoteMap = Object.fromEntries(pacotes.map(p => [p.id, p.nome]));
+  return res.json(expirando.map(pc => ({
+    id: pc.id,
+    clienteNome: pc.clienteNome,
+    clienteId: pc.clienteId,
+    pacoteNome: pacoteMap[pc.pacoteId] || "",
+    dataValidade: pc.dataValidade?.toISOString?.() ?? pc.dataValidade,
+    sessoesUsadas: pc.sessoesUsadas,
+    sessoesTotal: pc.sessoesTotal,
+  })));
+});
+
+router.post("/aniversario/enviar", requireAuth, async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const params = await getParametros(barbeariaId);
+  const { clienteId, canal } = req.body;
+  if (!clienteId || !canal) return res.status(400).json({ error: "clienteId e canal são obrigatórios" });
+
+  const [cliente] = await db.select().from(clientesTable).where(
+    and(eq(clientesTable.id, clienteId), eq(clientesTable.barbeariaId, barbeariaId))
+  ).limit(1);
+  if (!cliente) return res.status(404).json({ error: "Cliente não encontrado" });
+
+  const [barb] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
+  const nomeEstab = barb?.nome || "Glow Up";
+
+  if (canal === "email") {
+    if (params["notif_aniversario_email"] !== "Sim") {
+      return res.status(400).json({ error: "Envio de aniversário por email está desabilitado" });
+    }
+    if (!cliente.email) return res.status(400).json({ error: "Cliente não possui email cadastrado" });
+    await sendEmail({
+      to: [{ email: cliente.email, name: cliente.nome }],
+      subject: `${nomeEstab} — Feliz Aniversário! 🎂`,
+      htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>Feliz aniversário, <strong>${cliente.nome}</strong>! Desejamos a você um dia maravilhoso.</p></div>`,
+    });
+    return res.json({ success: true, canal: "email" });
+  }
+
+  if (canal === "sms") {
+    if (params["notif_aniversario_sms"] !== "Sim") {
+      return res.status(400).json({ error: "Envio de aniversário por SMS está desabilitado" });
+    }
+    return res.json({ success: true, canal: "sms", message: "SMS preparado (serviço externo não configurado)" });
+  }
+
+  if (canal === "whatsapp") {
+    if (params["notif_aniversario_whatsapp"] !== "Sim") {
+      return res.status(400).json({ error: "Envio de aniversário por WhatsApp está desabilitado" });
+    }
+    return res.json({ success: true, canal: "whatsapp", message: "WhatsApp preparado (serviço externo não configurado)" });
+  }
+
+  if (canal === "app") {
+    if (params["notif_aniversario_app"] !== "Sim") {
+      return res.status(400).json({ error: "Notificação de aniversário no app está desabilitada" });
+    }
+    return res.json({ success: true, canal: "app", message: "Notificação registrada" });
+  }
+
+  return res.status(400).json({ error: "Canal inválido. Use: email, sms, whatsapp ou app" });
+});
+
+router.post("/retorno/enviar", requireAuth, async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const params = await getParametros(barbeariaId);
+  const { clienteId, canal } = req.body;
+  if (!clienteId || !canal) return res.status(400).json({ error: "clienteId e canal são obrigatórios" });
+
+  if (canal === "sms") {
+    if (params["notif_retorno_sms"] !== "Sim") {
+      return res.status(400).json({ error: "Envio de retorno por SMS está desabilitado" });
+    }
+    return res.json({ success: true, canal: "sms", message: "SMS de retorno preparado (serviço externo não configurado)" });
+  }
+
+  if (canal === "whatsapp") {
+    if (params["notif_retorno_whatsapp"] !== "Sim") {
+      return res.status(400).json({ error: "Envio de retorno por WhatsApp está desabilitado" });
+    }
+    return res.json({ success: true, canal: "whatsapp", message: "WhatsApp de retorno preparado (serviço externo não configurado)" });
+  }
+
+  return res.status(400).json({ error: "Canal inválido para retorno. Use: sms ou whatsapp" });
 });
 
 export default router;

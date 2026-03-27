@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { recompensasTable, resgatesTable, clientesTable, barbeariasTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
+import { getParametros } from "../lib/parametros.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -13,6 +14,10 @@ function formatRecompensa(r: any) {
 router.get("/", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const params = await getParametros(barbeariaId);
+  if (params["fidelidade_desativar"] === "Sim") {
+    return res.json([]);
+  }
   const recompensas = await db.select().from(recompensasTable).where(eq(recompensasTable.barbeariaId, barbeariaId));
   res.json(recompensas.map(formatRecompensa));
 });

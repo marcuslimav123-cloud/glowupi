@@ -28,6 +28,7 @@ export const agendamentosTable = pgTable("agendamentos", {
   vip: boolean("vip").notNull().default(false),
   encaixe: boolean("encaixe").notNull().default(false),
   pacoteClienteId: integer("pacote_cliente_id"),
+  origem: text("origem").default("manual"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
