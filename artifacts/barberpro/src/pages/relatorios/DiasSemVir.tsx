@@ -20,14 +20,21 @@ export default function DiasSemVir() {
   const { barbeariaId } = useAuth();
   const [dias, setDias] = useState("30");
   const [searchDias, setSearchDias] = useState("30");
+  const [dataInicio, setDataInicio] = useState("");
+  const [dataFim, setDataFim] = useState("");
+  const [searchDataInicio, setSearchDataInicio] = useState("");
+  const [searchDataFim, setSearchDataFim] = useState("");
   const [busca, setBusca] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
   const { data = [], isLoading } = useQuery<any[]>({
-    queryKey: ["dias-sem-vir", barbeariaId, searchDias],
+    queryKey: ["dias-sem-vir", barbeariaId, searchDias, searchDataInicio, searchDataFim],
     queryFn: async () => {
-      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/relatorios/dias-sem-vir?dias=${searchDias}`), { credentials: "include" });
+      const params = new URLSearchParams({ dias: searchDias });
+      if (searchDataInicio) params.set("dataInicio", searchDataInicio);
+      if (searchDataFim) params.set("dataFim", searchDataFim);
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/relatorios/dias-sem-vir?${params}`), { credentials: "include" });
       if (!res.ok) throw new Error("Erro");
       return res.json();
     },
@@ -69,7 +76,15 @@ export default function DiasSemVir() {
               <Label className="text-xs">Dias sem agendar (mínimo)</Label>
               <Input type="number" value={dias} onChange={e => setDias(e.target.value)} className="w-32" min="1" />
             </div>
-            <Button onClick={() => { setSearchDias(dias); setPage(1); }} size="sm" className="bg-blue-600 hover:bg-blue-700">
+            <div className="space-y-1">
+              <Label className="text-xs">Cadastrado de</Label>
+              <Input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} className="w-40" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Até</Label>
+              <Input type="date" value={dataFim} onChange={e => setDataFim(e.target.value)} className="w-40" />
+            </div>
+            <Button onClick={() => { setSearchDias(dias); setSearchDataInicio(dataInicio); setSearchDataFim(dataFim); setPage(1); }} size="sm" className="bg-blue-600 hover:bg-blue-700">
               <Search className="h-4 w-4 mr-1.5" /> Pesquisar
             </Button>
             <div className="flex-1" />

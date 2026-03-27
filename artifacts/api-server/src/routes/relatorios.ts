@@ -364,8 +364,14 @@ router.get("/dias-sem-vir", requireAuth, requireRole("dono", "gerente"), async (
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const diasMinimo = parseInt(req.query.dias as string) || 30;
+  const dataInicio = req.query.dataInicio as string | undefined;
+  const dataFim = req.query.dataFim as string | undefined;
 
-  const clientes = await db.select().from(clientesTable).where(eq(clientesTable.barbeariaId, barbeariaId));
+  const clienteConditions = [eq(clientesTable.barbeariaId, barbeariaId)];
+  if (dataInicio) clienteConditions.push(sql`DATE(${clientesTable.createdAt}) >= ${dataInicio}`);
+  if (dataFim) clienteConditions.push(sql`DATE(${clientesTable.createdAt}) <= ${dataFim}`);
+
+  const clientes = await db.select().from(clientesTable).where(and(...clienteConditions));
   const agendamentos = await db.select({
     clienteId: agendamentosTable.clienteId,
     data: agendamentosTable.data,
@@ -424,15 +430,16 @@ router.get("/lucro-produtos", requireAuth, requireRole("dono", "gerente"), async
       if (!p.nome) return;
       if (!vendas[p.nome]) vendas[p.nome] = { nome: p.nome, qtd: 0, receita: 0, custo: 0, comissao: 0 };
       const qty = p.quantidade ?? 1;
-      const itemValor = Number(p.valor) || 0;
+      const unitPrice = Number(p.valor) || 0;
+      const lineTotal = unitPrice * qty;
       vendas[p.nome].qtd += qty;
-      vendas[p.nome].receita += itemValor;
+      vendas[p.nome].receita += lineTotal;
       const info = produtoMap[p.nome];
       if (info) {
         vendas[p.nome].custo += info.custo * qty;
       }
       if (valorTotal > 0 && comissaoTotal > 0) {
-        vendas[p.nome].comissao += (itemValor / valorTotal) * comissaoTotal;
+        vendas[p.nome].comissao += (lineTotal / valorTotal) * comissaoTotal;
       }
     });
   });
