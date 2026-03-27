@@ -47,6 +47,8 @@ const ALL_COLUMNS = [
   { key: "pagamentos", label: "Cartão" },
   { key: "dataFechamento", label: "Data" },
   { key: "valorTotal", label: "Valor" },
+  { key: "gorjeta", label: "Gorjeta" },
+  { key: "taxaCartao", label: "Taxa" },
   { key: "clienteNome", label: "Cliente" },
   { key: "observacao", label: "Obs" },
   { key: "cadastradoPor", label: "Cadastrou" },
@@ -92,6 +94,19 @@ export default function Caixa() {
     },
     enabled: !!barbeariaId,
   });
+
+  const { data: tipos = [] } = useQuery<any[]>({
+    queryKey: ["tipos-caixa", barbeariaId],
+    queryFn: async () => {
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/tipos`), { credentials: "include" });
+      return res.ok ? res.json() : [];
+    },
+    enabled: !!barbeariaId,
+  });
+
+  const bandeiras = tipos.filter((t: any) => t.categoria === "bandeira" && t.ativo);
+  const [selectedMetodo, setSelectedMetodo] = useState("pix");
+  const [selectedBandeira, setSelectedBandeira] = useState("");
 
   const { data: comandas = [], isLoading } = useQuery<any[]>({
     queryKey: ["comandas", barbeariaId, searchDataInicio, searchDataFim],
@@ -151,6 +166,8 @@ export default function Caixa() {
 
   const totalBruto = filtered.reduce((s: number, c: any) => s + c.valorTotal, 0);
   const totalComissoes = filtered.reduce((s: number, c: any) => s + c.comissaoTotal, 0);
+  const totalGorjetas = filtered.reduce((s: number, c: any) => s + (c.gorjeta?.valor || 0), 0);
+  const totalTaxas = filtered.reduce((s: number, c: any) => s + (c.taxaCartao || 0), 0);
   const pagTotals: Record<string, number> = {};
   filtered.forEach((c: any) => (c.pagamentos as any[])?.forEach((p: any) => { pagTotals[p.metodo] = (pagTotals[p.metodo] || 0) + p.valor; }));
 
@@ -231,7 +248,7 @@ export default function Caixa() {
       const servicoId = parseInt(fd.get("servicoId") as string);
       const clienteNome = fd.get("clienteNome") as string;
       const clienteTelefone = fd.get("clienteTelefone") as string;
-      const metodo = fd.get("metodo") as string;
+      const metodo = selectedMetodo;
       const agendRes = await fetch(apiUrl(`/barbearias/${barbeariaId}/agendamentos`), {
         method: "POST",
         credentials: "include",
@@ -250,13 +267,19 @@ export default function Caixa() {
       const agend = await agendRes.json();
       const servico = servicos.find((s: any) => s.id === servicoId);
       const valor = servico ? parseFloat(servico.preco) : 0;
+      const gorjetaValor = parseFloat(fd.get("gorjeta") as string) || 0;
+      const pagamento: Record<string, any> = { metodo, valor };
+      if ((metodo === "credito" || metodo === "debito") && selectedBandeira) {
+        pagamento.bandeira = selectedBandeira;
+      }
       const checkoutRes = await fetch(apiUrl(`/barbearias/${barbeariaId}/agendamentos/${agend.id}/checkout`), {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          pagamentos: [{ metodo, valor }],
+          pagamentos: [pagamento],
           observacao: fd.get("observacao") as string || null,
+          gorjeta: gorjetaValor > 0 ? { valor: gorjetaValor, profissionalId } : null,
         }),
       });
       if (!checkoutRes.ok) throw new Error("Erro ao fechar comanda");
@@ -362,7 +385,13 @@ export default function Caixa() {
               <div className="h-9 w-9 rounded-lg bg-green-500/10 flex items-center justify-center"><TrendingUp className="h-5 w-5 text-green-400" /></div>
               <span className="text-sm text-muted-foreground">Líquido</span>
             </div>
-            <p className="text-2xl font-bold text-green-400">{formatCurrency(totalBruto - totalComissoes)}</p>
+            <p className="text-2xl font-bold text-green-400">{formatCurrency(totalBruto - totalComissoes - totalTaxas)}</p>
+            {(totalGorjetas > 0 || totalTaxas > 0) && (
+              <div className="flex gap-3 mt-1 text-xs">
+                {totalGorjetas > 0 && <span className="text-green-500">Gorjetas: {formatCurrency(totalGorjetas)}</span>}
+                {totalTaxas > 0 && <span className="text-red-400">Taxas: -{formatCurrency(totalTaxas)}</span>}
+              </div>
+            )}
           </CardContent>
         </Card>
         {Object.entries(pagTotals).slice(0, 2).map(([metodo, valor]) => (
@@ -445,6 +474,12 @@ export default function Caixa() {
                           <span className="inline-flex items-center gap-1">Valor <SortIcon col="valorTotal" /></span>
                         </th>
                       )}
+                      {visibleCols.has("gorjeta") && (
+                        <th className="text-left py-3 px-3 font-medium text-muted-foreground">Gorjeta</th>
+                      )}
+                      {visibleCols.has("taxaCartao") && (
+                        <th className="text-left py-3 px-3 font-medium text-muted-foreground">Taxa</th>
+                      )}
                       {visibleCols.has("clienteNome") && (
                         <th className="text-left py-3 px-3 font-medium text-muted-foreground cursor-pointer select-none" onClick={() => toggleSort("clienteNome")}>
                           <span className="inline-flex items-center gap-1">Cliente <SortIcon col="clienteNome" /></span>
@@ -492,6 +527,16 @@ export default function Caixa() {
                         )}
                         {visibleCols.has("valorTotal") && (
                           <td className="py-3 px-3 font-semibold text-primary">{formatCurrency(c.valorTotal)}</td>
+                        )}
+                        {visibleCols.has("gorjeta") && (
+                          <td className="py-3 px-3 text-xs text-green-600">
+                            {c.gorjeta?.valor ? formatCurrency(c.gorjeta.valor) : "—"}
+                          </td>
+                        )}
+                        {visibleCols.has("taxaCartao") && (
+                          <td className="py-3 px-3 text-xs text-red-500">
+                            {c.taxaCartao ? `-${formatCurrency(c.taxaCartao)}` : "—"}
+                          </td>
                         )}
                         {visibleCols.has("clienteNome") && (
                           <td className="py-3 px-3">{c.clienteNome}</td>
@@ -583,12 +628,36 @@ export default function Caixa() {
             </div>
             <div>
               <Label>Forma de Pagamento *</Label>
-              <select name="metodo" required className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
+              <select
+                value={selectedMetodo}
+                onChange={e => { setSelectedMetodo(e.target.value); setSelectedBandeira(""); }}
+                required
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              >
                 <option value="pix">PIX</option>
                 <option value="dinheiro">Dinheiro</option>
                 <option value="credito">Crédito</option>
                 <option value="debito">Débito</option>
               </select>
+            </div>
+            {(selectedMetodo === "credito" || selectedMetodo === "debito") && bandeiras.length > 0 && (
+              <div>
+                <Label>Bandeira</Label>
+                <select
+                  value={selectedBandeira}
+                  onChange={e => setSelectedBandeira(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Selecione a bandeira...</option>
+                  {bandeiras.map((b: any) => (
+                    <option key={b.id} value={b.nome}>{b.nome}{b.taxaOperadora ? ` (${b.taxaOperadora}%)` : ""}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div>
+              <Label>Gorjeta (R$)</Label>
+              <Input name="gorjeta" type="number" step="0.01" min="0" placeholder="0,00 (opcional)" />
             </div>
             <div>
               <Label>Observação</Label>

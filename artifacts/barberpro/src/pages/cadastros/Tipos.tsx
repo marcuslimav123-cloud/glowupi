@@ -7,11 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Trash2, Tag, Settings, Wrench } from "lucide-react";
+import { Plus, Edit2, Trash2, Tag, Settings, Wrench, CreditCard } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type TabKey = "categoria_servico" | "categoria_profissional" | "categoria_produto" | "forma_pagamento" | "tipo_despesa" | "tipo_receita" | "subconta" | "equipamento" | "fornecedor" | "anamnese" | "bandeira" | "remuneracao" | "deducao";
 
@@ -48,6 +55,13 @@ export default function Tipos() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
 
+  const [formIsCartao, setFormIsCartao] = useState(false);
+  const [formMultPontos, setFormMultPontos] = useState("");
+  const [formTaxaOp, setFormTaxaOp] = useState("");
+  const [formTipoBandeira, setFormTipoBandeira] = useState("");
+  const [formDiasReceb, setFormDiasReceb] = useState("");
+  const [formDiasUteis, setFormDiasUteis] = useState(false);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const cat = params.get("cat");
@@ -60,6 +74,8 @@ export default function Tipos() {
   }, [window.location.search]);
 
   const isEquipamento = tab === "equipamento";
+  const isFormaPagamento = tab === "forma_pagamento";
+  const isBandeira = tab === "bandeira";
   const tiposPath = `/barbearias/${barbeariaId}/tipos`;
   const equipPath = `/barbearias/${barbeariaId}/equipamentos`;
 
@@ -77,6 +93,15 @@ export default function Tipos() {
     : (tipos as any[]).filter(t => t.categoria === tab);
   const isLoading = isEquipamento ? equipLoading : tiposLoading;
 
+  function resetFormExtras(item?: any) {
+    setFormIsCartao(item?.isCartao ?? false);
+    setFormMultPontos(item?.multiplicadorPontos ?? "");
+    setFormTaxaOp(item?.taxaOperadora ?? "");
+    setFormTipoBandeira(item?.tipoBandeira ?? "");
+    setFormDiasReceb(item?.diasRecebimento != null ? String(item.diasRecebimento) : "");
+    setFormDiasUteis(item?.diasUteis ?? false);
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
@@ -84,7 +109,21 @@ export default function Tipos() {
       if (isEquipamento) {
         await handleEquipSubmit(fd);
       } else {
-        const data = { categoria: tab, nome: fd.get("nome") as string, descricao: fd.get("descricao") as string };
+        const data: Record<string, any> = {
+          categoria: tab,
+          nome: fd.get("nome") as string,
+          descricao: fd.get("descricao") as string,
+        };
+        if (isFormaPagamento) {
+          data.isCartao = formIsCartao;
+          data.multiplicadorPontos = formMultPontos ? Number(formMultPontos) : null;
+        }
+        if (isBandeira) {
+          data.taxaOperadora = formTaxaOp ? Number(formTaxaOp) : null;
+          data.tipoBandeira = formTipoBandeira || null;
+          data.diasRecebimento = formDiasReceb ? Number(formDiasReceb) : null;
+          data.diasUteis = formDiasUteis;
+        }
         if (editing) {
           await updateTipo.mutateAsync({ id: editing.id, ...data });
           toast({ title: "Tipo atualizado" });
@@ -160,6 +199,16 @@ export default function Tipos() {
   function openNew() {
     setEditing(null);
     setEquipSelectedServices([]);
+    resetFormExtras();
+    setDialogOpen(true);
+  }
+
+  function openEdit(item: any) {
+    setEditing(item);
+    resetFormExtras(item);
+    if (isEquipamento) {
+      setEquipSelectedServices((item.servicosIds as number[]) || []);
+    }
     setDialogOpen(true);
   }
 
@@ -167,6 +216,31 @@ export default function Tipos() {
     setEquipSelectedServices(prev =>
       prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
     );
+  }
+
+  function renderItemBadges(item: any) {
+    if (isFormaPagamento) {
+      return (
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
+          {item.isCartao && <Badge variant="outline" className="text-xs gap-1"><CreditCard className="h-3 w-3" />Cartão</Badge>}
+          {item.multiplicadorPontos && <Badge variant="outline" className="text-xs">Pontos x{item.multiplicadorPontos}</Badge>}
+        </div>
+      );
+    }
+    if (isBandeira) {
+      return (
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
+          {item.tipoBandeira && <Badge variant="outline" className="text-xs">{item.tipoBandeira}</Badge>}
+          {item.taxaOperadora && <Badge variant="outline" className="text-xs">Taxa: {item.taxaOperadora}%</Badge>}
+          {item.diasRecebimento != null && (
+            <Badge variant="outline" className="text-xs">
+              Receb: {item.diasRecebimento} {item.diasUteis ? "dias úteis" : "dias"}
+            </Badge>
+          )}
+        </div>
+      );
+    }
+    return null;
   }
 
   return (
@@ -229,14 +303,15 @@ export default function Tipos() {
           {filtered.map((item: any) => (
             <div key={item.id} className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card">
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Tag className="h-5 w-5 text-primary" />
+                {isBandeira || isFormaPagamento ? <CreditCard className="h-5 w-5 text-primary" /> : <Tag className="h-5 w-5 text-primary" />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm">{item.nome}</p>
                 {item.descricao && <p className="text-xs text-muted-foreground">{item.descricao}</p>}
+                {renderItemBadges(item)}
               </div>
               <Switch checked={item.ativo} onCheckedChange={() => handleToggle(item)} />
-              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setEditing(item); setDialogOpen(true); }}>
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(item)}>
                 <Edit2 className="h-4 w-4" />
               </Button>
               <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400" onClick={() => handleDelete(item.id)}>
@@ -248,11 +323,79 @@ export default function Tipos() {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }}>
-        <DialogContent className={isEquipamento ? "max-w-lg" : ""}>
+        <DialogContent className={isEquipamento || isBandeira ? "max-w-lg" : ""}>
           <DialogHeader><DialogTitle>{editing ? "Editar" : "Novo"} {isEquipamento ? "Equipamento" : currentTabLabel}</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div><Label>Nome</Label><Input name="nome" required defaultValue={editing?.nome || ""} key={editing?.id || "new"} /></div>
             <div><Label>Descrição</Label><Input name="descricao" defaultValue={editing?.descricao || ""} key={(editing?.id || "new") + "_desc"} /></div>
+
+            {isFormaPagamento && (
+              <>
+                <div className="flex items-center justify-between">
+                  <Label>É cartão (crédito/débito)?</Label>
+                  <Switch checked={formIsCartao} onCheckedChange={setFormIsCartao} />
+                </div>
+                <div>
+                  <Label>Multiplicador de Pontos de Fidelidade</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="1.00 (padrão)"
+                    value={formMultPontos}
+                    onChange={e => setFormMultPontos(e.target.value)}
+                    className="mt-1"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Ex: 2.0 = pontos em dobro para esta forma de pagamento</p>
+                </div>
+              </>
+            )}
+
+            {isBandeira && (
+              <>
+                <div>
+                  <Label>Tipo de Bandeira</Label>
+                  <Select value={formTipoBandeira || "__none__"} onValueChange={v => setFormTipoBandeira(v === "__none__" ? "" : v)}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Nenhum</SelectItem>
+                      <SelectItem value="credito">Crédito</SelectItem>
+                      <SelectItem value="debito">Débito</SelectItem>
+                      <SelectItem value="ambos">Crédito e Débito</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Taxa da Operadora (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    placeholder="Ex: 2.99"
+                    value={formTaxaOp}
+                    onChange={e => setFormTaxaOp(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Dias para Recebimento</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="Ex: 30"
+                    value={formDiasReceb}
+                    onChange={e => setFormDiasReceb(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label>Contar em dias úteis?</Label>
+                  <Switch checked={formDiasUteis} onCheckedChange={setFormDiasUteis} />
+                </div>
+              </>
+            )}
+
             {isEquipamento && (
               <>
                 <div>

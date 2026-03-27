@@ -85,4 +85,14 @@ Dashboard → Agenda → Cadastros (Clientes, Profissionais, Serviços, Pacotes 
 **Categorias (Tutorial Compliance):**
 - 3 subtypes: Cat. Serviço, Cat. Profissional, Cat. Produto (all stored in `tipos` table with different `categoria` values)
 
+**Comandas & Pagamentos (Task #26 — Tutorial Compliance):**
+- `tipos` table extended: `is_cartao` + `multiplicador_pontos` (forma_pagamento), `taxa_operadora` + `tipo_bandeira` + `dias_recebimento` + `dias_uteis` (bandeira)
+- `comandas` table extended: `gorjeta` (jsonb {profissionalId, valor}), `tipo_comanda` (text), `valor_liquido` (numeric), `taxa_cartao` (numeric), `data_compensacao` (text)
+- Checkout calculates bandeira tax automatically from tipos table, computes valorLiquido, dataCompensacao
+- Gorjeta support in checkout and nova comanda dialog
+- Pontos fidelidade multiplicador per forma de pagamento
+- Auto-send pesquisa de satisfação log after checkout when envioAutomatico is enabled
+- Frontend Tipos.tsx: extra fields for forma_pagamento (isCartao, multiplicadorPontos) and bandeira (taxaOperadora, tipoBandeira, diasRecebimento, diasUteis)
+- Frontend Caixa.tsx: gorjeta field, gorjeta/taxa columns, líquido calculation with taxa deduction
+
 **DB Schema Path:** `lib/db/src/schema/` (each table in its own file, exported from `index.ts`)

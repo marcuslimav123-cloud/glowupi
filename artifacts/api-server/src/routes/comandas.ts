@@ -11,6 +11,8 @@ function formatComanda(c: any) {
   return {
     ...c,
     valorTotal: parseFloat(c.valorTotal),
+    valorLiquido: c.valorLiquido != null ? parseFloat(c.valorLiquido) : null,
+    taxaCartao: c.taxaCartao != null ? parseFloat(c.taxaCartao) : null,
     comissaoTotal: parseFloat(c.comissaoTotal),
     desconto: c.desconto ? parseFloat(c.desconto) : 0,
     dataFechamento: c.dataFechamento?.toISOString?.() ?? c.dataFechamento,

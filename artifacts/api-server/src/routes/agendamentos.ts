@@ -3,13 +3,37 @@ import { db } from "@workspace/db";
 import {
   agendamentosTable, barbeariasTable, profissionaisTable,
   servicosTable, clientesTable, comandasTable, produtosTable,
-  bloqueiosHorarioTable, profissionalServicosTable
+  bloqueiosHorarioTable, profissionalServicosTable,
+  tiposTable, pesquisaSatisfacaoTable
 } from "@workspace/db/schema";
 import { eq, and, sql, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
 
 const router: IRouter = Router({ mergeParams: true });
+
+async function calcPontosFromPagamentos(barbeariaId: number, pagamentos: any[], valorTotal: number): Promise<number> {
+  const formasPagamento = await db.select().from(tiposTable).where(
+    and(eq(tiposTable.barbeariaId, barbeariaId), eq(tiposTable.categoria, "forma_pagamento"))
+  );
+  let totalPontos = 0;
+  for (const pag of pagamentos) {
+    const pagValor = Number(pag.valor) || 0;
+    if (pagValor <= 0) continue;
+    let mult = 1;
+    if (pag.metodo) {
+      const match = formasPagamento.find(f => f.nome.toLowerCase() === pag.metodo.toLowerCase() || f.nome.toLowerCase().includes(pag.metodo.toLowerCase()));
+      if (match && match.multiplicadorPontos) {
+        mult = parseFloat(match.multiplicadorPontos) || 1;
+      }
+    }
+    totalPontos += Math.floor(pagValor / 10 * mult);
+  }
+  if (totalPontos === 0 && valorTotal > 0) {
+    totalPontos = Math.floor(valorTotal / 10);
+  }
+  return totalPontos;
+}
 
 function formatAgend(a: any) {
   return {
@@ -287,11 +311,11 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
   const [agend] = await db.select().from(agendamentosTable).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId))).limit(1);
   if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
   const [profissional] = await db.select().from(profissionaisTable).where(eq(profissionaisTable.id, agend.profissionalId)).limit(1);
-  const { produtosAdicionais = [], pagamentos, observacao, desconto: rawDesconto = 0, descontoTipo = "valor", parcelas: rawParcelas = 1 } = req.body;
+  const { produtosAdicionais = [], pagamentos, observacao, desconto: rawDesconto = 0, descontoTipo = "valor", parcelas: rawParcelas = 1, gorjeta, tipoComanda } = req.body;
 
   if (params["comanda_obrigatoriedade_bandeira"] === "Sim") {
     if (Array.isArray(pagamentos) && pagamentos.length > 0) {
-      const semBandeira = pagamentos.some((p: any) => p.forma === "cartao" && !p.bandeira);
+      const semBandeira = pagamentos.some((p: any) => (p.metodo === "credito" || p.metodo === "debito") && !p.bandeira);
       if (semBandeira) {
         return res.status(400).json({ error: "Seleção de bandeira é obrigatória para pagamentos em cartão" });
       }
@@ -349,9 +373,45 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
     }
   }
   valorTotal = Math.max(0, valorTotal);
+  const gorjetaVal = gorjeta ? { profissionalId: gorjeta.profissionalId ?? agend.profissionalId, valor: Number(gorjeta.valor) || 0 } : null;
+  if (gorjetaVal && gorjetaVal.valor > 0) {
+    valorTotal += gorjetaVal.valor;
+  }
   const comissaoTotal = comissaoServico + comissaoProdutos;
   const now = new Date();
   const mesAno = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  let taxaCartaoTotal = 0;
+  let dataCompensacao: string | null = null;
+  const pags = Array.isArray(pagamentos) ? pagamentos : [];
+  for (const pag of pags) {
+    if ((pag.metodo === "credito" || pag.metodo === "debito") && pag.bandeira) {
+      const [bandeira] = await db.select().from(tiposTable).where(
+        and(eq(tiposTable.barbeariaId, barbeariaId), eq(tiposTable.categoria, "bandeira"), eq(tiposTable.nome, pag.bandeira))
+      ).limit(1);
+      if (bandeira && bandeira.taxaOperadora) {
+        const taxa = (Number(pag.valor) * parseFloat(bandeira.taxaOperadora)) / 100;
+        taxaCartaoTotal += taxa;
+        if (!dataCompensacao && bandeira.diasRecebimento) {
+          const comp = new Date(now);
+          const dias = bandeira.diasRecebimento;
+          if (bandeira.diasUteis) {
+            let added = 0;
+            while (added < dias) {
+              comp.setDate(comp.getDate() + 1);
+              const day = comp.getDay();
+              if (day !== 0 && day !== 6) added++;
+            }
+          } else {
+            comp.setDate(comp.getDate() + dias);
+          }
+          dataCompensacao = comp.toISOString().slice(0, 10);
+        }
+      }
+    }
+  }
+  const valorLiquido = valorTotal - taxaCartaoTotal;
+
   const [comanda] = await db.insert(comandasTable).values({
     barbeariaId,
     agendamentoId: id,
@@ -361,8 +421,13 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
     mesAno,
     servicos: [{ id: agend.servicoId, nome: agend.servicoNome, valor: valorServico, comissao: comissaoServico }],
     produtos: prodItems,
-    pagamentos: pagamentos || [],
+    pagamentos: pags,
+    gorjeta: gorjetaVal,
+    tipoComanda: tipoComanda ?? "cliente",
     valorTotal: String(valorTotal),
+    valorLiquido: String(valorLiquido),
+    taxaCartao: taxaCartaoTotal > 0 ? String(taxaCartaoTotal) : null,
+    dataCompensacao,
     comissaoTotal: String(comissaoTotal),
     desconto: String(desconto),
     descontoTipo,
@@ -375,17 +440,34 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
   if (agend.clienteId) {
     const [cli] = await db.select().from(clientesTable).where(eq(clientesTable.id, agend.clienteId)).limit(1);
     if (cli) {
+      const pontos = await calcPontosFromPagamentos(barbeariaId, pags, valorTotal);
       await db.update(clientesTable).set({
         totalGasto: String(parseFloat(cli.totalGasto as string) + valorTotal),
-        pontosFidelidade: cli.pontosFidelidade + Math.floor(valorTotal / 10),
+        pontosFidelidade: cli.pontosFidelidade + pontos,
         ultimaVisita: now.toISOString().slice(0, 10),
         updatedAt: new Date(),
       }).where(eq(clientesTable.id, agend.clienteId));
     }
   }
+
+  try {
+    const pesquisas = await db.select().from(pesquisaSatisfacaoTable).where(
+      and(eq(pesquisaSatisfacaoTable.barbeariaId, barbeariaId), eq(pesquisaSatisfacaoTable.ativo, true), eq(pesquisaSatisfacaoTable.envioAutomatico, true))
+    ).limit(1);
+    if (pesquisas.length > 0 && agend.clienteTelefone) {
+      const pesquisa = pesquisas[0];
+      const [barb] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
+      console.log(`[Pesquisa Auto] Survey ${pesquisa.id} would be sent to ${agend.clienteNome} (${agend.clienteTelefone}) for ${barb?.nome || "barbearia"}`);
+    }
+  } catch (e) {
+    console.error("[Pesquisa Auto] Error:", e);
+  }
+
   return res.status(201).json({
     ...comanda,
     valorTotal: parseFloat(comanda.valorTotal as string),
+    valorLiquido: comanda.valorLiquido != null ? parseFloat(comanda.valorLiquido as string) : null,
+    taxaCartao: comanda.taxaCartao != null ? parseFloat(comanda.taxaCartao as string) : null,
     comissaoTotal: parseFloat(comanda.comissaoTotal as string),
     dataFechamento: comanda.dataFechamento?.toISOString(),
     createdAt: comanda.createdAt?.toISOString(),
