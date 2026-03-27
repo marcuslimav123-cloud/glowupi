@@ -8,14 +8,13 @@ import {
   respostasPesquisaTable, pacotesTable, pacotesClienteTable,
   assinantesTable, resgatesTable, usersTable
 } from "@workspace/db/schema";
-import { eq, and, gte, lte, or, inArray } from "drizzle-orm";
+import { eq, and, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
 import { sendEmail } from "../lib/brevo.js";
 
-async function notificarAgendamento(barbeariaId: number, params: Record<string, string>, agendData: { clienteNome: string; clienteTelefone?: string; profissionalNome: string; servicoNome: string; data: string; horaInicio: string; clienteId?: number | null }, tipo: "criado" | "cancelado") {
+async function notificarAgendamento(barbeariaId: number, params: Record<string, string>, agendData: { clienteNome: string; clienteTelefone?: string; profissionalNome: string; servicoNome: string; data: string; horaInicio: string; clienteId?: number | null; agendamentoId?: number }, tipo: "criado" | "cancelado") {
   try {
-    if ((params["notif_mensagem_agendar_cancelar"] || "Habilitado") !== "Habilitado") return;
     const [barb] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
     const nomeEstab = barb?.nome || "Glow Up";
     const assunto = tipo === "criado"
@@ -25,45 +24,48 @@ async function notificarAgendamento(barbeariaId: number, params: Record<string, 
       ? `Seu agendamento de <strong>${agendData.servicoNome}</strong> com <strong>${agendData.profissionalNome}</strong> em ${agendData.data} às ${agendData.horaInicio} foi confirmado.`
       : `Seu agendamento de <strong>${agendData.servicoNome}</strong> com <strong>${agendData.profissionalNome}</strong> em ${agendData.data} às ${agendData.horaInicio} foi cancelado.`;
 
-    if (tipo === "criado" && params["notif_nao_enviar_confirmacao"] === "Sim") {
-    } else if (agendData.clienteId) {
+    const clienteNotifHabilitada = (params["notif_mensagem_agendar_cancelar"] || "Habilitado") === "Habilitado";
+    const suprimirConfirmacao = tipo === "criado" && params["notif_nao_enviar_confirmacao"] === "Sim";
+    const devEnviarCliente = clienteNotifHabilitada && !suprimirConfirmacao;
+
+    if (devEnviarCliente && agendData.clienteId) {
       const [cliente] = await db.select().from(clientesTable).where(eq(clientesTable.id, agendData.clienteId)).limit(1);
       if (cliente?.email) {
-        const incluirLink = (params["notif_link_confirmacao"] || "Sim") === "Sim";
         const tempoLembrete = params["notif_tempo_lembrete"] || "24";
-        let rodape = "";
-        if (tipo === "criado" && incluirLink) {
-          rodape = `<p style="margin-top:16px;font-size:13px;color:rgba(0,0,0,0.5);">Link de confirmação disponível</p>`;
-        }
-        if (tipo === "criado") {
-          rodape += `<p style="font-size:12px;color:rgba(0,0,0,0.4);">Lembrete: ${tempoLembrete}h antes do horário</p>`;
-        }
+        const incluirLink = (params["notif_link_confirmacao"] || "Sim") === "Sim";
         const usaSms = params["notif_lembrete_sms"] === "Sim";
         const usaWhatsapp = params["notif_lembrete_whatsapp"] === "Sim";
-        let canaisLembrete = "";
-        if (usaSms || usaWhatsapp) {
-          const canais = [usaSms ? "SMS" : "", usaWhatsapp ? "WhatsApp" : ""].filter(Boolean).join(" e ");
-          canaisLembrete = `<p style="font-size:12px;color:rgba(0,0,0,0.4);">Lembrete também via: ${canais}</p>`;
+
+        let rodape = "";
+        if (tipo === "criado") {
+          if (incluirLink) {
+            const domain = process.env.REPLIT_DEV_DOMAIN || "glowup.app";
+            const confirmUrl = `https://${domain}/confirmar/${agendData.agendamentoId || 0}`;
+            rodape += `<p style="margin-top:16px;"><a href="${confirmUrl}" style="display:inline-block;padding:10px 24px;background:#c4a46a;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">Confirmar Agendamento</a></p>`;
+          }
+          rodape += `<p style="font-size:12px;color:rgba(0,0,0,0.4);margin-top:12px;">Você receberá um lembrete ${tempoLembrete}h antes do horário</p>`;
+          const canaisExtra = [usaSms ? "SMS" : "", usaWhatsapp ? "WhatsApp" : ""].filter(Boolean);
+          if (canaisExtra.length > 0) {
+            rodape += `<p style="font-size:12px;color:rgba(0,0,0,0.4);">Lembrete também via: ${canaisExtra.join(" e ")}</p>`;
+          }
         }
         await sendEmail({
           to: [{ email: cliente.email, name: agendData.clienteNome }],
           subject: assunto,
-          htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>${mensagem}</p>${rodape}${canaisLembrete}</div>`,
+          htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>${mensagem}</p>${rodape}</div>`,
         });
       }
     }
 
-    if ((params["notif_mensagem_gestores"] || "Habilitado") === "Habilitado") {
+    const gestorNotifHabilitada = (params["notif_mensagem_gestores"] || "Habilitado") === "Habilitado";
+    if (gestorNotifHabilitada) {
       const gestores = await db.select().from(usersTable).where(
-        and(
-          eq(usersTable.barbeariaId, barbeariaId),
-          or(eq(usersTable.role, "gerente"))
-        )
+        and(eq(usersTable.barbeariaId, barbeariaId), eq(usersTable.role, "gerente"))
       );
       const donoUsers = await db.select().from(usersTable).where(eq(usersTable.role, "dono"));
-      const donosDaBarbearia = donoUsers.filter(u => !u.barbeariaId);
       const allGestores = [...gestores];
-      for (const d of donosDaBarbearia) {
+      for (const d of donoUsers) {
+        if (d.barbeariaId) continue;
         const [b] = await db.select({ id: barbeariasTable.id }).from(barbeariasTable).where(eq(barbeariasTable.donoId, d.id)).limit(1);
         if (b?.id === barbeariaId) allGestores.push(d);
       }
@@ -333,6 +335,7 @@ router.post("/", requireAuth, async (req, res) => {
     clienteNome, clienteTelefone, clienteId,
     profissionalNome: profissional.apelido || profissional.nomeExibicao,
     servicoNome: servico.nome, data, horaInicio,
+    agendamentoId: agend.id,
   }, "criado");
 
   return res.status(201).json({ ...formatAgend(agend), pacoteClienteId: pacoteClienteAssociado });
@@ -435,6 +438,7 @@ router.delete("/:agendamentoId", requireAuth, async (req, res) => {
     servicoNome: agend.servicoNome,
     data: agend.data,
     horaInicio: agend.horaInicio,
+    agendamentoId: agend.id,
   }, "cancelado");
 
   return res.json({ success: true, message: "Agendamento cancelado" });
@@ -645,6 +649,8 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
       status: "paga",
       observacao: observacao || null,
       cadastradoPor: profissional?.nomeExibicao || agend.profissionalNome,
+      clienteId: agend.clienteId || null,
+      pontosGanhos: 0,
     }).returning();
     await tx.update(agendamentosTable).set({ status: "pago", pago: true, updatedAt: new Date() }).where(eq(agendamentosTable.id, id));
     if (agend.clienteId) {
@@ -659,6 +665,9 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
           if (!apenasAppSite || isAppSite) {
             pontos = await calcPontosFromPagamentos(barbeariaId, pags, valorTotal);
           }
+        }
+        if (pontos > 0) {
+          await tx.update(comandasTable).set({ pontosGanhos: pontos }).where(eq(comandasTable.id, cmd.id));
         }
         await tx.update(clientesTable).set({
           totalGasto: String(parseFloat(cli.totalGasto as string) + valorTotal),
@@ -696,12 +705,18 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
       const pesquisa = pesquisasAtivas[0];
       const [cliente] = await db.select().from(clientesTable)
         .where(eq(clientesTable.id, agend.clienteId)).limit(1);
+      const domain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(",")[0] || "";
+      const surveyUrl = `https://${domain}/pesquisa/${pesquisa.id}?cliente=${agend.clienteId}&prof=${agend.profissionalId}`;
+      const [barb] = await db.select().from(barbeariasTable)
+        .where(eq(barbeariasTable.id, barbeariaId)).limit(1);
+      const nomeEstab = barb?.nome || "Glow Up";
+
+      const enviarAvaliacaoWhatsapp = params["notif_avaliacao_whatsapp"] === "Sim";
+      if (enviarAvaliacaoWhatsapp && agend.clienteTelefone) {
+        console.log(`[Pesquisa] WhatsApp avaliação preparado para ${agend.clienteTelefone} — link: ${surveyUrl}`);
+      }
+
       if (cliente?.email) {
-        const domain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(",")[0] || "";
-        const surveyUrl = `https://${domain}/pesquisa/${pesquisa.id}?cliente=${agend.clienteId}&prof=${agend.profissionalId}`;
-        const [barb] = await db.select().from(barbeariasTable)
-          .where(eq(barbeariasTable.id, barbeariaId)).limit(1);
-        const nomeEstab = barb?.nome || "Glow Up";
         await sendEmail({
           to: [{ email: cliente.email, name: agend.clienteNome }],
           subject: `${nomeEstab} — Avalie seu atendimento`,

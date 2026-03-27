@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { resgatesTable, clientesTable, barbeariasTable } from "@workspace/db/schema";
-import { eq, and } from "drizzle-orm";
+import { resgatesTable, clientesTable, barbeariasTable, comandasTable } from "@workspace/db/schema";
+import { eq, and, gte, sql } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
 
@@ -9,6 +9,33 @@ const router: IRouter = Router({ mergeParams: true });
 
 function formatResgate(r: any) {
   return { ...r, createdAt: r.createdAt?.toISOString?.() ?? r.createdAt };
+}
+
+async function calcPontosValidos(barbeariaId: number, clienteId: number, diasExpiracao: number): Promise<number> {
+  const dataLimite = new Date();
+  dataLimite.setDate(dataLimite.getDate() - diasExpiracao);
+  const comandasValidas = await db.select({
+    pontosGanhos: comandasTable.pontosGanhos,
+  }).from(comandasTable).where(
+    and(
+      eq(comandasTable.barbeariaId, barbeariaId),
+      eq(comandasTable.clienteId, clienteId),
+      gte(comandasTable.createdAt, dataLimite)
+    )
+  );
+  const totalPontosGanhos = comandasValidas.reduce((sum, c) => sum + (c.pontosGanhos || 0), 0);
+
+  const resgatesFeitos = await db.select({
+    pontosUsados: resgatesTable.pontosUsados,
+  }).from(resgatesTable).where(
+    and(
+      eq(resgatesTable.barbeariaId, barbeariaId),
+      eq(resgatesTable.clienteId, clienteId),
+    )
+  );
+  const totalResgatado = resgatesFeitos.reduce((sum, r) => sum + r.pontosUsados, 0);
+
+  return Math.max(0, totalPontosGanhos - totalResgatado);
 }
 
 router.get("/", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
@@ -24,7 +51,6 @@ router.post("/", requireAuth, requireRole("dono", "gerente"), async (req: any, r
   const { clienteId, clienteNome, recompensaId, recompensaNome, pontosUsados, comandaId } = req.body;
   const [cliente] = await db.select().from(clientesTable).where(and(eq(clientesTable.id, clienteId), eq(clientesTable.barbeariaId, barbeariaId))).limit(1);
   if (!cliente) { res.status(404).json({ error: "Cliente não encontrado" }); return; }
-  if (cliente.pontosFidelidade < pontosUsados) { res.status(400).json({ error: "Pontos insuficientes" }); return; }
 
   const params = await getParametros(barbeariaId);
 
@@ -33,13 +59,20 @@ router.post("/", requireAuth, requireRole("dono", "gerente"), async (req: any, r
   }
 
   const diasExpiracao = parseInt(params["fidelidade_expiracao_pontos"] || "365");
-  if (diasExpiracao > 0 && cliente.ultimaVisita) {
-    const ultimaVisitaDate = new Date(cliente.ultimaVisita);
-    const agora = new Date();
-    const diffDias = Math.ceil((agora.getTime() - ultimaVisitaDate.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDias > diasExpiracao) {
-      await db.update(clientesTable).set({ pontosFidelidade: 0 }).where(eq(clientesTable.id, clienteId));
-      return res.status(400).json({ error: `Pontos expirados. Os pontos vencem após ${diasExpiracao} dias sem visita.` });
+  if (diasExpiracao > 0) {
+    const pontosValidos = await calcPontosValidos(barbeariaId, clienteId, diasExpiracao);
+    if (pontosValidos < pontosUsados) {
+      if (pontosValidos < cliente.pontosFidelidade) {
+        await db.update(clientesTable).set({ pontosFidelidade: pontosValidos }).where(eq(clientesTable.id, clienteId));
+      }
+      return res.status(400).json({
+        error: `Pontos válidos insuficientes. Você tem ${pontosValidos} ponto(s) não expirado(s) (pontos expiram após ${diasExpiracao} dias).`,
+        pontosValidos,
+      });
+    }
+  } else {
+    if (cliente.pontosFidelidade < pontosUsados) {
+      return res.status(400).json({ error: "Pontos insuficientes" });
     }
   }
 

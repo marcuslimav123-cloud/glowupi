@@ -29,6 +29,8 @@ export const comandasTable = pgTable("comandas", {
   status: text("status").notNull().default("paga"),
   observacao: text("observacao"),
   cadastradoPor: text("cadastrado_por"),
+  clienteId: integer("cliente_id"),
+  pontosGanhos: integer("pontos_ganhos").default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

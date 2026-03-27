@@ -25,6 +25,10 @@ router.get("/", requireAuth, requireRole("dono", "gerente"), async (req: any, re
 router.post("/", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const params = await getParametros(barbeariaId);
+  if (params["fidelidade_desativar"] === "Sim") {
+    return res.status(400).json({ error: "Programa de fidelidade está desativado" });
+  }
   const { nome, descricao, pontosNecessarios, tipo, ativo } = req.body;
   const [recompensa] = await db.insert(recompensasTable).values({
     barbeariaId, nome, descricao, pontosNecessarios, tipo, ativo
