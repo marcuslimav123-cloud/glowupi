@@ -81,8 +81,17 @@ const FEATURES = [
   { icon: Heart, title: "Estoque Inteligente", desc: "Controle de produtos com alertas de validade e movimentação" },
 ];
 
-const FAQ_ITEMS = [
+const FAQ_ITEMS_TRIAL = [
   { q: "Posso testar antes de assinar?", a: "Sim! Oferecemos 30 dias grátis para você conhecer todas as funcionalidades sem compromisso." },
+  { q: "Preciso instalar algum software?", a: "Não! O Glow Upi funciona 100% online, direto no navegador do computador, tablet ou celular." },
+  { q: "Como funciona o pagamento?", a: "O pagamento é feito via cartão de crédito, processado de forma segura pelo Stripe. Você pode cancelar a qualquer momento." },
+  { q: "Posso trocar de plano depois?", a: "Claro! Você pode fazer upgrade ou downgrade do seu plano a qualquer momento, e o valor é ajustado proporcionalmente." },
+  { q: "Meus dados estão seguros?", a: "Sim! Utilizamos criptografia de ponta e servidores seguros para proteger todas as informações do seu salão e clientes." },
+  { q: "Funciona para qualquer tipo de salão?", a: "Sim! Manicures, cabeleireiras, esteticistas, maquiadoras, barbeiros — qualquer profissional de beleza." },
+];
+
+const FAQ_ITEMS_NO_TRIAL = [
+  { q: "Como funciona a assinatura?", a: "Escolha o plano ideal para o tamanho do seu negócio e assine diretamente. O acesso é liberado imediatamente após o pagamento." },
   { q: "Preciso instalar algum software?", a: "Não! O Glow Upi funciona 100% online, direto no navegador do computador, tablet ou celular." },
   { q: "Como funciona o pagamento?", a: "O pagamento é feito via cartão de crédito, processado de forma segura pelo Stripe. Você pode cancelar a qualquer momento." },
   { q: "Posso trocar de plano depois?", a: "Claro! Você pode fazer upgrade ou downgrade do seu plano a qualquer momento, e o valor é ajustado proporcionalmente." },
@@ -166,6 +175,7 @@ export default function Landing() {
   const [period, setPeriod] = useState<BillingPeriod>("anual");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [pricingMode, setPricingMode] = useState<string>("all_plans");
+  const [freeTrialEnabled, setFreeTrialEnabled] = useState(true);
   const [stripeProducts, setStripeProducts] = useState<ProductInfo[]>([]);
   const [isLoadingCheckout, setIsLoadingCheckout] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -177,20 +187,35 @@ export default function Landing() {
       .then(data => {
         if (data.pricingMode) setPricingMode(data.pricingMode);
         if (data.products) setStripeProducts(data.products);
+        if (data.freeTrialEnabled !== undefined) setFreeTrialEnabled(data.freeTrialEnabled);
       })
       .catch(() => {});
   }, []);
 
+  const getFallbackUrl = () => {
+    if (freeTrialEnabled) {
+      return `${import.meta.env.BASE_URL}cadastro`.replace(/\/\//g, '/');
+    }
+    const pricingEl = document.getElementById("pricing");
+    if (pricingEl) {
+      pricingEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      return null;
+    }
+    return `${import.meta.env.BASE_URL}cadastro`.replace(/\/\//g, '/');
+  };
+
   const handleSubscribe = async (tier: string, billingPeriod: BillingPeriod) => {
     const product = stripeProducts.find(p => p.metadata?.tier === tier);
     if (!product) {
-      window.location.href = `${import.meta.env.BASE_URL}cadastro`.replace(/\/\//g, '/');
+      const url = getFallbackUrl();
+      if (url) window.location.href = url;
       return;
     }
 
     const price = product.prices.find(p => p.metadata?.period === billingPeriod);
     if (!price) {
-      window.location.href = `${import.meta.env.BASE_URL}cadastro`.replace(/\/\//g, '/');
+      const url = getFallbackUrl();
+      if (url) window.location.href = url;
       return;
     }
 
@@ -206,10 +231,12 @@ export default function Landing() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        window.location.href = `${import.meta.env.BASE_URL}cadastro`.replace(/\/\//g, '/');
+        const url = getFallbackUrl();
+        if (url) window.location.href = url;
       }
     } catch {
-      window.location.href = `${import.meta.env.BASE_URL}cadastro`.replace(/\/\//g, '/');
+      const url = getFallbackUrl();
+      if (url) window.location.href = url;
     } finally {
       setIsLoadingCheckout(null);
     }
@@ -250,11 +277,19 @@ export default function Landing() {
                 Entrar
               </Button>
             </Link>
-            <Link href="/cadastro">
-              <Button size="sm" className="text-[13px] h-9 px-5 rounded-full font-medium shadow-md shadow-primary/15">
-                Teste Grátis
-              </Button>
-            </Link>
+            {freeTrialEnabled ? (
+              <Link href="/cadastro">
+                <Button size="sm" className="text-[13px] h-9 px-5 rounded-full font-medium shadow-md shadow-primary/15">
+                  Teste Grátis
+                </Button>
+              </Link>
+            ) : (
+              <a href="#pricing" onClick={(e) => smoothScroll(e, "pricing")}>
+                <Button size="sm" className="text-[13px] h-9 px-5 rounded-full font-medium shadow-md shadow-primary/15">
+                  Assinar Agora
+                </Button>
+              </a>
+            )}
           </div>
 
           <button className="md:hidden p-2 -mr-2 text-white/70" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -274,9 +309,15 @@ export default function Landing() {
                 <Link href="/login" className="flex-1">
                   <Button variant="outline" className="w-full h-11 rounded-full text-[14px] border-white/10 text-white/70 hover:bg-white/10">Entrar</Button>
                 </Link>
-                <Link href="/cadastro" className="flex-1">
-                  <Button className="w-full h-11 rounded-full text-[14px]">Teste Grátis</Button>
-                </Link>
+                {freeTrialEnabled ? (
+                  <Link href="/cadastro" className="flex-1">
+                    <Button className="w-full h-11 rounded-full text-[14px]">Teste Grátis</Button>
+                  </Link>
+                ) : (
+                  <a href="#pricing" onClick={(e) => smoothScroll(e, "pricing")} className="flex-1">
+                    <Button className="w-full h-11 rounded-full text-[14px]">Assinar Agora</Button>
+                  </a>
+                )}
               </div>
             </div>
           </>
@@ -289,7 +330,7 @@ export default function Landing() {
             <AnimatedSection>
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/15 text-primary text-[13px] font-medium mb-8 border border-primary/20">
                 <Sparkles className="h-3.5 w-3.5" />
-                30 dias grátis para testar
+                {freeTrialEnabled ? "30 dias grátis para testar" : "A plataforma ideal para seu salão"}
               </div>
               <h1 className="text-[36px] sm:text-[44px] lg:text-[52px] xl:text-[58px] font-extrabold text-white leading-[1.08] mb-6 tracking-tight">
                 A plataforma completa para{" "}
@@ -299,12 +340,21 @@ export default function Landing() {
                 Gerencie sua agenda, clientes, finanças e muito mais em um só lugar. Feito sob medida para salões de beleza e estéticas.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 mb-8">
-                <Link href="/cadastro">
-                  <Button size="lg" className="text-[14px] px-8 h-12 rounded-full shadow-lg shadow-primary/25 font-semibold w-full sm:w-auto">
-                    Começar Agora — É Grátis
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
+                {freeTrialEnabled ? (
+                  <Link href="/cadastro">
+                    <Button size="lg" className="text-[14px] px-8 h-12 rounded-full shadow-lg shadow-primary/25 font-semibold w-full sm:w-auto">
+                      Começar Agora — É Grátis
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <a href="#pricing" onClick={(e) => smoothScroll(e, "pricing")}>
+                    <Button size="lg" className="text-[14px] px-8 h-12 rounded-full shadow-lg shadow-primary/25 font-semibold w-full sm:w-auto">
+                      Assinar Agora
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </a>
+                )}
                 <a href="#features" onClick={(e) => smoothScroll(e, "features")}>
                   <Button size="lg" variant="outline" className="text-[14px] px-8 h-12 rounded-full w-full sm:w-auto border-white/[0.12] text-white/60 hover:text-white hover:border-white/[0.25] hover:bg-white/[0.05]">
                     Ver Funcionalidades
@@ -312,7 +362,9 @@ export default function Landing() {
                 </a>
               </div>
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-white/40">
-                <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-green-400" /> Sem cartão de crédito</span>
+                {freeTrialEnabled && (
+                  <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-green-400" /> Sem cartão de crédito</span>
+                )}
                 <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-green-400" /> Cancele quando quiser</span>
                 <span className="flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-green-400" /> 100% seguro</span>
               </div>
@@ -471,7 +523,7 @@ export default function Landing() {
                     {isLoadingCheckout === "single-mensal" ? "Redirecionando..." : "Começar Agora"}
                     {isLoadingCheckout !== "single-mensal" && <ArrowRight className="ml-2 h-4 w-4" />}
                   </Button>
-                  <p className="text-[11px] text-white/30 mt-3">30 dias grátis • Cancele a qualquer momento</p>
+                  <p className="text-[11px] text-white/30 mt-3">{freeTrialEnabled ? "30 dias grátis • " : ""}Cancele a qualquer momento</p>
                 </div>
               </AnimatedSection>
             ) : (
@@ -625,7 +677,7 @@ export default function Landing() {
           </AnimatedSection>
 
           <div className="space-y-2.5">
-            {FAQ_ITEMS.map((item, i) => (
+            {(freeTrialEnabled ? FAQ_ITEMS_TRIAL : FAQ_ITEMS_NO_TRIAL).map((item, i) => (
               <AnimatedSection key={i} delay={i * 50}>
                 <div className="rounded-2xl bg-white/[0.04] border border-white/[0.06] overflow-hidden hover:border-white/[0.12] transition-colors">
                   <button
@@ -666,15 +718,26 @@ export default function Landing() {
             Pronta para transformar<br className="hidden sm:block" /> seu salão?
           </h2>
           <p className="text-[16px] sm:text-[18px] text-white/45 mb-10 max-w-[480px] mx-auto">
-            Comece agora com 30 dias grátis e descubra como o {APP_NAME} pode simplificar sua rotina.
+            {freeTrialEnabled
+              ? `Comece agora com 30 dias grátis e descubra como o ${APP_NAME} pode simplificar sua rotina.`
+              : `Descubra como o ${APP_NAME} pode simplificar sua rotina e transformar seu salão.`}
           </p>
-          <Link href="/cadastro">
-            <Button size="lg" className="text-[14px] px-10 h-[52px] rounded-full shadow-lg shadow-primary/25 font-semibold">
-              Começar Teste Grátis
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
-          <p className="text-[13px] text-white/30 mt-6">Sem cartão de crédito. Cancele a qualquer momento.</p>
+          {freeTrialEnabled ? (
+            <Link href="/cadastro">
+              <Button size="lg" className="text-[14px] px-10 h-[52px] rounded-full shadow-lg shadow-primary/25 font-semibold">
+                Começar Teste Grátis
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          ) : (
+            <a href="#pricing" onClick={(e) => smoothScroll(e, "pricing")}>
+              <Button size="lg" className="text-[14px] px-10 h-[52px] rounded-full shadow-lg shadow-primary/25 font-semibold">
+                Assinar Agora
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </a>
+          )}
+          <p className="text-[13px] text-white/30 mt-6">{freeTrialEnabled ? "Sem cartão de crédito. " : ""}Cancele a qualquer momento.</p>
         </AnimatedSection>
       </section>
 

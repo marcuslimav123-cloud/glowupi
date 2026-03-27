@@ -153,9 +153,13 @@ router.get("/me", requireAuth, async (req, res) => {
       }
     }
 
+    const [superAdmin] = await db.select().from(superAdminsTable).where(eq(superAdminsTable.email, user.email)).limit(1);
+    const isSuperAdmin = !!superAdmin && superAdmin.ativo;
+
     return res.json({
       ...userWithoutPass,
       createdAt: user.createdAt.toISOString(),
+      isSuperAdmin,
       barbearia: barbearia ? {
         ...barbearia,
         createdAt: barbearia.createdAt.toISOString(),

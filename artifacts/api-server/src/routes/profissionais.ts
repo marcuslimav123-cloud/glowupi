@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { profissionaisTable, profissionalServicosTable, servicosTable, barbeariasTable } from "@workspace/db/schema";
+import { profissionaisTable, profissionalServicosTable, servicosTable, barbeariasTable, superAdminsTable } from "@workspace/db/schema";
 import { eq, and, inArray, sql } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole, PLAN_PROFESSIONAL_LIMITS } from "../lib/auth.js";
 
@@ -100,8 +100,15 @@ router.post("/", requireAuth, requireRole("dono", "gerente"), async (req, res) =
   } = req.body;
   if (!nomeExibicao || comissaoValor === undefined) return res.status(400).json({ error: "Dados inválidos" });
 
+  const user = (req as any).user;
+  let isSuperAdmin = false;
+  if (user) {
+    const [sa] = await db.select().from(superAdminsTable).where(eq(superAdminsTable.email, user.email)).limit(1);
+    isSuperAdmin = !!sa && sa.ativo;
+  }
+
   const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
-  if (barbearia) {
+  if (barbearia && !isSuperAdmin) {
     const plan = barbearia.subscriptionPlan || "trial";
     const maxProfs = PLAN_PROFESSIONAL_LIMITS[plan] ?? 999;
     const [countResult] = await db.select({ count: sql<number>`count(*)::int` }).from(profissionaisTable).where(eq(profissionaisTable.barbeariaId, barbeariaId));

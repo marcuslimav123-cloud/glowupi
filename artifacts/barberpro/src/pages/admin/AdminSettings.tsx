@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { apiUrl } from "@/lib/utils";
-import { Settings, Save, ToggleLeft, ToggleRight, Info, Shield, FileText } from "lucide-react";
+import { Settings, Save, ToggleLeft, ToggleRight, Info, Shield, FileText, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -17,6 +17,8 @@ export default function AdminSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pricingMode, setPricingMode] = useState("all_plans");
+  const [freeTrialEnabled, setFreeTrialEnabled] = useState(true);
+  const [savingTrial, setSavingTrial] = useState(false);
   const [privacyPolicy, setPrivacyPolicy] = useState("");
   const [termsOfUse, setTermsOfUse] = useState("");
   const [savingPrivacy, setSavingPrivacy] = useState(false);
@@ -29,12 +31,33 @@ export default function AdminSettings() {
       .then(data => {
         setConfig(data);
         setPricingMode(data.pricing_mode || "all_plans");
+        setFreeTrialEnabled(data.free_trial_enabled !== "false");
         setPrivacyPolicy(data.lgpd_privacy_policy || "");
         setTermsOfUse(data.lgpd_terms_of_use || "");
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  const saveTrialMode = async (enabled: boolean) => {
+    setSavingTrial(true);
+    try {
+      const res = await fetch(apiUrl("/admin/config"), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ chave: "free_trial_enabled", valor: enabled ? "true" : "false" }),
+      });
+      if (res.ok) {
+        setFreeTrialEnabled(enabled);
+        toast({ title: "Configuração salva", description: `Teste grátis: ${enabled ? "Ativado" : "Desativado"}` });
+      }
+    } catch {
+      toast({ title: "Erro", description: "Falha ao salvar configuração", variant: "destructive" });
+    } finally {
+      setSavingTrial(false);
+    }
+  };
 
   const savePricingMode = async (mode: string) => {
     setSaving(true);
@@ -125,6 +148,63 @@ export default function AdminSettings() {
                     <p className="text-xs text-slate-400">{mode.description}</p>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="h-10 w-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                  <Gift className="h-5 w-5 text-amber-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-display text-white">Modo de Teste Grátis</h2>
+                  <p className="text-sm text-slate-400">Controla a oferta de 30 dias grátis na landing page e novos cadastros</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button
+                  onClick={() => saveTrialMode(true)}
+                  disabled={savingTrial}
+                  className={`p-4 rounded-xl border text-left transition-all duration-200 ${
+                    freeTrialEnabled
+                      ? "bg-primary/10 border-primary/30 ring-1 ring-primary/20"
+                      : "bg-white/5 border-white/10 hover:border-white/20"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-sm font-medium ${freeTrialEnabled ? "text-primary" : "text-white"}`}>
+                      Ativado
+                    </span>
+                    {freeTrialEnabled ? (
+                      <ToggleRight className="h-5 w-5 text-primary" />
+                    ) : (
+                      <ToggleLeft className="h-5 w-5 text-slate-500" />
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400">Novos cadastros ganham 30 dias grátis. A landing page exibe CTAs de "Teste Grátis".</p>
+                </button>
+                <button
+                  onClick={() => saveTrialMode(false)}
+                  disabled={savingTrial}
+                  className={`p-4 rounded-xl border text-left transition-all duration-200 ${
+                    !freeTrialEnabled
+                      ? "bg-primary/10 border-primary/30 ring-1 ring-primary/20"
+                      : "bg-white/5 border-white/10 hover:border-white/20"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-sm font-medium ${!freeTrialEnabled ? "text-primary" : "text-white"}`}>
+                      Desativado
+                    </span>
+                    {!freeTrialEnabled ? (
+                      <ToggleRight className="h-5 w-5 text-primary" />
+                    ) : (
+                      <ToggleLeft className="h-5 w-5 text-slate-500" />
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400">Sem trial grátis. Landing page mostra CTAs de compra direta ("Assinar Agora"). Novos cadastros precisam pagar.</p>
+                </button>
               </div>
             </div>
 

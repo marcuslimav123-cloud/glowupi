@@ -53,10 +53,13 @@ router.get("/pricing-config", async (_req, res) => {
       filteredProducts = [];
     }
 
+    const freeTrialEnabled = configMap["free_trial_enabled"] !== "false";
+
     res.json({
       pricingMode,
       products: filteredProducts,
       publishableKey,
+      freeTrialEnabled,
     });
   } catch (error: any) {
     console.error("Error fetching pricing config:", error);
@@ -64,6 +67,7 @@ router.get("/pricing-config", async (_req, res) => {
       pricingMode: "all_plans",
       products: [],
       publishableKey: null,
+      freeTrialEnabled: true,
     });
   }
 });

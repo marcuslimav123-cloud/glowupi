@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
 import { db } from "@workspace/db";
-import { usersTable, barbeariasTable, clienteUsersTable } from "@workspace/db/schema";
+import { usersTable, barbeariasTable, clienteUsersTable, superAdminsTable } from "@workspace/db/schema";
 import { eq, and, or } from "drizzle-orm";
 
 const SESSIONS: Map<string, { userId: number; expiresAt: Date }> = new Map();
@@ -74,6 +74,14 @@ export async function requireBarbearia(req: Request, res: Response, next: NextFu
 }
 
 export async function requireActiveSubscription(req: Request, res: Response, next: NextFunction) {
+  const user = (req as any).user;
+  if (user) {
+    const [superAdmin] = await db.select().from(superAdminsTable).where(eq(superAdminsTable.email, user.email)).limit(1);
+    if (superAdmin && superAdmin.ativo) {
+      return next();
+    }
+  }
+
   const barbearia = (req as any).barbearia;
   if (!barbearia) {
     return res.status(403).json({ error: "Barbearia não encontrada" });

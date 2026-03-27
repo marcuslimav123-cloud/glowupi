@@ -9,6 +9,10 @@ export function useSubscriptionGuard() {
     return { canAccess: false, status: "none" as SubscriptionStatus, shouldShowUpgrade: false, trialDaysLeft: 0 };
   }
 
+  if ((user as any).isSuperAdmin) {
+    return { canAccess: true, status: "ativo" as SubscriptionStatus, shouldShowUpgrade: false, trialDaysLeft: 999 };
+  }
+
   if (!isDono) {
     return { canAccess: true, status: "ativo" as SubscriptionStatus, shouldShowUpgrade: false, trialDaysLeft: 0 };
   }
