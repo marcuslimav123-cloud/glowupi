@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import * as SecureStore from "expo-secure-store";
+import { getItem, setItem, deleteItem } from "@/lib/storage";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 
 interface User {
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const getToken = useCallback(async (): Promise<string | null> => {
     try {
-      return await SecureStore.getItemAsync(TOKEN_KEY);
+      return await getItem(TOKEN_KEY);
     } catch {
       return null;
     }
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: true,
       });
     } catch {
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
+      await deleteItem(TOKEN_KEY);
       setState({
         user: null,
         barbearia: null,
@@ -115,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshUser]);
 
   const handleAuthResponse = useCallback(async (data: { token: string }) => {
-    await SecureStore.setItemAsync(TOKEN_KEY, data.token);
+    await setItem(TOKEN_KEY, data.token);
     const meData = await fetchMe(data.token);
     setState({
       user: meData,
@@ -150,7 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [handleAuthResponse]);
 
   const loginWithToken = useCallback(async (token: string) => {
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
+    await setItem(TOKEN_KEY, token);
     const meData = await fetchMe(token);
     setState({
       user: meData,
@@ -172,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       } catch {}
     }
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await deleteItem(TOKEN_KEY);
     setState({
       user: null,
       barbearia: null,
