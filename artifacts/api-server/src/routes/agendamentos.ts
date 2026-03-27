@@ -16,7 +16,7 @@ import { sendEmail } from "../lib/brevo.js";
 async function notificarAgendamento(barbeariaId: number, params: Record<string, string>, agendData: { clienteNome: string; clienteTelefone?: string; profissionalNome: string; servicoNome: string; data: string; horaInicio: string; clienteId?: number | null; agendamentoId?: number }, tipo: "criado" | "cancelado") {
   try {
     const [barb] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
-    const nomeEstab = barb?.nome || "Glow Up";
+    const nomeEstab = barb?.nome || "Glow Upi";
     const assunto = tipo === "criado"
       ? `${nomeEstab} — Agendamento Confirmado`
       : `${nomeEstab} — Agendamento Cancelado`;
@@ -697,7 +697,7 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
       const surveyUrl = `https://${domain}/pesquisa/${pesquisa.id}?cliente=${agend.clienteId}&prof=${agend.profissionalId}`;
       const [barb] = await db.select().from(barbeariasTable)
         .where(eq(barbeariasTable.id, barbeariaId)).limit(1);
-      const nomeEstab = barb?.nome || "Glow Up";
+      const nomeEstab = barb?.nome || "Glow Upi";
 
       const enviarAvaliacaoWhatsapp = params["notif_avaliacao_whatsapp"] === "Sim";
       if (enviarAvaliacaoWhatsapp && agend.clienteTelefone) {
@@ -733,7 +733,7 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
       </p>
     </div>
     <div style="padding:16px 32px;border-top:1px solid rgba(0,0,0,0.04);text-align:center;">
-      <p style="margin:0;font-size:11px;color:rgba(0,0,0,0.25);">${nomeEstab} — Glow Up</p>
+      <p style="margin:0;font-size:11px;color:rgba(0,0,0,0.25);">${nomeEstab} — Glow Upi</p>
     </div>
   </div>
 </body></html>`,

@@ -1,7 +1,7 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-export const APP_NAME = "Glow Up";
+export const APP_NAME = "Glow Upi";
 export const APP_TAGLINE = "Organize sua agenda e fidelize suas clientes";
 
 const ROLE_LABELS: Record<string, string> = {

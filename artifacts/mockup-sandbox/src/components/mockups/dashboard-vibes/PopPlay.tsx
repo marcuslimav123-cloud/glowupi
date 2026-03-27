@@ -53,7 +53,7 @@ export function PopPlay() {
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-500 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-pink-200 rotate-3 transition-transform hover:rotate-12 cursor-pointer">
             <Sparkles size={24} />
           </div>
-          <span className="font-['Playfair_Display'] font-bold text-2xl bg-gradient-to-r from-pink-600 to-violet-600 bg-clip-text text-transparent">Glow Up</span>
+          <span className="font-['Playfair_Display'] font-bold text-2xl bg-gradient-to-r from-pink-600 to-violet-600 bg-clip-text text-transparent">Glow Upi</span>
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-8">

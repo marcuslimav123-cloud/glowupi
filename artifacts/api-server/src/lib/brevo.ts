@@ -24,7 +24,7 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
     return { success: false, error: "Senha de app do Gmail não configurada" };
   }
 
-  const senderName = params.sender?.name || "Glow Up";
+  const senderName = params.sender?.name || "Glow Upi";
   const recipients = params.to.map(r => r.name ? `"${r.name}" <${r.email}>` : r.email).join(", ");
 
   try {
@@ -72,7 +72,7 @@ export function buildInviteEmailHtml(params: {
 <body style="margin:0;padding:0;font-family:'Inter',Arial,sans-serif;background:#fafafa;">
   <div style="max-width:520px;margin:40px auto;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;">
     <div style="padding:32px 32px 24px;text-align:center;background:linear-gradient(135deg,rgba(196,164,106,0.08),rgba(196,164,106,0.02));">
-      <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#1a1a1a;">Glow Up</h1>
+      <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#1a1a1a;">Glow Upi</h1>
       <p style="margin:0;font-size:13px;color:rgba(0,0,0,0.4);">Convite para equipe</p>
     </div>
     <div style="padding:32px;">
@@ -91,7 +91,7 @@ export function buildInviteEmailHtml(params: {
       </p>
     </div>
     <div style="padding:16px 32px;border-top:1px solid rgba(0,0,0,0.04);text-align:center;">
-      <p style="margin:0;font-size:11px;color:rgba(0,0,0,0.25);">Glow Up — Organize sua agenda e fidelize suas clientes</p>
+      <p style="margin:0;font-size:11px;color:rgba(0,0,0,0.25);">Glow Upi — Organize sua agenda e fidelize suas clientes</p>
     </div>
   </div>
 </body>

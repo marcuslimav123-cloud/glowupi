@@ -44,7 +44,7 @@ const TEMPLATE_TYPES = [
 
 const DEFAULT_TEMPLATES: Record<string, { assunto: string; corpo: string }> = {
   convite: {
-    assunto: "Convite para {{nomeEstabelecimento}} — Glow Up",
+    assunto: "Convite para {{nomeEstabelecimento}} — Glow Upi",
     corpo: `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -52,7 +52,7 @@ const DEFAULT_TEMPLATES: Record<string, { assunto: string; corpo: string }> = {
   <div style="max-width:520px;margin:40px auto;background:#ffffff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
     <div style="padding:32px 32px 24px;text-align:center;background:linear-gradient(135deg,rgba(196,164,106,0.12),rgba(196,164,106,0.03));">
       <div style="display:inline-block;width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,rgba(196,164,106,0.2),rgba(196,164,106,0.08));line-height:48px;font-size:24px;margin-bottom:12px;">✨</div>
-      <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#1a1a1a;letter-spacing:-0.3px;">Glow Up</h1>
+      <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#1a1a1a;letter-spacing:-0.3px;">Glow Upi</h1>
       <p style="margin:0;font-size:13px;color:rgba(0,0,0,0.4);">Convite para equipe</p>
     </div>
     <div style="padding:32px;">
@@ -78,7 +78,7 @@ const DEFAULT_TEMPLATES: Record<string, { assunto: string; corpo: string }> = {
     </div>
     <div style="padding:20px 32px;border-top:1px solid rgba(0,0,0,0.04);text-align:center;background:rgba(0,0,0,0.01);">
       <p style="margin:0 0 4px;font-size:11px;color:rgba(0,0,0,0.25);">Este convite expira em 7 dias.</p>
-      <p style="margin:0;font-size:11px;color:rgba(0,0,0,0.2);">Glow Up — Organize sua agenda e fidelize suas clientes</p>
+      <p style="margin:0;font-size:11px;color:rgba(0,0,0,0.2);">Glow Upi — Organize sua agenda e fidelize suas clientes</p>
     </div>
   </div>
 </body>
@@ -93,7 +93,7 @@ const DEFAULT_TEMPLATES: Record<string, { assunto: string; corpo: string }> = {
   <div style="max-width:520px;margin:40px auto;background:#ffffff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
     <div style="padding:32px 32px 24px;text-align:center;background:linear-gradient(135deg,rgba(196,164,106,0.12),rgba(196,164,106,0.03));">
       <div style="display:inline-block;width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,rgba(196,164,106,0.2),rgba(196,164,106,0.08));line-height:48px;font-size:24px;margin-bottom:12px;">📅</div>
-      <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#1a1a1a;letter-spacing:-0.3px;">Glow Up</h1>
+      <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#1a1a1a;letter-spacing:-0.3px;">Glow Upi</h1>
       <p style="margin:0;font-size:13px;color:rgba(0,0,0,0.4);">Lembrete de agendamento</p>
     </div>
     <div style="padding:32px;">
@@ -126,7 +126,7 @@ const DEFAULT_TEMPLATES: Record<string, { assunto: string; corpo: string }> = {
       </p>
     </div>
     <div style="padding:20px 32px;border-top:1px solid rgba(0,0,0,0.04);text-align:center;background:rgba(0,0,0,0.01);">
-      <p style="margin:0;font-size:11px;color:rgba(0,0,0,0.2);">Glow Up — Organize sua agenda e fidelize suas clientes</p>
+      <p style="margin:0;font-size:11px;color:rgba(0,0,0,0.2);">Glow Upi — Organize sua agenda e fidelize suas clientes</p>
     </div>
   </div>
 </body>
@@ -141,7 +141,7 @@ const DEFAULT_TEMPLATES: Record<string, { assunto: string; corpo: string }> = {
   <div style="max-width:520px;margin:40px auto;background:#ffffff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
     <div style="padding:32px 32px 24px;text-align:center;background:linear-gradient(135deg,rgba(196,164,106,0.12),rgba(196,164,106,0.03));">
       <div style="display:inline-block;width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,rgba(196,164,106,0.2),rgba(196,164,106,0.08));line-height:48px;font-size:24px;margin-bottom:12px;">💛</div>
-      <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#1a1a1a;letter-spacing:-0.3px;">Glow Up</h1>
+      <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#1a1a1a;letter-spacing:-0.3px;">Glow Upi</h1>
       <p style="margin:0;font-size:13px;color:rgba(0,0,0,0.4);">Boas-vindas</p>
     </div>
     <div style="padding:32px;">
@@ -154,7 +154,7 @@ const DEFAULT_TEMPLATES: Record<string, { assunto: string; corpo: string }> = {
       </p>
     </div>
     <div style="padding:20px 32px;border-top:1px solid rgba(0,0,0,0.04);text-align:center;background:rgba(0,0,0,0.01);">
-      <p style="margin:0;font-size:11px;color:rgba(0,0,0,0.2);">Glow Up — Organize sua agenda e fidelize suas clientes</p>
+      <p style="margin:0;font-size:11px;color:rgba(0,0,0,0.2);">Glow Upi — Organize sua agenda e fidelize suas clientes</p>
     </div>
   </div>
 </body>

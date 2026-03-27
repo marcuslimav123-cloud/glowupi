@@ -67,7 +67,7 @@ export function GlamourNoir() {
       <aside className="w-64 border-r border-[#d4a853]/20 bg-[#130b18] flex flex-col hidden md:flex shrink-0">
         <div className="h-20 flex items-center px-6 border-b border-[#d4a853]/20">
           <Sparkles className="h-6 w-6 text-[#d4a853] mr-3" />
-          <span className="font-['Playfair_Display'] text-2xl font-bold tracking-wide text-[#d4a853] italic">Glow Up</span>
+          <span className="font-['Playfair_Display'] text-2xl font-bold tracking-wide text-[#d4a853] italic">Glow Upi</span>
         </div>
         
         <div className="flex-1 overflow-y-auto py-6 px-4 space-y-8">

@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
-  title: Glow Up API
+  title: Glow Upi API
   version: 0.1.0
-  description: Glow Up — SaaS para salões de beleza
+  description: Glow Upi — SaaS para salões de beleza
 servers:
   - url: /api
     description: Base API path

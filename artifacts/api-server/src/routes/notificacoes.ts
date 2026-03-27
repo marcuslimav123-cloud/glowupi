@@ -194,7 +194,7 @@ router.post("/pacotes-expirando/enviar", requireAuth, async (req, res) => {
   if (pc.clienteId) {
     const [cliente] = await db.select().from(clientesTable).where(eq(clientesTable.id, pc.clienteId)).limit(1);
     const [barb] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
-    const nomeEstab = barb?.nome || "Glow Up";
+    const nomeEstab = barb?.nome || "Glow Upi";
     const pacotes = await db.select().from(pacotesTable).where(eq(pacotesTable.id, pc.pacoteId));
     const pacoteNome = pacotes[0]?.nome || "Pacote";
     if (cliente?.email) {
@@ -222,7 +222,7 @@ router.post("/aniversario/enviar", requireAuth, async (req, res) => {
   if (!cliente) return res.status(404).json({ error: "Cliente não encontrado" });
 
   const [barb] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
-  const nomeEstab = barb?.nome || "Glow Up";
+  const nomeEstab = barb?.nome || "Glow Upi";
 
   if (canal === "email") {
     if (params["notif_aniversario_email"] !== "Sim") {
@@ -345,7 +345,7 @@ router.post("/lembretes/enviar", requireAuth, async (req, res) => {
   if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
 
   const [barb] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
-  const nomeEstab = barb?.nome || "Glow Up";
+  const nomeEstab = barb?.nome || "Glow Upi";
   const incluirLink = (params["notif_link_confirmacao"] || "Sim") === "Sim";
   const usaSms = params["notif_lembrete_sms"] === "Sim";
   const usaWhatsapp = params["notif_lembrete_whatsapp"] === "Sim";
