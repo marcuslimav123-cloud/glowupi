@@ -463,9 +463,13 @@ export default function Landing() {
                       </li>
                     ))}
                   </ul>
-                  <Button className="w-full h-12 text-[14px] font-semibold rounded-full shadow-lg shadow-primary/20" onClick={() => handleSubscribe("single", "mensal")}>
-                    Começar Agora
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                  <Button
+                    className="w-full h-12 text-[14px] font-semibold rounded-full shadow-lg shadow-primary/20"
+                    onClick={() => handleSubscribe("single", "mensal")}
+                    disabled={isLoadingCheckout === "single-mensal"}
+                  >
+                    {isLoadingCheckout === "single-mensal" ? "Redirecionando..." : "Começar Agora"}
+                    {isLoadingCheckout !== "single-mensal" && <ArrowRight className="ml-2 h-4 w-4" />}
                   </Button>
                   <p className="text-[11px] text-white/30 mt-3">30 dias grátis • Cancele a qualquer momento</p>
                 </div>
