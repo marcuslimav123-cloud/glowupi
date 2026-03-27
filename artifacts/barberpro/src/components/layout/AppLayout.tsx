@@ -632,7 +632,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </Button>
           <div className="font-semibold text-[14px] text-foreground tracking-tight flex items-center gap-1.5">
-            <Sparkles className="h-[16px] w-[16px] text-primary" /> {APP_NAME}
+            <img src="/logo-icon.png" alt={APP_NAME} className="h-[16px] w-[16px] object-contain" /> {APP_NAME}
           </div>
         </div>
         <HeaderBar />
@@ -658,7 +658,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <Sparkles className="h-6 w-6 text-primary/40" />
+                    <img src="/logo-icon.png" alt={APP_NAME} className="h-10 w-10 object-contain opacity-60" />
                   </div>
                 )}
               </div>

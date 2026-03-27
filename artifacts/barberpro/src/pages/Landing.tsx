@@ -167,7 +167,7 @@ function HeroVideo() {
       <div className="absolute -inset-6 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent rounded-[32px] blur-3xl" />
       <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/20 border border-white/[0.08]">
         <iframe
-          src="/glow-upi-video/"
+          src={`${window.location.origin}/glow-upi-video/`}
           className="w-full aspect-video border-0"
           title="Glow Upi — Vídeo de Apresentação"
           loading="eager"
