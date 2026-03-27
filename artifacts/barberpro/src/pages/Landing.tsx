@@ -392,8 +392,8 @@ export default function Landing() {
           : "bg-transparent"
       }`}>
         <div className="max-w-[1200px] mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 font-semibold text-[16px] tracking-tight text-foreground">
-            <img src="/logo-icon.png" alt="Glow Upi" className="h-8 w-8 object-contain" />
+          <div className="flex items-center gap-3 font-semibold text-[18px] tracking-tight text-foreground">
+            <img src="/logo-icon.png" alt="Glow Upi" className="h-10 w-10 object-contain" />
             {APP_NAME}
           </div>
 

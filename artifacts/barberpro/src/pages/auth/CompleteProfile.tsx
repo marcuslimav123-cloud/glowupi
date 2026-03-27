@@ -70,8 +70,8 @@ export default function CompleteProfile() {
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#fafafa]">
       <div className="w-full max-w-[380px]">
         <div className="flex flex-col items-center mb-10">
-          <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center mb-5">
-            <Sparkles className="h-6 w-6 text-primary" />
+          <div className="mb-5">
+            <img src="/logo-icon.png" alt="Glow Upi" className="h-14 w-14 object-contain" />
           </div>
           <h1 className="text-[28px] font-bold text-foreground tracking-tight">Quase lá!</h1>
           <p className="text-foreground/40 text-[14px] mt-1">

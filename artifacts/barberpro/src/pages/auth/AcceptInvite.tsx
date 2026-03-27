@@ -150,8 +150,8 @@ export default function AcceptInvite() {
     <div className="min-h-screen flex items-center justify-center bg-[#fafafa] p-6">
       <div className="max-w-sm w-full space-y-8">
         <div className="text-center">
-          <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center mx-auto mb-4">
-            <Sparkles className="h-6 w-6 text-primary" />
+          <div className="mx-auto mb-4">
+            <img src="/logo-icon.png" alt="Glow Upi" className="h-14 w-14 object-contain mx-auto" />
           </div>
           <h1 className="text-[22px] font-bold text-foreground tracking-tight mb-1">
             Bem-vinda ao {APP_NAME}
