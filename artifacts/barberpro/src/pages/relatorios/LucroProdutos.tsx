@@ -13,6 +13,7 @@ const COLUMNS: ColumnDef[] = [
   { key: "qtd", label: "Qtd Vendida" },
   { key: "receita", label: "Receita", render: (v: number) => formatCurrency(v) },
   { key: "custo", label: "Custo", render: (v: number) => formatCurrency(v) },
+  { key: "comissao", label: "Comissão", render: (v: number) => formatCurrency(v) },
   { key: "lucro", label: "Lucro", render: (v: number) => (
     <span className={v >= 0 ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>{formatCurrency(v)}</span>
   )},
