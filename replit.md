@@ -95,4 +95,19 @@ Dashboard → Agenda → Cadastros (Clientes, Profissionais, Serviços, Pacotes 
 - Frontend Tipos.tsx: extra fields for forma_pagamento (isCartao, multiplicadorPontos) and bandeira (taxaOperadora, tipoBandeira, diasRecebimento, diasUteis)
 - Frontend Caixa.tsx: gorjeta field, gorjeta/taxa columns, líquido calculation with taxa deduction
 
+**Financeiro & Caixa (Task #27 — Tutorial Compliance):**
+- `forma_pagamento` field added to `contas_financeiras` for tracking payment method on baixa
+- PUT `/financeiro/:contaId/baixa` sets status=paga, dataPagamento, formaPagamento
+- Caixa: sangria (cash withdrawal), vale (advance to professional w/ atomic debit in contas_profissional)
+- Fechar Caixa: conferência modal showing esperado/informado/diferença
+- FluxoCaixa: 3 tabs (Total Movimentado, Total Disponível, Total a Receber) with per-payment-entry calculations
+
+**Clientes & Relatórios (Task #28):**
+- Client dashboard: `/gestao/clientes/:clienteId` page with summary cards (favorite service, favorite product, days since last appointment, total spent, loyalty points), tabs for agendamento history and comanda history
+- WhatsApp button on client listing opens `wa.me/55{phone}` in new tab
+- API: `GET /clientes/:clienteId/dashboard` returns aggregated client stats + history
+- Report "Dias sem Vir": `/relatorios/dias-sem-vir` lists inactive clients (configurable days threshold)
+- Report "Lucro por Produtos": `/relatorios/lucro-produtos` calculates revenue - cost = profit per product
+- Both new reports accessible from sidebar under Relatórios > Gerencial
+
 **DB Schema Path:** `lib/db/src/schema/` (each table in its own file, exported from `index.ts`)

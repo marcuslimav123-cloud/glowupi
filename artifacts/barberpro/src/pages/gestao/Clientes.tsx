@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useListClientes, useCreateCliente, useUpdateCliente } from "@workspace/api-client-react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Search, UserRound, Star, Crown, Phone, Mail,
-  Cake, TrendingUp, Edit2, Award
+  Cake, TrendingUp, Edit2, Award, MessageCircle, Eye
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
@@ -216,6 +217,18 @@ export default function Clientes() {
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
+                  {c.telefone && (
+                    <a href={`https://wa.me/55${c.telefone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50" title="WhatsApp">
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
+                    </a>
+                  )}
+                  <Link href={`/gestao/clientes/${c.id}`}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title="Ver Detalhes">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </Link>
                   <Button variant="ghost" size="icon" className={`h-8 w-8 ${c.vip ? "text-amber-500" : "text-muted-foreground hover:text-amber-500"}`} title={c.vip ? "Remover VIP" : "Marcar VIP"} onClick={() => handleToggleVip(c)}>
                     <Crown className="h-4 w-4" />
                   </Button>

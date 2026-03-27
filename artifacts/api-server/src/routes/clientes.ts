@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { clientesTable, barbeariasTable } from "@workspace/db/schema";
-import { eq, and, ilike, or } from "drizzle-orm";
+import { clientesTable, barbeariasTable, agendamentosTable, comandasTable } from "@workspace/db/schema";
+import { eq, and, ilike, or, desc, sql } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
 
@@ -56,6 +56,69 @@ router.post("/", requireAuth, async (req, res) => {
     vip: vip ?? false,
   }).returning();
   return res.status(201).json(formatCliente(cliente));
+});
+
+router.get("/:clienteId/dashboard", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const clienteId = parseInt(req.params.clienteId);
+
+  const [cliente] = await db.select().from(clientesTable).where(and(eq(clientesTable.id, clienteId), eq(clientesTable.barbeariaId, barbeariaId))).limit(1);
+  if (!cliente) return res.status(404).json({ error: "Cliente não encontrado" });
+
+  const [agendamentos, comandas] = await Promise.all([
+    db.select().from(agendamentosTable).where(and(eq(agendamentosTable.barbeariaId, barbeariaId), eq(agendamentosTable.clienteId, clienteId))).orderBy(desc(agendamentosTable.data)),
+    db.select().from(comandasTable).where(and(eq(comandasTable.barbeariaId, barbeariaId), sql`${comandasTable.clienteNome} = ${cliente.nome}`)).orderBy(desc(comandasTable.dataFechamento)),
+  ]);
+
+  const servicoCount: Record<string, number> = {};
+  const produtoCount: Record<string, number> = {};
+
+  agendamentos.forEach(a => {
+    const nome = a.servicoNome;
+    servicoCount[nome] = (servicoCount[nome] || 0) + 1;
+  });
+
+  comandas.forEach(c => {
+    const prods = Array.isArray(c.produtos) ? c.produtos : [];
+    (prods as Array<{ nome: string }>).forEach(p => {
+      if (p.nome) produtoCount[p.nome] = (produtoCount[p.nome] || 0) + 1;
+    });
+  });
+
+  const servicoMaisRealizado = Object.entries(servicoCount).sort((a, b) => b[1] - a[1])[0] ?? null;
+  const produtoMaisComprado = Object.entries(produtoCount).sort((a, b) => b[1] - a[1])[0] ?? null;
+
+  const ultimoAgendamento = agendamentos[0] ?? null;
+  let diasSemAgendar: number | null = null;
+  if (ultimoAgendamento) {
+    const diff = Date.now() - new Date(ultimoAgendamento.data).getTime();
+    diasSemAgendar = Math.floor(diff / (1000 * 60 * 60 * 24));
+  }
+
+  return res.json({
+    cliente: formatCliente(cliente),
+    servicoMaisRealizado: servicoMaisRealizado ? { nome: servicoMaisRealizado[0], vezes: servicoMaisRealizado[1] } : null,
+    produtoMaisComprado: produtoMaisComprado ? { nome: produtoMaisComprado[0], vezes: produtoMaisComprado[1] } : null,
+    diasSemAgendar,
+    totalGasto: parseFloat(cliente.totalGasto as string),
+    pontosFidelidade: cliente.pontosFidelidade,
+    totalAgendamentos: agendamentos.length,
+    totalComandas: comandas.length,
+    agendamentos: agendamentos.slice(0, 50).map(a => ({
+      id: a.id, data: a.data, horaInicio: a.horaInicio, horaFim: a.horaFim,
+      servicoNome: a.servicoNome, profissionalNome: a.profissionalNome,
+      status: a.status, valor: parseFloat(a.valor as string),
+    })),
+    comandas: comandas.slice(0, 50).map(c => ({
+      id: c.id, dataFechamento: c.dataFechamento?.toISOString(),
+      profissionalNome: c.profissionalNome,
+      valorTotal: parseFloat(c.valorTotal as string),
+      pagamentos: c.pagamentos,
+      servicos: c.servicos,
+      produtos: c.produtos,
+    })),
+  });
 });
 
 router.get("/:clienteId", requireAuth, requireRole("dono", "gerente"), async (req, res) => {

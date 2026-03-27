@@ -69,6 +69,9 @@ import PerfilCliente from "@/pages/relatorios/PerfilCliente";
 import EstoqueReport from "@/pages/relatorios/EstoqueReport";
 import PacotesReport from "@/pages/relatorios/PacotesReport";
 import ComandasItensReport from "@/pages/relatorios/ComandasItensReport";
+import DiasSemVir from "@/pages/relatorios/DiasSemVir";
+import LucroProdutos from "@/pages/relatorios/LucroProdutos";
+import ClienteDetalhe from "@/pages/gestao/ClienteDetalhe";
 
 import Parametros from "@/pages/configuracoes/Parametros";
 import PerfisAcesso from "@/pages/configuracoes/PerfisAcesso";
@@ -106,6 +109,7 @@ function Router() {
       <Route path="/gestao/profissionais" component={Profissionais} />
       <Route path="/gestao/servicos" component={Servicos} />
       <Route path="/gestao/produtos" component={Produtos} />
+      <Route path="/gestao/clientes/:clienteId" component={ClienteDetalhe} />
       <Route path="/gestao/clientes" component={Clientes} />
 
       <Route path="/comandas/abertas" component={ComandasAbertas} />
@@ -131,6 +135,8 @@ function Router() {
       <Route path="/relatorios/estoque" component={EstoqueReport} />
       <Route path="/relatorios/pacotes" component={PacotesReport} />
       <Route path="/relatorios/comandas-itens" component={ComandasItensReport} />
+      <Route path="/relatorios/dias-sem-vir" component={DiasSemVir} />
+      <Route path="/relatorios/lucro-produtos" component={LucroProdutos} />
       <Route path="/relatorios" component={Relatorios} />
 
       <Route path="/caixa" component={Caixa} />
