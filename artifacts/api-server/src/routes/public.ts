@@ -257,8 +257,8 @@ router.get("/:slug/slots", async (req, res) => {
     const slotSizeParam = params["agenda_tamanho_slots"] || "30min";
     const intervalo = slotSizeParam === "1h" ? 60 : (parseInt(slotSizeParam) || 30);
     const limiteAntecedenciaRaw = params["agenda_limite_antecedencia"];
-    const limiteAntecedenciaParsed = limiteAntecedenciaRaw !== undefined ? parseFloat(limiteAntecedenciaRaw) : 0.5;
-    const limiteAntecedencia = isNaN(limiteAntecedenciaParsed) ? 0.5 : limiteAntecedenciaParsed;
+    const limiteAntecedenciaParsed = limiteAntecedenciaRaw !== undefined ? parseFloat(limiteAntecedenciaRaw) : 0;
+    const limiteAntecedencia = isNaN(limiteAntecedenciaParsed) ? 0 : limiteAntecedenciaParsed;
     const limiteFuturoDias = parseInt(params["agenda_limite_futuro_dias"] || "30");
 
     const slots: any[] = [];
@@ -348,8 +348,8 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
     }
 
     const limiteAntecedenciaRaw2 = params["agenda_limite_antecedencia"];
-    const limiteAntecedenciaParsed2 = limiteAntecedenciaRaw2 !== undefined ? parseFloat(limiteAntecedenciaRaw2) : 0.5;
-    const limiteAntecedencia = isNaN(limiteAntecedenciaParsed2) ? 0.5 : limiteAntecedenciaParsed2;
+    const limiteAntecedenciaParsed2 = limiteAntecedenciaRaw2 !== undefined ? parseFloat(limiteAntecedenciaRaw2) : 0;
+    const limiteAntecedencia = isNaN(limiteAntecedenciaParsed2) ? 0 : limiteAntecedenciaParsed2;
     const [hI, mI] = horaInicio.split(":").map(Number);
     const slotMinutes = hI * 60 + mI;
     const totalMinutesFromNow = (diffDias * 24 * 60) + (slotMinutes - localNow.currentMinutes);
