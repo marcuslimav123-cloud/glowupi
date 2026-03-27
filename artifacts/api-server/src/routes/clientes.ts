@@ -82,8 +82,8 @@ router.get("/:clienteId/dashboard", requireAuth, requireRole("dono", "gerente"),
 
   comandas.forEach(c => {
     const prods = Array.isArray(c.produtos) ? c.produtos : [];
-    (prods as Array<{ nome: string }>).forEach(p => {
-      if (p.nome) produtoCount[p.nome] = (produtoCount[p.nome] || 0) + 1;
+    (prods as Array<{ nome: string; quantidade?: number }>).forEach(p => {
+      if (p.nome) produtoCount[p.nome] = (produtoCount[p.nome] || 0) + (p.quantidade ?? 1);
     });
   });
 
