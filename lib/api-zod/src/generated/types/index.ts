@@ -83,6 +83,7 @@ export * from "./resgate";
 export * from "./resgateInput";
 export * from "./servico";
 export * from "./servicoMetrica";
+export * from "./servicoOverride";
 export * from "./servicoTipoPreco";
 export * from "./slotDisponivel";
 export * from "./successResponse";

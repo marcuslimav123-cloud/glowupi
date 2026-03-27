@@ -194,13 +194,26 @@ export const ListProfissionaisResponseItem = zod.object({
   barbeariaId: zod.number(),
   usuarioId: zod.number().nullish(),
   nomeExibicao: zod.string(),
+  apelido: zod.string().nullish(),
   fotoUrl: zod.string().nullish(),
   comissaoTipo: zod.enum(["percentual", "valor_fixo"]),
   comissaoValor: zod.number(),
+  celular: zod.string().nullish(),
   ativo: zod.boolean(),
   ordem: zod.number(),
   especialidade: zod.string().nullish(),
   horarios: zod.object({}).passthrough().nullish(),
+  servicoIds: zod.array(zod.number()).optional(),
+  servicosOverrides: zod
+    .array(
+      zod.object({
+        servicoId: zod.number(),
+        comissaoOverride: zod.number().nullish(),
+        tempoOverride: zod.number().nullish(),
+        precoOverride: zod.number().nullish(),
+      }),
+    )
+    .optional(),
   createdAt: zod.string().optional(),
 });
 export const ListProfissionaisResponse = zod.array(
@@ -216,11 +229,24 @@ export const CreateProfissionalParams = zod.object({
 
 export const CreateProfissionalBody = zod.object({
   nomeExibicao: zod.string(),
+  apelido: zod.string().nullish(),
   fotoUrl: zod.string().nullish(),
   comissaoTipo: zod.enum(["percentual", "valor_fixo"]),
   comissaoValor: zod.number(),
+  celular: zod.string().nullish(),
   especialidade: zod.string().nullish(),
   horarios: zod.object({}).passthrough().nullish(),
+  servicoIds: zod.array(zod.number()).optional(),
+  servicosOverrides: zod
+    .array(
+      zod.object({
+        servicoId: zod.number(),
+        comissaoOverride: zod.number().nullish(),
+        tempoOverride: zod.number().nullish(),
+        precoOverride: zod.number().nullish(),
+      }),
+    )
+    .optional(),
 });
 
 /**
@@ -236,13 +262,26 @@ export const GetProfissionalResponse = zod.object({
   barbeariaId: zod.number(),
   usuarioId: zod.number().nullish(),
   nomeExibicao: zod.string(),
+  apelido: zod.string().nullish(),
   fotoUrl: zod.string().nullish(),
   comissaoTipo: zod.enum(["percentual", "valor_fixo"]),
   comissaoValor: zod.number(),
+  celular: zod.string().nullish(),
   ativo: zod.boolean(),
   ordem: zod.number(),
   especialidade: zod.string().nullish(),
   horarios: zod.object({}).passthrough().nullish(),
+  servicoIds: zod.array(zod.number()).optional(),
+  servicosOverrides: zod
+    .array(
+      zod.object({
+        servicoId: zod.number(),
+        comissaoOverride: zod.number().nullish(),
+        tempoOverride: zod.number().nullish(),
+        precoOverride: zod.number().nullish(),
+      }),
+    )
+    .optional(),
   createdAt: zod.string().optional(),
 });
 
@@ -256,13 +295,26 @@ export const UpdateProfissionalParams = zod.object({
 
 export const UpdateProfissionalBody = zod.object({
   nomeExibicao: zod.string().optional(),
+  apelido: zod.string().nullish(),
   fotoUrl: zod.string().nullish(),
   comissaoTipo: zod.enum(["percentual", "valor_fixo"]).optional(),
   comissaoValor: zod.number().optional(),
+  celular: zod.string().nullish(),
   ativo: zod.boolean().optional(),
   ordem: zod.number().optional(),
   especialidade: zod.string().nullish(),
   horarios: zod.object({}).passthrough().nullish(),
+  servicoIds: zod.array(zod.number()).optional(),
+  servicosOverrides: zod
+    .array(
+      zod.object({
+        servicoId: zod.number(),
+        comissaoOverride: zod.number().nullish(),
+        tempoOverride: zod.number().nullish(),
+        precoOverride: zod.number().nullish(),
+      }),
+    )
+    .optional(),
 });
 
 export const UpdateProfissionalResponse = zod.object({
@@ -270,13 +322,26 @@ export const UpdateProfissionalResponse = zod.object({
   barbeariaId: zod.number(),
   usuarioId: zod.number().nullish(),
   nomeExibicao: zod.string(),
+  apelido: zod.string().nullish(),
   fotoUrl: zod.string().nullish(),
   comissaoTipo: zod.enum(["percentual", "valor_fixo"]),
   comissaoValor: zod.number(),
+  celular: zod.string().nullish(),
   ativo: zod.boolean(),
   ordem: zod.number(),
   especialidade: zod.string().nullish(),
   horarios: zod.object({}).passthrough().nullish(),
+  servicoIds: zod.array(zod.number()).optional(),
+  servicosOverrides: zod
+    .array(
+      zod.object({
+        servicoId: zod.number(),
+        comissaoOverride: zod.number().nullish(),
+        tempoOverride: zod.number().nullish(),
+        precoOverride: zod.number().nullish(),
+      }),
+    )
+    .optional(),
   createdAt: zod.string().optional(),
 });
 
@@ -1010,13 +1075,26 @@ export const GetPublicBarbeariaResponse = zod.object({
       barbeariaId: zod.number(),
       usuarioId: zod.number().nullish(),
       nomeExibicao: zod.string(),
+      apelido: zod.string().nullish(),
       fotoUrl: zod.string().nullish(),
       comissaoTipo: zod.enum(["percentual", "valor_fixo"]),
       comissaoValor: zod.number(),
+      celular: zod.string().nullish(),
       ativo: zod.boolean(),
       ordem: zod.number(),
       especialidade: zod.string().nullish(),
       horarios: zod.object({}).passthrough().nullish(),
+      servicoIds: zod.array(zod.number()).optional(),
+      servicosOverrides: zod
+        .array(
+          zod.object({
+            servicoId: zod.number(),
+            comissaoOverride: zod.number().nullish(),
+            tempoOverride: zod.number().nullish(),
+            precoOverride: zod.number().nullish(),
+          }),
+        )
+        .optional(),
       createdAt: zod.string().optional(),
     }),
   ),

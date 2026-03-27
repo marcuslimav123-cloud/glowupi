@@ -7,12 +7,17 @@
  */
 import type { CreateProfissionalInputComissaoTipo } from "./createProfissionalInputComissaoTipo";
 import type { CreateProfissionalInputHorarios } from "./createProfissionalInputHorarios";
+import type { ServicoOverride } from "./servicoOverride";
 
 export interface CreateProfissionalInput {
   nomeExibicao: string;
+  apelido?: string | null;
   fotoUrl?: string | null;
   comissaoTipo: CreateProfissionalInputComissaoTipo;
   comissaoValor: number;
+  celular?: string | null;
   especialidade?: string | null;
   horarios?: CreateProfissionalInputHorarios;
+  servicoIds?: number[];
+  servicosOverrides?: ServicoOverride[];
 }

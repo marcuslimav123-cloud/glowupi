@@ -164,7 +164,7 @@ router.get("/", async (req, res) => {
         horaInicio,
         horaFim,
         profissionalId: prof.id,
-        profissionalNome: prof.nomeExibicao,
+        profissionalNome: prof.apelido || prof.nomeExibicao,
         disponivel: !ocupado && !bloqueado && !tooSoon,
       });
     }

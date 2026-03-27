@@ -15,13 +15,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit2, Trash2, Users, Award, ToggleLeft, ToggleRight, Clock, Calendar, Scissors, Check, User } from "lucide-react";
+import { Plus, Edit2, Trash2, Users, Award, ToggleLeft, ToggleRight, Clock, Calendar, Scissors, Check, User, Phone } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { ImageUpload } from "@/components/ImageUpload";
+
+type ServicoOverride = {
+  servicoId: number;
+  comissaoOverride?: number | null;
+  tempoOverride?: number | null;
+  precoOverride?: number | null;
+};
 
 type Prof = {
   id: number;
   nomeExibicao: string;
+  apelido?: string | null;
+  celular?: string | null;
   especialidade: string | null;
   comissaoTipo: string;
   comissaoValor: number;
@@ -29,6 +38,7 @@ type Prof = {
   horarios?: any;
   fotoUrl?: string | null;
   servicoIds?: number[];
+  servicosOverrides?: ServicoOverride[];
 };
 
 type Servico = {
@@ -36,6 +46,7 @@ type Servico = {
   nome: string;
   preco: number;
   duracaoMinutos: number;
+  comissaoPorcentagem?: number | null;
   ativo: boolean;
 };
 
@@ -112,6 +123,8 @@ function ProfForm({
   servicos: Servico[];
 }) {
   const [nome, setNome] = useState(initial?.nomeExibicao ?? "");
+  const [apelido, setApelido] = useState(initial?.apelido ?? "");
+  const [celular, setCelular] = useState(initial?.celular ?? "");
   const [esp, setEsp] = useState(initial?.especialidade ?? "");
   const [tipo, setTipo] = useState<string>(initial?.comissaoTipo ?? "percentual");
   const [valor, setValor] = useState(String(initial?.comissaoValor ?? ""));
@@ -119,6 +132,10 @@ function ProfForm({
   const [horarios, setHorarios] = useState<any>(initial?.horarios || { porDia: {} });
   const [showSchedule, setShowSchedule] = useState(!!initial?.horarios?.porDia && Object.keys(initial.horarios.porDia).length > 0);
   const [selectedServicoIds, setSelectedServicoIds] = useState<number[]>(initial?.servicoIds || []);
+
+  const initialOverridesMap = new Map<number, ServicoOverride>();
+  (initial?.servicosOverrides || []).forEach(o => initialOverridesMap.set(o.servicoId, o));
+  const [overrides, setOverrides] = useState<Map<number, ServicoOverride>>(initialOverridesMap);
 
   const activeServicos = servicos.filter(s => s.ativo);
 
@@ -136,27 +153,65 @@ function ProfForm({
     setSelectedServicoIds([]);
   };
 
+  const updateOverride = (servicoId: number, field: keyof ServicoOverride, value: string) => {
+    setOverrides(prev => {
+      const next = new Map(prev);
+      const existing = next.get(servicoId) || { servicoId };
+      const numVal = value === "" ? null : Number(value);
+      next.set(servicoId, { ...existing, [field]: numVal });
+      return next;
+    });
+  };
+
+  const getOverride = (servicoId: number): ServicoOverride => {
+    return overrides.get(servicoId) || { servicoId };
+  };
+
   return (
     <form onSubmit={e => {
       e.preventDefault();
+      const servicosOverrides = selectedServicoIds
+        .map(id => getOverride(id))
+        .filter(o => o.comissaoOverride != null || o.tempoOverride != null || o.precoOverride != null);
+
       onSave({
         nomeExibicao: nome,
+        apelido: apelido || null,
+        celular: celular || null,
         especialidade: esp || null,
         comissaoTipo: tipo,
         comissaoValor: parseFloat(valor),
         fotoUrl: fotoUrl || null,
         horarios: showSchedule ? horarios : null,
         servicoIds: selectedServicoIds,
+        servicosOverrides,
       });
     }} className="space-y-4 mt-2">
-      <div className="space-y-2">
-        <Label>Nome de Exibição *</Label>
-        <Input value={nome} onChange={e => setNome(e.target.value)} required placeholder="Ex: Ana Beatriz" className="bg-background" />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Nome de Exibição *</Label>
+          <Input value={nome} onChange={e => setNome(e.target.value)} required placeholder="Ex: Ana Beatriz" className="bg-background" />
+        </div>
+        <div className="space-y-2">
+          <Label>Apelido</Label>
+          <Input value={apelido} onChange={e => setApelido(e.target.value)} placeholder="Nome curto para agenda" className="bg-background" />
+        </div>
       </div>
-      <div className="space-y-2">
-        <Label>Especialidade</Label>
-        <Input value={esp} onChange={e => setEsp(e.target.value)} placeholder="Ex: Nail Designer, Esteticista" className="bg-background" />
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Especialidade</Label>
+          <Input value={esp} onChange={e => setEsp(e.target.value)} placeholder="Ex: Nail Designer" className="bg-background" />
+        </div>
+        <div className="space-y-2">
+          <Label className="flex items-center gap-1.5">
+            <Phone className="h-3.5 w-3.5" />
+            Celular
+          </Label>
+          <Input value={celular} onChange={e => setCelular(e.target.value)} placeholder="(11) 99999-0000" className="bg-background" />
+        </div>
       </div>
+
       <ImageUpload
         value={fotoUrl}
         onChange={(url) => setFotoUrl(url || "")}
@@ -165,6 +220,7 @@ function ProfForm({
         label="Foto de Perfil"
         placeholder={<User className="h-6 w-6 text-muted-foreground" />}
       />
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Tipo de Comissão</Label>
@@ -201,26 +257,68 @@ function ProfForm({
               <span className="text-xs text-muted-foreground">|</span>
               <button type="button" onClick={clearAll} className="text-xs text-muted-foreground hover:underline">Limpar</button>
             </div>
-            <div className="rounded-xl border border-border overflow-hidden max-h-48 overflow-y-auto">
+            <div className="rounded-xl border border-border overflow-hidden max-h-[400px] overflow-y-auto">
               {activeServicos.map((s, i) => {
                 const checked = selectedServicoIds.includes(s.id);
+                const ov = getOverride(s.id);
                 return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => toggleServico(s.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted/30 ${i > 0 ? "border-t border-border/50" : ""}`}
-                  >
-                    <div className={`h-5 w-5 rounded-md border flex items-center justify-center shrink-0 transition-all ${checked ? "bg-primary border-primary" : "border-border"}`}>
-                      {checked && <Check className="h-3 w-3 text-primary-foreground" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{s.nome}</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {s.duracaoMinutos}min — R$ {s.preco.toFixed(2).replace(".", ",")}
-                    </span>
-                  </button>
+                  <div key={s.id} className={`${i > 0 ? "border-t border-border/50" : ""}`}>
+                    <button
+                      type="button"
+                      onClick={() => toggleServico(s.id)}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted/30`}
+                    >
+                      <div className={`h-5 w-5 rounded-md border flex items-center justify-center shrink-0 transition-all ${checked ? "bg-primary border-primary" : "border-border"}`}>
+                        {checked && <Check className="h-3 w-3 text-primary-foreground" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{s.nome}</p>
+                      </div>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {s.duracaoMinutos}min — R$ {s.preco.toFixed(2).replace(".", ",")}
+                      </span>
+                    </button>
+                    {checked && (
+                      <div className="px-4 pb-3 pt-1 bg-muted/10">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5 font-medium">Valores personalizados (deixe vazio para usar padrão)</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <label className="text-[10px] text-muted-foreground block mb-0.5">Comissão (%)</label>
+                            <Input
+                              type="number" step="0.01" min="0" max="100"
+                              value={ov.comissaoOverride != null ? String(ov.comissaoOverride) : ""}
+                              onChange={e => updateOverride(s.id, "comissaoOverride", e.target.value)}
+                              placeholder={s.comissaoPorcentagem != null ? `${s.comissaoPorcentagem}%` : "padrão"}
+                              className="h-7 text-xs bg-background"
+                              onClick={e => e.stopPropagation()}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-muted-foreground block mb-0.5">Tempo (min)</label>
+                            <Input
+                              type="number" min="1"
+                              value={ov.tempoOverride != null ? String(ov.tempoOverride) : ""}
+                              onChange={e => updateOverride(s.id, "tempoOverride", e.target.value)}
+                              placeholder={`${s.duracaoMinutos}`}
+                              className="h-7 text-xs bg-background"
+                              onClick={e => e.stopPropagation()}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-muted-foreground block mb-0.5">Valor (R$)</label>
+                            <Input
+                              type="number" step="0.01" min="0"
+                              value={ov.precoOverride != null ? String(ov.precoOverride) : ""}
+                              onChange={e => updateOverride(s.id, "precoOverride", e.target.value)}
+                              placeholder={s.preco.toFixed(2)}
+                              className="h-7 text-xs bg-background"
+                              onClick={e => e.stopPropagation()}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -333,6 +431,11 @@ export default function Profissionais() {
   const servicoMap: Record<number, string> = {};
   (servicos as Servico[]).forEach(s => { servicoMap[s.id] = s.nome; });
 
+  const countOverrides = (p: Prof) => {
+    if (!p.servicosOverrides) return 0;
+    return p.servicosOverrides.filter(o => o.comissaoOverride != null || o.tempoOverride != null || o.precoOverride != null).length;
+  };
+
   return (
     <AppLayout>
       <div className="flex items-center justify-between mb-8">
@@ -369,25 +472,33 @@ export default function Profissionais() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-semibold text-foreground">{p.nomeExibicao}</p>
+                  {p.apelido && (
+                    <span className="text-xs text-muted-foreground">({p.apelido})</span>
+                  )}
                   <Badge variant={p.ativo ? "default" : "secondary"} className={p.ativo ? "bg-green-500/15 text-green-400 border-green-500/25 text-xs" : "text-xs"}>
                     {p.ativo ? "Ativo" : "Inativo"}
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground mt-0.5">{p.especialidade || "Sem especialidade definida"}</p>
-                {p.servicoIds && p.servicoIds.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {p.servicoIds.slice(0, 3).map(sId => (
-                      <span key={sId} className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">
-                        {servicoMap[sId] || `#${sId}`}
-                      </span>
-                    ))}
-                    {p.servicoIds.length > 3 && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                        +{p.servicoIds.length - 3}
-                      </span>
-                    )}
-                  </div>
-                )}
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {p.servicoIds && p.servicoIds.length > 0 && (
+                    <Badge variant="outline" className="text-[10px] h-5 bg-primary/5 border-primary/20 text-primary">
+                      <Scissors className="h-2.5 w-2.5 mr-1" />
+                      {p.servicoIds.length} serviço(s)
+                    </Badge>
+                  )}
+                  {countOverrides(p) > 0 && (
+                    <Badge variant="outline" className="text-[10px] h-5 bg-amber-500/10 border-amber-500/20 text-amber-500">
+                      {countOverrides(p)} override(s)
+                    </Badge>
+                  )}
+                  {p.celular && (
+                    <Badge variant="outline" className="text-[10px] h-5">
+                      <Phone className="h-2.5 w-2.5 mr-1" />
+                      {p.celular}
+                    </Badge>
+                  )}
+                </div>
                 {getScheduleSummary(p) && (
                   <div className="flex items-center gap-1 mt-1">
                     <Clock className="h-3 w-3 text-primary" />
@@ -423,7 +534,7 @@ export default function Profissionais() {
       )}
 
       <Dialog open={modalOpen} onOpenChange={v => { setModalOpen(v); if (!v) setEditing(null); }}>
-        <DialogContent className="bg-card border-border sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-display">{editing ? "Editar Profissional" : "Novo Profissional"}</DialogTitle>
           </DialogHeader>

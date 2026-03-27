@@ -9,6 +9,7 @@ export const profissionaisTable = pgTable("profissionais", {
   barbeariaId: integer("barbearia_id").notNull().references(() => barbeariasTable.id),
   usuarioId: integer("usuario_id").references(() => usersTable.id),
   nomeExibicao: text("nome_exibicao").notNull(),
+  apelido: text("apelido"),
   fotoUrl: text("foto_url"),
   comissaoTipo: text("comissao_tipo").notNull().default("percentual"),
   comissaoValor: numeric("comissao_valor", { precision: 10, scale: 2 }).notNull().default("40"),

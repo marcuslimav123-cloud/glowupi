@@ -5,16 +5,21 @@
  * Glow Up — SaaS para salões de beleza
  * OpenAPI spec version: 0.1.0
  */
+import type { ServicoOverride } from "./servicoOverride";
 import type { UpdateProfissionalInputComissaoTipo } from "./updateProfissionalInputComissaoTipo";
 import type { UpdateProfissionalInputHorarios } from "./updateProfissionalInputHorarios";
 
 export interface UpdateProfissionalInput {
   nomeExibicao?: string;
+  apelido?: string | null;
   fotoUrl?: string | null;
   comissaoTipo?: UpdateProfissionalInputComissaoTipo;
   comissaoValor?: number;
+  celular?: string | null;
   ativo?: boolean;
   ordem?: number;
   especialidade?: string | null;
   horarios?: UpdateProfissionalInputHorarios;
+  servicoIds?: number[];
+  servicosOverrides?: ServicoOverride[];
 }

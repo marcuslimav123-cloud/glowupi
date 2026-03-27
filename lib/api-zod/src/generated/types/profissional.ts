@@ -7,18 +7,23 @@
  */
 import type { ProfissionalComissaoTipo } from "./profissionalComissaoTipo";
 import type { ProfissionalHorarios } from "./profissionalHorarios";
+import type { ServicoOverride } from "./servicoOverride";
 
 export interface Profissional {
   id: number;
   barbeariaId: number;
   usuarioId?: number | null;
   nomeExibicao: string;
+  apelido?: string | null;
   fotoUrl?: string | null;
   comissaoTipo: ProfissionalComissaoTipo;
   comissaoValor: number;
+  celular?: string | null;
   ativo: boolean;
   ordem: number;
   especialidade?: string | null;
   horarios?: ProfissionalHorarios;
+  servicoIds?: number[];
+  servicosOverrides?: ServicoOverride[];
   createdAt?: string;
 }

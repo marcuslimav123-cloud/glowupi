@@ -120,6 +120,13 @@ export interface UpdateBarbeariaInput {
   horarioFuncionamento?: UpdateBarbeariaInputHorarioFuncionamento;
 }
 
+export interface ServicoOverride {
+  servicoId: number;
+  comissaoOverride?: number | null;
+  tempoOverride?: number | null;
+  precoOverride?: number | null;
+}
+
 export type ProfissionalComissaoTipo =
   (typeof ProfissionalComissaoTipo)[keyof typeof ProfissionalComissaoTipo];
 
@@ -135,13 +142,17 @@ export interface Profissional {
   barbeariaId: number;
   usuarioId?: number | null;
   nomeExibicao: string;
+  apelido?: string | null;
   fotoUrl?: string | null;
   comissaoTipo: ProfissionalComissaoTipo;
   comissaoValor: number;
+  celular?: string | null;
   ativo: boolean;
   ordem: number;
   especialidade?: string | null;
   horarios?: ProfissionalHorarios;
+  servicoIds?: number[];
+  servicosOverrides?: ServicoOverride[];
   createdAt?: string;
 }
 
@@ -157,11 +168,15 @@ export type CreateProfissionalInputHorarios = { [key: string]: unknown } | null;
 
 export interface CreateProfissionalInput {
   nomeExibicao: string;
+  apelido?: string | null;
   fotoUrl?: string | null;
   comissaoTipo: CreateProfissionalInputComissaoTipo;
   comissaoValor: number;
+  celular?: string | null;
   especialidade?: string | null;
   horarios?: CreateProfissionalInputHorarios;
+  servicoIds?: number[];
+  servicosOverrides?: ServicoOverride[];
 }
 
 export type UpdateProfissionalInputComissaoTipo =
@@ -176,13 +191,17 @@ export type UpdateProfissionalInputHorarios = { [key: string]: unknown } | null;
 
 export interface UpdateProfissionalInput {
   nomeExibicao?: string;
+  apelido?: string | null;
   fotoUrl?: string | null;
   comissaoTipo?: UpdateProfissionalInputComissaoTipo;
   comissaoValor?: number;
+  celular?: string | null;
   ativo?: boolean;
   ordem?: number;
   especialidade?: string | null;
   horarios?: UpdateProfissionalInputHorarios;
+  servicoIds?: number[];
+  servicosOverrides?: ServicoOverride[];
 }
 
 export type ServicoTipoPreco =

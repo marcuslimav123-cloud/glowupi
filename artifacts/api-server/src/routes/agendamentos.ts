@@ -3,7 +3,7 @@ import { db } from "@workspace/db";
 import {
   agendamentosTable, barbeariasTable, profissionaisTable,
   servicosTable, clientesTable, comandasTable, produtosTable,
-  bloqueiosHorarioTable
+  bloqueiosHorarioTable, profissionalServicosTable
 } from "@workspace/db/schema";
 import { eq, and, sql, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
@@ -154,7 +154,7 @@ router.post("/", requireAuth, async (req, res) => {
     clienteNome,
     clienteTelefone,
     profissionalId,
-    profissionalNome: profissional.nomeExibicao,
+    profissionalNome: profissional.apelido || profissional.nomeExibicao,
     servicoId,
     servicoNome: servico.nome,
     data,
@@ -212,7 +212,7 @@ router.put("/:agendamentoId", requireAuth, async (req, res) => {
   };
   if (profissionalId && user.role !== "colaborador") {
     const [prof] = await db.select().from(profissionaisTable).where(eq(profissionaisTable.id, profissionalId)).limit(1);
-    if (prof) { updates.profissionalId = profissionalId; updates.profissionalNome = prof.nomeExibicao; }
+    if (prof) { updates.profissionalId = profissionalId; updates.profissionalNome = prof.apelido || prof.nomeExibicao; }
   }
   if (data) updates.data = data;
   if (horaInicio) updates.horaInicio = horaInicio;
@@ -292,12 +292,28 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
   const desconto = Math.max(0, Number(rawDesconto) || 0);
   const parcelas = Math.max(1, Math.floor(Number(rawParcelas) || 1));
   const valorServico = parseFloat(agend.valor as string);
-  const comissaoPerc = profissional ? parseFloat(profissional.comissaoValor as string) : 40;
-  let comissaoServico = profissional?.comissaoTipo === "valor_fixo" ? comissaoPerc : (valorServico * comissaoPerc) / 100;
+
+  const [profServicoLink] = profissional ? await db.select().from(profissionalServicosTable).where(
+    and(
+      eq(profissionalServicosTable.profissionalId, agend.profissionalId),
+      eq(profissionalServicosTable.servicoId, agend.servicoId),
+      eq(profissionalServicosTable.barbeariaId, barbeariaId)
+    )
+  ).limit(1) : [undefined];
+
+  const hasComissaoOverride = profServicoLink?.comissaoOverride != null;
+  const comissaoPerc = hasComissaoOverride
+    ? parseFloat(profServicoLink!.comissaoOverride!)
+    : (profissional ? parseFloat(profissional.comissaoValor as string) : 40);
+  let comissaoServico = (hasComissaoOverride || profissional?.comissaoTipo === "percentual")
+    ? (valorServico * comissaoPerc) / 100
+    : comissaoPerc;
 
   const comissaoEditavel = params["comanda_edicao_comissoes"] || "Liberar";
   if (comissaoEditavel === "Bloquear" && req.body.comissaoCustom !== undefined) {
-    comissaoServico = profissional?.comissaoTipo === "valor_fixo" ? comissaoPerc : (valorServico * comissaoPerc) / 100;
+    comissaoServico = (hasComissaoOverride || profissional?.comissaoTipo === "percentual")
+      ? (valorServico * comissaoPerc) / 100
+      : comissaoPerc;
   } else if (comissaoEditavel === "Liberar" && req.body.comissaoCustom !== undefined) {
     comissaoServico = Math.max(0, Number(req.body.comissaoCustom) || comissaoServico);
   }
