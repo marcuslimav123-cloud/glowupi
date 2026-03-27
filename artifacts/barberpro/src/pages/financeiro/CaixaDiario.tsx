@@ -127,7 +127,7 @@ export default function CaixaDiario() {
     finally { setSubmitting(false); }
   };
 
-  if (loading) return <AppLayout><div className="animate-pulse h-48 bg-white rounded-2xl" /></AppLayout>;
+  if (loading) return <AppLayout><div className="animate-pulse h-48 bg-card rounded-2xl" /></AppLayout>;
 
   return (
     <AppLayout>
@@ -149,7 +149,7 @@ export default function CaixaDiario() {
       </div>
 
       {showAbrir && (
-        <Card className="mb-6 bg-white border-black/[0.04] shadow-none">
+        <Card className="mb-6 bg-card border-border shadow-none">
           <CardHeader><CardTitle className="text-[16px]">Abrir Caixa</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div><Label>Valor de Abertura (R$)</Label><Input type="number" value={valorAbertura} onChange={e => setValorAbertura(e.target.value)} className="mt-1" /></div>
@@ -274,7 +274,7 @@ export default function CaixaDiario() {
       {caixa ? (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-            <Card className="bg-white border-black/[0.04] shadow-none">
+            <Card className="bg-card border-border shadow-none">
               <CardContent className="p-4">
                 <p className="text-[12px] text-foreground/40 mb-1">Abertura</p>
                 <p className="text-[20px] font-bold">{formatCurrency(caixa.valorAbertura)}</p>
@@ -299,7 +299,7 @@ export default function CaixaDiario() {
               </CardContent>
             </Card>
           </div>
-          <Card className="bg-white border-black/[0.04] shadow-none">
+          <Card className="bg-card border-border shadow-none">
             <CardHeader><CardTitle className="text-[16px]">Movimentações</CardTitle></CardHeader>
             <CardContent>
               {(!caixa.movimentacoes || caixa.movimentacoes.length === 0) ? (
@@ -331,7 +331,7 @@ export default function CaixaDiario() {
           </Card>
         </>
       ) : !showAbrir && (
-        <Card className="bg-white border-black/[0.04] shadow-none">
+        <Card className="bg-card border-border shadow-none">
           <CardContent className="py-16 text-center">
             <DollarSign className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
             <p className="text-foreground/40 text-[14px]">Nenhum caixa aberto. Clique em "Abrir Caixa" para começar.</p>

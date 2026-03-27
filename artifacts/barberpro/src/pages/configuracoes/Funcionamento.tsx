@@ -119,7 +119,7 @@ export default function Funcionamento() {
     setHorarios(h => h.map((item, i) => i === index ? { ...item, [field]: value } : item));
   };
 
-  if (loading) return <AppLayout><div className="animate-pulse h-48 bg-white rounded-2xl" /></AppLayout>;
+  if (loading) return <AppLayout><div className="animate-pulse h-48 bg-card rounded-2xl" /></AppLayout>;
 
   return (
     <AppLayout>
@@ -133,7 +133,7 @@ export default function Funcionamento() {
 
       <div className="space-y-3">
         {horarios.map((h, i) => (
-          <Card key={h.dia} className="bg-white border-black/[0.04] shadow-none">
+          <Card key={h.dia} className="bg-card border-border shadow-none">
             <CardContent className="p-5">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="flex items-center gap-3 sm:w-40">

@@ -87,7 +87,7 @@ export default function ContaProfissional() {
       </div>
 
       {showForm && (
-        <Card className="mb-6 bg-white border-black/[0.04] shadow-none">
+        <Card className="mb-6 bg-card border-border shadow-none">
           <CardHeader><CardTitle className="text-[16px]">Novo Lançamento</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -110,15 +110,15 @@ export default function ContaProfissional() {
         </Card>
       )}
 
-      {loading ? <div className="animate-pulse h-48 bg-white rounded-2xl" /> : grouped.length === 0 ? (
-        <Card className="bg-white border-black/[0.04] shadow-none"><CardContent className="py-16 text-center">
+      {loading ? <div className="animate-pulse h-48 bg-card rounded-2xl" /> : grouped.length === 0 ? (
+        <Card className="bg-card border-border shadow-none"><CardContent className="py-16 text-center">
           <Users className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
           <p className="text-foreground/40 text-[14px]">Nenhuma conta encontrada</p>
         </CardContent></Card>
       ) : (
         <div className="space-y-4">
           {grouped.map(p => (
-            <Card key={p.id} className="bg-white border-black/[0.04] shadow-none">
+            <Card key={p.id} className="bg-card border-border shadow-none">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -128,7 +128,7 @@ export default function ContaProfissional() {
                   <span className={`text-[16px] font-bold ${p.saldo >= 0 ? "text-green-600" : "text-red-600"}`}>{formatCurrency(p.saldo)}</span>
                 </div>
                 {p.contas.length > 0 && (
-                  <div className="space-y-1 mt-3 pt-3 border-t border-black/[0.04]">
+                  <div className="space-y-1 mt-3 pt-3 border-t border-border">
                     {p.contas.map((c: any) => (
                       <div key={c.id} className="flex items-center justify-between py-1.5 text-[13px]">
                         <div><span className={c.tipo === "credito" ? "text-green-600" : "text-red-600"}>{c.tipo === "credito" ? "+" : "-"}</span> {c.descricao} <span className="text-foreground/30 text-[11px] ml-1">{c.data}</span></div>

@@ -82,7 +82,7 @@ export default function Caixinha() {
       </div>
 
       {showForm && (
-        <Card className="mb-6 bg-white border-black/[0.04] shadow-none">
+        <Card className="mb-6 bg-card border-border shadow-none">
           <CardHeader><CardTitle className="text-[16px]">Nova Gorjeta</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -106,15 +106,15 @@ export default function Caixinha() {
         <p className="text-[24px] font-bold text-primary">{formatCurrency(contas.reduce((s, c) => s + c.valor, 0))}</p>
       </CardContent></Card>
 
-      {loading ? <div className="animate-pulse h-48 bg-white rounded-2xl" /> : grouped.length === 0 ? (
-        <Card className="bg-white border-black/[0.04] shadow-none"><CardContent className="py-16 text-center">
+      {loading ? <div className="animate-pulse h-48 bg-card rounded-2xl" /> : grouped.length === 0 ? (
+        <Card className="bg-card border-border shadow-none"><CardContent className="py-16 text-center">
           <Wallet className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
           <p className="text-foreground/40 text-[14px]">Nenhuma gorjeta registrada este mês</p>
         </CardContent></Card>
       ) : (
         <div className="space-y-4">
           {grouped.map(p => (
-            <Card key={p.id} className="bg-white border-black/[0.04] shadow-none">
+            <Card key={p.id} className="bg-card border-border shadow-none">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-3">
                   <p className="font-semibold text-[14px]">{p.nome}</p>

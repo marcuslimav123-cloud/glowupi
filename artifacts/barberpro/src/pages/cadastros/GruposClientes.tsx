@@ -114,7 +114,7 @@ export default function GruposClientes() {
       </div>
 
       {showForm && (
-        <Card className="mb-6 bg-white border-black/[0.04] shadow-none">
+        <Card className="mb-6 bg-card border-border shadow-none">
           <CardHeader><CardTitle className="text-[16px]">{editId ? "Editar" : "Novo"} Grupo</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div><Label>Nome do Grupo</Label><Input value={nome} onChange={e => setNome(e.target.value)} className="mt-1" placeholder="Ex: VIP, Frequentes, Novos..." /></div>
@@ -145,7 +145,7 @@ export default function GruposClientes() {
                         key={c.id}
                         type="button"
                         onClick={() => toggleCliente(c.id)}
-                        className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-black/[0.02] transition-colors border-b border-border last:border-b-0 ${selectedClienteIds.includes(c.id) ? "bg-primary/5" : ""}`}
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted/50 transition-colors border-b border-border last:border-b-0 ${selectedClienteIds.includes(c.id) ? "bg-primary/5" : ""}`}
                       >
                         <div className={`h-5 w-5 rounded border flex items-center justify-center shrink-0 ${selectedClienteIds.includes(c.id) ? "bg-primary border-primary" : "border-border"}`}>
                           {selectedClienteIds.includes(c.id) && <Check className="h-3 w-3 text-white" />}
@@ -169,15 +169,15 @@ export default function GruposClientes() {
         </Card>
       )}
 
-      {loading ? <div className="animate-pulse h-48 bg-white rounded-2xl" /> : grupos.length === 0 ? (
-        <Card className="bg-white border-black/[0.04] shadow-none"><CardContent className="py-16 text-center">
+      {loading ? <div className="animate-pulse h-48 bg-card rounded-2xl" /> : grupos.length === 0 ? (
+        <Card className="bg-card border-border shadow-none"><CardContent className="py-16 text-center">
           <UsersRound className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
           <p className="text-foreground/40 text-[14px]">Nenhum grupo cadastrado</p>
         </CardContent></Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {grupos.map(g => (
-            <Card key={g.id} className="bg-white border-black/[0.04] shadow-none hover:shadow-lg hover:shadow-black/[0.03] transition-all">
+            <Card key={g.id} className="bg-card border-border shadow-none hover:shadow-lg hover:shadow-black/[0.03] transition-all">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">

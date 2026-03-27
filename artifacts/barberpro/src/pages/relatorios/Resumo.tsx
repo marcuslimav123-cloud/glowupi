@@ -48,7 +48,7 @@ export default function Resumo() {
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {[1,2,3,4,5,6,7,8].map(i => (
-            <div key={i} className="h-32 bg-white rounded-2xl border border-black/[0.04] animate-pulse" />
+            <div key={i} className="h-32 bg-card rounded-2xl border border-border animate-pulse" />
           ))}
         </div>
       ) : data ? (
@@ -63,7 +63,7 @@ export default function Resumo() {
                 className={`${kpi.color} ${kpi.textColor} rounded-2xl p-5 flex flex-col justify-between min-h-[130px] shadow-lg shadow-black/10 hover:shadow-xl transition-shadow`}
               >
                 <div className="flex items-start justify-between">
-                  <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-xl bg-card/20 flex items-center justify-center">
                     <Icon className="h-5 w-5" />
                   </div>
                   <span className="text-3xl font-bold">{displayValue}</span>

@@ -86,7 +86,7 @@ export default function Comissoes() {
       </div>
 
       {showForm && (
-        <Card className="mb-6 bg-white border-black/[0.04] shadow-none">
+        <Card className="mb-6 bg-card border-border shadow-none">
           <CardHeader><CardTitle className="text-[16px]">Nova Comissão</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div><Label>Profissional</Label>
@@ -114,15 +114,15 @@ export default function Comissoes() {
         </CardContent></Card>
       </div>
 
-      {loading ? <div className="animate-pulse h-48 bg-white rounded-2xl" /> : comissoes.length === 0 ? (
-        <Card className="bg-white border-black/[0.04] shadow-none"><CardContent className="py-16 text-center">
+      {loading ? <div className="animate-pulse h-48 bg-card rounded-2xl" /> : comissoes.length === 0 ? (
+        <Card className="bg-card border-border shadow-none"><CardContent className="py-16 text-center">
           <Percent className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
           <p className="text-foreground/40 text-[14px]">Nenhuma comissão encontrada</p>
         </CardContent></Card>
       ) : (
         <div className="space-y-2">
           {comissoes.map(c => (
-            <div key={c.id} className="flex items-center justify-between p-4 rounded-xl bg-white border border-black/[0.04]">
+            <div key={c.id} className="flex items-center justify-between p-4 rounded-xl bg-card border border-border">
               <div>
                 <p className="text-[14px] font-medium">{c.profissionalNome}</p>
                 <p className="text-[12px] text-foreground/40">Base: {formatCurrency(c.valorBase)} · {c.percentual}%</p>

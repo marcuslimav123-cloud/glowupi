@@ -19,13 +19,13 @@ export default function Dashboard() {
     return (
       <AppLayout>
         <div className="space-y-6 animate-pulse">
-          <div className="h-8 w-40 bg-black/[0.04] rounded-lg"></div>
+          <div className="h-8 w-40 bg-muted rounded-lg"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {[1,2,3,4].map(i => <div key={i} className="h-28 bg-white rounded-2xl border border-black/[0.04]"></div>)}
+            {[1,2,3,4].map(i => <div key={i} className="h-28 bg-card rounded-2xl border border-border"></div>)}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <div className="h-80 bg-white rounded-2xl border border-black/[0.04] lg:col-span-2"></div>
-            <div className="h-80 bg-white rounded-2xl border border-black/[0.04]"></div>
+            <div className="h-80 bg-card rounded-2xl border border-border lg:col-span-2"></div>
+            <div className="h-80 bg-card rounded-2xl border border-border"></div>
           </div>
         </div>
       </AppLayout>
@@ -47,7 +47,7 @@ export default function Dashboard() {
           <MetricCard title="Pagos" value={colabData.pagos ?? 0} icon={DollarSignIcon} />
         </div>
 
-        <Card className="bg-white border-black/[0.04] shadow-none">
+        <Card className="bg-card border-border shadow-none">
           <CardHeader>
             <CardTitle className="text-[15px] font-semibold">Agenda do Dia</CardTitle>
           </CardHeader>
@@ -57,13 +57,13 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-2">
                 {colabData.meusAgendamentosHoje.map((ag: any) => (
-                  <div key={ag.id} className="flex items-center justify-between p-3.5 rounded-xl bg-[#fafafa] hover:bg-black/[0.02] transition-colors">
+                  <div key={ag.id} className="flex items-center justify-between p-3.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
                     <div>
                       <p className="font-medium text-[13px] text-foreground">{ag.horario} — {ag.clienteNome || "Cliente"}</p>
                       <p className="text-[11px] text-foreground/35">{ag.servicoNome || "Serviço"}</p>
                     </div>
                     <div className="text-right">
-                      <span className={`text-[12px] px-2 py-0.5 rounded-full font-medium ${ag.status === "confirmado" ? "bg-green-50 text-green-600" : ag.status === "cancelado" ? "bg-red-50 text-red-500" : "bg-amber-50 text-amber-600"}`}>
+                      <span className={`text-[12px] px-2 py-0.5 rounded-full font-medium ${ag.status === "confirmado" ? "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400" : ag.status === "cancelado" ? "bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400" : "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"}`}>
                         {ag.status}
                       </span>
                       {ag.valor > 0 && <p className="text-[12px] text-foreground/50 mt-1">{formatCurrency(ag.valor)}</p>}
@@ -87,12 +87,12 @@ export default function Dashboard() {
           <h1 className="text-[24px] font-bold text-foreground">Dashboard</h1>
           <p className="text-foreground/40 text-[14px] mt-0.5">Visão geral do seu negócio</p>
         </div>
-        <div className="flex bg-white p-1 rounded-full border border-black/[0.06] w-fit">
+        <div className="flex bg-card p-1 rounded-full border border-border w-fit">
           {["hoje", "semana", "mes"].map((p) => (
             <button
               key={p}
               onClick={() => setPeriodo(p as any)}
-              className={`px-4 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200 ${periodo === p ? 'bg-foreground text-white' : 'text-foreground/40 hover:text-foreground'}`}
+              className={`px-4 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200 ${periodo === p ? 'bg-foreground text-background' : 'text-foreground/40 hover:text-foreground'}`}
             >
               {p.charAt(0).toUpperCase() + p.slice(1)}
             </button>
@@ -125,7 +125,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
-        <Card className="lg:col-span-2 bg-white border-black/[0.04] shadow-none">
+        <Card className="lg:col-span-2 bg-card border-border shadow-none">
           <CardHeader>
             <CardTitle className="text-[15px] font-semibold">Faturamento ({periodo})</CardTitle>
           </CardHeader>
@@ -137,8 +137,9 @@ export default function Dashboard() {
                   <YAxis stroke="hsl(var(--foreground) / 0.25)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(val) => `R$${val}`} />
                   <RechartsTooltip 
                     cursor={{fill: 'hsl(var(--foreground) / 0.03)'}}
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '12px', fontSize: '13px' }}
+                    contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '13px', color: 'hsl(var(--foreground))' }}
                     itemStyle={{ color: 'hsl(var(--foreground))' }}
+                    labelStyle={{ color: 'hsl(var(--foreground))' }}
                   />
                   <Bar dataKey="valor" radius={[6, 6, 0, 0]}>
                     {data.faturamentoPorDia.map((entry, index) => (
@@ -151,7 +152,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-black/[0.04] shadow-none">
+        <Card className="bg-card border-border shadow-none">
           <CardHeader>
             <CardTitle className="text-[15px] font-semibold">Top Serviços</CardTitle>
           </CardHeader>
@@ -164,7 +165,7 @@ export default function Dashboard() {
                       <PieCell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <RechartsTooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '12px', fontSize: '13px' }} />
+                  <RechartsTooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '13px', color: 'hsl(var(--foreground))' }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -184,16 +185,16 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="bg-white border-black/[0.04] shadow-none">
+        <Card className="bg-card border-border shadow-none">
           <CardHeader>
             <CardTitle className="text-[15px] font-semibold flex items-center gap-2"><Award className="h-4 w-4 text-primary" /> Ranking Profissionais</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {data.rankingProfissionais.map((prof, idx) => (
-                <div key={prof.profissionalId} className="flex items-center justify-between p-3 rounded-xl bg-[#fafafa] hover:bg-black/[0.02] transition-colors">
+                <div key={prof.profissionalId} className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className={`h-7 w-7 rounded-full flex items-center justify-center font-bold text-[11px] ${idx === 0 ? 'bg-amber-100 text-amber-600' : idx === 1 ? 'bg-slate-100 text-slate-500' : idx === 2 ? 'bg-orange-100 text-orange-600' : 'bg-black/[0.04] text-foreground/40'}`}>
+                    <div className={`h-7 w-7 rounded-full flex items-center justify-center font-bold text-[11px] ${idx === 0 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : idx === 1 ? 'bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400' : idx === 2 ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' : 'bg-muted text-foreground/40'}`}>
                       {idx + 1}
                     </div>
                     <div>
@@ -210,7 +211,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-black/[0.04] shadow-none">
+        <Card className="bg-card border-border shadow-none">
           <CardHeader>
             <CardTitle className="text-[15px] font-semibold flex items-center gap-2"><AlertCircle className="h-4 w-4 text-red-500" /> Alertas</CardTitle>
           </CardHeader>
@@ -220,7 +221,7 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-2">
                 {data.alertas.map((alerta, idx) => (
-                  <div key={idx} className={`p-3.5 rounded-xl border ${alerta.nivel === 'danger' ? 'bg-red-50 border-red-100 text-red-600' : 'bg-amber-50 border-amber-100 text-amber-600'}`}>
+                  <div key={idx} className={`p-3.5 rounded-xl border ${alerta.nivel === 'danger' ? 'bg-red-50 dark:bg-red-950/30 border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400' : 'bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/30 text-amber-600 dark:text-amber-400'}`}>
                     <p className="font-medium text-[13px]">{alerta.mensagem}</p>
                   </div>
                 ))}
@@ -236,7 +237,7 @@ export default function Dashboard() {
 
 function MetricCard({ title, value, icon: Icon, trend }: any) {
   return (
-    <Card className="bg-white border-black/[0.04] shadow-none hover:shadow-lg hover:shadow-black/[0.02] transition-all duration-300">
+    <Card className="bg-card border-border shadow-none hover:shadow-lg hover:shadow-foreground/[0.02] transition-all duration-300">
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-3">
           <p className="text-[13px] font-medium text-foreground/40">{title}</p>

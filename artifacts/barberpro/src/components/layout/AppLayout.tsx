@@ -301,6 +301,8 @@ const HREF_TO_PERMISSION: Record<string, string> = {
   "/configuracoes/alertas": "configuracoes",
   "/empresa": "empresa",
   "/equipe": "equipe",
+  "/relatorios/dias-sem-vir": "relatorios",
+  "/relatorios/lucro-produtos": "relatorios",
 };
 
 function hasPermission(href: string | undefined, perms: string[] | null): boolean {
@@ -364,7 +366,7 @@ function CollapsibleSubgroup({ sg, location, onLinkClick }: { sg: { label: strin
           "w-full flex items-center gap-1.5 px-3 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider transition-all duration-150 cursor-pointer",
           active
             ? "text-primary/60 hover:text-primary/80"
-            : "text-foreground/25 hover:text-foreground/40 hover:bg-black/[0.02]"
+            : "text-foreground/25 hover:text-foreground/40 hover:bg-muted/50"
         )}
       >
         <ChevronDown className={cn(
@@ -382,8 +384,8 @@ function CollapsibleSubgroup({ sg, location, onLinkClick }: { sg: { label: strin
             <Link key={sub.name + (sub.href || '')} href={sub.href!} className={cn(
               "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150",
               loc === sub.href?.split("?")[0]
-                ? "bg-foreground text-white"
-                : "text-foreground/45 hover:text-foreground hover:bg-black/[0.03]"
+                ? "bg-foreground text-background"
+                : "text-foreground/45 hover:text-foreground hover:bg-muted/50"
             )} onClick={onLinkClick}>
               <sub.icon className="h-[14px] w-[14px]" />
               {sub.name}
@@ -425,7 +427,7 @@ function CollapsibleGroup({ item, location, onNavigate, mainRef }: { item: NavIt
           "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150",
           active
             ? "text-primary bg-primary/[0.06]"
-            : "text-foreground/50 hover:text-foreground hover:bg-black/[0.03]"
+            : "text-foreground/50 hover:text-foreground hover:bg-muted/50"
         )}
       >
         <item.icon className="h-[16px] w-[16px]" />
@@ -440,13 +442,13 @@ function CollapsibleGroup({ item, location, onNavigate, mainRef }: { item: NavIt
         "overflow-hidden transition-all duration-200",
         open ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
       )}>
-        <div className="ml-2 pl-3 border-l border-black/[0.06] mt-0.5 space-y-0.5">
+        <div className="ml-2 pl-3 border-l border-border mt-0.5 space-y-0.5">
           {(item.children || []).map(child => (
             <Link key={child.name + (child.href || '')} href={child.href!} className={cn(
               "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150",
               loc === child.href?.split("?")[0]
-                ? "bg-foreground text-white"
-                : "text-foreground/45 hover:text-foreground hover:bg-black/[0.03]"
+                ? "bg-foreground text-background"
+                : "text-foreground/45 hover:text-foreground hover:bg-muted/50"
             )} onClick={handleLinkClick}>
               <child.icon className="h-[14px] w-[14px]" />
               {child.name}
@@ -567,7 +569,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }, [layoutParams]);
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center bg-[#fafafa]"><div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div></div>;
+    return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div></div>;
   }
 
   if (!user) return null;
@@ -575,7 +577,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   if (!canAccess && status !== "none") {
     const isTrialExpired = status === "trial_expired";
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fafafa] p-6">
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
         <div className="max-w-sm w-full text-center space-y-6">
           <div className={`h-16 w-16 rounded-2xl flex items-center justify-center mx-auto ${isTrialExpired ? "bg-primary/10" : "bg-red-500/8"}`}>
             {isTrialExpired ? (
@@ -594,9 +596,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </h1>
             <p className="text-foreground/45 text-[14px] leading-relaxed">
               {isTrialExpired
-                ? "Seus 30 dias de teste gratuito acabaram. Escolha um plano para continuar usando o Glow Up e não perder seus dados."
+                ? "Seu período de teste gratuito terminou. Escolha um plano para continuar usando todas as funcionalidades."
                 : status === "cancelado"
-                ? "Sua assinatura foi cancelada. Renove seu plano para continuar usando a plataforma."
+                ? "Sua assinatura foi cancelada. Renove para voltar a usar o sistema."
                 : "Sua assinatura está inativa. Atualize seu plano para voltar a usar todas as funcionalidades."}
             </p>
           </div>
@@ -649,7 +651,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <LogoUpload value={logoUrl} onChange={handleLogoChange} />
             ) : (
               <div
-                className="w-full rounded-lg overflow-hidden bg-black/[0.03] border border-black/[0.06]"
+                className="w-full rounded-lg overflow-hidden bg-muted border border-border"
                 style={{ aspectRatio: "16/9" }}
               >
                 {logoUrl ? (
@@ -678,8 +680,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <Link href={item.href!} className={cn(
                   "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150",
                   location === item.href || location.startsWith(item.href + '/')
-                    ? "bg-foreground text-white" 
-                    : "text-foreground/50 hover:text-foreground hover:bg-black/[0.03]"
+                    ? "bg-foreground text-background" 
+                    : "text-foreground/50 hover:text-foreground hover:bg-muted/50"
                 )} onClick={handleNavClick}>
                   <item.icon className="h-[16px] w-[16px]" />
                   {item.name}
@@ -689,7 +691,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           ))}
         </div>
 
-        <div className="p-4 border-t border-black/[0.04] shrink-0">
+        <div className="p-4 border-t border-border shrink-0">
           <div className="flex items-center gap-2.5 px-2 py-2 mb-3">
             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-semibold text-[12px]">
               {user.nome.charAt(0).toUpperCase()}
@@ -701,7 +703,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
           <Button 
             variant="ghost" 
-            className="w-full justify-start text-foreground/40 hover:text-red-500 hover:bg-red-50 text-[13px] h-8 rounded-lg" 
+            className="w-full justify-start text-foreground/40 hover:text-red-500 hover:bg-destructive/10 text-[13px] h-8 rounded-lg" 
             onClick={logout}
           >
             <LogOut className="mr-2 h-3.5 w-3.5" /> Sair
@@ -716,9 +718,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         {shouldShowUpgrade && (
           <div className={`border-b px-4 py-2 flex items-center justify-center gap-3 z-20 shrink-0 ${
             trialDaysLeft >= 0 && trialDaysLeft <= 5
-              ? "bg-red-50 border-red-100"
+              ? "bg-red-50 dark:bg-red-950/30 border-red-100 dark:border-red-900/30"
               : trialDaysLeft >= 0 && trialDaysLeft <= 10
-              ? "bg-amber-50 border-amber-100"
+              ? "bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/30"
               : "bg-primary/5 border-primary/10"
           }`}>
             {trialDaysLeft >= 0 && trialDaysLeft <= 5 ? (
@@ -726,7 +728,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             ) : (
               <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
             )}
-            <span className={`text-[13px] ${trialDaysLeft >= 0 && trialDaysLeft <= 5 ? "text-red-600 font-medium" : trialDaysLeft >= 0 && trialDaysLeft <= 10 ? "text-amber-700" : "text-foreground/60"}`}>
+            <span className={`text-[13px] ${trialDaysLeft >= 0 && trialDaysLeft <= 5 ? "text-red-600 dark:text-red-400 font-medium" : trialDaysLeft >= 0 && trialDaysLeft <= 10 ? "text-amber-700 dark:text-amber-400" : "text-foreground/60"}`}>
               {trialDaysLeft > 0
                 ? `${trialDaysLeft} dia${trialDaysLeft !== 1 ? "s" : ""} restante${trialDaysLeft !== 1 ? "s" : ""} de teste grátis`
                 : "Período de teste gratuito ativo"}
@@ -734,7 +736,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Link href="/#precos">
               <Button size="sm" variant="outline" className={`text-[11px] h-6 px-2.5 rounded-full ${
                 trialDaysLeft >= 0 && trialDaysLeft <= 5
-                  ? "border-red-300 text-red-600 hover:bg-red-50"
+                  ? "border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50"
                   : "border-primary/20 text-primary"
               }`}>
                 Escolher Plano

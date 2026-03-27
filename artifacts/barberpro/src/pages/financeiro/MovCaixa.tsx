@@ -62,7 +62,7 @@ export default function MovCaixa() {
       </div>
 
       {showForm && (
-        <Card className="mb-6 bg-white border-black/[0.04] shadow-none">
+        <Card className="mb-6 bg-card border-border shadow-none">
           <CardHeader><CardTitle className="text-[16px]">{editId ? "Editar" : "Nova"} Conta</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -97,15 +97,15 @@ export default function MovCaixa() {
         </CardContent></Card>
       </div>
 
-      {loading ? <div className="animate-pulse h-48 bg-white rounded-2xl" /> : contas.length === 0 ? (
-        <Card className="bg-white border-black/[0.04] shadow-none"><CardContent className="py-16 text-center">
+      {loading ? <div className="animate-pulse h-48 bg-card rounded-2xl" /> : contas.length === 0 ? (
+        <Card className="bg-card border-border shadow-none"><CardContent className="py-16 text-center">
           <ArrowUpDown className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
           <p className="text-foreground/40 text-[14px]">Nenhuma movimentação cadastrada</p>
         </CardContent></Card>
       ) : (
         <div className="space-y-2">
           {contas.map(c => (
-            <div key={c.id} className="flex items-center justify-between p-4 rounded-xl bg-white border border-black/[0.04]">
+            <div key={c.id} className="flex items-center justify-between p-4 rounded-xl bg-card border border-border">
               <div className="flex items-center gap-3">
                 {c.tipo === "receber" ? <ArrowUpCircle className="h-5 w-5 text-green-500" /> : <ArrowDownCircle className="h-5 w-5 text-red-500" />}
                 <div>

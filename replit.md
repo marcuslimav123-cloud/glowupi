@@ -12,6 +12,8 @@ The project is a full-stack monorepo utilizing `pnpm workspaces`. The frontend i
 **UI/UX Decisions:**
 The design follows a "luxury clinic aesthetic" with a color palette of warm gold, cream, and off-white, aiming for a high-end feel. It uses `Inter` for body text and `DM Serif Display` for headings, with subtle borders and `fafafa` backgrounds for a clean, Apple-inspired look.
 
+**Dark Mode:** All internal pages (inside AppLayout) use semantic Tailwind tokens (`bg-card`, `bg-muted`, `bg-background`, `border-border`, `text-foreground`) instead of hardcoded `bg-white`/`border-black`. Dark mode toggled via `.dark` class on `<html>`, controlled by `tema_layout` parameter (Claro/Escuro/Automático). Public pages (PublicBooking, PublicStorefront, Landing, auth) use their own dark backgrounds intentionally and are NOT tokenized. Parameter changes (theme/font) invalidate `["parametros-layout"]` query for instant updates without page reload.
+
 **Technical Implementations:**
 - **Authentication:** Session-based with cookies. Supports Google Sign-In. Features a multi-level access control system (owner, manager, collaborator, client) and a separate super admin login.
 - **API:** All endpoints are prefixed with `/api` and are documented with OpenAPI, generating client code via Orval.

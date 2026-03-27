@@ -70,7 +70,7 @@ export default function RestricaoCliente() {
       </div>
 
       {showForm && (
-        <Card className="mb-6 bg-white border-black/[0.04] shadow-none">
+        <Card className="mb-6 bg-card border-border shadow-none">
           <CardHeader><CardTitle className="text-[16px]">Nova Restrição</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div><Label>Cliente</Label>
@@ -92,15 +92,15 @@ export default function RestricaoCliente() {
         <Input placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9 rounded-xl" />
       </div>
 
-      {loading ? <div className="animate-pulse h-48 bg-white rounded-2xl" /> : filtered.length === 0 ? (
-        <Card className="bg-white border-black/[0.04] shadow-none"><CardContent className="py-16 text-center">
+      {loading ? <div className="animate-pulse h-48 bg-card rounded-2xl" /> : filtered.length === 0 ? (
+        <Card className="bg-card border-border shadow-none"><CardContent className="py-16 text-center">
           <ShieldAlert className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
           <p className="text-foreground/40 text-[14px]">Nenhuma restrição cadastrada</p>
         </CardContent></Card>
       ) : (
         <div className="space-y-2">
           {filtered.map(r => (
-            <div key={r.id} className="flex items-center justify-between p-4 rounded-xl bg-white border border-black/[0.04]">
+            <div key={r.id} className="flex items-center justify-between p-4 rounded-xl bg-card border border-border">
               <div className="flex items-center gap-3">
                 <ShieldAlert className={`h-5 w-5 ${r.tipo === "bloqueio" ? "text-red-500" : r.tipo === "alerta" ? "text-amber-500" : "text-blue-500"}`} />
                 <div>

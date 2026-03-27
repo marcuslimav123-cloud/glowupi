@@ -145,7 +145,7 @@ export default function EmailTemplates() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-black/[0.04] p-6 space-y-5">
+          <div className="bg-card rounded-2xl border border-border p-6 space-y-5">
             <div>
               <label className="text-[13px] font-medium text-foreground/60 mb-1.5 block">Assunto do E-mail</label>
               <Input
@@ -161,7 +161,7 @@ export default function EmailTemplates() {
                 value={editCorpo}
                 onChange={e => setEditCorpo(e.target.value)}
                 rows={18}
-                className="w-full px-3 py-2.5 rounded-xl border border-black/[0.06] text-[13px] text-foreground/80 font-mono bg-white resize-y focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full px-3 py-2.5 rounded-xl border border-border text-[13px] text-foreground/80 font-mono bg-card resize-y focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
@@ -207,8 +207,8 @@ export default function EmailTemplates() {
                   <X className="h-3.5 w-3.5 mr-1" /> Fechar
                 </Button>
               </div>
-              <div className="bg-white rounded-2xl border border-black/[0.04] overflow-hidden">
-                <div className="bg-black/[0.02] px-4 py-2 border-b border-black/[0.04]">
+              <div className="bg-card rounded-2xl border border-border overflow-hidden">
+                <div className="bg-muted/50 px-4 py-2 border-b border-border">
                   <p className="text-[12px] text-foreground/40">
                     <strong>Assunto:</strong> {editAssunto.replace(/\{\{(\w+)\}\}/g, (_, k) => editing.exemplos[k] || `{{${k}}}`)}
                   </p>
@@ -243,7 +243,7 @@ export default function EmailTemplates() {
         ) : (
           <div className="space-y-4">
             {templates.map(t => (
-              <div key={t.tipo} className="bg-white rounded-2xl border border-black/[0.04] p-5 space-y-3">
+              <div key={t.tipo} className="bg-card rounded-2xl border border-border p-5 space-y-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center">
@@ -294,7 +294,7 @@ export default function EmailTemplates() {
                   </div>
                 </div>
 
-                <div className="bg-black/[0.015] rounded-xl px-4 py-3">
+                <div className="bg-muted/50 rounded-xl px-4 py-3">
                   <p className="text-[12px] text-foreground/50">
                     <strong>Assunto:</strong> {t.assunto}
                   </p>
@@ -302,7 +302,7 @@ export default function EmailTemplates() {
 
                 <div className="flex flex-wrap gap-1">
                   {t.variaveis.map(v => (
-                    <span key={v} className="inline-flex px-2 py-0.5 rounded-md bg-black/[0.03] text-[10px] text-foreground/35 font-mono">
+                    <span key={v} className="inline-flex px-2 py-0.5 rounded-md bg-muted/50 text-[10px] text-foreground/35 font-mono">
                       {"{{" + v + "}}"}
                     </span>
                   ))}

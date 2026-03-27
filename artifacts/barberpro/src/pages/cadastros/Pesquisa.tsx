@@ -87,13 +87,13 @@ export default function Pesquisa() {
 
         {estatisticas && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <Card className="bg-white border-black/[0.04] shadow-none">
+            <Card className="bg-card border-border shadow-none">
               <CardContent className="p-5 text-center">
                 <p className="text-[12px] text-foreground/40 mb-1">Total de Respostas</p>
                 <p className="text-3xl font-bold text-primary">{estatisticas.totalRespostas}</p>
               </CardContent>
             </Card>
-            <Card className="bg-white border-black/[0.04] shadow-none">
+            <Card className="bg-card border-border shadow-none">
               <CardContent className="p-5 text-center">
                 <p className="text-[12px] text-foreground/40 mb-1">Nota Média</p>
                 <div className="flex items-center justify-center gap-1">
@@ -102,7 +102,7 @@ export default function Pesquisa() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-white border-black/[0.04] shadow-none">
+            <Card className="bg-card border-border shadow-none">
               <CardContent className="p-5">
                 <p className="text-[12px] text-foreground/40 mb-2 text-center">Distribuição</p>
                 <div className="space-y-1">
@@ -132,13 +132,13 @@ export default function Pesquisa() {
         </div>
 
         {respostas.length === 0 ? (
-          <Card className="bg-white border-black/[0.04] shadow-none"><CardContent className="py-16 text-center">
+          <Card className="bg-card border-border shadow-none"><CardContent className="py-16 text-center">
             <p className="text-foreground/40 text-[14px]">Nenhuma resposta recebida ainda</p>
           </CardContent></Card>
         ) : (
           <div className="space-y-3">
             {respostas.map((r: any) => (
-              <Card key={r.id} className="bg-white border-black/[0.04] shadow-none"><CardContent className="p-4">
+              <Card key={r.id} className="bg-card border-border shadow-none"><CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="font-semibold text-[14px]">{r.clienteNome || "Anônimo"}</p>
                   <p className="text-[11px] text-foreground/30">{new Date(r.createdAt).toLocaleDateString("pt-BR")}</p>
@@ -176,7 +176,7 @@ export default function Pesquisa() {
       </div>
 
       {showForm && (
-        <Card className="mb-6 bg-white border-black/[0.04] shadow-none">
+        <Card className="mb-6 bg-card border-border shadow-none">
           <CardHeader><CardTitle className="text-[16px]">{editId ? "Editar" : "Nova"} Pesquisa</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div><Label>Título</Label><Input value={form.titulo} onChange={e => setForm(f => ({ ...f, titulo: e.target.value }))} className="mt-1" /></div>
@@ -207,15 +207,15 @@ export default function Pesquisa() {
         </Card>
       )}
 
-      {loading ? <div className="animate-pulse h-48 bg-white rounded-2xl" /> : pesquisas.length === 0 ? (
-        <Card className="bg-white border-black/[0.04] shadow-none"><CardContent className="py-16 text-center">
+      {loading ? <div className="animate-pulse h-48 bg-card rounded-2xl" /> : pesquisas.length === 0 ? (
+        <Card className="bg-card border-border shadow-none"><CardContent className="py-16 text-center">
           <ClipboardList className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
           <p className="text-foreground/40 text-[14px]">Nenhuma pesquisa cadastrada</p>
         </CardContent></Card>
       ) : (
         <div className="space-y-3">
           {pesquisas.map(p => (
-            <Card key={p.id} className="bg-white border-black/[0.04] shadow-none">
+            <Card key={p.id} className="bg-card border-border shadow-none">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">

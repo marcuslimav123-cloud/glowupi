@@ -38,9 +38,9 @@ export default function HistoricoCaixa() {
         <Button onClick={fetchHistorico} className="rounded-xl"><Search className="h-4 w-4 mr-2" />Buscar</Button>
       </div>
       {loading ? (
-        <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 bg-white rounded-2xl animate-pulse" />)}</div>
+        <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 bg-card rounded-2xl animate-pulse" />)}</div>
       ) : caixas.length === 0 ? (
-        <Card className="bg-white border-black/[0.04] shadow-none">
+        <Card className="bg-card border-border shadow-none">
           <CardContent className="py-16 text-center">
             <History className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
             <p className="text-foreground/40 text-[14px]">Nenhum caixa encontrado no período</p>
@@ -49,7 +49,7 @@ export default function HistoricoCaixa() {
       ) : (
         <div className="space-y-3">
           {caixas.map(c => (
-            <Card key={c.id} className="bg-white border-black/[0.04] shadow-none">
+            <Card key={c.id} className="bg-card border-border shadow-none">
               <CardContent className="p-5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">

@@ -96,7 +96,7 @@ export default function Noticias() {
       </div>
 
       {showForm && (
-        <Card className="mb-6 bg-white border-black/[0.04] shadow-none">
+        <Card className="mb-6 bg-card border-border shadow-none">
           <CardHeader><CardTitle className="text-[16px]">{editId ? "Editar" : "Nova"} Notícia</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div><Label>Título</Label><Input value={form.titulo} onChange={e => setForm(f => ({ ...f, titulo: e.target.value }))} className="mt-1" placeholder="Título da notícia" /></div>
@@ -111,15 +111,15 @@ export default function Noticias() {
         </Card>
       )}
 
-      {loading ? <div className="animate-pulse h-48 bg-white rounded-2xl" /> : noticias.length === 0 ? (
-        <Card className="bg-white border-black/[0.04] shadow-none"><CardContent className="py-16 text-center">
+      {loading ? <div className="animate-pulse h-48 bg-card rounded-2xl" /> : noticias.length === 0 ? (
+        <Card className="bg-card border-border shadow-none"><CardContent className="py-16 text-center">
           <Newspaper className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
           <p className="text-foreground/40 text-[14px]">Nenhuma notícia cadastrada</p>
         </CardContent></Card>
       ) : (
         <div className="space-y-3">
           {noticias.map(n => (
-            <Card key={n.id} className="bg-white border-black/[0.04] shadow-none">
+            <Card key={n.id} className="bg-card border-border shadow-none">
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

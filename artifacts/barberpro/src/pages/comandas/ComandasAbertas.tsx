@@ -135,17 +135,17 @@ export default function ComandasAbertas() {
             placeholder="Buscar por cliente ou profissional..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="pl-9 h-10 rounded-xl border-black/[0.08] bg-white"
+            className="pl-9 h-10 rounded-xl border-border bg-card"
           />
         </div>
       </div>
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1,2,3].map(i => <div key={i} className="h-48 bg-white rounded-2xl border border-black/[0.04] animate-pulse" />)}
+          {[1,2,3].map(i => <div key={i} className="h-48 bg-card rounded-2xl border border-border animate-pulse" />)}
         </div>
       ) : filtered.length === 0 ? (
-        <Card className="bg-white border-black/[0.04] shadow-none">
+        <Card className="bg-card border-border shadow-none">
           <CardContent className="py-16 text-center">
             <Receipt className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
             <p className="text-foreground/40 text-[14px]">Nenhuma comanda aberta no momento</p>
@@ -154,7 +154,7 @@ export default function ComandasAbertas() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(ag => (
-            <Card key={ag.id} className="bg-white border-black/[0.04] shadow-none hover:shadow-lg hover:shadow-black/[0.03] transition-all">
+            <Card key={ag.id} className="bg-card border-border shadow-none hover:shadow-lg hover:shadow-black/[0.03] transition-all">
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -178,7 +178,7 @@ export default function ComandasAbertas() {
                     <span>{ag.profissionalNome}</span>
                   </div>
                 </div>
-                <div className="flex items-center justify-between pt-3 border-t border-black/[0.04]">
+                <div className="flex items-center justify-between pt-3 border-t border-border">
                   <span className="text-[18px] font-bold text-primary">{formatCurrency(ag.valor)}</span>
                   <Button size="sm" className="rounded-xl h-9 text-[13px]" onClick={() => openCheckout(ag)}>
                     <Check className="h-3.5 w-3.5 mr-1.5" /> Fechar

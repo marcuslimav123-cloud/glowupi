@@ -365,14 +365,14 @@ export default function PerfisAcesso() {
         {!showForm && (
           <>
             <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex bg-white border border-black/[0.06] rounded-xl overflow-hidden">
+              <div className="flex bg-card border border-border rounded-xl overflow-hidden">
                 <button
                   onClick={() => setActiveTab("web")}
                   className={cn(
                     "px-5 py-2 text-[13px] font-medium transition-all",
                     activeTab === "web"
                       ? "bg-foreground text-white"
-                      : "text-foreground/50 hover:text-foreground hover:bg-black/[0.02]"
+                      : "text-foreground/50 hover:text-foreground hover:bg-muted/50"
                   )}
                 >
                   Web Admin
@@ -383,7 +383,7 @@ export default function PerfisAcesso() {
                     "px-5 py-2 text-[13px] font-medium transition-all",
                     activeTab === "app"
                       ? "bg-foreground text-white"
-                      : "text-foreground/50 hover:text-foreground hover:bg-black/[0.02]"
+                      : "text-foreground/50 hover:text-foreground hover:bg-muted/50"
                   )}
                 >
                   App Profissionais
@@ -404,7 +404,7 @@ export default function PerfisAcesso() {
         )}
 
         {showForm && (
-          <div className="bg-white rounded-2xl border border-black/[0.06] p-6 space-y-5">
+          <div className="bg-card rounded-2xl border border-border p-6 space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="text-[16px] font-semibold text-foreground">
                 {editingId ? "Editar Perfil" : "Novo Perfil de Acesso"}
@@ -441,7 +441,7 @@ export default function PerfisAcesso() {
                         "px-4 py-2 rounded-xl text-[13px] font-medium border transition-all",
                         tipo === t
                           ? "bg-foreground text-white border-foreground"
-                          : "bg-white text-foreground/50 border-black/[0.08] hover:border-black/[0.15]"
+                          : "bg-card text-foreground/50 border-border hover:border-black/[0.15]"
                       )}
                     >
                       {t === "web" ? "Web Admin" : "App"}
@@ -470,9 +470,9 @@ export default function PerfisAcesso() {
                   const expanded = expandedGroups[group.label] !== false;
 
                   return (
-                    <div key={group.label} className="border border-black/[0.06] rounded-xl overflow-hidden">
+                    <div key={group.label} className="border border-border rounded-xl overflow-hidden">
                       <button
-                        className="w-full flex items-center gap-3 px-4 py-2.5 bg-black/[0.01] hover:bg-black/[0.03] transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 bg-muted/50 hover:bg-muted/50 transition-colors"
                         onClick={() => setExpandedGroups(prev => ({ ...prev, [group.label]: !expanded }))}
                       >
                         {expanded ? <ChevronDown className="h-3.5 w-3.5 text-foreground/30" /> : <ChevronRight className="h-3.5 w-3.5 text-foreground/30" />}
@@ -488,7 +488,7 @@ export default function PerfisAcesso() {
                               ? "bg-foreground border-foreground"
                               : someChecked
                               ? "bg-foreground/20 border-foreground/30"
-                              : "border-black/[0.15] bg-white"
+                              : "border-black/[0.15] bg-card"
                           )}
                         >
                           {allChecked && <Check className="h-3 w-3 text-white" />}
@@ -496,7 +496,7 @@ export default function PerfisAcesso() {
                         </span>
                       </button>
                       {expanded && (
-                        <div className="px-4 py-2 space-y-1 bg-white">
+                        <div className="px-4 py-2 space-y-1 bg-card">
                           {group.items.map(item => (
                             <div
                               key={item.key}
@@ -505,14 +505,14 @@ export default function PerfisAcesso() {
                               aria-checked={permissoes.includes(item.key)}
                               onClick={() => togglePermission(item.key)}
                               onKeyDown={e => { if (e.key === " " || e.key === "Enter") togglePermission(item.key); }}
-                              className="flex items-center gap-3 py-1.5 cursor-pointer hover:bg-black/[0.01] px-2 rounded-lg"
+                              className="flex items-center gap-3 py-1.5 cursor-pointer hover:bg-muted/50 px-2 rounded-lg"
                             >
                               <span
                                 className={cn(
                                   "h-[18px] w-[18px] rounded-md border flex items-center justify-center transition-colors shrink-0",
                                   permissoes.includes(item.key)
                                     ? "bg-primary border-primary"
-                                    : "border-black/[0.15] bg-white"
+                                    : "border-black/[0.15] bg-card"
                                 )}
                               >
                                 {permissoes.includes(item.key) && <Check className="h-3 w-3 text-white" />}
@@ -544,7 +544,7 @@ export default function PerfisAcesso() {
                       "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all",
                       selectedProfIds.includes(prof.id)
                         ? "border-primary/30 bg-primary/[0.03]"
-                        : "border-black/[0.06] hover:border-black/[0.12]"
+                        : "border-border hover:border-black/[0.12]"
                     )}
                   >
                     <span
@@ -552,7 +552,7 @@ export default function PerfisAcesso() {
                         "h-[18px] w-[18px] rounded-md border flex items-center justify-center transition-colors shrink-0",
                         selectedProfIds.includes(prof.id)
                           ? "bg-primary border-primary"
-                          : "border-black/[0.15] bg-white"
+                          : "border-black/[0.15] bg-card"
                       )}
                     >
                       {selectedProfIds.includes(prof.id) && <Check className="h-3 w-3 text-white" />}
@@ -582,7 +582,7 @@ export default function PerfisAcesso() {
                 <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
               </div>
             ) : filteredPerfis.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-black/[0.06] p-12 text-center">
+              <div className="bg-card rounded-2xl border border-border p-12 text-center">
                 <Shield className="h-10 w-10 text-foreground/15 mx-auto mb-4" />
                 <h3 className="text-[15px] font-semibold text-foreground mb-1">
                   {searchQuery ? "Nenhum perfil encontrado" : `Nenhum perfil ${activeTab === "web" ? "Web Admin" : "App"} criado`}
@@ -600,10 +600,10 @@ export default function PerfisAcesso() {
               </div>
             ) : (
               <>
-                <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden">
+                <div className="bg-card rounded-2xl border border-border overflow-hidden">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-black/[0.04]">
+                      <tr className="border-b border-border">
                         <th className="text-left px-5 py-3 text-[12px] font-semibold text-foreground/40 uppercase tracking-wider">Perfil</th>
                         <th className="text-left px-5 py-3 text-[12px] font-semibold text-foreground/40 uppercase tracking-wider hidden sm:table-cell">Permissões</th>
                         <th className="text-left px-5 py-3 text-[12px] font-semibold text-foreground/40 uppercase tracking-wider hidden md:table-cell">Profissionais</th>
@@ -617,8 +617,8 @@ export default function PerfisAcesso() {
                         <tr
                           key={perfil.id}
                           className={cn(
-                            "transition-colors hover:bg-black/[0.01]",
-                            idx < paginatedPerfis.length - 1 && "border-b border-black/[0.04]"
+                            "transition-colors hover:bg-muted/50",
+                            idx < paginatedPerfis.length - 1 && "border-b border-border"
                           )}
                         >
                           <td className="px-5 py-3.5">
@@ -645,7 +645,7 @@ export default function PerfisAcesso() {
                                 );
                               })}
                               {perfil.permissoes.length > 4 && (
-                                <span className="px-2 py-0.5 rounded-md bg-black/[0.03] text-foreground/35 text-[10px] font-medium">
+                                <span className="px-2 py-0.5 rounded-md bg-muted/50 text-foreground/35 text-[10px] font-medium">
                                   +{perfil.permissoes.length - 4}
                                 </span>
                               )}
@@ -692,7 +692,7 @@ export default function PerfisAcesso() {
                       <select
                         value={pageSize}
                         onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                        className="h-7 px-2 rounded-lg border border-black/[0.08] bg-white text-[12px] text-foreground/60"
+                        className="h-7 px-2 rounded-lg border border-border bg-card text-[12px] text-foreground/60"
                       >
                         {PAGE_SIZE_OPTIONS.map(n => (
                           <option key={n} value={n}>{n}</option>

@@ -151,7 +151,7 @@ export function LogoUpload({ value, onChange }: LogoUploadProps) {
   return (
     <>
       <div
-        className="w-full cursor-pointer group relative rounded-lg overflow-hidden bg-black/[0.03] border border-black/[0.06] hover:border-primary/30 transition-colors"
+        className="w-full cursor-pointer group relative rounded-lg overflow-hidden bg-muted/50 border border-border hover:border-primary/30 transition-colors"
         onClick={() => inputRef.current?.click()}
         style={{ aspectRatio: "16/9" }}
       >

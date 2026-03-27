@@ -113,7 +113,7 @@ export default function FluxoCaixa() {
         ))}
       </div>
 
-      {loading ? <div className="animate-pulse h-48 bg-white rounded-2xl" /> : (
+      {loading ? <div className="animate-pulse h-48 bg-card rounded-2xl" /> : (
         <>
           {tab === "movimentado" && (
             <>
@@ -137,7 +137,7 @@ export default function FluxoCaixa() {
                   <p className="text-[20px] font-bold text-red-700">{formatCurrency(totalContasPagar)}</p>
                 </CardContent></Card>
               </div>
-              <Card className="bg-white border-black/[0.04] shadow-none mb-4">
+              <Card className="bg-card border-border shadow-none mb-4">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <p className="text-[12px] text-foreground/40 flex items-center gap-1"><DollarSign className="h-3 w-3" />Saldo do Período</p>
@@ -145,7 +145,7 @@ export default function FluxoCaixa() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="bg-white border-black/[0.04] shadow-none">
+              <Card className="bg-card border-border shadow-none">
                 <CardHeader><CardTitle className="text-[16px]">Receitas por Dia</CardTitle></CardHeader>
                 <CardContent>
                   {Object.keys(byDay(comandas)).length === 0 ? (
@@ -197,7 +197,7 @@ export default function FluxoCaixa() {
                       <p className="text-[20px] font-bold text-orange-700">-{formatCurrency(totalTaxas)}</p>
                     </CardContent></Card>
                   </div>
-                  <Card className="bg-white border-black/[0.04] shadow-none">
+                  <Card className="bg-card border-border shadow-none">
                     <CardHeader><CardTitle className="text-[16px]">Recebimentos Disponíveis por Dia</CardTitle></CardHeader>
                     <CardContent>
                       {Object.keys(byDayDisp).length === 0 ? (
@@ -231,7 +231,7 @@ export default function FluxoCaixa() {
                   <p className="text-[20px] font-bold text-green-700">{formatCurrency(totalContasReceber)}</p>
                 </CardContent></Card>
               </div>
-              <Card className="bg-white border-black/[0.04] shadow-none">
+              <Card className="bg-card border-border shadow-none">
                 <CardHeader><CardTitle className="text-[16px]">Recebimentos de Cartão Pendentes</CardTitle></CardHeader>
                 <CardContent>
                   {cardPending.length === 0 ? (

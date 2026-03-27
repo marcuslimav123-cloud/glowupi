@@ -83,7 +83,7 @@ export function AnamneseFormularios() {
       </div>
 
       {showTipoForm && (
-        <Card className="mb-6 bg-white border-black/[0.04] shadow-none">
+        <Card className="mb-6 bg-card border-border shadow-none">
           <CardHeader><CardTitle className="text-[16px]">{editTipoId ? "Editar" : "Novo"} Tipo</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div><Label>Nome</Label><Input value={tipoForm.nome} onChange={e => setTipoForm(f => ({ ...f, nome: e.target.value }))} className="mt-1" /></div>
@@ -95,7 +95,7 @@ export function AnamneseFormularios() {
       )}
 
       {showFormForm && (
-        <Card className="mb-6 bg-white border-black/[0.04] shadow-none">
+        <Card className="mb-6 bg-card border-border shadow-none">
           <CardHeader><CardTitle className="text-[16px]">{editFormId ? "Editar" : "Novo"} Formulário</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div><Label>Título</Label><Input value={formForm.titulo} onChange={e => setFormForm(f => ({ ...f, titulo: e.target.value }))} className="mt-1" /></div>
@@ -116,7 +116,7 @@ export function AnamneseFormularios() {
       )}
 
       {tipos.length > 0 && (
-        <Card className="mb-6 bg-white border-black/[0.04] shadow-none">
+        <Card className="mb-6 bg-card border-border shadow-none">
           <CardHeader><CardTitle className="text-[16px]">Tipos de Anamnese</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -134,13 +134,13 @@ export function AnamneseFormularios() {
         </Card>
       )}
 
-      {loading ? <div className="animate-pulse h-48 bg-white rounded-2xl" /> : formularios.length === 0 && tipos.length === 0 ? (
-        <Card className="bg-white border-black/[0.04] shadow-none"><CardContent className="py-16 text-center">
+      {loading ? <div className="animate-pulse h-48 bg-card rounded-2xl" /> : formularios.length === 0 && tipos.length === 0 ? (
+        <Card className="bg-card border-border shadow-none"><CardContent className="py-16 text-center">
           <FileText className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
           <p className="text-foreground/40 text-[14px]">Nenhum formulário de anamnese cadastrado</p>
         </CardContent></Card>
       ) : formularios.length > 0 && (
-        <Card className="bg-white border-black/[0.04] shadow-none">
+        <Card className="bg-card border-border shadow-none">
           <CardHeader><CardTitle className="text-[16px]">Formulários</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -199,13 +199,13 @@ export function AnamneseClientes() {
         <button onClick={() => setSelectedCliente(null)} className="text-sm text-primary mb-4 hover:underline">← Voltar</button>
         <h1 className="text-[24px] font-bold text-foreground mb-4">Anamnese: {selectedCliente.nome}</h1>
         {fichas.length === 0 ? (
-          <Card className="bg-white border-black/[0.04] shadow-none"><CardContent className="py-16 text-center">
+          <Card className="bg-card border-border shadow-none"><CardContent className="py-16 text-center">
             <p className="text-foreground/40 text-[14px]">Nenhuma ficha de anamnese preenchida</p>
           </CardContent></Card>
         ) : (
           <div className="space-y-3">
             {fichas.map((f: any) => (
-              <Card key={f.id} className="bg-white border-black/[0.04] shadow-none"><CardContent className="p-4">
+              <Card key={f.id} className="bg-card border-border shadow-none"><CardContent className="p-4">
                 <p className="text-[14px] font-medium">Formulário #{f.formularioId}</p>
                 <p className="text-[12px] text-foreground/40">{new Date(f.preenchidoEm).toLocaleDateString("pt-BR")}</p>
                 <pre className="text-[12px] mt-2 bg-gray-50 p-3 rounded-lg overflow-auto">{JSON.stringify(f.respostas, null, 2)}</pre>
@@ -226,15 +226,15 @@ export function AnamneseClientes() {
       <div className="mb-4 relative max-w-sm">
         <Input placeholder="Buscar cliente..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-4 rounded-xl" />
       </div>
-      {loading ? <div className="animate-pulse h-48 bg-white rounded-2xl" /> : filtered.length === 0 ? (
-        <Card className="bg-white border-black/[0.04] shadow-none"><CardContent className="py-16 text-center">
+      {loading ? <div className="animate-pulse h-48 bg-card rounded-2xl" /> : filtered.length === 0 ? (
+        <Card className="bg-card border-border shadow-none"><CardContent className="py-16 text-center">
           <FileText className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
           <p className="text-foreground/40 text-[14px]">Nenhum cliente encontrado</p>
         </CardContent></Card>
       ) : (
         <div className="space-y-2">
           {filtered.map(c => (
-            <div key={c.id} onClick={() => selectCliente(c)} className="flex items-center justify-between p-4 rounded-xl bg-white border border-black/[0.04] cursor-pointer hover:shadow-md transition-shadow">
+            <div key={c.id} onClick={() => selectCliente(c)} className="flex items-center justify-between p-4 rounded-xl bg-card border border-border cursor-pointer hover:shadow-md transition-shadow">
               <p className="text-[14px] font-medium">{c.nome}</p>
               <span className="text-[12px] text-foreground/40">{c.telefone || c.email || "—"}</span>
             </div>

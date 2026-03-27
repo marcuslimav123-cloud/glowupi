@@ -56,7 +56,7 @@ export default function ContaCliente() {
       {selectedCliente ? (
         <div>
           <button onClick={() => setSelectedCliente(null)} className="text-sm text-primary mb-4 hover:underline">← Voltar</button>
-          <Card className="bg-white border-black/[0.04] shadow-none mb-4">
+          <Card className="bg-card border-border shadow-none mb-4">
             <CardContent className="p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center"><User className="h-6 w-6 text-primary" /></div>
@@ -70,7 +70,7 @@ export default function ContaCliente() {
           </Card>
           <div className="space-y-2">
             {getClienteComandas(selectedCliente.nome).map((c: any) => (
-              <div key={c.id} className="flex items-center justify-between p-3 rounded-xl bg-white border border-black/[0.04]">
+              <div key={c.id} className="flex items-center justify-between p-3 rounded-xl bg-card border border-border">
                 <div>
                   <p className="text-[13px] font-medium">{c.servicos?.map((s: any) => s.nome).join(", ") || "Serviço"}</p>
                   <p className="text-[12px] text-foreground/40">{c.profissionalNome} · {c.dataFechamento ? new Date(c.dataFechamento).toLocaleDateString("pt-BR") : "—"}</p>
@@ -82,16 +82,16 @@ export default function ContaCliente() {
           </div>
         </div>
       ) : loading ? (
-        <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-16 bg-white rounded-xl animate-pulse" />)}</div>
+        <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-16 bg-card rounded-xl animate-pulse" />)}</div>
       ) : filtered.length === 0 ? (
-        <Card className="bg-white border-black/[0.04] shadow-none"><CardContent className="py-16 text-center">
+        <Card className="bg-card border-border shadow-none"><CardContent className="py-16 text-center">
           <User className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
           <p className="text-foreground/40 text-[14px]">Nenhum cliente encontrado</p>
         </CardContent></Card>
       ) : (
         <div className="space-y-2">
           {filtered.map(c => (
-            <div key={c.id} onClick={() => setSelectedCliente(c)} className="flex items-center justify-between p-4 rounded-xl bg-white border border-black/[0.04] cursor-pointer hover:shadow-md transition-shadow">
+            <div key={c.id} onClick={() => setSelectedCliente(c)} className="flex items-center justify-between p-4 rounded-xl bg-card border border-border cursor-pointer hover:shadow-md transition-shadow">
               <div className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center"><User className="h-4 w-4 text-primary" /></div>
                 <div>

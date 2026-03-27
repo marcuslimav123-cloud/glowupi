@@ -50,26 +50,26 @@ export default function ComandasHistorico() {
       <div className="flex flex-wrap gap-3 mb-4">
         <div className="relative max-w-xs flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/30" />
-          <Input placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9 h-10 rounded-xl border-black/[0.08] bg-white" />
+          <Input placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9 h-10 rounded-xl border-border bg-card" />
         </div>
-        <Input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} className="h-10 w-40 rounded-xl border-black/[0.08] bg-white" />
-        <Input type="date" value={dataFim} onChange={e => setDataFim(e.target.value)} className="h-10 w-40 rounded-xl border-black/[0.08] bg-white" />
+        <Input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} className="h-10 w-40 rounded-xl border-border bg-card" />
+        <Input type="date" value={dataFim} onChange={e => setDataFim(e.target.value)} className="h-10 w-40 rounded-xl border-border bg-card" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <Card className="bg-white border-black/[0.04] shadow-none">
+        <Card className="bg-card border-border shadow-none">
           <CardContent className="p-4">
             <p className="text-[12px] text-foreground/40 mb-1">Total Comandas</p>
             <p className="text-[22px] font-bold">{filtered.length}</p>
           </CardContent>
         </Card>
-        <Card className="bg-white border-black/[0.04] shadow-none">
+        <Card className="bg-card border-border shadow-none">
           <CardContent className="p-4">
             <p className="text-[12px] text-foreground/40 mb-1">Faturamento</p>
             <p className="text-[22px] font-bold text-primary">{formatCurrency(totalFaturamento)}</p>
           </CardContent>
         </Card>
-        <Card className="bg-white border-black/[0.04] shadow-none">
+        <Card className="bg-card border-border shadow-none">
           <CardContent className="p-4">
             <p className="text-[12px] text-foreground/40 mb-1">Ticket Médio</p>
             <p className="text-[22px] font-bold">{filtered.length > 0 ? formatCurrency(totalFaturamento / filtered.length) : formatCurrency(0)}</p>
@@ -78,21 +78,21 @@ export default function ComandasHistorico() {
       </div>
 
       {loading ? (
-        <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-16 bg-white rounded-xl animate-pulse" />)}</div>
+        <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-16 bg-card rounded-xl animate-pulse" />)}</div>
       ) : filtered.length === 0 ? (
-        <Card className="bg-white border-black/[0.04] shadow-none">
+        <Card className="bg-card border-border shadow-none">
           <CardContent className="py-16 text-center">
             <Receipt className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
             <p className="text-foreground/40 text-[14px]">Nenhuma comanda encontrada</p>
           </CardContent>
         </Card>
       ) : (
-        <Card className="bg-white border-black/[0.04] shadow-none">
+        <Card className="bg-card border-border shadow-none">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-[13px]">
                 <thead>
-                  <tr className="border-b border-black/[0.04]">
+                  <tr className="border-b border-border">
                     <th className="text-left p-3 font-medium text-foreground/50">Data</th>
                     <th className="text-left p-3 font-medium text-foreground/50">Cliente</th>
                     <th className="text-left p-3 font-medium text-foreground/50">Profissional</th>
@@ -103,7 +103,7 @@ export default function ComandasHistorico() {
                 </thead>
                 <tbody>
                   {filtered.map(c => (
-                    <tr key={c.id} className="border-b border-black/[0.03] hover:bg-black/[0.01]">
+                    <tr key={c.id} className="border-b border-border hover:bg-muted/50">
                       <td className="p-3">{c.dataFechamento ? new Date(c.dataFechamento).toLocaleDateString("pt-BR") : "—"}</td>
                       <td className="p-3 font-medium">{c.clienteNome}</td>
                       <td className="p-3">{c.profissionalNome}</td>

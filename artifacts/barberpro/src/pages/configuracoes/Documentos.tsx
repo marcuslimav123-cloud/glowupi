@@ -67,7 +67,7 @@ export function DocumentosPage() {
       </div>
 
       {showForm && (
-        <Card className="mb-6 bg-white border-black/[0.04] shadow-none">
+        <Card className="mb-6 bg-card border-border shadow-none">
           <CardHeader><CardTitle className="text-[16px]">{editId ? "Editar" : "Novo"} Documento</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div><Label>Título</Label><Input value={form.titulo} onChange={e => setForm(f => ({ ...f, titulo: e.target.value }))} className="mt-1" /></div>
@@ -84,15 +84,15 @@ export function DocumentosPage() {
         </Card>
       )}
 
-      {loading ? <div className="animate-pulse h-48 bg-white rounded-2xl" /> : documentos.length === 0 ? (
-        <Card className="bg-white border-black/[0.04] shadow-none"><CardContent className="py-16 text-center">
+      {loading ? <div className="animate-pulse h-48 bg-card rounded-2xl" /> : documentos.length === 0 ? (
+        <Card className="bg-card border-border shadow-none"><CardContent className="py-16 text-center">
           <FileText className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
           <p className="text-foreground/40 text-[14px]">Nenhum documento cadastrado</p>
         </CardContent></Card>
       ) : (
         <div className="space-y-3">
           {documentos.map((d: any) => (
-            <Card key={d.id} className="bg-white border-black/[0.04] shadow-none">
+            <Card key={d.id} className="bg-card border-border shadow-none">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between">
                   <div>
@@ -146,10 +146,10 @@ export function DocumentosClientePage() {
         <p className="text-foreground/40 text-[14px] mt-0.5">Documentos associados aos clientes</p>
       </div>
       <div className="mb-4 relative max-w-sm"><Input placeholder="Buscar cliente..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="rounded-xl" /></div>
-      {loading ? <div className="animate-pulse h-48 bg-white rounded-2xl" /> : (
+      {loading ? <div className="animate-pulse h-48 bg-card rounded-2xl" /> : (
         <div className="space-y-2">
           {filtered.map(c => (
-            <div key={c.id} className="p-4 rounded-xl bg-white border border-black/[0.04]">
+            <div key={c.id} className="p-4 rounded-xl bg-card border border-border">
               <p className="text-[14px] font-medium">{c.nome}</p>
               {getClientDocs(c.id).length > 0 ? (
                 <div className="mt-2 space-y-1">
@@ -173,7 +173,7 @@ export function DocumentosProfissionalPage() {
         <h1 className="text-[24px] font-bold text-foreground">Documentos - Profissionais</h1>
         <p className="text-foreground/40 text-[14px] mt-0.5">Documentos associados aos profissionais</p>
       </div>
-      <Card className="bg-white border-black/[0.04] shadow-none"><CardContent className="py-16 text-center">
+      <Card className="bg-card border-border shadow-none"><CardContent className="py-16 text-center">
         <FileText className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
         <p className="text-foreground/40 text-[14px]">Use a seção "Meus Documentos" para gerenciar documentos de profissionais</p>
       </CardContent></Card>

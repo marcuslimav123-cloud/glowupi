@@ -215,7 +215,7 @@ export default function Equipe() {
         </div>
 
         {showInviteForm && (
-          <div className="bg-white rounded-2xl border border-black/[0.04] p-6 space-y-5">
+          <div className="bg-card rounded-2xl border border-border p-6 space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="text-[16px] font-semibold">Novo Convite</h2>
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setShowInviteForm(false); resetForm(); }}>
@@ -256,7 +256,7 @@ export default function Equipe() {
                       "flex-1 px-4 py-2.5 rounded-xl border text-[13px] font-medium transition-all",
                       inviteRole === "colaborador"
                         ? "border-primary bg-primary/5 text-primary"
-                        : "border-black/[0.06] text-foreground/50 hover:border-black/[0.12]"
+                        : "border-border text-foreground/50 hover:border-black/[0.12]"
                     )}
                   >
                     Colaborador(a)
@@ -269,7 +269,7 @@ export default function Equipe() {
                       "flex-1 px-4 py-2.5 rounded-xl border text-[13px] font-medium transition-all",
                       inviteRole === "gerente"
                         ? "border-primary bg-primary/5 text-primary"
-                        : "border-black/[0.06] text-foreground/50 hover:border-black/[0.12]"
+                        : "border-border text-foreground/50 hover:border-black/[0.12]"
                     )}
                   >
                     Gerente
@@ -287,7 +287,7 @@ export default function Equipe() {
                   <select
                     value={invitePerfilId}
                     onChange={e => setInvitePerfilId(e.target.value)}
-                    className="w-full h-10 px-3 rounded-xl border border-black/[0.06] text-[14px] text-foreground/70 bg-white"
+                    className="w-full h-10 px-3 rounded-xl border border-border text-[14px] text-foreground/70 bg-card"
                   >
                     <option value="">Sem perfil (acesso basico)</option>
                     {filteredPerfis.map(p => (
@@ -313,7 +313,7 @@ export default function Equipe() {
                       "flex-1 px-4 py-2.5 rounded-xl border text-[13px] font-medium transition-all flex items-center justify-center gap-2",
                       enviarEmail
                         ? "border-primary bg-primary/5 text-primary"
-                        : "border-black/[0.06] text-foreground/50 hover:border-black/[0.12]"
+                        : "border-border text-foreground/50 hover:border-black/[0.12]"
                     )}
                   >
                     <Mail className="h-4 w-4" />
@@ -326,7 +326,7 @@ export default function Equipe() {
                       "flex-1 px-4 py-2.5 rounded-xl border text-[13px] font-medium transition-all flex items-center justify-center gap-2",
                       !enviarEmail
                         ? "border-primary bg-primary/5 text-primary"
-                        : "border-black/[0.06] text-foreground/50 hover:border-black/[0.12]"
+                        : "border-border text-foreground/50 hover:border-black/[0.12]"
                     )}
                   >
                     <Copy className="h-4 w-4" />
@@ -356,7 +356,7 @@ export default function Equipe() {
         {members.length > 0 && (
           <div className="space-y-3">
             <h2 className="text-[14px] font-semibold text-foreground/60">Membros Ativos</h2>
-            <div className="bg-white rounded-2xl border border-black/[0.04] divide-y divide-black/[0.04]">
+            <div className="bg-card rounded-2xl border border-border divide-y divide-black/[0.04]">
               {members.map(member => (
                 <div key={member.id} className="flex items-center gap-4 p-4">
                   <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-semibold text-[13px] shrink-0">
@@ -370,7 +370,7 @@ export default function Equipe() {
                     <select
                       value={member.role}
                       onChange={e => handleUpdateRole(member.id, e.target.value)}
-                      className="text-[12px] bg-black/[0.03] border-0 rounded-lg px-2.5 py-1.5 text-foreground/60 font-medium cursor-pointer"
+                      className="text-[12px] bg-muted/50 border-0 rounded-lg px-2.5 py-1.5 text-foreground/60 font-medium cursor-pointer"
                     >
                       <option value="colaborador">Colaborador(a)</option>
                       <option value="gerente">Gerente</option>
@@ -393,7 +393,7 @@ export default function Equipe() {
         {pendingInvites.length > 0 && (
           <div className="space-y-3">
             <h2 className="text-[14px] font-semibold text-foreground/60">Convites Pendentes</h2>
-            <div className="bg-white rounded-2xl border border-black/[0.04] divide-y divide-black/[0.04]">
+            <div className="bg-card rounded-2xl border border-border divide-y divide-black/[0.04]">
               {pendingInvites.map(invite => {
                 const perfil = invite.perfilAcessoId ? perfis.find(p => p.id === invite.perfilAcessoId) : null;
                 return (

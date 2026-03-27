@@ -50,6 +50,7 @@ export default function Parametros() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["parametros"] });
+      queryClient.invalidateQueries({ queryKey: ["parametros-layout"] });
       setEditedValues(prev => {
         const next = { ...prev };
         delete next[variables.chave];
@@ -73,6 +74,7 @@ export default function Parametros() {
     },
     onSuccess: (_data, chave) => {
       queryClient.invalidateQueries({ queryKey: ["parametros"] });
+      queryClient.invalidateQueries({ queryKey: ["parametros-layout"] });
       setEditedValues(prev => {
         const next = { ...prev };
         delete next[chave];
@@ -124,7 +126,7 @@ export default function Parametros() {
           placeholder="Filtrar..."
           value={filtro}
           onChange={(e) => setFiltro(e.target.value)}
-          className="pl-10 h-10 rounded-xl border-black/[0.08] bg-white text-[14px]"
+          className="pl-10 h-10 rounded-xl border-border bg-card text-[14px]"
         />
       </div>
 
@@ -138,7 +140,7 @@ export default function Parametros() {
           <p className="text-foreground/40 text-[14px]">Nenhum parâmetro encontrado.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
           {filtered.map((p, idx) => {
             const currentVal = getDisplayValue(p);
             const modified = isModified(p);
@@ -146,7 +148,7 @@ export default function Parametros() {
             return (
               <div
                 key={p.chave}
-                className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-4 py-2.5 border-b border-black/[0.04] last:border-b-0 ${isEven ? "bg-white" : "bg-black/[0.015]"}`}
+                className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-4 py-2.5 border-b border-border last:border-b-0 ${isEven ? "bg-card" : "bg-muted/30"}`}
               >
                 <div className="flex-1 min-w-0">
                   <span className="text-[13px] text-foreground leading-tight">
@@ -159,7 +161,7 @@ export default function Parametros() {
                     <select
                       value={currentVal}
                       onChange={(e) => handleValueChange(p.chave, e.target.value)}
-                      className="h-8 rounded-lg border border-black/[0.08] bg-white px-2 text-[12px] text-foreground min-w-[160px]"
+                      className="h-8 rounded-lg border border-border bg-card px-2 text-[12px] text-foreground min-w-[160px]"
                     >
                       {p.opcoes.map(o => (
                         <option key={o} value={o}>{o}</option>
@@ -169,7 +171,7 @@ export default function Parametros() {
                     <Input
                       value={currentVal}
                       onChange={(e) => handleValueChange(p.chave, e.target.value)}
-                      className="h-8 rounded-lg border-black/[0.08] text-[12px] w-[160px]"
+                      className="h-8 rounded-lg border-border text-[12px] w-[160px]"
                     />
                   )}
                   <Button
@@ -185,7 +187,7 @@ export default function Parametros() {
                     variant="outline"
                     onClick={() => resetMutation.mutate(p.chave)}
                     disabled={p.valor === p.valorPadrao && !modified}
-                    className="h-8 w-8 p-0 rounded-lg border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                    className="h-8 w-8 p-0 rounded-lg border-red-200 dark:border-red-800 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 hover:text-red-600 disabled:opacity-40"
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
                   </Button>
