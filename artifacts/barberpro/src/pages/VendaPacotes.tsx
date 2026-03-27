@@ -59,7 +59,10 @@ export default function VendaPacotes() {
       await usarSessao.mutateAsync({ barbeariaId: barbeariaId!, pacoteClienteId: pcId });
       invalidateAll();
       toast({ title: "Sessão registrada" });
-    } catch (err: any) { toast({ title: err?.response?.data?.error || "Erro", variant: "destructive" }); }
+    } catch (err: unknown) {
+      const detail = (err as Record<string, Record<string, string>>)?.data?.error || (err instanceof Error ? err.message : "Erro ao usar sessão");
+      toast({ title: detail, variant: "destructive" });
+    }
   }
 
   const vendidosArr = vendidos as any[];

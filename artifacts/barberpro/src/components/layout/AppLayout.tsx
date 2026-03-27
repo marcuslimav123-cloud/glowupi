@@ -537,19 +537,28 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         "fixed inset-y-0 left-0 z-50 w-[240px] bg-white border-r border-black/[0.04] transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 flex flex-col",
         mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="px-5 py-5 hidden md:flex items-center gap-2.5 font-semibold text-[15px] text-foreground tracking-tight shrink-0">
-          {isDono ? (
-            <LogoUpload value={logoUrl} onChange={handleLogoChange} />
-          ) : (
-            <div className="h-8 w-8 rounded-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-primary/15 to-primary/5">
-              {logoUrl ? (
-                <img src={logoUrl} alt="Logo" className="h-full w-full object-cover" />
-              ) : (
-                <Sparkles className="h-4 w-4 text-primary" />
-              )}
-            </div>
-          )}
-          {barbeariaNome || APP_NAME}
+        <div className="hidden md:flex flex-col shrink-0">
+          <div className="px-5 pt-4 pb-2 text-center font-semibold text-[15px] text-foreground tracking-tight">
+            {barbeariaNome || APP_NAME}
+          </div>
+          <div className="px-4 pb-4">
+            {isDono ? (
+              <LogoUpload value={logoUrl} onChange={handleLogoChange} />
+            ) : (
+              <div
+                className="w-full rounded-lg overflow-hidden bg-black/[0.03] border border-black/[0.06]"
+                style={{ aspectRatio: "16/9" }}
+              >
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Sparkles className="h-6 w-6 text-primary/40" />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5 sidebar-scroll">
