@@ -3,6 +3,13 @@ import Stripe from 'stripe';
 let connectionSettings: any;
 
 async function getCredentials() {
+  if (process.env.STRIPE_LIVE_SECRET_KEY && process.env.STRIPE_LIVE_PUBLISHABLE_KEY) {
+    return {
+      publishableKey: process.env.STRIPE_LIVE_PUBLISHABLE_KEY,
+      secretKey: process.env.STRIPE_LIVE_SECRET_KEY,
+    };
+  }
+
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY
     ? 'repl ' + process.env.REPL_IDENTITY
@@ -38,18 +45,11 @@ async function getCredentials() {
         };
       }
     } catch (err) {
-      console.warn('Stripe integration credentials unavailable, checking env fallback...');
+      console.warn('Stripe integration credentials unavailable');
     }
   }
 
-  if (process.env.STRIPE_LIVE_SECRET_KEY && process.env.STRIPE_LIVE_PUBLISHABLE_KEY) {
-    return {
-      publishableKey: process.env.STRIPE_LIVE_PUBLISHABLE_KEY,
-      secretKey: process.env.STRIPE_LIVE_SECRET_KEY,
-    };
-  }
-
-  throw new Error('No Stripe credentials available: integration not configured and STRIPE_LIVE_* env vars not set');
+  throw new Error('No Stripe credentials available: STRIPE_LIVE_* env vars not set and integration not configured');
 }
 
 export async function getUncachableStripeClient() {
