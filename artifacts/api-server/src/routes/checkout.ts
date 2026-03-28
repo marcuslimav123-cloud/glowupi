@@ -249,7 +249,7 @@ router.post("/create-direct-session", requireAuth, async (req: any, res) => {
           source: "pdvd",
         },
       },
-      locale: 'pt-BR' as any,
+      locale: 'auto',
     });
 
     res.json({ url: session.url, sessionId: session.id });
@@ -360,6 +360,11 @@ router.post("/complete-direct-onboarding", requireAuth, async (req: any, res) =>
       baseSlug = `${baseSlug}-${Date.now()}`;
     }
 
+    let planoVencimento: Date | null = null;
+    if (subscription?.current_period_end) {
+      planoVencimento = new Date(subscription.current_period_end * 1000);
+    }
+
     const [barbearia] = await db.insert(barbeariasTable).values({
       donoId: user.id,
       nome,
@@ -373,7 +378,7 @@ router.post("/complete-direct-onboarding", requireAuth, async (req: any, res) =>
       cidade: cidade || null,
       uf: uf || null,
       onboardingStep: 5,
-      planoVencimento: null,
+      planoVencimento,
       subscriptionStatus: "ativo",
       planoStatus: "ativo",
       planoNome: productMeta.tier || "pro",
