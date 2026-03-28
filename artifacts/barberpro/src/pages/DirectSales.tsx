@@ -186,8 +186,12 @@ export default function DirectSales() {
   }, []);
 
   useEffect(() => {
-    const existingToken = document.cookie.match(/session=([^;]+)/)?.[1];
-    if (existingToken) setAuthToken(existingToken);
+    fetch(`${apiBase}/auth/me`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.id) setAuthToken('session-active');
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -231,7 +235,7 @@ export default function DirectSales() {
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       const activeToken = token || authToken;
-      if (activeToken) headers["Authorization"] = `Bearer ${activeToken}`;
+      if (activeToken && activeToken !== 'session-active') headers["Authorization"] = `Bearer ${activeToken}`;
 
       const res = await fetch(apiUrl("/checkout/create-direct-session"), {
         method: "POST",
