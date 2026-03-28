@@ -56,10 +56,10 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-await initStripe();
-await seedSuperAdmins().catch(err => console.error("Error seeding super admins:", err));
-
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
   startReminderService();
+
+  initStripe().catch(err => console.error("Stripe init error:", err));
+  seedSuperAdmins().catch(err => console.error("Error seeding super admins:", err));
 });

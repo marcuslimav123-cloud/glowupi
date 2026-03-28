@@ -11,8 +11,11 @@ const __dirname = path.dirname(__filename);
 // packages that are not bundle compatible
 const allowlist = [
   "@google/generative-ai",
+  "@google-cloud/storage",
   "axios",
+  "bcryptjs",
   "connect-pg-simple",
+  "cookie-parser",
   "cors",
   "date-fns",
   "drizzle-orm",
@@ -20,6 +23,7 @@ const allowlist = [
   "express",
   "express-rate-limit",
   "express-session",
+  "google-auth-library",
   "jsonwebtoken",
   "memorystore",
   "multer",
