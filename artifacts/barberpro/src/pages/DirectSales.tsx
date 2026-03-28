@@ -175,22 +175,30 @@ export default function DirectSales() {
   const scrolled = useScrolled();
 
   useEffect(() => {
+    console.log("[PDVD] Fetching pricing from:", PRICING_MODE_ENDPOINT);
     fetch(PRICING_MODE_ENDPOINT)
       .then(r => r.json())
       .then(data => {
+        console.log("[PDVD] Pricing response:", { mode: data.pricingMode, productCount: data.products?.length, publishableKey: data.publishableKey ? "present" : "missing" });
         if (data.pricingMode) setPricingMode(data.pricingMode);
-        if (data.products) setStripeProducts(data.products);
+        if (data.products) {
+          console.log("[PDVD] Products:", data.products.map((p: any) => ({ name: p.name, tier: p.metadata?.tier, prices: p.prices?.length })));
+          setStripeProducts(data.products);
+        }
       })
-      .catch(() => {});
+      .catch((err) => { console.error("[PDVD] Pricing fetch error:", err); });
   }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tokenFromUrl = params.get("token");
     if (tokenFromUrl) {
+      console.log("[PDVD] Token found in URL, length:", tokenFromUrl.length);
       setAuthToken(tokenFromUrl);
       const cleanUrl = window.location.pathname;
       window.history.replaceState({}, "", cleanUrl);
+    } else {
+      console.log("[PDVD] No token in URL");
     }
   }, []);
 
@@ -206,9 +214,11 @@ export default function DirectSales() {
   }, [authToken]);
 
   useEffect(() => {
+    console.log("[PDVD] Auto-checkout check: authToken=", !!authToken, "products=", stripeProducts.length);
     if (!authToken) return;
     if (stripeProducts.length === 0) return;
     const pendingRaw = sessionStorage.getItem("pdvd_pending_plan");
+    console.log("[PDVD] Pending plan from sessionStorage:", pendingRaw);
     if (!pendingRaw) return;
     let pending: { tier?: string; period?: BillingPeriod };
     try {
@@ -218,12 +228,25 @@ export default function DirectSales() {
       return;
     }
     if (!pending.tier || !pending.period) {
+      console.log("[PDVD] Invalid pending plan, clearing");
       sessionStorage.removeItem("pdvd_pending_plan");
       return;
     }
     const product = stripeProducts.find(p => p.metadata?.tier === pending.tier);
-    if (!product) return;
+    console.log("[PDVD] Found product for tier", pending.tier, ":", product ? product.name : "NOT FOUND");
+    if (!product) {
+      console.error("[PDVD] No product found for tier:", pending.tier, "Available tiers:", stripeProducts.map(p => p.metadata?.tier));
+      return;
+    }
+    const price = product.prices.find(p => p.metadata?.period === pending.period);
+    console.log("[PDVD] Found price for period", pending.period, ":", price ? price.id : "NOT FOUND");
+    if (!price) {
+      console.error("[PDVD] No price found for period:", pending.period, "Available:", product.prices.map(p => ({ period: p.metadata?.period, id: p.id })));
+      return;
+    }
+    console.log("[PDVD] Starting checkout with priceId:", price.id);
     proceedToCheckout(pending.tier, pending.period).then(started => {
+      console.log("[PDVD] Checkout result:", started);
       if (started) {
         sessionStorage.removeItem("pdvd_pending_plan");
       }
@@ -238,33 +261,48 @@ export default function DirectSales() {
   };
 
   const proceedToCheckout = async (tier: string, billingPeriod: BillingPeriod): Promise<boolean> => {
+    console.log("[PDVD] proceedToCheckout called:", { tier, billingPeriod, authToken: authToken ? authToken.substring(0, 10) + "..." : null });
     const product = stripeProducts.find(p => p.metadata?.tier === tier);
-    if (!product) return false;
+    if (!product) {
+      console.error("[PDVD] proceedToCheckout: product NOT FOUND for tier:", tier);
+      return false;
+    }
 
     const price = product.prices.find(p => p.metadata?.period === billingPeriod);
-    if (!price) return false;
+    if (!price) {
+      console.error("[PDVD] proceedToCheckout: price NOT FOUND for period:", billingPeriod, "in product:", product.name);
+      return false;
+    }
 
+    console.log("[PDVD] proceedToCheckout: calling create-direct-session with priceId:", price.id);
     setIsLoadingCheckout(`${tier}-${billingPeriod}`);
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (authToken && authToken !== 'session-active') headers["Authorization"] = `Bearer ${authToken}`;
 
-      const res = await fetch(apiUrl("/checkout/create-direct-session"), {
+      const endpoint = apiUrl("/checkout/create-direct-session");
+      console.log("[PDVD] POST to:", endpoint);
+      const res = await fetch(endpoint, {
         method: "POST",
         headers,
         credentials: "include",
         body: JSON.stringify({ priceId: price.id, billingPeriod }),
       });
+      console.log("[PDVD] Response status:", res.status);
       const data = await res.json();
+      console.log("[PDVD] Response data:", data);
       if (data.url) {
+        console.log("[PDVD] Redirecting to Stripe:", data.url.substring(0, 60) + "...");
         window.location.href = data.url;
         return true;
       } else {
-        console.error("No checkout URL returned:", data);
+        console.error("[PDVD] No checkout URL returned:", data);
+        alert("Erro ao iniciar pagamento: " + (data.error || "Tente novamente"));
         return false;
       }
     } catch (err) {
-      console.error("Checkout error:", err);
+      console.error("[PDVD] Checkout error:", err);
+      alert("Erro de conexão. Tente novamente.");
       return false;
     } finally {
       setIsLoadingCheckout(null);

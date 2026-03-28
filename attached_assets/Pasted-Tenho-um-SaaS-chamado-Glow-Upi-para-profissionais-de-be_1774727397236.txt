@@ -1,0 +1,53 @@
+Tenho um SaaS chamado Glow Upi para profissionais de beleza. O sistema está em produção mas o fluxo de pagamento não funciona de ponta a ponta. Preciso que isso funcione definitivamente.
+
+Arquitetura do projeto
+Monorepo pnpm com:
+artifacts/api-server — Express/Node.js (porta 8080), ESM, build com esbuild para dist/index.mjs
+artifacts/barberpro — React + Vite (frontend)
+lib/db — Drizzle ORM + PostgreSQL
+Deploy: Replit (domínio glowupi.com.br)
+Stripe: Conta live acct_1TEZoE75EBjZCK7y com chaves STRIPE_LIVE_SECRET_KEY e STRIPE_LIVE_PUBLISHABLE_KEY
+Auth: Google OAuth com redirect (não popup)
+Produtos no Stripe (4 produtos × 3 preços cada)
+Produto	Tier (metadata)	Mensal	Semestral	Anual
+Glow Upi - 1 Profissional	1_pro	R$79,90/mês	R$67,80/mês	R$55,90/mês
+Glow Upi - 2 a 5 Profissionais	2_5_pro	R$109,90/mês	R$93,30/mês	R$76,90/mês
+Glow Upi - 6 a 15 Profissionais	6_15_pro	R$164,50/mês	R$139,80/mês	R$115,15/mês
+Glow Upi - +15 Profissionais	15_plus_pro	R$219,90/mês	R$186,80/mês	R$153,90/mês
+Cada preço tem metadata period (mensal, semestral, anual) e tier correspondente.
+
+Fluxo desejado (venda direta, rota /)
+Cliente acessa / → vê a página DirectSales com 4 cards de planos e seletor de período (mensal/semestral/anual)
+Cliente clica "Assinar" em um plano
+Sistema salva { tier, period } no sessionStorage("pdvd_pending_plan")
+Redireciona para /api/auth/google/signin-popup?return_url=/ (redirect completo, não popup)
+Google autentica → callback redireciona para /?token=JWT_TOKEN
+Frontend lê o ?token=, seta authToken
+useEffect detecta authToken + stripeProducts.length > 0 + pdvd_pending_plan existe
+Chama proceedToCheckout(tier, period) que:
+Encontra o produto pelo metadata.tier
+Encontra o preço pelo metadata.period
+POST para /api/checkout/create-direct-session com { priceId, billingPeriod }
+Backend cria Stripe Checkout Session e retorna { url }
+Frontend redireciona para url (página de pagamento do Stripe)
+Após pagamento, Stripe redireciona para /sucesso?session_id=...
+O problema principal (já corrigido parcialmente)
+O banco de produção não tem as tabelas do schema stripe (products, prices, etc.). A lib stripe-replit-sync cria essas tabelas no banco de desenvolvimento, mas em produção elas nunca foram criadas. O endpoint /api/checkout/pricing-config dependia dessas tabelas — quando não existem, retornava products: [].
+
+Já foi adicionado um fallback: quando stripeStorage.listProductsWithPrices() falha, busca direto da API do Stripe (stripe.products.list + stripe.prices.list). Os logs de produção confirmam que o fallback está ativando: "Stripe sync DB unavailable, fetching directly from Stripe API...".
+
+O que pode ainda estar falhando
+Produtos duplicados: A API do Stripe retorna 9 produtos (4 antigos "Glow Agenda" + 4 novos "Glow Upi" + 1 "Plano Único"). O frontend filtra por metadata.tier, mas stripeProducts.find(p => p.metadata?.tier === tier) pode estar pegando o produto ERRADO (o antigo "Glow Agenda" em vez do novo "Glow Upi") porque o find retorna o primeiro match
+Produto não encontrado: Se o find retorna um produto antigo cujos preços não têm o metadata.period correto, product.prices.find(p => p.metadata?.period === billingPeriod) retorna undefined → proceedToCheckout retorna false → nada acontece
+Timing: O useEffect que processa o pdvd_pending_plan depende de stripeProducts.length > 0, mas se o fetch do pricing-config demora, pode não executar no momento certo
+Arquivos principais
+artifacts/barberpro/src/pages/DirectSales.tsx — Página de venda direta (frontend)
+artifacts/api-server/src/routes/checkout.ts — Endpoints de checkout (backend)
+artifacts/api-server/src/stripeClient.ts — Cliente Stripe
+artifacts/api-server/src/stripeService.ts — Serviço Stripe
+artifacts/api-server/src/stripeStorage.ts — Storage local Stripe
+O que eu preciso
+Que o endpoint pricing-config retorne APENAS os 4 produtos corretos ("Glow Upi"), não os antigos ("Glow Agenda") nem o "Plano Único"
+Que o fluxo completo funcione: escolher plano → Google auth → Stripe Checkout → pagar → /sucesso
+Que funcione tanto em desenvolvimento quanto em produção
+Quero ver os 4 planos na tela com os 3 períodos, não apenas 1

@@ -21,61 +21,54 @@ router.get("/pricing-config", async (_req, res) => {
 
     let filteredProducts: any[] = [];
 
-    try {
-      const productsWithPrices = await stripeStorage.listProductsWithPrices(true, 50, 0);
-
-      const productsMap = new Map<string, any>();
-      for (const row of productsWithPrices) {
-        const pid = row.product_id as string;
-        if (!productsMap.has(pid)) {
-          productsMap.set(pid, {
-            id: pid,
-            name: row.product_name,
-            description: row.product_description,
-            metadata: row.product_metadata,
-            prices: []
-          });
-        }
-        if (row.price_id) {
-          productsMap.get(pid).prices.push({
-            id: row.price_id,
-            unit_amount: row.unit_amount,
-            currency: row.currency,
-            recurring: row.recurring,
-            metadata: row.price_metadata,
-          });
-        }
-      }
-      filteredProducts = Array.from(productsMap.values());
-    } catch (dbErr) {
-      console.warn("Stripe sync DB unavailable, fetching directly from Stripe API...");
-      const stripeClient = await getUncachableStripeClient();
-      const stripeProducts = await stripeClient.products.list({ active: true, limit: 50 });
-      for (const product of stripeProducts.data) {
-        const prices = await stripeClient.prices.list({ product: product.id, active: true, limit: 20 });
-        filteredProducts.push({
-          id: product.id,
-          name: product.name,
-          description: product.description,
-          metadata: product.metadata,
-          prices: prices.data.map(p => ({
-            id: p.id,
-            unit_amount: p.unit_amount,
-            currency: p.currency,
-            recurring: p.recurring,
-            metadata: p.metadata,
-          })),
-        });
-      }
+    const stripeClient = await getUncachableStripeClient();
+    const stripeProducts = await stripeClient.products.list({ active: true, limit: 50 });
+    for (const product of stripeProducts.data) {
+      const prices = await stripeClient.prices.list({ product: product.id, active: true, limit: 20 });
+      filteredProducts.push({
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        metadata: product.metadata,
+        prices: prices.data.map(p => ({
+          id: p.id,
+          unit_amount: p.unit_amount,
+          currency: p.currency,
+          recurring: p.recurring,
+          metadata: p.metadata,
+        })),
+      });
     }
 
-    const publishableKey = await getStripePublishableKey();
+    const VALID_TIERS = ["1_pro", "2_5_pro", "6_15_pro", "15_plus_pro"];
 
     if (pricingMode === "single_price") {
       filteredProducts = filteredProducts.filter((p: any) => p.metadata?.tier === "single");
     } else if (pricingMode === "hidden") {
       filteredProducts = [];
+    } else {
+      const glowUpiProducts = filteredProducts.filter((p: any) => {
+        const tier = p.metadata?.tier;
+        return tier && VALID_TIERS.includes(tier) && p.name?.startsWith("Glow Upi");
+      });
+
+      if (glowUpiProducts.length >= 4) {
+        filteredProducts = glowUpiProducts;
+      } else {
+        const seenTiers = new Set<string>();
+        filteredProducts = filteredProducts.filter((p: any) => {
+          const tier = p.metadata?.tier;
+          if (!tier || !VALID_TIERS.includes(tier)) return false;
+          if (seenTiers.has(tier)) return false;
+          seenTiers.add(tier);
+          return true;
+        });
+      }
     }
+
+    console.log(`[pricing-config] Returning ${filteredProducts.length} products, mode=${pricingMode}`);
+
+    const publishableKey = await getStripePublishableKey();
 
     const freeTrialEnabled = configMap["free_trial_enabled"] !== "false";
 
@@ -231,6 +224,7 @@ router.post("/create-direct-session", requireAuth, async (req: any, res) => {
   try {
     const { priceId, billingPeriod } = req.body;
     const user = req.user;
+    console.log("[create-direct-session] userId:", user.id, "email:", user.email, "priceId:", priceId, "billingPeriod:", billingPeriod);
 
     if (!priceId) {
       return res.status(400).json({ error: "priceId is required" });
