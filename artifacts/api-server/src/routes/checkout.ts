@@ -193,6 +193,25 @@ router.post("/google-checkout", async (req, res) => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     if (!clientId) return res.status(500).json({ error: "Login com Google não configurado" });
 
+    const configs = await db.select().from(platformConfigTable);
+    const pricingMode = configs.find(c => c.chave === "pricing_mode")?.valor || "all_plans";
+    if (pricingMode === "hidden") {
+      return res.status(403).json({ error: "Assinaturas estão desativadas no momento" });
+    }
+
+    const allProducts = await stripeStorage.listProductsWithPrices(true, 50, 0);
+    const priceRow = allProducts.find((r: any) => r.price_id === priceId);
+    if (!priceRow) {
+      return res.status(400).json({ error: "Plano não encontrado" });
+    }
+
+    if (pricingMode === "single_price") {
+      const tier = priceRow.product_metadata?.tier;
+      if (tier !== "single") {
+        return res.status(403).json({ error: "Este plano não está disponível" });
+      }
+    }
+
     const client = new OAuth2Client(clientId);
     const ticket = await client.verifyIdToken({ idToken: credential, audience: clientId });
     const payload = ticket.getPayload();
@@ -232,7 +251,7 @@ router.post("/google-checkout", async (req, res) => {
 
       [barbearia] = await db.insert(barbeariasTable).values({
         donoId: user.id,
-        nome: `${nome}`,
+        nome: `${nome} Salão`,
         slug: baseSlug,
         telefone: null,
         email: email,
@@ -251,25 +270,6 @@ router.post("/google-checkout", async (req, res) => {
         await db.insert(parametrosConfigTable).values(paramRows);
       } catch (seedErr) {
         console.error("parametros seed error (non-fatal):", seedErr);
-      }
-    }
-
-    const configs = await db.select().from(platformConfigTable);
-    const pricingMode = configs.find(c => c.chave === "pricing_mode")?.valor || "all_plans";
-    if (pricingMode === "hidden") {
-      return res.status(403).json({ error: "Assinaturas estão desativadas no momento" });
-    }
-
-    const allProducts = await stripeStorage.listProductsWithPrices(true, 50, 0);
-    const priceRow = allProducts.find((r: any) => r.price_id === priceId);
-    if (!priceRow) {
-      return res.status(400).json({ error: "Plano não encontrado" });
-    }
-
-    if (pricingMode === "single_price") {
-      const tier = priceRow.product_metadata?.tier;
-      if (tier !== "single") {
-        return res.status(403).json({ error: "Este plano não está disponível" });
       }
     }
 

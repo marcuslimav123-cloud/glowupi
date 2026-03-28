@@ -307,26 +307,7 @@ export default function Landing() {
     const price = product.prices.find(p => p.metadata?.period === billingPeriod);
     if (!price) return;
 
-    setIsLoadingCheckout(`${tier}-${billingPeriod}`);
-
-    try {
-      const res = await fetch(`${import.meta.env.BASE_URL}api/checkout/create-checkout-session`.replace(/\/\//g, '/'), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ priceId: price.id, billingPeriod }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.url) {
-          window.location.href = data.url;
-          return;
-        }
-      }
-    } catch {}
-
     pendingCheckoutRef.current = { priceId: price.id, billingPeriod };
-    setIsLoadingCheckout(null);
     setShowGoogleModal(true);
   };
 
