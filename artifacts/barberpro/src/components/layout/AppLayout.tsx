@@ -610,7 +610,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </p>
           </div>
           <div className="flex flex-col gap-3">
-            <Link href="/#pricing">
+            <Link href="/planos">
               <Button size="lg" className="w-full rounded-xl h-11 text-[14px] font-medium">
                 {isPendente ? "Assinar Agora" : isTrialExpired ? "Escolher Plano" : "Ver Planos"}
               </Button>

@@ -13,6 +13,7 @@ import CompleteProfile from "@/pages/auth/CompleteProfile";
 import BarbeariaStep from "@/pages/onboarding/BarbeariaStep";
 import CheckoutSuccess from "@/pages/checkout/CheckoutSuccess";
 import CheckoutCancel from "@/pages/checkout/CheckoutCancel";
+import Planos from "@/pages/checkout/Planos";
 import Dashboard from "@/pages/Dashboard";
 import Agenda from "@/pages/Agenda";
 import Profissionais from "@/pages/gestao/Profissionais";
@@ -100,6 +101,7 @@ function Router() {
 
       <Route path="/completar-perfil" component={CompleteProfile} />
       <Route path="/onboarding/barbearia" component={BarbeariaStep} />
+      <Route path="/planos" component={Planos} />
       <Route path="/checkout/success" component={CheckoutSuccess} />
       <Route path="/checkout/cancel" component={CheckoutCancel} />
 
