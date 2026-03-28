@@ -186,7 +186,7 @@ export default function DirectSales() {
   }, []);
 
   useEffect(() => {
-    fetch(`${apiBase}/auth/me`, { credentials: 'include' })
+    fetch(apiUrl("/auth/me"), { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data?.id) setAuthToken('session-active');
