@@ -303,12 +303,20 @@ export default function Landing() {
 
   const handleSubscribe = async (tier: string, billingPeriod: BillingPeriod) => {
     const product = stripeProducts.find(p => p.metadata?.tier === tier);
-    if (!product) return;
+    if (!product) {
+      window.location.href = `${import.meta.env.BASE_URL}cadastro`.replace(/\/\//g, '/');
+      return;
+    }
     const price = product.prices.find(p => p.metadata?.period === billingPeriod);
-    if (!price) return;
+    if (!price) {
+      window.location.href = `${import.meta.env.BASE_URL}cadastro`.replace(/\/\//g, '/');
+      return;
+    }
 
+    setIsLoadingCheckout(`${tier}-${billingPeriod}`);
     pendingCheckoutRef.current = { priceId: price.id, billingPeriod };
     setShowGoogleModal(true);
+    setIsLoadingCheckout(null);
   };
 
   const smoothScroll = useCallback((e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
