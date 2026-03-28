@@ -55,7 +55,7 @@ router.post("/", requireAuth, requireRole("dono"), async (req, res) => {
       uf: uf || null,
       onboardingStep: 2,
       planoVencimento,
-      subscriptionStatus: freeTrialEnabled ? undefined : "pendente",
+      subscriptionStatus: freeTrialEnabled ? undefined : "trial_expired",
     }).returning();
 
     try {

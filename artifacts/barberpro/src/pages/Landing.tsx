@@ -180,8 +180,6 @@ export default function Landing() {
   const [isLoadingCheckout, setIsLoadingCheckout] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const scrolled = useScrolled();
-  const pendingCheckoutRef = useRef<{ priceId: string; billingPeriod: BillingPeriod } | null>(null);
-  const googleClientIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     fetch(PRICING_MODE_ENDPOINT)
@@ -192,119 +190,54 @@ export default function Landing() {
         if (data.freeTrialEnabled !== undefined) setFreeTrialEnabled(data.freeTrialEnabled);
       })
       .catch(() => {});
-
-    fetch(`${import.meta.env.BASE_URL}api/lgpd/google-client-id`.replace(/\/\//g, '/'))
-      .then(r => r.json())
-      .then(data => {
-        if (data.clientId) {
-          googleClientIdRef.current = data.clientId;
-          loadGoogleScript(data.clientId);
-        }
-      })
-      .catch(() => {});
   }, []);
 
-  const loadGoogleScript = (clientId: string) => {
-    if (document.getElementById("google-gsi-script")) {
-      initGoogle(clientId);
+  const getFallbackUrl = () => {
+    if (freeTrialEnabled) {
+      return `${import.meta.env.BASE_URL}cadastro`.replace(/\/\//g, '/');
+    }
+    const pricingEl = document.getElementById("pricing");
+    if (pricingEl) {
+      pricingEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      return null;
+    }
+    return `${import.meta.env.BASE_URL}cadastro`.replace(/\/\//g, '/');
+  };
+
+  const handleSubscribe = async (tier: string, billingPeriod: BillingPeriod) => {
+    const product = stripeProducts.find(p => p.metadata?.tier === tier);
+    if (!product) {
+      const url = getFallbackUrl();
+      if (url) window.location.href = url;
       return;
     }
-    const script = document.createElement("script");
-    script.id = "google-gsi-script";
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    script.onload = () => initGoogle(clientId);
-    document.head.appendChild(script);
-  };
 
-  const initGoogle = (clientId: string) => {
-    if (!(window as any).google) return;
-    (window as any).google.accounts.id.initialize({
-      client_id: clientId,
-      callback: handleGoogleResponse,
-    });
-  };
+    const price = product.prices.find(p => p.metadata?.period === billingPeriod);
+    if (!price) {
+      const url = getFallbackUrl();
+      if (url) window.location.href = url;
+      return;
+    }
 
-  const handleGoogleResponse = async (response: any) => {
-    const pending = pendingCheckoutRef.current;
-    if (!pending) return;
-
-    setIsLoadingCheckout("google-auth");
+    setIsLoadingCheckout(`${tier}-${billingPeriod}`);
     try {
-      const res = await fetch(`${import.meta.env.BASE_URL}api/checkout/google-checkout`.replace(/\/\//g, '/'), {
+      const res = await fetch(`${import.meta.env.BASE_URL}api/checkout/create-checkout-session`.replace(/\/\//g, '/'), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          credential: response.credential,
-          priceId: pending.priceId,
-          billingPeriod: pending.billingPeriod,
-        }),
+        body: JSON.stringify({ priceId: price.id, billingPeriod }),
       });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert(data.error || "Erro ao processar checkout. Tente novamente.");
-        setIsLoadingCheckout(null);
+        const url = getFallbackUrl();
+        if (url) window.location.href = url;
       }
     } catch {
-      alert("Erro de conexão. Tente novamente.");
-      setIsLoadingCheckout(null);
-    }
-  };
-
-  const handleSubscribe = async (tier: string, billingPeriod: BillingPeriod) => {
-    const product = stripeProducts.find(p => p.metadata?.tier === tier);
-    if (!product) return;
-
-    const price = product.prices.find(p => p.metadata?.period === billingPeriod);
-    if (!price) return;
-
-    setIsLoadingCheckout(`${tier}-${billingPeriod}`);
-
-    const res = await fetch(`${import.meta.env.BASE_URL}api/checkout/create-checkout-session`.replace(/\/\//g, '/'), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ priceId: price.id, billingPeriod }),
-    }).catch(() => null);
-
-    if (res && res.ok) {
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-        return;
-      }
-    }
-
-    pendingCheckoutRef.current = { priceId: price.id, billingPeriod };
-
-    if ((window as any).google) {
-      (window as any).google.accounts.id.prompt((notification: any) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          (window as any).google.accounts.id.prompt();
-          const container = document.getElementById("google-landing-btn");
-          if (container && googleClientIdRef.current) {
-            container.innerHTML = "";
-            (window as any).google.accounts.id.renderButton(container, {
-              type: "standard",
-              theme: "outline",
-              size: "large",
-              width: 340,
-              text: "signup_with",
-              shape: "pill",
-              locale: "pt-BR",
-            });
-            const modal = document.getElementById("google-auth-modal");
-            if (modal) modal.style.display = "flex";
-          }
-          setIsLoadingCheckout(null);
-        }
-      });
-    } else {
-      window.location.href = `${import.meta.env.BASE_URL}cadastro?plan=${tier}&period=${billingPeriod}`.replace(/\/\//g, '/');
+      const url = getFallbackUrl();
+      if (url) window.location.href = url;
+    } finally {
       setIsLoadingCheckout(null);
     }
   };

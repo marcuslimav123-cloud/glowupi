@@ -577,13 +577,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (!canAccess && status !== "none") {
     const isTrialExpired = status === "trial_expired";
-    const isPendente = status === "pendente";
-    const needsPayment = isTrialExpired || isPendente;
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
         <div className="max-w-sm w-full text-center space-y-6">
-          <div className={`h-16 w-16 rounded-2xl flex items-center justify-center mx-auto ${needsPayment ? "bg-primary/10" : "bg-red-500/8"}`}>
-            {needsPayment ? (
+          <div className={`h-16 w-16 rounded-2xl flex items-center justify-center mx-auto ${isTrialExpired ? "bg-primary/10" : "bg-red-500/8"}`}>
+            {isTrialExpired ? (
               <Crown className="h-8 w-8 text-primary" />
             ) : (
               <AlertTriangle className="h-8 w-8 text-red-500" />
@@ -591,18 +589,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
           <div>
             <h1 className="text-[22px] font-bold text-foreground mb-2">
-              {isPendente
-                ? "Escolha seu Plano"
-                : isTrialExpired
+              {isTrialExpired
                 ? "Período de Teste Encerrado"
                 : status === "cancelado"
                 ? "Assinatura Cancelada"
                 : "Assinatura Inativa"}
             </h1>
             <p className="text-foreground/45 text-[14px] leading-relaxed">
-              {isPendente
-                ? "Sua conta foi criada com sucesso! Escolha um plano para começar a usar todas as funcionalidades."
-                : isTrialExpired
+              {isTrialExpired
                 ? "Seu período de teste gratuito terminou. Escolha um plano para continuar usando todas as funcionalidades."
                 : status === "cancelado"
                 ? "Sua assinatura foi cancelada. Renove para voltar a usar o sistema."
@@ -610,9 +604,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </p>
           </div>
           <div className="flex flex-col gap-3">
-            <Link href="/planos">
+            <Link href="/#precos">
               <Button size="lg" className="w-full rounded-xl h-11 text-[14px] font-medium">
-                {isPendente ? "Assinar Agora" : isTrialExpired ? "Escolher Plano" : "Ver Planos"}
+                {isTrialExpired ? "Escolher Plano" : "Ver Planos"}
               </Button>
             </Link>
             <Button size="lg" variant="outline" onClick={logout} className="rounded-xl h-11 text-[14px]">Sair</Button>
