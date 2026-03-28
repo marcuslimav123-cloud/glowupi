@@ -97,7 +97,9 @@ const queryClient = new QueryClient();
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Landing} />
+      <Route path="/" component={DirectSales} />
+      <Route path="/sucesso" component={DirectSalesSuccess} />
+      <Route path="/pdvd" component={Landing} />
       <Route path="/login" component={Login} />
       <Route path="/cadastro" component={Register} />
 
@@ -105,9 +107,6 @@ function Router() {
       <Route path="/onboarding/barbearia" component={BarbeariaStep} />
       <Route path="/checkout/success" component={CheckoutSuccess} />
       <Route path="/checkout/cancel" component={CheckoutCancel} />
-
-      <Route path="/pdvd" component={DirectSales} />
-      <Route path="/pdvd/sucesso" component={DirectSalesSuccess} />
 
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/agenda" component={Agenda} />

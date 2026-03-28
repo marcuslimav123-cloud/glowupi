@@ -155,7 +155,7 @@ export default function DirectSalesSuccess() {
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Ops!</h2>
           <p className="text-white/50 text-sm mb-6">{errorMsg}</p>
-          <Button onClick={() => window.location.href = "/pdvd"} className="rounded-full px-8">
+          <Button onClick={() => window.location.href = "/"} className="rounded-full px-8">
             Voltar para Planos
           </Button>
         </div>

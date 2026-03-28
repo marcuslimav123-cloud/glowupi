@@ -235,8 +235,8 @@ router.post("/create-direct-session", requireAuth, async (req: any, res) => {
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
-      success_url: `${baseUrl}/pdvd/sucesso?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/pdvd`,
+      success_url: `${baseUrl}/sucesso?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/`,
       metadata: {
         userId: String(user.id),
         billingPeriod: resolvedPeriod,
