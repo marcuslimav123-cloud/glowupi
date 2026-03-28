@@ -19,34 +19,58 @@ router.get("/pricing-config", async (_req, res) => {
 
     const pricingMode = configMap["pricing_mode"] || "all_plans";
 
-    const productsWithPrices = await stripeStorage.listProductsWithPrices(true, 50, 0);
+    let filteredProducts: any[] = [];
 
-    const productsMap = new Map<string, any>();
-    for (const row of productsWithPrices) {
-      const pid = row.product_id as string;
-      if (!productsMap.has(pid)) {
-        productsMap.set(pid, {
-          id: pid,
-          name: row.product_name,
-          description: row.product_description,
-          metadata: row.product_metadata,
-          prices: []
-        });
+    try {
+      const productsWithPrices = await stripeStorage.listProductsWithPrices(true, 50, 0);
+
+      const productsMap = new Map<string, any>();
+      for (const row of productsWithPrices) {
+        const pid = row.product_id as string;
+        if (!productsMap.has(pid)) {
+          productsMap.set(pid, {
+            id: pid,
+            name: row.product_name,
+            description: row.product_description,
+            metadata: row.product_metadata,
+            prices: []
+          });
+        }
+        if (row.price_id) {
+          productsMap.get(pid).prices.push({
+            id: row.price_id,
+            unit_amount: row.unit_amount,
+            currency: row.currency,
+            recurring: row.recurring,
+            metadata: row.price_metadata,
+          });
+        }
       }
-      if (row.price_id) {
-        productsMap.get(pid).prices.push({
-          id: row.price_id,
-          unit_amount: row.unit_amount,
-          currency: row.currency,
-          recurring: row.recurring,
-          metadata: row.price_metadata,
+      filteredProducts = Array.from(productsMap.values());
+    } catch (dbErr) {
+      console.warn("Stripe sync DB unavailable, fetching directly from Stripe API...");
+      const stripeClient = await getUncachableStripeClient();
+      const stripeProducts = await stripeClient.products.list({ active: true, limit: 50 });
+      for (const product of stripeProducts.data) {
+        const prices = await stripeClient.prices.list({ product: product.id, active: true, limit: 20 });
+        filteredProducts.push({
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          metadata: product.metadata,
+          prices: prices.data.map(p => ({
+            id: p.id,
+            unit_amount: p.unit_amount,
+            currency: p.currency,
+            recurring: p.recurring,
+            metadata: p.metadata,
+          })),
         });
       }
     }
 
     const publishableKey = await getStripePublishableKey();
 
-    let filteredProducts = Array.from(productsMap.values());
     if (pricingMode === "single_price") {
       filteredProducts = filteredProducts.filter((p: any) => p.metadata?.tier === "single");
     } else if (pricingMode === "hidden") {
@@ -88,12 +112,21 @@ router.post("/create-checkout-session", requireAuth, requireBarbearia, async (re
     }
 
     if (pricingMode === "single_price") {
-      const allProducts = await stripeStorage.listProductsWithPrices(true, 50, 0);
-      const allowedPriceIds = allProducts
-        .filter((r: any) => r.product_metadata?.tier === "single")
-        .map((r: any) => r.price_id);
-      if (!allowedPriceIds.includes(priceId)) {
-        return res.status(400).json({ error: "Este plano não está disponível no momento" });
+      try {
+        const allProducts = await stripeStorage.listProductsWithPrices(true, 50, 0);
+        const allowedPriceIds = allProducts
+          .filter((r: any) => r.product_metadata?.tier === "single")
+          .map((r: any) => r.price_id);
+        if (!allowedPriceIds.includes(priceId)) {
+          return res.status(400).json({ error: "Este plano não está disponível no momento" });
+        }
+      } catch (_e) {
+        const sc = await getUncachableStripeClient();
+        const priceObj = await sc.prices.retrieve(priceId, { expand: ['product'] });
+        const prod = priceObj.product as any;
+        if (prod?.metadata?.tier !== "single") {
+          return res.status(400).json({ error: "Este plano não está disponível no momento" });
+        }
       }
     }
 
@@ -111,10 +144,18 @@ router.post("/create-checkout-session", requireAuth, requireBarbearia, async (re
     }
 
     let resolvedPeriod = billingPeriod || 'mensal';
-    const allProducts = await stripeStorage.listProductsWithPrices(true, 50, 0);
-    const priceRow = allProducts.find((r: any) => r.price_id === priceId);
-    if (priceRow?.price_metadata?.period) {
-      resolvedPeriod = priceRow.price_metadata.period;
+    try {
+      const allProducts = await stripeStorage.listProductsWithPrices(true, 50, 0);
+      const priceRow = allProducts.find((r: any) => r.price_id === priceId);
+      if (priceRow?.price_metadata?.period) {
+        resolvedPeriod = priceRow.price_metadata.period;
+      }
+    } catch (_e) {
+      const stripeClient = await getUncachableStripeClient();
+      const price = await stripeClient.prices.retrieve(priceId);
+      if (price.metadata?.period) {
+        resolvedPeriod = price.metadata.period;
+      }
     }
 
     const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
@@ -146,7 +187,13 @@ router.get("/subscription-status", requireAuth, requireBarbearia, async (req: an
       });
     }
 
-    const subscription = await stripeStorage.getSubscription(barbearia.stripeSubscriptionId);
+    let subscription: any = null;
+    try {
+      subscription = await stripeStorage.getSubscription(barbearia.stripeSubscriptionId);
+    } catch (_e) {
+      const stripeClient = await getUncachableStripeClient();
+      subscription = await stripeClient.subscriptions.retrieve(barbearia.stripeSubscriptionId);
+    }
     res.json({
       status: barbearia.subscriptionStatus,
       subscription,
@@ -196,36 +243,61 @@ router.post("/create-direct-session", requireAuth, async (req: any, res) => {
     }
 
     if (pricingMode === "single_price") {
-      const allProductsCheck = await stripeStorage.listProductsWithPrices(true, 50, 0);
-      const allowedPriceIds = allProductsCheck
-        .filter((r: any) => r.product_metadata?.tier === "single")
-        .map((r: any) => r.price_id);
-      if (!allowedPriceIds.includes(priceId)) {
-        return res.status(400).json({ error: "Este plano não está disponível no momento" });
+      try {
+        const allProductsCheck = await stripeStorage.listProductsWithPrices(true, 50, 0);
+        const allowedPriceIds = allProductsCheck
+          .filter((r: any) => r.product_metadata?.tier === "single")
+          .map((r: any) => r.price_id);
+        if (!allowedPriceIds.includes(priceId)) {
+          return res.status(400).json({ error: "Este plano não está disponível no momento" });
+        }
+      } catch (_e) {
+        const sc = await getUncachableStripeClient();
+        const priceObj = await sc.prices.retrieve(priceId, { expand: ['product'] });
+        const prod = priceObj.product as any;
+        if (prod?.metadata?.tier !== "single") {
+          return res.status(400).json({ error: "Este plano não está disponível no momento" });
+        }
       }
     }
 
     const stripeClient = await getUncachableStripeClient();
     const customerEmail = user.email;
-    let customer = await stripeStorage.getCustomerByEmail(customerEmail);
     let customerId: string;
 
-    if (customer) {
-      customerId = customer.id as string;
-    } else {
-      const newCustomer = await stripeClient.customers.create({
-        email: customerEmail,
-        name: user.nome,
-        metadata: { userId: String(user.id), source: "pdvd" },
-      });
-      customerId = newCustomer.id;
+    try {
+      const customer = await stripeStorage.getCustomerByEmail(customerEmail);
+      if (customer) {
+        customerId = customer.id as string;
+      } else {
+        throw new Error("not found");
+      }
+    } catch (_e) {
+      const existing = await stripeClient.customers.list({ email: customerEmail, limit: 1 });
+      if (existing.data.length > 0) {
+        customerId = existing.data[0].id;
+      } else {
+        const newCustomer = await stripeClient.customers.create({
+          email: customerEmail,
+          name: user.nome,
+          metadata: { userId: String(user.id), source: "pdvd" },
+        });
+        customerId = newCustomer.id;
+      }
     }
 
     let resolvedPeriod = billingPeriod || 'mensal';
-    const allProducts = await stripeStorage.listProductsWithPrices(true, 50, 0);
-    const priceRow = allProducts.find((r: any) => r.price_id === priceId);
-    if (priceRow?.price_metadata?.period) {
-      resolvedPeriod = priceRow.price_metadata.period;
+    try {
+      const allProducts = await stripeStorage.listProductsWithPrices(true, 50, 0);
+      const priceRow = allProducts.find((r: any) => r.price_id === priceId);
+      if (priceRow?.price_metadata?.period) {
+        resolvedPeriod = priceRow.price_metadata.period;
+      }
+    } catch (_e) {
+      const price = await stripeClient.prices.retrieve(priceId);
+      if (price.metadata?.period) {
+        resolvedPeriod = price.metadata.period;
+      }
     }
 
     const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
