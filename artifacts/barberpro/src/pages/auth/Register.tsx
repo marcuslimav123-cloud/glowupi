@@ -12,6 +12,7 @@ export default function Register() {
   const [googleFailed, setGoogleFailed] = useState(false);
   const googleInitRef = useRef(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [freeTrialEnabled, setFreeTrialEnabled] = useState(false);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -28,6 +29,13 @@ export default function Register() {
         }
       })
       .catch(() => setGoogleFailed(true));
+
+    fetch(apiUrl("/checkout/pricing-config"))
+      .then(r => r.json())
+      .then(data => {
+        if (data.freeTrialEnabled !== undefined) setFreeTrialEnabled(data.freeTrialEnabled);
+      })
+      .catch(() => {});
 
     return () => clearTimeout(timeout);
   }, []);
@@ -132,7 +140,9 @@ export default function Register() {
             <img src="/logo-icon.png" alt="Glow Upi" className="h-20 w-20 object-contain" />
           </div>
           <h1 className="text-[28px] font-bold text-white tracking-tight">Criar Conta</h1>
-          <p className="text-primary text-[13px] font-medium mt-1 tracking-wide">30 DIAS GRÁTIS</p>
+          {freeTrialEnabled && (
+            <p className="text-primary text-[13px] font-medium mt-1 tracking-wide">30 DIAS GRÁTIS</p>
+          )}
         </div>
 
         <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl p-7 shadow-xl shadow-black/20 backdrop-blur-sm">

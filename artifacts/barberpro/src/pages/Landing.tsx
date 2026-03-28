@@ -227,6 +227,11 @@ export default function Landing() {
         credentials: "include",
         body: JSON.stringify({ priceId: price.id, billingPeriod }),
       });
+      if (res.status === 401 || res.status === 403) {
+        const cadastroUrl = `${import.meta.env.BASE_URL}cadastro?plan=${tier}&period=${billingPeriod}`.replace(/\/\//g, '/');
+        window.location.href = cadastroUrl;
+        return;
+      }
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;

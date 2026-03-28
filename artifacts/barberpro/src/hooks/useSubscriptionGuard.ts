@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 
-export type SubscriptionStatus = "trial" | "trial_expired" | "ativo" | "inadimplente" | "cancelado" | "none";
+export type SubscriptionStatus = "trial" | "trial_expired" | "ativo" | "inadimplente" | "cancelado" | "pendente" | "none";
 
 export function useSubscriptionGuard() {
   const { user, isAuthenticated, isDono } = useAuth();
