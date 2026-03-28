@@ -210,17 +210,24 @@ export default function DirectSales() {
     if (stripeProducts.length === 0) return;
     const pendingRaw = sessionStorage.getItem("pdvd_pending_plan");
     if (!pendingRaw) return;
+    let pending: { tier?: string; period?: BillingPeriod };
     try {
-      const pending = JSON.parse(pendingRaw);
-      if (pending.tier && pending.period) {
-        const product = stripeProducts.find(p => p.metadata?.tier === pending.tier);
-        if (!product) return;
-        sessionStorage.removeItem("pdvd_pending_plan");
-        proceedToCheckout(pending.tier, pending.period);
-      }
+      pending = JSON.parse(pendingRaw);
     } catch {
       sessionStorage.removeItem("pdvd_pending_plan");
+      return;
     }
+    if (!pending.tier || !pending.period) {
+      sessionStorage.removeItem("pdvd_pending_plan");
+      return;
+    }
+    const product = stripeProducts.find(p => p.metadata?.tier === pending.tier);
+    if (!product) return;
+    proceedToCheckout(pending.tier, pending.period).then(started => {
+      if (started) {
+        sessionStorage.removeItem("pdvd_pending_plan");
+      }
+    });
   }, [authToken, stripeProducts]);
 
   const redirectToGoogleAuth = (tier: string, billingPeriod: BillingPeriod) => {
@@ -230,12 +237,12 @@ export default function DirectSales() {
     window.location.href = apiUrl(`/auth/google/signin-popup?return_url=${returnUrl}`);
   };
 
-  const proceedToCheckout = async (tier: string, billingPeriod: BillingPeriod) => {
+  const proceedToCheckout = async (tier: string, billingPeriod: BillingPeriod): Promise<boolean> => {
     const product = stripeProducts.find(p => p.metadata?.tier === tier);
-    if (!product) return;
+    if (!product) return false;
 
     const price = product.prices.find(p => p.metadata?.period === billingPeriod);
-    if (!price) return;
+    if (!price) return false;
 
     setIsLoadingCheckout(`${tier}-${billingPeriod}`);
     try {
@@ -251,11 +258,14 @@ export default function DirectSales() {
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
+        return true;
       } else {
         console.error("No checkout URL returned:", data);
+        return false;
       }
     } catch (err) {
       console.error("Checkout error:", err);
+      return false;
     } finally {
       setIsLoadingCheckout(null);
     }
