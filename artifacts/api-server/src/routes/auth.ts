@@ -329,7 +329,7 @@ router.get("/google/mobile/callback", async (req, res) => {
         }
         if (returnUrl.protocol === "https:" || returnUrl.protocol === "http:") {
           const host = returnUrl.hostname;
-          if (!host.endsWith(".replit.dev") && !host.endsWith(".replit.app") && host !== "localhost") {
+          if (!host.endsWith(".replit.dev") && !host.endsWith(".replit.app") && !host.endsWith("glowupi.com.br") && host !== "localhost") {
             return res.status(400).send(errorPage("Erro", "URL de retorno não autorizada."));
           }
         }

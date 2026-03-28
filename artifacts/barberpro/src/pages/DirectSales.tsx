@@ -172,7 +172,6 @@ export default function DirectSales() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [authenticating, setAuthenticating] = useState(false);
-  const [pendingSubscription, setPendingSubscription] = useState<{ tier: string; period: BillingPeriod } | null>(null);
   const scrolled = useScrolled();
 
   useEffect(() => {
@@ -186,55 +185,47 @@ export default function DirectSales() {
   }, []);
 
   useEffect(() => {
-    fetch(apiUrl("/auth/me"), { credentials: 'include' })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data?.id) setAuthToken('session-active');
-      })
-      .catch(() => {});
+    const params = new URLSearchParams(window.location.search);
+    const tokenFromUrl = params.get("token");
+    if (tokenFromUrl) {
+      setAuthToken(tokenFromUrl);
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, "", cleanUrl);
+    }
   }, []);
 
   useEffect(() => {
-    const handler = (e: MessageEvent) => {
-      if (e.origin !== window.location.origin) return;
-      if (e.data?.type === 'google-auth-success' && e.data.token) {
-        setAuthToken(e.data.token);
-        setAuthenticating(false);
-
-        if (pendingSubscription) {
-          proceedToCheckout(pendingSubscription.tier, pendingSubscription.period, e.data.token);
-          setPendingSubscription(null);
-        }
-      }
-    };
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
-  }, [pendingSubscription]);
-
-  const openGoogleAuth = () => {
-    setAuthenticating(true);
-    const w = 500;
-    const h = 600;
-    const left = window.screenX + (window.innerWidth - w) / 2;
-    const top = window.screenY + (window.innerHeight - h) / 2;
-    const popup = window.open(
-      apiUrl("/auth/google/signin-popup"),
-      "google-auth",
-      `width=${w},height=${h},left=${left},top=${top},popup=yes`
-    );
-    if (popup) {
-      const checkClosed = setInterval(() => {
-        if (popup.closed) {
-          clearInterval(checkClosed);
-          setAuthenticating(false);
-        }
-      }, 500);
-    } else {
-      setAuthenticating(false);
+    if (!authToken) {
+      fetch(apiUrl("/auth/me"), { credentials: 'include' })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.id) setAuthToken('session-active');
+        })
+        .catch(() => {});
     }
+  }, [authToken]);
+
+  useEffect(() => {
+    if (!authToken) return;
+    const pendingRaw = sessionStorage.getItem("pdvd_pending_plan");
+    if (!pendingRaw) return;
+    sessionStorage.removeItem("pdvd_pending_plan");
+    try {
+      const pending = JSON.parse(pendingRaw);
+      if (pending.tier && pending.period) {
+        proceedToCheckout(pending.tier, pending.period);
+      }
+    } catch {}
+  }, [authToken, stripeProducts]);
+
+  const redirectToGoogleAuth = (tier: string, billingPeriod: BillingPeriod) => {
+    sessionStorage.setItem("pdvd_pending_plan", JSON.stringify({ tier, period: billingPeriod }));
+    setAuthenticating(true);
+    const returnUrl = encodeURIComponent(window.location.origin + "/");
+    window.location.href = apiUrl(`/auth/google/signin-popup?return_url=${returnUrl}`);
   };
 
-  const proceedToCheckout = async (tier: string, billingPeriod: BillingPeriod, token?: string) => {
+  const proceedToCheckout = async (tier: string, billingPeriod: BillingPeriod) => {
     const product = stripeProducts.find(p => p.metadata?.tier === tier);
     if (!product) return;
 
@@ -244,8 +235,7 @@ export default function DirectSales() {
     setIsLoadingCheckout(`${tier}-${billingPeriod}`);
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
-      const activeToken = token || authToken;
-      if (activeToken && activeToken !== 'session-active') headers["Authorization"] = `Bearer ${activeToken}`;
+      if (authToken && authToken !== 'session-active') headers["Authorization"] = `Bearer ${authToken}`;
 
       const res = await fetch(apiUrl("/checkout/create-direct-session"), {
         method: "POST",
@@ -268,8 +258,7 @@ export default function DirectSales() {
 
   const handleSubscribe = async (tier: string, billingPeriod: BillingPeriod) => {
     if (!authToken) {
-      setPendingSubscription({ tier, period: billingPeriod });
-      openGoogleAuth();
+      redirectToGoogleAuth(tier, billingPeriod);
       return;
     }
     await proceedToCheckout(tier, billingPeriod);
