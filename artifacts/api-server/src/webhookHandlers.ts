@@ -28,6 +28,16 @@ async function handleSubscriptionEvent(subscription: any) {
   const planTier = priceMetadata?.tier || null;
   const planPeriod = priceMetadata?.period || null;
 
+  let planoVencimento: Date | null = barbearia.planoVencimento;
+  if (subscriptionStatus === 'ativo' || subscriptionStatus === 'trial') {
+    const currentPeriodEnd = subscription.current_period_end;
+    if (currentPeriodEnd) {
+      planoVencimento = new Date(currentPeriodEnd * 1000);
+    }
+  } else if (subscriptionStatus === 'cancelado') {
+    planoVencimento = barbearia.planoVencimento;
+  }
+
   await db.update(barbeariasTable)
     .set({
       stripeSubscriptionId: subscription.id,
@@ -36,6 +46,7 @@ async function handleSubscriptionEvent(subscription: any) {
       subscriptionPeriod: planPeriod,
       planoStatus: subscriptionStatus === 'ativo' ? 'ativo' : subscriptionStatus,
       planoNome: planTier || barbearia.planoNome,
+      planoVencimento,
       updatedAt: new Date(),
     })
     .where(eq(barbeariasTable.id, barbearia.id));

@@ -196,7 +196,6 @@ export default function DirectSales() {
       if (e.data?.type === 'google-auth-success' && e.data.token) {
         setAuthToken(e.data.token);
         setAuthenticating(false);
-        document.cookie = `session=${e.data.token};path=/;max-age=${7 * 24 * 60 * 60};samesite=lax`;
 
         if (pendingSubscription) {
           proceedToCheckout(pendingSubscription.tier, pendingSubscription.period, e.data.token);

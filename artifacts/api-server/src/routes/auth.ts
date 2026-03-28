@@ -304,6 +304,7 @@ router.get("/google/mobile/callback", async (req, res) => {
     }
 
     const token = createSession(user.id);
+    res.cookie("session", token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: "lax" });
 
     if (redirectScheme === "__popup__") {
       const successPage = `<!DOCTYPE html><html><head><meta charset="utf-8">
