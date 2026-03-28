@@ -207,15 +207,20 @@ export default function DirectSales() {
 
   useEffect(() => {
     if (!authToken) return;
+    if (stripeProducts.length === 0) return;
     const pendingRaw = sessionStorage.getItem("pdvd_pending_plan");
     if (!pendingRaw) return;
-    sessionStorage.removeItem("pdvd_pending_plan");
     try {
       const pending = JSON.parse(pendingRaw);
       if (pending.tier && pending.period) {
+        const product = stripeProducts.find(p => p.metadata?.tier === pending.tier);
+        if (!product) return;
+        sessionStorage.removeItem("pdvd_pending_plan");
         proceedToCheckout(pending.tier, pending.period);
       }
-    } catch {}
+    } catch {
+      sessionStorage.removeItem("pdvd_pending_plan");
+    }
   }, [authToken, stripeProducts]);
 
   const redirectToGoogleAuth = (tier: string, billingPeriod: BillingPeriod) => {
