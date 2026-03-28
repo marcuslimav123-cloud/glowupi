@@ -22,7 +22,18 @@ router.get("/pricing-config", async (_req, res) => {
 
     const pricingMode = configMap["pricing_mode"] || "all_plans";
 
-    const productsWithPrices = await stripeStorage.listProductsWithPrices(true, 50, 0);
+    let productsWithPrices: any[] = [];
+    try {
+      productsWithPrices = await stripeStorage.listProductsWithPrices(true, 50, 0);
+    } catch (stripeErr) {
+      console.error("Error fetching pricing config:", stripeErr);
+      return res.json({
+        pricingMode,
+        products: [],
+        publishableKey: await getStripePublishableKey().catch(() => ""),
+        freeTrialEnabled: configMap["free_trial_enabled"] === "true",
+      });
+    }
 
     const productsMap = new Map<string, any>();
     for (const row of productsWithPrices) {
