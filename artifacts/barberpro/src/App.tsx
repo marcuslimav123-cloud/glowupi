@@ -48,6 +48,9 @@ import PublicBooking from "@/pages/PublicBooking";
 import PublicStorefront from "@/pages/PublicStorefront";
 import PublicPesquisa from "@/pages/PublicPesquisa";
 
+import DirectSales from "@/pages/DirectSales";
+import DirectSalesSuccess from "@/pages/DirectSalesSuccess";
+
 import ComandasAbertas from "@/pages/comandas/ComandasAbertas";
 import ComandasHistorico from "@/pages/comandas/ComandasHistorico";
 
@@ -102,6 +105,9 @@ function Router() {
       <Route path="/onboarding/barbearia" component={BarbeariaStep} />
       <Route path="/checkout/success" component={CheckoutSuccess} />
       <Route path="/checkout/cancel" component={CheckoutCancel} />
+
+      <Route path="/pdvd" component={DirectSales} />
+      <Route path="/pdvd/sucesso" component={DirectSalesSuccess} />
 
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/agenda" component={Agenda} />

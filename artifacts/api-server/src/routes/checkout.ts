@@ -180,4 +180,234 @@ router.post("/create-portal-session", requireAuth, requireBarbearia, async (req:
   }
 });
 
+router.post("/create-direct-session", requireAuth, async (req: any, res) => {
+  try {
+    const { priceId, billingPeriod } = req.body;
+    const user = req.user;
+
+    if (!priceId) {
+      return res.status(400).json({ error: "priceId is required" });
+    }
+
+    const configs = await db.select().from(platformConfigTable);
+    const pricingMode = configs.find(c => c.chave === "pricing_mode")?.valor || "all_plans";
+    if (pricingMode === "hidden") {
+      return res.status(403).json({ error: "Assinaturas estão desativadas no momento" });
+    }
+
+    if (pricingMode === "single_price") {
+      const allProductsCheck = await stripeStorage.listProductsWithPrices(true, 50, 0);
+      const allowedPriceIds = allProductsCheck
+        .filter((r: any) => r.product_metadata?.tier === "single")
+        .map((r: any) => r.price_id);
+      if (!allowedPriceIds.includes(priceId)) {
+        return res.status(400).json({ error: "Este plano não está disponível no momento" });
+      }
+    }
+
+    const stripeClient = await getUncachableStripeClient();
+    const customerEmail = user.email;
+    let customer = await stripeStorage.getCustomerByEmail(customerEmail);
+    let customerId: string;
+
+    if (customer) {
+      customerId = customer.id as string;
+    } else {
+      const newCustomer = await stripeClient.customers.create({
+        email: customerEmail,
+        name: user.nome,
+        metadata: { userId: String(user.id), source: "pdvd" },
+      });
+      customerId = newCustomer.id;
+    }
+
+    let resolvedPeriod = billingPeriod || 'mensal';
+    const allProducts = await stripeStorage.listProductsWithPrices(true, 50, 0);
+    const priceRow = allProducts.find((r: any) => r.price_id === priceId);
+    if (priceRow?.price_metadata?.period) {
+      resolvedPeriod = priceRow.price_metadata.period;
+    }
+
+    const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+
+    const session = await stripeClient.checkout.sessions.create({
+      customer: customerId,
+      payment_method_types: ['card'],
+      line_items: [{ price: priceId, quantity: 1 }],
+      mode: 'subscription',
+      success_url: `${baseUrl}/pdvd/sucesso?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/pdvd`,
+      metadata: {
+        userId: String(user.id),
+        billingPeriod: resolvedPeriod,
+        source: "pdvd",
+      },
+      subscription_data: {
+        metadata: {
+          userId: String(user.id),
+          billingPeriod: resolvedPeriod,
+          source: "pdvd",
+        },
+      },
+      locale: 'pt-BR' as any,
+    });
+
+    res.json({ url: session.url, sessionId: session.id });
+  } catch (error: any) {
+    console.error("Direct checkout session error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/verify-direct-session", requireAuth, async (req: any, res) => {
+  try {
+    const { sessionId } = req.body;
+    const user = req.user;
+    if (!sessionId) {
+      return res.status(400).json({ error: "sessionId is required" });
+    }
+
+    const stripeClient = await getUncachableStripeClient();
+    const session = await stripeClient.checkout.sessions.retrieve(sessionId, {
+      expand: ['subscription', 'subscription.items.data.price.product'],
+    });
+
+    if (session.metadata?.userId !== String(user.id)) {
+      return res.status(403).json({ error: "Sessão não pertence a este usuário" });
+    }
+
+    if (session.metadata?.source !== "pdvd") {
+      return res.status(400).json({ error: "Sessão inválida para venda direta" });
+    }
+
+    if (session.payment_status !== 'paid') {
+      return res.status(400).json({ error: "Pagamento não confirmado", status: session.payment_status });
+    }
+
+    const subscription = session.subscription as any;
+    const priceItem = subscription?.items?.data?.[0];
+    const product = priceItem?.price?.product as any;
+    const priceMeta = priceItem?.price?.metadata || {};
+    const productMeta = product?.metadata || {};
+
+    res.json({
+      verified: true,
+      customerId: session.customer as string,
+      subscriptionId: subscription?.id,
+      planTier: productMeta.tier || null,
+      planPeriod: priceMeta.period || session.metadata?.billingPeriod || 'mensal',
+      productName: product?.name || null,
+    });
+  } catch (error: any) {
+    console.error("Verify direct session error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/complete-direct-onboarding", requireAuth, async (req: any, res) => {
+  try {
+    const user = req.user;
+    const {
+      sessionId,
+      nome,
+      telefone,
+      cep,
+      logradouro,
+      numero,
+      bairro,
+      cidade,
+      uf,
+      tipoEstabelecimento,
+      comoSoube,
+    } = req.body;
+
+    if (!sessionId || !nome || !telefone) {
+      return res.status(400).json({ error: "sessionId, nome e telefone são obrigatórios" });
+    }
+
+    const [existingBarb] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
+    if (existingBarb) {
+      return res.json({ id: existingBarb.id, alreadyExists: true });
+    }
+
+    const stripeClient = await getUncachableStripeClient();
+    const session = await stripeClient.checkout.sessions.retrieve(sessionId, {
+      expand: ['subscription', 'subscription.items.data.price.product'],
+    });
+
+    if (session.metadata?.userId !== String(user.id)) {
+      return res.status(403).json({ error: "Sessão não pertence a este usuário" });
+    }
+
+    if (session.metadata?.source !== "pdvd") {
+      return res.status(400).json({ error: "Sessão inválida para venda direta" });
+    }
+
+    if (session.payment_status !== 'paid') {
+      return res.status(400).json({ error: "Pagamento não confirmado" });
+    }
+
+    const subscription = session.subscription as any;
+    const priceItem = subscription?.items?.data?.[0];
+    const product = priceItem?.price?.product as any;
+    const priceMeta = priceItem?.price?.metadata || {};
+    const productMeta = product?.metadata || {};
+
+    const { slugify } = await import("../lib/slugify.js");
+    let baseSlug = slugify(nome);
+    const [existing2] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.slug, baseSlug)).limit(1);
+    if (existing2) {
+      baseSlug = `${baseSlug}-${Date.now()}`;
+    }
+
+    const [barbearia] = await db.insert(barbeariasTable).values({
+      donoId: user.id,
+      nome,
+      slug: baseSlug,
+      telefone: telefone || null,
+      email: user.email || null,
+      cep: cep || null,
+      logradouro: logradouro || null,
+      numero: numero || null,
+      bairro: bairro || null,
+      cidade: cidade || null,
+      uf: uf || null,
+      onboardingStep: 5,
+      planoVencimento: null,
+      subscriptionStatus: "ativo",
+      planoStatus: "ativo",
+      planoNome: productMeta.tier || "pro",
+      stripeCustomerId: session.customer as string,
+      stripeSubscriptionId: subscription?.id || null,
+      subscriptionPlan: productMeta.tier || null,
+      subscriptionPeriod: priceMeta.period || session.metadata?.billingPeriod || 'mensal',
+      segmentacao: tipoEstabelecimento || comoSoube ? { tipoEstabelecimento, comoSoube } : null,
+    }).returning();
+
+    try {
+      const { PARAMETROS_DEFAULTS } = await import("./parametros.js");
+      const { parametrosConfigTable } = await import("@workspace/db/schema");
+      const paramRows = PARAMETROS_DEFAULTS.map((p: any) => ({
+        barbeariaId: barbearia.id,
+        chave: p.chave,
+        valor: p.valorPadrao,
+        tipo: p.tipo,
+      }));
+      await db.insert(parametrosConfigTable).values(paramRows);
+    } catch (seedErr) {
+      console.error("parametros seed error (non-fatal):", seedErr);
+    }
+
+    res.json({
+      id: barbearia.id,
+      nome: barbearia.nome,
+      slug: barbearia.slug,
+      subscriptionStatus: barbearia.subscriptionStatus,
+    });
+  } catch (error: any) {
+    console.error("Complete direct onboarding error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
