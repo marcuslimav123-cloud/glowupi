@@ -217,11 +217,21 @@ export default function DirectSales() {
     const h = 600;
     const left = window.screenX + (window.innerWidth - w) / 2;
     const top = window.screenY + (window.innerHeight - h) / 2;
-    window.open(
+    const popup = window.open(
       apiUrl("/auth/google/signin-popup"),
       "google-auth",
       `width=${w},height=${h},left=${left},top=${top},popup=yes`
     );
+    if (popup) {
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          setAuthenticating(false);
+        }
+      }, 500);
+    } else {
+      setAuthenticating(false);
+    }
   };
 
   const proceedToCheckout = async (tier: string, billingPeriod: BillingPeriod, token?: string) => {

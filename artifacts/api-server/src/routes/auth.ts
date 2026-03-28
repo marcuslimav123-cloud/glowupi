@@ -314,7 +314,7 @@ router.get("/google/mobile/callback", async (req, res) => {
         h2{color:#22c55e;margin:0 0 8px}p{color:#aaa;font-size:14px}</style></head>
         <body><div class="card"><h2>Login realizado!</h2><p>Fechando...</p></div>
         <script>
-          if(window.opener){window.opener.postMessage({type:'google-auth-success',token:'${token}'},'*');setTimeout(function(){window.close()},500)}
+          if(window.opener){window.opener.postMessage({type:'google-auth-success',token:'${token}'},window.location.origin);setTimeout(function(){window.close()},500)}
           else{document.querySelector('p').textContent='Feche esta janela e volte ao app.'}
         </script></body></html>`;
       return res.send(successPage);
