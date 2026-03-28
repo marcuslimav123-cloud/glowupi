@@ -1,0 +1,519 @@
+Solution: Direct Stripe API Fallback Implementation
+1. First, let's fix the pricing endpoint to work directly with Stripe API:
+javascript
+// backend/routes/checkout.js or wherever your pricing endpoint is
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// Define your product IDs from Stripe (you can get these from your Stripe dashboard)
+// These should match the products you have in your Stripe account
+const PRODUCT_CONFIG = {
+  // Example structure - replace with your actual product IDs
+  'prod_basic': {
+    id: 'prod_basic',
+    name: 'Plano Básico',
+    description: 'Para profissionais iniciantes',
+    prices: {
+      monthly: 'price_monthly_basic_id',
+      semiannual: 'price_semiannual_basic_id',
+      annual: 'price_annual_basic_id'
+    }
+  },
+  'prod_pro': {
+    id: 'prod
+responde em portugues
+Vou te ajudar a resolver esse problema em produção. O cerne da questão é que as tabelas de sincronização do Stripe não existem no banco de produção, e precisamos garantir que o endpoint de pricing funcione diretamente com a API do Stripe.
+
+Solução: Implementar Fallback Direto com API do Stripe
+1. Corrigir o Endpoint de Pricing (/api/checkout/pricing-config)
+javascript
+// backend/routes/checkout.js ou backend/src/routes/pricing.js
+import Stripe from 'stripe';
+import { db } from '../db.js'; // seu banco de dados
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// Configuração dos seus produtos (IDs fixos do Stripe)
+// Você pode pegar esses IDs no dashboard do Stripe > Produtos
+const FALLBACK_PRODUCTS = {
+  'prod_exemplo_1': {
+    id: 'prod_exemplo_1',
+    name: 'Plano Básico',
+    description: 'Para profissionais iniciantes',
+    active: true,
+    prices: []
+  },
+  'prod_exemplo_2': {
+    id: 'prod_exemplo_2',
+    name: 'Plano Profissional',
+    description: 'Para profissionais estabelecidos',
+    active: true,
+    prices: []
+  },
+  'prod_exemplo_3': {
+    id: 'prod_exemplo_3',
+    name: 'Plano Premium',
+    description: 'Para salões e equipes',
+    active: true,
+    prices: []
+  },
+  'prod_exemplo_4': {
+    id: 'prod_exemplo_4',
+    name: 'Plano Enterprise',
+    description: 'Para redes de salões',
+    active: true,
+    prices: []
+  }
+};
+
+export async function getPricingConfig(req, res) {
+  try {
+    let products = [];
+    let useFallback = false;
+
+    // Tenta buscar do banco local primeiro
+    try {
+      const localProducts = await db.query.stripeProducts.findMany({
+        where: (products, { eq }) => eq(products.active, true)
+      });
+
+      if (localProducts && localProducts.length > 0) {
+        // Busca os preços para cada produto
+        for (const product of localProducts) {
+          const prices = await db.query.stripePrices.findMany({
+            where: (prices, { eq }) => eq(prices.productId, product.id)
+          });
+          
+          products.push({
+            ...product,
+            prices: prices.filter(p => p.active)
+          });
+        }
+      } else {
+        useFallback = true;
+      }
+    } catch (dbError) {
+      console.log('Erro ao acessar tabelas locais, usando fallback:', dbError.message);
+      useFallback = true;
+    }
+
+    // Se não conseguiu do banco, busca direto da API do Stripe
+    if (useFallback) {
+      console.log('Buscando produtos direto da API do Stripe...');
+      
+      // Busca todos os produtos ativos do Stripe
+      const stripeProducts = await stripe.products.list({
+        active: true,
+        limit: 100
+      });
+
+      // Para cada produto, busca os preços
+      for (const stripeProduct of stripeProducts.data) {
+        const prices = await stripe.prices.list({
+          product: stripeProduct.id,
+          active: true,
+          limit: 100
+        });
+
+        products.push({
+          id: stripeProduct.id,
+          name: stripeProduct.name,
+          description: stripeProduct.description,
+          active: stripeProduct.active,
+          metadata: stripeProduct.metadata,
+          prices: prices.data.map(price => ({
+            id: price.id,
+            productId: price.product,
+            unitAmount: price.unit_amount,
+            currency: price.currency,
+            type: price.type,
+            recurring: price.recurring,
+            interval: price.recurring?.interval,
+            intervalCount: price.recurring?.interval_count,
+            active: price.active
+          }))
+        });
+      }
+    }
+
+    // Retorna os produtos formatados para o frontend
+    const formattedProducts = products.map(product => ({
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      prices: product.prices.map(price => ({
+        id: price.id,
+        amount: price.unit_amount,
+        currency: price.currency,
+        interval: price.recurring?.interval || 'one_time',
+        intervalCount: price.recurring?.interval_count || 1,
+        formattedPrice: formatPrice(price.unit_amount, price.currency)
+      }))
+    }));
+
+    res.json({ products: formattedProducts });
+    
+  } catch (error) {
+    console.error('Erro ao buscar configuração de preços:', error);
+    res.status(500).json({ 
+      error: 'Erro ao carregar planos',
+      products: [] 
+    });
+  }
+}
+
+function formatPrice(amount, currency = 'brl') {
+  if (!amount) return 'Grátis';
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: currency.toUpperCase()
+  }).format(amount / 100);
+}
+2. Corrigir o Endpoint de Criação da Sessão (/api/checkout/create-direct-session)
+javascript
+// backend/routes/checkout.js
+export async function createDirectCheckoutSession(req, res) {
+  try {
+    const { priceId, planType, userId } = req.body;
+
+    if (!priceId || !userId) {
+      return res.status(400).json({ 
+        error: 'Price ID e User ID são obrigatórios' 
+      });
+    }
+
+    // Busca o preço direto da API do Stripe para verificar se existe
+    let price;
+    try {
+      price = await stripe.prices.retrieve(priceId);
+      
+      if (!price.active) {
+        throw new Error('Preço não está ativo');
+      }
+    } catch (stripeError) {
+      console.error('Erro ao buscar preço no Stripe:', stripeError);
+      return res.status(400).json({ 
+        error: 'Plano não encontrado ou inativo' 
+      });
+    }
+
+    // Busca o usuário no banco
+    const user = await db.query.users.findFirst({
+      where: (users, { eq }) => eq(users.id, userId)
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    // Cria a sessão de checkout
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card', 'boleto'],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      success_url: `${process.env.APP_URL}/sucesso?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.APP_URL}/cancelado`,
+      customer_email: user.email,
+      client_reference_id: user.id,
+      metadata: {
+        userId: user.id,
+        planType: planType,
+        priceId: priceId
+      },
+      subscription_data: {
+        metadata: {
+          userId: user.id,
+          planType: planType
+        }
+      }
+    });
+
+    res.json({ url: session.url });
+    
+  } catch (error) {
+    console.error('Erro ao criar sessão de checkout:', error);
+    res.status(500).json({ 
+      error: 'Erro ao criar sessão de pagamento',
+      details: error.message 
+    });
+  }
+}
+3. Atualizar o Frontend para Lidar com a Resposta
+javascript
+// frontend/src/pages/Checkout.jsx ou onde está o fluxo de assinatura
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
+export function CheckoutPage() {
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [selectedPrice, setSelectedPrice] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    // Busca os planos disponíveis
+    async function loadPlans() {
+      try {
+        const response = await fetch('/api/checkout/pricing-config');
+        const data = await response.json();
+        
+        if (data.products && data.products.length > 0) {
+          setProducts(data.products);
+        } else {
+          console.error('Nenhum plano encontrado');
+          // Mostrar mensagem de erro para o usuário
+        }
+      } catch (error) {
+        console.error('Erro ao carregar planos:', error);
+      }
+    }
+    
+    loadPlans();
+  }, []);
+
+  // Verifica se tem token na URL após login do Google
+  useEffect(() => {
+    const token = searchParams.get('token');
+    const selectedPlanData = sessionStorage.getItem('selectedPlan');
+    
+    if (token && selectedPlanData && !isLoading) {
+      // Token recebido, usuário já logou
+      const plan = JSON.parse(selectedPlanData);
+      createCheckoutSession(plan.priceId, plan.planType);
+    }
+  }, [searchParams]);
+
+  async function createCheckoutSession(priceId, planType) {
+    setIsLoading(true);
+    
+    try {
+      // Obtém o token do usuário (assumindo que está no localStorage ou contexto)
+      const userToken = localStorage.getItem('authToken');
+      
+      const response = await fetch('/api/checkout/create-direct-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userToken}`
+        },
+        body: JSON.stringify({
+          priceId,
+          planType,
+          userId: getUserIdFromToken() // Função para extrair userId do token
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.url) {
+        // Redireciona para o checkout do Stripe
+        window.location.href = data.url;
+      } else {
+        console.error('Erro ao criar sessão:', data.error);
+        // Mostrar erro para o usuário
+      }
+    } catch (error) {
+      console.error('Erro ao criar checkout:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handlePlanSelection(plan) {
+    // Salva o plano selecionado
+    sessionStorage.setItem('selectedPlan', JSON.stringify({
+      priceId: plan.priceId,
+      planType: plan.interval
+    }));
+    
+    // Verifica se usuário está logado
+    const isLoggedIn = checkIfUserIsLoggedIn();
+    
+    if (isLoggedIn) {
+      // Se já está logado, vai direto pro checkout
+      await createCheckoutSession(plan.priceId, plan.interval);
+    } else {
+      // Se não está logado, redireciona pro Google OAuth
+      const redirectUrl = `/api/auth/google?plan=${encodeURIComponent(JSON.stringify(plan))}`;
+      window.location.href = redirectUrl;
+    }
+  }
+
+  return (
+    <div>
+      {/* Seu componente de seleção de planos */}
+      {products.map(product => (
+        <div key={product.id}>
+          <h3>{product.name}</h3>
+          <p>{product.description}</p>
+          {product.prices.map(price => (
+            <button
+              key={price.id}
+              onClick={() => handlePlanSelection({
+                priceId: price.id,
+                interval: price.interval,
+                amount: price.amount
+              })}
+              disabled={isLoading}
+            >
+              {price.interval === 'month' && 'Mensal'}
+              {price.interval === 'year' && 'Anual'}
+              {price.formattedPrice}
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Funções auxiliares
+function checkIfUserIsLoggedIn() {
+  return !!localStorage.getItem('authToken');
+}
+
+function getUserIdFromToken() {
+  // Implementar decodificação do token JWT
+  const token = localStorage.getItem('authToken');
+  if (!token) return null;
+  
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.userId || payload.sub;
+  } catch (error) {
+    console.error('Erro ao decodificar token:', error);
+    return null;
+  }
+}
+4. Rota de Callback do Google OAuth Atualizada
+javascript
+// backend/routes/auth.js
+export async function googleCallback(req, res) {
+  try {
+    const { code, plan } = req.query;
+    
+    // Processa o login com Google
+    // ... seu código de autenticação existente ...
+    
+    // Após autenticar, gera o token
+    const token = generateUserToken(user);
+    
+    // Redireciona de volta para o frontend com o token e plano
+    const redirectUrl = `${process.env.FRONTEND_URL}/?token=${token}&plan=${encodeURIComponent(plan)}`;
+    
+    res.redirect(redirectUrl);
+    
+  } catch (error) {
+    console.error('Erro no callback do Google:', error);
+    res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
+  }
+}
+5. Script para Sincronizar Produtos (Opcional - para manter banco atualizado)
+javascript
+// backend/scripts/sync-stripe-products.js
+import Stripe from 'stripe';
+import { db } from '../db.js';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+async function syncStripeProducts() {
+  console.log('Sincronizando produtos do Stripe...');
+  
+  try {
+    // Busca produtos do Stripe
+    const products = await stripe.products.list({ active: true, limit: 100 });
+    
+    for (const product of products.data) {
+      // Insere ou atualiza no banco local
+      await db.insert(db.stripeProducts)
+        .values({
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          active: product.active,
+          metadata: product.metadata
+        })
+        .onConflictDoUpdate({
+          target: db.stripeProducts.id,
+          set: {
+            name: product.name,
+            description: product.description,
+            active: product.active,
+            metadata: product.metadata
+          }
+        });
+      
+      // Busca preços do produto
+      const prices = await stripe.prices.list({ 
+        product: product.id, 
+        active: true,
+        limit: 100 
+      });
+      
+      for (const price of prices.data) {
+        await db.insert(db.stripePrices)
+          .values({
+            id: price.id,
+            productId: price.product,
+            unitAmount: price.unit_amount,
+            currency: price.currency,
+            type: price.type,
+            recurring: price.recurring,
+            interval: price.recurring?.interval,
+            intervalCount: price.recurring?.interval_count,
+            active: price.active
+          })
+          .onConflictDoUpdate({
+            target: db.stripePrices.id,
+            set: {
+              unitAmount: price.unit_amount,
+              currency: price.currency,
+              active: price.active
+            }
+          });
+      }
+    }
+    
+    console.log('Sincronização concluída com sucesso!');
+  } catch (error) {
+    console.error('Erro na sincronização:', error);
+  }
+}
+
+// Executar
+syncStripeProducts();
+6. Adicionar no package.json
+json
+{
+  "scripts": {
+    "sync-stripe": "node backend/scripts/sync-stripe-products.js"
+  }
+}
+Próximos Passos:
+Deploy das alterações no Replit
+
+Testar o fluxo completo em produção
+
+Verificar logs no Replit para garantir que o fallback está sendo usado
+
+Opcional: Rodar npm run sync-stripe uma vez para popular as tabelas locais
+
+Pontos de Verificação:
+✅ As chaves do Stripe (live) estão corretas no ambiente de produção
+
+✅ Os Product IDs no fallback correspondem aos IDs reais do Stripe
+
+✅ O frontend está recebendo a lista de produtos
+
+✅ O endpoint de criação de sessão está recebendo os parâmetros corretos
+
+✅ O redirecionamento para o Stripe está funcionando
+
+Isso deve resolver seu problema, pois agora o sistema não depende mais das tabelas locais para funcionar. O fallback direto com a API do Stripe garante que mesmo sem as tabelas, o fluxo completo vai funcionar.
