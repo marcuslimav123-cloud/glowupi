@@ -4,7 +4,7 @@ import { seedSuperAdmins } from "./lib/adminAuth.js";
 import { startReminderService } from "./lib/pushNotifications.js";
 import app from "./app.js";
 
-async function initStripe(retryCount = 0): Promise<void> {
+async function initStripe() {
   const databaseUrl = process.env.DATABASE_URL;
 
   if (!databaseUrl) {
@@ -13,7 +13,7 @@ async function initStripe(retryCount = 0): Promise<void> {
   }
 
   try {
-    console.log(`Initializing Stripe schema... (attempt ${retryCount + 1})`);
+    console.log('Initializing Stripe schema...');
     await runMigrations({
       databaseUrl,
       schema: 'stripe'
@@ -38,14 +38,7 @@ async function initStripe(retryCount = 0): Promise<void> {
         console.error('Error syncing Stripe data:', err);
       });
   } catch (error) {
-    console.error(`Failed to initialize Stripe (attempt ${retryCount + 1}):`, error);
-    if (retryCount < 3) {
-      const delay = (retryCount + 1) * 3000;
-      console.log(`Retrying Stripe init in ${delay / 1000}s...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return initStripe(retryCount + 1);
-    }
-    console.error('Stripe initialization failed after all retries');
+    console.error('Failed to initialize Stripe:', error);
   }
 }
 

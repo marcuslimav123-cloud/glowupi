@@ -180,12 +180,8 @@ export default function Landing() {
   const [isLoadingCheckout, setIsLoadingCheckout] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const scrolled = useScrolled();
-  const [showGoogleModal, setShowGoogleModal] = useState(false);
-  const [googleModalReady, setGoogleModalReady] = useState(false);
-  const [googleCheckoutLoading, setGoogleCheckoutLoading] = useState(false);
   const pendingCheckoutRef = useRef<{ priceId: string; billingPeriod: BillingPeriod } | null>(null);
   const googleClientIdRef = useRef<string | null>(null);
-  const googleScriptLoadedRef = useRef(false);
 
   useEffect(() => {
     fetch(PRICING_MODE_ENDPOINT)
@@ -209,9 +205,8 @@ export default function Landing() {
   }, []);
 
   const loadGoogleScript = (clientId: string) => {
-    if (googleScriptLoadedRef.current) return;
     if (document.getElementById("google-gsi-script")) {
-      googleScriptLoadedRef.current = true;
+      initGoogle(clientId);
       return;
     }
     const script = document.createElement("script");
@@ -219,62 +214,23 @@ export default function Landing() {
     script.src = "https://accounts.google.com/gsi/client";
     script.async = true;
     script.defer = true;
-    script.onload = () => { googleScriptLoadedRef.current = true; };
+    script.onload = () => initGoogle(clientId);
     document.head.appendChild(script);
   };
 
-  const renderGoogleButtonInModal = () => {
-    const g = (window as any).google;
-    const clientId = googleClientIdRef.current;
-    if (!g || !clientId) return;
-
-    g.accounts.id.initialize({
+  const initGoogle = (clientId: string) => {
+    if (!(window as any).google) return;
+    (window as any).google.accounts.id.initialize({
       client_id: clientId,
       callback: handleGoogleResponse,
     });
-
-    setTimeout(() => {
-      const container = document.getElementById("google-modal-btn");
-      if (container) {
-        container.innerHTML = "";
-        g.accounts.id.renderButton(container, {
-          type: "standard",
-          theme: "outline",
-          size: "large",
-          width: 320,
-          text: "signup_with",
-          shape: "pill",
-          locale: "pt-BR",
-        });
-        setGoogleModalReady(true);
-      }
-    }, 100);
   };
-
-  useEffect(() => {
-    if (showGoogleModal) {
-      setGoogleModalReady(false);
-      let attempts = 0;
-      const tryRender = () => {
-        attempts++;
-        if ((window as any).google && googleClientIdRef.current) {
-          renderGoogleButtonInModal();
-        } else if (attempts < 20) {
-          setTimeout(tryRender, 250);
-        } else {
-          setShowGoogleModal(false);
-          window.location.href = `${import.meta.env.BASE_URL}cadastro`.replace(/\/\//g, '/');
-        }
-      };
-      tryRender();
-    }
-  }, [showGoogleModal]);
 
   const handleGoogleResponse = async (response: any) => {
     const pending = pendingCheckoutRef.current;
     if (!pending) return;
 
-    setGoogleCheckoutLoading(true);
+    setIsLoadingCheckout("google-auth");
     try {
       const res = await fetch(`${import.meta.env.BASE_URL}api/checkout/google-checkout`.replace(/\/\//g, '/'), {
         method: "POST",
@@ -290,33 +246,67 @@ export default function Landing() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert(data.error || "Erro ao processar. Tente novamente.");
-        setGoogleCheckoutLoading(false);
-        setShowGoogleModal(false);
+        alert(data.error || "Erro ao processar checkout. Tente novamente.");
+        setIsLoadingCheckout(null);
       }
     } catch {
       alert("Erro de conexão. Tente novamente.");
-      setGoogleCheckoutLoading(false);
-      setShowGoogleModal(false);
+      setIsLoadingCheckout(null);
     }
   };
 
   const handleSubscribe = async (tier: string, billingPeriod: BillingPeriod) => {
     const product = stripeProducts.find(p => p.metadata?.tier === tier);
-    if (!product) {
-      window.location.href = `${import.meta.env.BASE_URL}cadastro`.replace(/\/\//g, '/');
-      return;
-    }
+    if (!product) return;
+
     const price = product.prices.find(p => p.metadata?.period === billingPeriod);
-    if (!price) {
-      window.location.href = `${import.meta.env.BASE_URL}cadastro`.replace(/\/\//g, '/');
-      return;
-    }
+    if (!price) return;
 
     setIsLoadingCheckout(`${tier}-${billingPeriod}`);
+
+    const res = await fetch(`${import.meta.env.BASE_URL}api/checkout/create-checkout-session`.replace(/\/\//g, '/'), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ priceId: price.id, billingPeriod }),
+    }).catch(() => null);
+
+    if (res && res.ok) {
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+    }
+
     pendingCheckoutRef.current = { priceId: price.id, billingPeriod };
-    setShowGoogleModal(true);
-    setIsLoadingCheckout(null);
+
+    if ((window as any).google) {
+      (window as any).google.accounts.id.prompt((notification: any) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          (window as any).google.accounts.id.prompt();
+          const container = document.getElementById("google-landing-btn");
+          if (container && googleClientIdRef.current) {
+            container.innerHTML = "";
+            (window as any).google.accounts.id.renderButton(container, {
+              type: "standard",
+              theme: "outline",
+              size: "large",
+              width: 340,
+              text: "signup_with",
+              shape: "pill",
+              locale: "pt-BR",
+            });
+            const modal = document.getElementById("google-auth-modal");
+            if (modal) modal.style.display = "flex";
+          }
+          setIsLoadingCheckout(null);
+        }
+      });
+    } else {
+      window.location.href = `${import.meta.env.BASE_URL}cadastro?plan=${tier}&period=${billingPeriod}`.replace(/\/\//g, '/');
+      setIsLoadingCheckout(null);
+    }
   };
 
   const smoothScroll = useCallback((e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
@@ -870,41 +860,6 @@ export default function Landing() {
           </div>
         </div>
       </footer>
-
-      {showGoogleModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => { setShowGoogleModal(false); setGoogleCheckoutLoading(false); }}>
-          <div className="bg-[#1a1714] border border-white/[0.1] rounded-2xl p-8 w-full max-w-[400px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            {googleCheckoutLoading ? (
-              <div className="flex flex-col items-center gap-4 py-6">
-                <div className="h-12 w-12 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                <p className="text-white/60 text-[14px]">Redirecionando para o pagamento...</p>
-              </div>
-            ) : (
-              <>
-                <div className="text-center mb-6">
-                  <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                    <Sparkles className="h-7 w-7 text-primary" />
-                  </div>
-                  <h3 className="text-[20px] font-bold text-white mb-2">Crie sua conta para assinar</h3>
-                  <p className="text-white/40 text-[13px]">Faça login com Google para continuar para o pagamento seguro via Stripe.</p>
-                </div>
-                <div className="flex flex-col items-center gap-3">
-                  <div id="google-modal-btn" className="flex justify-center min-h-[44px]" />
-                  {!googleModalReady && (
-                    <div className="flex items-center gap-2 text-[13px] text-white/40">
-                      <div className="h-4 w-4 rounded-full border-2 border-white/20 border-t-primary animate-spin" />
-                      Carregando...
-                    </div>
-                  )}
-                </div>
-                <div className="mt-6 pt-4 border-t border-white/[0.06] text-center">
-                  <p className="text-[11px] text-white/25">Seus dados são protegidos. Pagamento processado pelo Stripe.</p>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

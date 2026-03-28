@@ -205,7 +205,7 @@ export default function Login() {
           <div className="mt-6 text-center text-[13px] text-white/40">
             Ainda não tem conta?{" "}
             <Link href="/cadastro" className="text-primary hover:underline font-medium">
-              Criar Conta
+              Teste 30 dias grátis
             </Link>
           </div>
         </div>

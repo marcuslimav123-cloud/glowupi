@@ -22,18 +22,7 @@ router.get("/pricing-config", async (_req, res) => {
 
     const pricingMode = configMap["pricing_mode"] || "all_plans";
 
-    let productsWithPrices: any[] = [];
-    try {
-      productsWithPrices = await stripeStorage.listProductsWithPrices(true, 50, 0);
-    } catch (stripeErr) {
-      console.error("Error fetching pricing config:", stripeErr);
-      return res.json({
-        pricingMode,
-        products: [],
-        publishableKey: await getStripePublishableKey().catch(() => ""),
-        freeTrialEnabled: configMap["free_trial_enabled"] === "true",
-      });
-    }
+    const productsWithPrices = await stripeStorage.listProductsWithPrices(true, 50, 0);
 
     const productsMap = new Map<string, any>();
     for (const row of productsWithPrices) {
@@ -204,25 +193,6 @@ router.post("/google-checkout", async (req, res) => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     if (!clientId) return res.status(500).json({ error: "Login com Google não configurado" });
 
-    const configs = await db.select().from(platformConfigTable);
-    const pricingMode = configs.find(c => c.chave === "pricing_mode")?.valor || "all_plans";
-    if (pricingMode === "hidden") {
-      return res.status(403).json({ error: "Assinaturas estão desativadas no momento" });
-    }
-
-    const allProducts = await stripeStorage.listProductsWithPrices(true, 50, 0);
-    const priceRow = allProducts.find((r: any) => r.price_id === priceId);
-    if (!priceRow) {
-      return res.status(400).json({ error: "Plano não encontrado" });
-    }
-
-    if (pricingMode === "single_price") {
-      const tier = priceRow.product_metadata?.tier;
-      if (tier !== "single") {
-        return res.status(403).json({ error: "Este plano não está disponível" });
-      }
-    }
-
     const client = new OAuth2Client(clientId);
     const ticket = await client.verifyIdToken({ idToken: credential, audience: clientId });
     const payload = ticket.getPayload();
@@ -262,7 +232,7 @@ router.post("/google-checkout", async (req, res) => {
 
       [barbearia] = await db.insert(barbeariasTable).values({
         donoId: user.id,
-        nome: `${nome} Salão`,
+        nome: `${nome}`,
         slug: baseSlug,
         telefone: null,
         email: email,
@@ -284,6 +254,12 @@ router.post("/google-checkout", async (req, res) => {
       }
     }
 
+    const configs = await db.select().from(platformConfigTable);
+    const pricingMode = configs.find(c => c.chave === "pricing_mode")?.valor || "all_plans";
+    if (pricingMode === "hidden") {
+      return res.status(403).json({ error: "Assinaturas estão desativadas no momento" });
+    }
+
     let customerId = barbearia.stripeCustomerId;
     if (!customerId) {
       const customer = await stripeService.createCustomer(
@@ -298,7 +274,9 @@ router.post("/google-checkout", async (req, res) => {
     }
 
     let resolvedPeriod = billingPeriod || "mensal";
-    if (priceRow.price_metadata?.period) {
+    const allProducts = await stripeStorage.listProductsWithPrices(true, 50, 0);
+    const priceRow = allProducts.find((r: any) => r.price_id === priceId);
+    if (priceRow?.price_metadata?.period) {
       resolvedPeriod = priceRow.price_metadata.period;
     }
 

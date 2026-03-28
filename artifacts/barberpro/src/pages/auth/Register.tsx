@@ -13,7 +13,6 @@ export default function Register() {
   const googleInitRef = useRef(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [freeTrialEnabled, setFreeTrialEnabled] = useState(false);
-  const [stripeProducts, setStripeProducts] = useState<any[]>([]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -35,7 +34,6 @@ export default function Register() {
       .then(r => r.json())
       .then(data => {
         if (data.freeTrialEnabled !== undefined) setFreeTrialEnabled(data.freeTrialEnabled);
-        if (data.products) setStripeProducts(data.products);
       })
       .catch(() => {});
 
@@ -82,32 +80,6 @@ export default function Register() {
   const handleGoogleResponse = async (response: any) => {
     setGoogleLoading(true);
     try {
-      const params = new URLSearchParams(window.location.search);
-      const planTier = params.get("plan");
-      const planPeriod = params.get("period") || "mensal";
-
-      if (!freeTrialEnabled && planTier && stripeProducts.length > 0) {
-        const product = stripeProducts.find((p: any) => p.metadata?.tier === planTier);
-        const price = product?.prices?.find((p: any) => p.metadata?.period === planPeriod);
-        if (price) {
-          const checkoutRes = await fetch(apiUrl("/checkout/google-checkout"), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({
-              credential: response.credential,
-              priceId: price.id,
-              billingPeriod: planPeriod,
-            }),
-          });
-          const checkoutData = await checkoutRes.json();
-          if (checkoutData.url) {
-            window.location.href = checkoutData.url;
-            return;
-          }
-        }
-      }
-
       const res = await fetch(apiUrl("/auth/google"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -116,14 +88,10 @@ export default function Register() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Falha no cadastro com Google");
-      if (freeTrialEnabled) {
-        if (data.isNew || !data.user?.telefone) {
-          window.location.href = "/completar-perfil";
-        } else {
-          window.location.href = "/dashboard";
-        }
+      if (data.isNew || !data.user?.telefone) {
+        window.location.href = "/completar-perfil";
       } else {
-        window.location.href = "/planos";
+        window.location.href = "/onboarding/barbearia";
       }
     } catch (err: any) {
       toast({
@@ -172,9 +140,9 @@ export default function Register() {
             <img src="/logo-icon.png" alt="Glow Upi" className="h-20 w-20 object-contain" />
           </div>
           <h1 className="text-[28px] font-bold text-white tracking-tight">Criar Conta</h1>
-          <p className="text-white/40 text-[13px] mt-1">
-            {freeTrialEnabled ? "30 dias grátis para testar" : "Cadastre-se para escolher seu plano"}
-          </p>
+          {freeTrialEnabled && (
+            <p className="text-primary text-[13px] font-medium mt-1 tracking-wide">30 DIAS GRÁTIS</p>
+          )}
         </div>
 
         <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl p-7 shadow-xl shadow-black/20 backdrop-blur-sm">
