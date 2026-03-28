@@ -260,6 +260,19 @@ router.post("/google-checkout", async (req, res) => {
       return res.status(403).json({ error: "Assinaturas estão desativadas no momento" });
     }
 
+    const allProducts = await stripeStorage.listProductsWithPrices(true, 50, 0);
+    const priceRow = allProducts.find((r: any) => r.price_id === priceId);
+    if (!priceRow) {
+      return res.status(400).json({ error: "Plano não encontrado" });
+    }
+
+    if (pricingMode === "single_price") {
+      const tier = priceRow.product_metadata?.tier;
+      if (tier !== "single") {
+        return res.status(403).json({ error: "Este plano não está disponível" });
+      }
+    }
+
     let customerId = barbearia.stripeCustomerId;
     if (!customerId) {
       const customer = await stripeService.createCustomer(
@@ -274,9 +287,7 @@ router.post("/google-checkout", async (req, res) => {
     }
 
     let resolvedPeriod = billingPeriod || "mensal";
-    const allProducts = await stripeStorage.listProductsWithPrices(true, 50, 0);
-    const priceRow = allProducts.find((r: any) => r.price_id === priceId);
-    if (priceRow?.price_metadata?.period) {
+    if (priceRow.price_metadata?.period) {
       resolvedPeriod = priceRow.price_metadata.period;
     }
 
