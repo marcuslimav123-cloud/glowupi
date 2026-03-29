@@ -12,8 +12,27 @@ export default function Register() {
   const [googleFailed, setGoogleFailed] = useState(false);
   const googleInitRef = useRef(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [freeTrialEnabled, setFreeTrialEnabled] = useState<boolean | null>(null);
 
   useEffect(() => {
+    fetch(apiUrl("/checkout/pricing-config"))
+      .then(r => r.json())
+      .then(data => {
+        const enabled = data.freeTrialEnabled !== false;
+        setFreeTrialEnabled(enabled);
+        if (!enabled) {
+          window.location.href = "/";
+        }
+      })
+      .catch(() => {
+        setFreeTrialEnabled(false);
+        window.location.href = "/";
+      });
+  }, []);
+
+  useEffect(() => {
+    if (freeTrialEnabled === false) return;
+
     const timeout = setTimeout(() => {
       if (!googleInitRef.current) setGoogleFailed(true);
     }, 4000);
@@ -30,7 +49,7 @@ export default function Register() {
       .catch(() => setGoogleFailed(true));
 
     return () => clearTimeout(timeout);
-  }, []);
+  }, [freeTrialEnabled]);
 
   const loadGoogleScript = (clientId: string) => {
     if (document.getElementById("google-gsi-script")) {
@@ -95,6 +114,14 @@ export default function Register() {
       setGoogleLoading(false);
     }
   };
+
+  if (freeTrialEnabled === null || freeTrialEnabled === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0f0f0f] via-[#141210] to-[#0f0f0f]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (showSuccess) {
     return (

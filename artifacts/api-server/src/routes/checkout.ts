@@ -84,7 +84,7 @@ router.get("/pricing-config", async (_req, res) => {
       pricingMode: "all_plans",
       products: [],
       publishableKey: null,
-      freeTrialEnabled: true,
+      freeTrialEnabled: false,
     });
   }
 });

@@ -25,6 +25,16 @@ export default function Login() {
   const [googleReady, setGoogleReady] = useState(false);
   const [googleFailed, setGoogleFailed] = useState(false);
   const googleInitRef = useRef(false);
+  const [freeTrialEnabled, setFreeTrialEnabled] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch(apiUrl("/checkout/pricing-config"))
+      .then(r => r.json())
+      .then(data => {
+        setFreeTrialEnabled(data.freeTrialEnabled !== false);
+      })
+      .catch(() => setFreeTrialEnabled(false));
+  }, []);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -202,12 +212,14 @@ export default function Login() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-[13px] text-white/40">
-            Ainda não tem conta?{" "}
-            <Link href="/cadastro" className="text-primary hover:underline font-medium">
-              Teste 30 dias grátis
-            </Link>
-          </div>
+          {freeTrialEnabled && (
+            <div className="mt-6 text-center text-[13px] text-white/40">
+              Ainda não tem conta?{" "}
+              <Link href="/cadastro" className="text-primary hover:underline font-medium">
+                Teste 30 dias grátis
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>
