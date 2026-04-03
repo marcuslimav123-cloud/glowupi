@@ -40,9 +40,12 @@ function Popup({ open, onClose, children, className = "" }: { open: boolean; onC
   }, [open, onClose]);
   if (!open) return null;
   return (
-    <div ref={ref} className={`absolute right-0 top-full mt-2 bg-card rounded-xl shadow-xl border border-border z-[100] ${className}`}>
-      {children}
-    </div>
+    <>
+      <div className="md:hidden fixed inset-0 bg-black/30 z-[99]" onClick={onClose} />
+      <div ref={ref} className={`fixed md:absolute left-2 right-2 bottom-16 md:left-auto md:right-0 md:bottom-auto md:top-full md:mt-2 bg-card rounded-xl shadow-xl border border-border z-[100] md:w-auto ${className}`}>
+        {children}
+      </div>
+    </>
   );
 }
 
@@ -127,18 +130,19 @@ export function HeaderBar() {
 
   return (
     <div className="flex items-center gap-1">
-      <Link href="/agenda" className={iconBtn} title="Agenda">
-        <CalendarDays className={iconCls} />
-      </Link>
+      <div className="hidden md:flex items-center gap-1">
+        <Link href="/agenda" className={iconBtn} title="Agenda">
+          <CalendarDays className={iconCls} />
+        </Link>
 
-      <Link href="/financeiro" className={iconBtn} title="Financeiro">
-        <DollarSign className={iconCls} />
-      </Link>
+        <Link href="/financeiro" className={iconBtn} title="Financeiro">
+          <DollarSign className={iconCls} />
+        </Link>
 
-      <Link href="/caixa" className={iconBtn} title="Comandas">
-        <FileText className={iconCls} />
-      </Link>
-
+        <Link href="/caixa" className={iconBtn} title="Comandas">
+          <FileText className={iconCls} />
+        </Link>
+      </div>
 
       <div className="relative">
         <button onClick={() => toggle("aniversarios")} className={iconBtn} title="Aniversários">
@@ -272,7 +276,7 @@ export function HeaderBar() {
         </div>
       )}
 
-      <div className="w-px h-5 bg-border mx-1" />
+      <div className="hidden md:block w-px h-5 bg-border mx-1" />
 
       <div className="relative">
         <button onClick={() => toggle("perfil")} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-muted transition-colors cursor-pointer">

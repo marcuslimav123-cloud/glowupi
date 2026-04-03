@@ -221,3 +221,44 @@
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+@media (max-width: 767px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input, select, textarea, button {
+    font-size: 16px !important;
+  }
+
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    min-height: 44px;
+  }
+
+  .mobile-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -1rem;
+    padding: 0 1rem;
+  }
+
+  .mobile-table-wrap table {
+    min-width: 600px;
+  }
+
+  .mobile-card-stack > * {
+    width: 100% !important;
+  }
+}
+
+@supports (padding: max(0px)) {
+  .safe-area-top {
+    padding-top: max(env(safe-area-inset-top, 0px), 0px);
+  }
+  .safe-area-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
+  }
+}

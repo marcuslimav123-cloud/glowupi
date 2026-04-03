@@ -21,8 +21,8 @@ export function MobileBottomBar() {
   const loc = location.split("?")[0];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-area-bottom">
-      <div className="flex items-center justify-around h-14">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border safe-area-bottom">
+      <div className="flex items-center justify-around h-16 px-1">
         {TABS.map((tab) => {
           const isActive =
             loc === tab.href ||
@@ -32,14 +32,22 @@ export function MobileBottomBar() {
               key={tab.href}
               href={tab.href}
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors",
+                "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all duration-200 rounded-xl mx-0.5",
                 isActive
                   ? "text-primary"
-                  : "text-muted-foreground"
+                  : "text-muted-foreground active:scale-95"
               )}
             >
-              <tab.icon className={cn("h-5 w-5", isActive && "stroke-[2.5]")} />
-              <span className={cn("text-[10px] font-medium", isActive && "font-semibold")}>
+              <div className={cn(
+                "flex items-center justify-center h-7 w-7 rounded-lg transition-all duration-200",
+                isActive && "bg-primary/10"
+              )}>
+                <tab.icon className={cn("h-[20px] w-[20px]", isActive && "stroke-[2.5]")} />
+              </div>
+              <span className={cn(
+                "text-[11px] leading-none",
+                isActive ? "font-bold" : "font-medium"
+              )}>
                 {tab.name}
               </span>
             </Link>

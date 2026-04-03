@@ -607,18 +607,18 @@ export default function Agenda() {
 
     if (!daySchedule.aberto) {
       return (
-        <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg flex flex-col h-[calc(100vh-380px)] min-h-[300px] items-center justify-center">
+        <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg flex flex-col h-[calc(100vh-320px)] sm:h-[calc(100vh-380px)] min-h-[200px] items-center justify-center px-4">
           <Lock className="h-10 w-10 text-muted-foreground/40 mb-3" />
-          <p className="text-lg font-semibold text-muted-foreground">Estabelecimento fechado</p>
-          <p className="text-sm text-muted-foreground/60 mt-1">Esse dia não tem horário de funcionamento configurado</p>
+          <p className="text-base sm:text-lg font-semibold text-muted-foreground text-center">Estabelecimento fechado</p>
+          <p className="text-xs sm:text-sm text-muted-foreground/60 mt-1 text-center">Esse dia não tem horário de funcionamento configurado</p>
         </div>
       );
     }
 
     return (
-      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg flex flex-col h-[calc(100vh-380px)] min-h-[300px]">
+      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg flex flex-col h-[calc(100vh-320px)] sm:h-[calc(100vh-380px)] min-h-[300px]">
         <div className="flex border-b border-border bg-muted/30">
-          <div className="w-14 shrink-0 border-r border-border p-2 flex items-center justify-center">
+          <div className="w-12 sm:w-14 shrink-0 border-r border-border p-2 flex items-center justify-center">
             <Clock className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="flex-1 flex overflow-x-auto">
@@ -626,9 +626,9 @@ export default function Agenda() {
               const profAgends = dayAgends.filter(a => a.profissionalId === prof.id && a.status === "pago");
               const total = profAgends.reduce((s, a) => s + a.valor, 0);
               return (
-                <div key={prof.id} className="flex-1 min-w-[140px] p-2 text-center border-r border-border last:border-r-0">
-                  <div className="flex items-center justify-center gap-1.5">
-                    <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[9px] border border-primary/20">
+                <div key={prof.id} className="flex-1 min-w-[100px] sm:min-w-[140px] p-1.5 sm:p-2 text-center border-r border-border last:border-r-0">
+                  <div className="flex items-center justify-center gap-1">
+                    <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[9px] border border-primary/20 shrink-0">
                       {prof.nomeExibicao.charAt(0)}
                     </div>
                     <p className="font-semibold text-foreground truncate text-[11px]">{prof.apelido || prof.nomeExibicao}</p>
@@ -645,7 +645,7 @@ export default function Agenda() {
 
         <div className="flex-1 overflow-y-auto relative">
           <div className="flex min-h-max">
-            <div className="w-14 shrink-0 border-r border-border bg-card">
+            <div className="w-12 sm:w-14 shrink-0 border-r border-border bg-card">
               {timeSlots.map(time => (
                 <div key={time} className="h-14 border-b border-border/40 flex items-start justify-center pt-1 text-[10px] text-muted-foreground font-medium">
                   {time}
@@ -664,7 +664,7 @@ export default function Agenda() {
               )}
 
               {profs.map((prof: any) => (
-                <div key={prof.id} className="flex-1 min-w-[140px] border-r border-border last:border-r-0 relative">
+                <div key={prof.id} className="flex-1 min-w-[100px] sm:min-w-[140px] border-r border-border last:border-r-0 relative">
                   {timeSlots.map(time => (
                     <div key={time} className="h-14 border-b border-border/30 hover:bg-primary/5 transition-colors cursor-pointer"
                       onClick={() => { resetForm(); setFormProfId(String(prof.id)); setFormHora(time); setNewStep("client"); setIsNewOpen(true); }} />
@@ -1294,11 +1294,10 @@ export default function Agenda() {
         </div>
       </div>
 
-      {/* FAB for mobile */}
-      <div className="fixed bottom-6 right-6 z-50 sm:hidden flex flex-col gap-2">
+      <div className="fixed bottom-[100px] right-4 z-40 sm:hidden flex flex-col gap-2">
         <button
           onClick={() => { resetForm(); setIsNewOpen(true); }}
-          className="h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-xl shadow-primary/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+          className="h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-xl shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform"
         >
           <Plus className="h-6 w-6" />
         </button>

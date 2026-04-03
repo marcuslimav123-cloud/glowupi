@@ -627,13 +627,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="h-screen overflow-hidden flex flex-col md:flex-row bg-background">
-      <div className="md:hidden flex items-center justify-between px-4 py-2.5 border-b border-border bg-card">
+      <div className="md:hidden flex items-center justify-between px-3 py-2 border-b border-border bg-card/95 backdrop-blur-lg safe-area-top">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="h-8 w-8 shrink-0">
-            {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="h-9 w-9 shrink-0">
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
-          <div className="font-semibold text-[14px] text-foreground tracking-tight flex items-center gap-1.5">
-            <img src="/logo-icon.png" alt={APP_NAME} className="h-[28px] w-[28px] object-contain" /> {APP_NAME}
+          <div className="font-semibold text-[15px] text-foreground tracking-tight flex items-center gap-1.5">
+            <img src="/logo-icon.png" alt={APP_NAME} className="h-[26px] w-[26px] object-contain" /> {APP_NAME}
           </div>
         </div>
         <HeaderBar />
@@ -745,7 +745,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
         )}
-        <div ref={mainContentRef} className="flex-1 overflow-y-auto p-5 md:p-8 pb-20 md:pb-8 z-10 main-scroll">
+        <div ref={mainContentRef} className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 z-10 main-scroll">
           {children}
         </div>
       </main>
@@ -759,7 +759,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         href="https://wa.me/5586981418877?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20o%20Glow%20Upi"
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50 h-12 w-12 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow-lg shadow-green-500/30 transition-all hover:scale-110"
+        className="fixed bottom-[88px] md:bottom-6 right-4 md:right-6 z-40 h-12 w-12 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow-lg shadow-green-500/30 transition-all hover:scale-110"
         title="Suporte via WhatsApp"
       >
         <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current">

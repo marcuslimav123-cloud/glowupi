@@ -130,7 +130,7 @@ export default function Dashboard() {
             <CardTitle className="text-[15px] font-semibold">Faturamento ({periodo})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[280px] w-full">
+            <div className="h-[220px] sm:h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.faturamentoPorDia} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <XAxis dataKey="data" stroke="hsl(var(--foreground) / 0.25)" fontSize={11} tickLine={false} axisLine={false} />

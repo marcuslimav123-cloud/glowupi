@@ -190,7 +190,7 @@ export default function Clientes() {
           {filtered.map((c, i) => {
             const isAniversario = c.aniversario?.slice(5) === today;
             return (
-              <div key={c.id} className={`flex items-center gap-4 p-4 hover:bg-muted/20 transition-colors ${i !== 0 ? "border-t border-border" : ""}`}>
+              <div key={c.id} className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 hover:bg-muted/20 transition-colors ${i !== 0 ? "border-t border-border" : ""}`}>
                 <Link href={`/gestao/clientes/${c.id}`} className="shrink-0">
                 <div className={`h-11 w-11 rounded-full flex items-center justify-center font-bold text-lg border cursor-pointer ${c.vip ? "bg-amber-500/10 text-amber-500 border-amber-500/25" : "bg-primary/10 text-primary border-primary/20"}`}>
                   {c.nome.charAt(0).toUpperCase()}
@@ -218,24 +218,24 @@ export default function Clientes() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
                   {c.telefone && (
-                    <a href={`https://wa.me/55${c.telefone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
+                    <a href={`https://wa.me/55${c.telefone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="hidden sm:block">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50" title="WhatsApp">
                         <MessageCircle className="h-4 w-4" />
                       </Button>
                     </a>
                   )}
-                  <Link href={`/gestao/clientes/${c.id}`}>
+                  <Link href={`/gestao/clientes/${c.id}`} className="hidden sm:block">
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title="Ver Detalhes">
                       <Eye className="h-4 w-4" />
                     </Button>
                   </Link>
-                  <Button variant="ghost" size="icon" className={`h-8 w-8 ${c.vip ? "text-amber-500" : "text-muted-foreground hover:text-amber-500"}`} title={c.vip ? "Remover VIP" : "Marcar VIP"} onClick={() => handleToggleVip(c)}>
-                    <Crown className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" className={`h-7 w-7 sm:h-8 sm:w-8 ${c.vip ? "text-amber-500" : "text-muted-foreground hover:text-amber-500"}`} title={c.vip ? "Remover VIP" : "Marcar VIP"} onClick={() => handleToggleVip(c)}>
+                    <Crown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => { setEditing(c); setModalOpen(true); }}>
-                    <Edit2 className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground hover:text-primary" onClick={() => { setEditing(c); setModalOpen(true); }}>
+                    <Edit2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </Button>
                 </div>
               </div>

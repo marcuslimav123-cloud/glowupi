@@ -398,13 +398,13 @@ export default function Caixa() {
       <Card className="mb-6">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row items-end gap-3 flex-wrap">
-            <div className="space-y-1">
+            <div className="space-y-1 w-full sm:w-auto">
               <Label className="text-xs">Data Inicial*</Label>
-              <Input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} className="w-40" />
+              <Input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} className="w-full sm:w-40" />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 w-full sm:w-auto">
               <Label className="text-xs">Data Final*</Label>
-              <Input type="date" value={dataFim} onChange={e => setDataFim(e.target.value)} className="w-40" />
+              <Input type="date" value={dataFim} onChange={e => setDataFim(e.target.value)} className="w-full sm:w-40" />
             </div>
             <Button onClick={handleHoje} variant="outline" size="sm" className="gap-1.5">
               <CalendarDays className="h-4 w-4" /> Hoje
@@ -573,7 +573,7 @@ export default function Caixa() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto mobile-table-wrap">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border">
