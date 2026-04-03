@@ -134,6 +134,7 @@ router.get("/:slug", async (req, res) => {
 
   const mostrarProdutos = pubParams["outros_mostrar_produtos_app"] !== "Não";
   const esconderNaoQueroConversar = pubParams["app_nao_quero_conversar"] === "Sim";
+  const tipoLinkAgendamento = pubParams["agenda_tipo_link"] === "Sem login (simples)" ? "simples" : "com_login";
 
   return res.json({
     id: barbearia.id,
@@ -156,6 +157,7 @@ router.get("/:slug", async (req, res) => {
     redesSociais: barbearia.redesSociais || {},
     semPreferenciaHabilitado: showSemPreferencia,
     naoQueroConversarOculto: esconderNaoQueroConversar,
+    tipoLinkAgendamento,
     categorias,
     servicos: servicos.map(s => ({
       ...s,
@@ -428,6 +430,132 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
     });
   } catch (e) {
     console.error("public agendar error:", e);
+    return res.status(500).json({ error: "Erro ao criar agendamento" });
+  }
+});
+
+router.post("/:slug/agendar-simples", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.slug, slug)).limit(1);
+    if (!barbearia) return res.status(404).json({ error: "Barbearia não encontrada" });
+
+    const { getParametros: getParamsSimples, getLocalNow: getLocalNowSimples } = await import("../lib/parametros.js");
+    const paramsSimples = await getParamsSimples(barbearia.id);
+
+    if (paramsSimples["agenda_tipo_link"] !== "Sem login (simples)") {
+      return res.status(403).json({ error: "Agendamento simples não está habilitado para este estabelecimento" });
+    }
+
+    const { profissionalId, servicoId, data, horaInicio, semPreferencia, observacao, clienteNome, clienteWhatsapp } = req.body;
+    if (!profissionalId || !servicoId || !data || !horaInicio) {
+      return res.status(400).json({ error: "Dados inválidos" });
+    }
+    if (!clienteNome || !clienteWhatsapp) {
+      return res.status(400).json({ error: "Nome e WhatsApp são obrigatórios" });
+    }
+
+    const whatsappLimpo = clienteWhatsapp.replace(/\D/g, "");
+    if (whatsappLimpo.length < 10 || whatsappLimpo.length > 13) {
+      return res.status(400).json({ error: "Número de WhatsApp inválido" });
+    }
+
+    const localNowSimples = getLocalNowSimples(paramsSimples);
+
+    const limiteFuturoDias = parseInt(paramsSimples["agenda_limite_futuro_dias"] || "30");
+    const dataAgend = new Date(data + "T12:00:00");
+    const hojeDate = new Date(localNowSimples.todayStr + "T12:00:00");
+    const diffDias = Math.ceil((dataAgend.getTime() - hojeDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDias > limiteFuturoDias) {
+      return res.status(400).json({ error: `Agendamento limitado a ${limiteFuturoDias} dias no futuro` });
+    }
+
+    const limitePassadoDias = parseInt(paramsSimples["agenda_limite_passado"] || "7");
+    if (diffDias < 0 && Math.abs(diffDias) > limitePassadoDias) {
+      return res.status(400).json({ error: `Agendamento não pode exceder ${limitePassadoDias} dias no passado` });
+    }
+
+    const limiteAntecedenciaRaw = paramsSimples["agenda_limite_antecedencia"];
+    const limiteAntecedenciaParsed = limiteAntecedenciaRaw !== undefined ? parseFloat(limiteAntecedenciaRaw) : 0;
+    const limiteAntecedencia = isNaN(limiteAntecedenciaParsed) ? 0 : limiteAntecedenciaParsed;
+    const [hI, mI] = horaInicio.split(":").map(Number);
+    const slotMinutes = hI * 60 + mI;
+    const totalMinutesFromNow = (diffDias * 24 * 60) + (slotMinutes - localNowSimples.currentMinutes);
+    const diffHoras = totalMinutesFromNow / 60;
+    if (diffHoras >= 0 && diffHoras < limiteAntecedencia) {
+      return res.status(400).json({ error: `Agendamento requer no mínimo ${limiteAntecedencia} hora(s) de antecedência` });
+    }
+
+    const paramHoraInicio = paramsSimples["agenda_horario_inicio"];
+    const paramHoraFim = paramsSimples["agenda_horario_fim"];
+
+    const [servico] = await db.select().from(servicosTable).where(and(eq(servicosTable.id, servicoId), eq(servicosTable.barbeariaId, barbearia.id))).limit(1);
+    if (!servico) return res.status(404).json({ error: "Serviço não encontrado" });
+    const [profissional] = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, profissionalId), eq(profissionaisTable.barbeariaId, barbearia.id))).limit(1);
+    if (!profissional) return res.status(404).json({ error: "Profissional não encontrado" });
+
+    const profLinks = await db.select().from(profissionalServicosTable).where(and(eq(profissionalServicosTable.profissionalId, profissionalId), eq(profissionalServicosTable.barbeariaId, barbearia.id)));
+    if (profLinks.length > 0 && !profLinks.some(l => l.servicoId === servicoId)) {
+      return res.status(400).json({ error: "Este profissional não atende o serviço selecionado" });
+    }
+
+    const tempoPadraoStr = paramsSimples["agenda_tempo_padrao"] || "30min";
+    const tempoPadrao = tempoPadraoStr === "1h" ? 60 : (parseInt(tempoPadraoStr) || 30);
+
+    let [cliente] = await db.select().from(clientesTable).where(
+      and(eq(clientesTable.barbeariaId, barbearia.id), eq(clientesTable.telefone, whatsappLimpo))
+    ).limit(1);
+    if (!cliente) {
+      const autoAprovar = paramsSimples["cliente_aprovar_cadastro_auto"] !== "Não";
+      [cliente] = await db.insert(clientesTable).values({
+        barbeariaId: barbearia.id,
+        nome: clienteNome,
+        telefone: whatsappLimpo,
+        email: null,
+        status: autoAprovar ? "aprovado" : "pendente",
+      }).returning();
+    }
+
+    const duracaoFinal = servico.duracaoMinutos || tempoPadrao;
+    const horaFim = addMinutes(horaInicio, duracaoFinal);
+
+    if (paramHoraInicio && timeToMinutes(horaInicio) < timeToMinutes(paramHoraInicio)) {
+      return res.status(400).json({ error: `Horário antes do início permitido (${paramHoraInicio})` });
+    }
+    if (paramHoraFim && timeToMinutes(horaFim) > timeToMinutes(paramHoraFim)) {
+      return res.status(400).json({ error: `Horário após o fim permitido (${paramHoraFim})` });
+    }
+
+    const [agend] = await db.insert(agendamentosTable).values({
+      barbeariaId: barbearia.id,
+      clienteId: cliente.id,
+      clienteNome,
+      clienteTelefone: whatsappLimpo,
+      profissionalId,
+      profissionalNome: profissional.nomeExibicao,
+      servicoId,
+      servicoNome: servico.nome,
+      data,
+      horaInicio,
+      horaFim,
+      status: "confirmado",
+      valor: servico.preco,
+      pago: false,
+      semPreferencia: semPreferencia ?? false,
+      observacao: observacao || null,
+      aniversario: false,
+      vip: false,
+      origem: "site",
+    }).returning();
+
+    return res.status(201).json({
+      ...agend,
+      valor: parseFloat(agend.valor as string),
+      createdAt: agend.createdAt?.toISOString(),
+      updatedAt: agend.updatedAt?.toISOString(),
+    });
+  } catch (e) {
+    console.error("public agendar-simples error:", e);
     return res.status(500).json({ error: "Erro ao criar agendamento" });
   }
 });

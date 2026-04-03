@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams } from "wouter";
-import { Calendar, Clock, Scissors, User, ChevronLeft, ChevronRight, Check, MapPin, Phone, Loader2, LogOut } from "lucide-react";
+import { Calendar, Clock, Scissors, User, ChevronLeft, ChevronRight, Check, MapPin, Phone, Loader2, LogOut, MessageCircle } from "lucide-react";
 import ClientAuthModal from "@/components/ClientAuthModal";
 
 const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, "/");
@@ -40,6 +40,7 @@ interface BarbeariaData {
   horarioFuncionamento: any;
   servicos: any[];
   profissionais: any[];
+  tipoLinkAgendamento?: "simples" | "com_login";
 }
 
 interface Slot {
@@ -71,6 +72,8 @@ export default function PublicBooking() {
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [observacao, setObservacao] = useState("");
+  const [simplesNome, setSimplesNome] = useState("");
+  const [simplesWhatsapp, setSimplesWhatsapp] = useState("");
 
   const accent = barbearia?.corPrimaria || "#C4943C";
   const accentText = getContrastColor(accent);
@@ -134,7 +137,42 @@ export default function PublicBooking() {
   }
 
   async function handleBooking() {
-    if (!selectedServico || !selectedSlot || !clientUser || !barbearia) return;
+    if (!selectedServico || !selectedSlot || !barbearia) return;
+
+    if (isSimpleMode) {
+      if (!simplesNome.trim() || !simplesWhatsapp.trim()) {
+        setError("Preencha seu nome e WhatsApp para agendar");
+        return;
+      }
+      setBookingLoading(true);
+      try {
+        const res = await fetch(`${API_BASE}/public/${slug}/agendar-simples`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            profissionalId: selectedSlot.profissionalId,
+            servicoId: selectedServico.id,
+            data: selectedDate,
+            horaInicio: selectedSlot.horaInicio,
+            observacao: observacao || null,
+            clienteNome: simplesNome.trim(),
+            clienteWhatsapp: simplesWhatsapp.trim(),
+          }),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || "Erro ao agendar");
+        }
+        setStep("sucesso");
+      } catch (e: any) {
+        setError(e.message);
+      } finally {
+        setBookingLoading(false);
+      }
+      return;
+    }
+
+    if (!clientUser) return;
     setBookingLoading(true);
     try {
       const res = await fetch(`${API_BASE}/public/${slug}/agendar`, {
@@ -178,8 +216,10 @@ export default function PublicBooking() {
     setStep("data");
   }
 
+  const isSimpleMode = barbearia?.tipoLinkAgendamento === "simples";
+
   function handleProceedToSlots() {
-    if (!clientUser) {
+    if (!isSimpleMode && !clientUser) {
       setShowAuthModal(true);
       return;
     }
@@ -268,7 +308,7 @@ export default function PublicBooking() {
                 </p>
               )}
             </div>
-            {clientUser && (
+            {!isSimpleMode && clientUser && (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-white/40 hidden sm:block">{clientUser.nome.split(" ")[0]}</span>
                 <button onClick={handleLogout} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition" title="Sair">
@@ -433,7 +473,7 @@ export default function PublicBooking() {
             </div>
           )}
 
-          {step === "confirmar" && selectedServico && selectedSlot && clientUser && (
+          {step === "confirmar" && selectedServico && selectedSlot && (isSimpleMode || clientUser) && (
             <div>
               <h2 className="text-lg font-semibold mb-5">Confirmar agendamento</h2>
               <div className="space-y-3 mb-6">
@@ -461,11 +501,45 @@ export default function PublicBooking() {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                  <p className="text-xs text-white/30 mb-1">Agendando como</p>
-                  <p className="text-sm font-medium">{clientUser.nome}</p>
-                  <p className="text-xs text-white/40">{clientUser.email}</p>
-                </div>
+                {isSimpleMode ? (
+                  <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-4">
+                    <p className="text-xs text-white/30 mb-1">Seus dados para agendamento</p>
+                    <div>
+                      <label className="text-white/40 text-xs font-medium mb-1.5 block">Nome *</label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
+                        <input
+                          type="text"
+                          value={simplesNome}
+                          onChange={(e) => setSimplesNome(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/25 text-sm focus:outline-none focus:border-white/30"
+                          placeholder="Seu nome completo"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-white/40 text-xs font-medium mb-1.5 block">WhatsApp *</label>
+                      <div className="relative">
+                        <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
+                        <input
+                          type="tel"
+                          value={simplesWhatsapp}
+                          onChange={(e) => setSimplesWhatsapp(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/25 text-sm focus:outline-none focus:border-white/30"
+                          placeholder="(11) 99999-9999"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : clientUser && (
+                  <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                    <p className="text-xs text-white/30 mb-1">Agendando como</p>
+                    <p className="text-sm font-medium">{clientUser.nome}</p>
+                    <p className="text-xs text-white/40">{clientUser.email}</p>
+                  </div>
+                )}
               </div>
 
               <div className="mb-6">
@@ -510,6 +584,8 @@ export default function PublicBooking() {
                   setSelectedDate("");
                   setSelectedSlot(null);
                   setObservacao("");
+                  setSimplesNome("");
+                  setSimplesWhatsapp("");
                   setError("");
                 }}
                 className="px-6 py-2.5 rounded-xl border border-white/10 text-sm font-medium hover:bg-white/5 transition"
@@ -521,12 +597,14 @@ export default function PublicBooking() {
         </div>
       </div>
 
-      <ClientAuthModal
-        open={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onAuthenticated={handleClientAuth}
-        accentColor={accent}
-      />
+      {!isSimpleMode && (
+        <ClientAuthModal
+          open={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onAuthenticated={handleClientAuth}
+          accentColor={accent}
+        />
+      )}
     </div>
   );
 }
