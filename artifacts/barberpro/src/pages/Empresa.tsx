@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { ImageUpload } from "@/components/ImageUpload";
 import { formatPhone, stripPhone, apiUrl } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, MapPin, Clock, Palette, Save, Link2, Copy, Check, ExternalLink, ImageIcon, XCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { Building2, MapPin, Clock, Palette, Save, Link2, Copy, Check, ExternalLink, ImageIcon, XCircle, AlertTriangle, Loader2, CreditCard, ArrowUpRight } from "lucide-react";
 
 const DIAS = ["segunda","terca","quarta","quinta","sexta","sabado","domingo"];
 const DIA_LABEL: Record<string,string> = { segunda:"Segunda",terca:"Terça",quarta:"Quarta",quinta:"Quinta",sexta:"Sexta",sabado:"Sábado",domingo:"Domingo" };
@@ -42,6 +42,7 @@ export default function Empresa() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [cancellingPlan, setCancellingPlan] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [openingPortal, setOpeningPortal] = useState(false);
 
   useEffect(() => {
     if (barbearia) {
@@ -83,6 +84,25 @@ export default function Empresa() {
 
   const setHorario = (dia: string, field: "inicio" | "fim", val: string) => {
     setHorarios((h: any) => ({ ...h, [dia]: { ...h[dia], [field]: val } }));
+  };
+
+  const openStripePortal = async () => {
+    setOpeningPortal(true);
+    try {
+      const res = await fetch(apiUrl("/checkout/create-portal-session"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      let data: any;
+      try { data = await res.json(); } catch { data = {}; }
+      if (!res.ok) throw new Error(data.error || "Erro ao abrir portal");
+      if (data.url) window.open(data.url, "_blank");
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setOpeningPortal(false);
+    }
   };
 
   const handleCancelPlan = async () => {
@@ -174,6 +194,33 @@ export default function Empresa() {
                 <a href={`${import.meta.env.BASE_URL}s/${barbearia.slug}`} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4" />
                 </a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {barbearia && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5 text-primary" /> Meu Plano</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-sm">{barbearia.subscriptionPlan || barbearia.planoNome || "Trial"}</Badge>
+                  {barbearia.subscriptionPeriod && <span className="text-xs text-muted-foreground">({barbearia.subscriptionPeriod})</span>}
+                </div>
+                {barbearia.planoVencimento && (
+                  <p className="text-sm text-muted-foreground">
+                    Acesso até: <strong className="text-foreground">{new Date(barbearia.planoVencimento).toLocaleDateString("pt-BR")}</strong>
+                  </p>
+                )}
+              </div>
+              <Button variant="outline" onClick={openStripePortal} disabled={openingPortal}>
+                {openingPortal ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ArrowUpRight className="h-4 w-4 mr-2" />}
+                Gerenciar Plano / Upgrade
               </Button>
             </div>
           </CardContent>

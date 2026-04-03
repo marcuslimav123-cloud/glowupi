@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { apiUrl } from "@/lib/utils";
 import { StatusBadge } from "./AdminDashboard";
-import { Search, ToggleLeft, ToggleRight, Building2 } from "lucide-react";
+import { Search, Building2, Users, Calendar, Clock, ChevronDown, ChevronUp, Plus, Minus, History } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -18,9 +18,37 @@ interface Tenant {
   subscriptionStatus: string | null;
   subscriptionPlan: string | null;
   subscriptionPeriod: string | null;
+  planoVencimento: string | null;
   ativo: boolean;
   createdAt: string;
   dono: { id: number; nome: string; email: string } | null;
+  proCount: number;
+  proLimit: number;
+  diasRestantes: number | null;
+  mesesAcesso: number;
+  anosAcesso: number;
+}
+
+interface LogEntry {
+  id: number;
+  acao: string;
+  detalhes: any;
+  createdAt: string;
+}
+
+const STATUS_OPTIONS = [
+  { value: "trial", label: "Trial", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+  { value: "pendente", label: "Pendente", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
+  { value: "ativo", label: "Ativo", color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
+  { value: "inativo", label: "Inativo", color: "bg-red-500/20 text-red-400 border-red-500/30" },
+  { value: "suspenso", label: "Suspenso", color: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
+  { value: "inadimplente", label: "Inadimplente", color: "bg-red-500/20 text-red-400 border-red-500/30" },
+  { value: "cancelado", label: "Cancelado", color: "bg-slate-500/20 text-slate-400 border-slate-500/30" },
+];
+
+function formatDate(iso: string | null) {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleDateString("pt-BR");
 }
 
 export default function AdminTenants() {
@@ -28,7 +56,11 @@ export default function AdminTenants() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [toggling, setToggling] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [diasExtras, setDiasExtras] = useState("");
 
   const fetchTenants = () => {
     fetch(apiUrl("/admin/tenants"), { credentials: "include" })
@@ -40,22 +72,72 @@ export default function AdminTenants() {
 
   useEffect(() => { fetchTenants(); }, []);
 
-  const toggleTenant = async (id: number) => {
-    setToggling(id);
+  const changeStatus = async (id: number, status: string) => {
+    setActionLoading(id);
     try {
-      const res = await fetch(apiUrl(`/admin/tenants/${id}/toggle`), {
+      const res = await fetch(apiUrl(`/admin/tenants/${id}/status`), {
         method: "PUT",
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
+        body: JSON.stringify({ status }),
       });
-      const data = await res.json();
       if (res.ok) {
-        setTenants(prev => prev.map(t => t.id === id ? { ...t, ativo: data.ativo } : t));
-        toast({ title: data.ativo ? "Estúdio ativado" : "Estúdio desativado" });
+        const data = await res.json();
+        setTenants(prev => prev.map(t => t.id === id ? { ...t, subscriptionStatus: data.subscriptionStatus, ativo: data.ativo } : t));
+        toast({ title: `Status alterado para "${status}"` });
+      } else {
+        const err = await res.json();
+        toast({ title: "Erro", description: err.error, variant: "destructive" });
       }
     } catch {
-      toast({ title: "Erro", description: "Falha ao alterar status", variant: "destructive" });
+      toast({ title: "Erro ao alterar status", variant: "destructive" });
     } finally {
-      setToggling(null);
+      setActionLoading(null);
+    }
+  };
+
+  const adjustDates = async (id: number) => {
+    const dias = parseInt(diasExtras);
+    if (isNaN(dias) || dias === 0) {
+      toast({ title: "Informe um número válido de dias", variant: "destructive" });
+      return;
+    }
+    setActionLoading(id);
+    try {
+      const res = await fetch(apiUrl(`/admin/tenants/${id}/dates`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ diasExtras: dias }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTenants(prev => prev.map(t => t.id === id ? { ...t, planoVencimento: data.planoVencimento } : t));
+        setDiasExtras("");
+        toast({ title: `${dias > 0 ? "Adicionados" : "Removidos"} ${Math.abs(dias)} dias` });
+      }
+    } catch {
+      toast({ title: "Erro ao ajustar datas", variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const toggleExpand = async (id: number) => {
+    if (expandedId === id) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(id);
+    setLogsLoading(true);
+    try {
+      const res = await fetch(apiUrl(`/admin/tenants/${id}/logs`), { credentials: "include" });
+      const data = await res.json();
+      setLogs(data);
+    } catch {
+      setLogs([]);
+    } finally {
+      setLogsLoading(false);
     }
   };
 
@@ -90,78 +172,162 @@ export default function AdminTenants() {
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-primary"></div>
           </div>
         ) : (
-          <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-white/10">
-                    <th className="text-left p-4 text-slate-400 font-medium">Estúdio</th>
-                    <th className="text-left p-4 text-slate-400 font-medium hidden md:table-cell">Proprietário</th>
-                    <th className="text-left p-4 text-slate-400 font-medium hidden lg:table-cell">Localização</th>
-                    <th className="text-left p-4 text-slate-400 font-medium">Status</th>
-                    <th className="text-left p-4 text-slate-400 font-medium hidden sm:table-cell">Plano</th>
-                    <th className="text-left p-4 text-slate-400 font-medium">Ativo</th>
-                    <th className="text-left p-4 text-slate-400 font-medium">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="p-8 text-center text-slate-500">
-                        <Building2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        Nenhum estúdio encontrado
-                      </td>
-                    </tr>
-                  ) : (
-                    filtered.map(t => (
-                      <tr key={t.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                        <td className="p-4">
-                          <div>
-                            <p className="text-white font-medium">{t.nome}</p>
-                            <p className="text-xs text-slate-500">{t.email || "-"}</p>
-                          </div>
-                        </td>
-                        <td className="p-4 hidden md:table-cell">
-                          <div>
-                            <p className="text-slate-300 text-sm">{t.dono?.nome || "-"}</p>
-                            <p className="text-xs text-slate-500">{t.dono?.email || "-"}</p>
-                          </div>
-                        </td>
-                        <td className="p-4 hidden lg:table-cell text-slate-400">
-                          {t.cidade && t.uf ? `${t.cidade}/${t.uf}` : "-"}
-                        </td>
-                        <td className="p-4">
+          <div className="space-y-3">
+            {filtered.length === 0 ? (
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center text-slate-500">
+                <Building2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                Nenhum estúdio encontrado
+              </div>
+            ) : (
+              filtered.map(t => (
+                <div key={t.id} className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                  <div
+                    className="p-4 cursor-pointer hover:bg-white/5 transition-colors"
+                    onClick={() => toggleExpand(t.id)}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <p className="text-white font-semibold text-lg">{t.nome}</p>
                           <StatusBadge status={t.subscriptionStatus || "trial"} />
-                        </td>
-                        <td className="p-4 hidden sm:table-cell text-slate-400">
-                          {t.subscriptionPlan || "Trial"}
-                          {t.subscriptionPeriod && <span className="text-xs text-slate-500 ml-1">({t.subscriptionPeriod})</span>}
-                        </td>
-                        <td className="p-4">
-                          {t.ativo ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Sim</span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30">Não</span>
+                          {!t.ativo && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-red-500/20 text-red-400 border border-red-500/30">DESATIVADO</span>
                           )}
-                        </td>
-                        <td className="p-4">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-white/20 text-slate-300 hover:text-white hover:bg-white/10 h-8"
-                            onClick={() => toggleTenant(t.id)}
-                            disabled={toggling === t.id}
-                          >
-                            {t.ativo ? <ToggleRight className="h-4 w-4 mr-1" /> : <ToggleLeft className="h-4 w-4 mr-1" />}
-                            {t.ativo ? "Desativar" : "Ativar"}
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
+                        </div>
+                        <div className="flex items-center gap-4 mt-1 text-sm text-slate-400 flex-wrap">
+                          <span>{t.dono?.nome || "-"} · {t.dono?.email || "-"}</span>
+                          {t.cidade && t.uf && <span>{t.cidade}/{t.uf}</span>}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-6 shrink-0">
+                        <div className="text-center hidden sm:block">
+                          <div className="flex items-center gap-1 text-sm">
+                            <Users className="h-3.5 w-3.5 text-primary" />
+                            <span className={`font-bold ${t.proCount >= t.proLimit ? "text-red-400" : "text-white"}`}>
+                              {t.proCount}/{t.proLimit}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500">Profissionais</p>
+                        </div>
+
+                        <div className="text-center hidden md:block">
+                          <p className="text-sm font-bold text-white">{t.subscriptionPlan || "Trial"}</p>
+                          <p className="text-[11px] text-slate-500">{t.subscriptionPeriod || "-"}</p>
+                        </div>
+
+                        <div className="text-center hidden lg:block">
+                          <p className={`text-sm font-bold ${t.diasRestantes !== null && t.diasRestantes <= 5 ? "text-red-400" : "text-white"}`}>
+                            {t.diasRestantes !== null ? `${t.diasRestantes}d` : "-"}
+                          </p>
+                          <p className="text-[11px] text-slate-500">Restantes</p>
+                        </div>
+
+                        <div className="text-center hidden lg:block">
+                          <p className="text-sm font-bold text-white">
+                            {t.anosAcesso > 0 ? `${t.anosAcesso}a ${t.mesesAcesso % 12}m` : `${t.mesesAcesso}m`}
+                          </p>
+                          <p className="text-[11px] text-slate-500">Tempo</p>
+                        </div>
+
+                        {expandedId === t.id ? <ChevronUp className="h-4 w-4 text-slate-500" /> : <ChevronDown className="h-4 w-4 text-slate-500" />}
+                      </div>
+                    </div>
+                  </div>
+
+                  {expandedId === t.id && (
+                    <div className="border-t border-white/10 p-4 space-y-4 bg-white/[0.02]">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="bg-white/5 rounded-lg p-3">
+                          <p className="text-[11px] text-slate-500 mb-1 flex items-center gap-1"><Users className="h-3 w-3" /> Profissionais</p>
+                          <p className="text-white font-bold">{t.proCount} / {t.proLimit}</p>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-3">
+                          <p className="text-[11px] text-slate-500 mb-1 flex items-center gap-1"><Calendar className="h-3 w-3" /> Cadastro</p>
+                          <p className="text-white font-bold">{formatDate(t.createdAt)}</p>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-3">
+                          <p className="text-[11px] text-slate-500 mb-1 flex items-center gap-1"><Clock className="h-3 w-3" /> Vencimento</p>
+                          <p className={`font-bold ${t.diasRestantes !== null && t.diasRestantes <= 5 ? "text-red-400" : "text-white"}`}>
+                            {formatDate(t.planoVencimento)} {t.diasRestantes !== null && `(${t.diasRestantes} dias)`}
+                          </p>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-3">
+                          <p className="text-[11px] text-slate-500 mb-1">Tempo de acesso</p>
+                          <p className="text-white font-bold">
+                            {t.anosAcesso > 0 ? `${t.anosAcesso} ano(s) e ${t.mesesAcesso % 12} mês(es)` : `${t.mesesAcesso} mês(es)`}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1 bg-white/5 rounded-lg p-3">
+                          <p className="text-[11px] text-slate-500 mb-2">Alterar Status</p>
+                          <div className="flex flex-wrap gap-2">
+                            {STATUS_OPTIONS.map(s => (
+                              <button
+                                key={s.value}
+                                onClick={() => changeStatus(t.id, s.value)}
+                                disabled={actionLoading === t.id || t.subscriptionStatus === s.value}
+                                className={`px-3 py-1 rounded-full text-xs font-medium border transition-all disabled:opacity-40 ${
+                                  t.subscriptionStatus === s.value ? s.color + " ring-1 ring-white/30" : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
+                                }`}
+                              >
+                                {s.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="sm:w-64 bg-white/5 rounded-lg p-3">
+                          <p className="text-[11px] text-slate-500 mb-2">Ajustar Prazo (dias)</p>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              value={diasExtras}
+                              onChange={e => setDiasExtras(e.target.value)}
+                              placeholder="ex: 30 ou -7"
+                              className="bg-white/10 border-white/20 text-white text-sm h-8"
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => adjustDates(t.id)}
+                              disabled={actionLoading === t.id}
+                              className="h-8 bg-primary/80 hover:bg-primary text-black"
+                            >
+                              Aplicar
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-white/5 rounded-lg p-3">
+                        <p className="text-[11px] text-slate-500 mb-2 flex items-center gap-1"><History className="h-3 w-3" /> Log de Ações</p>
+                        {logsLoading ? (
+                          <p className="text-slate-500 text-sm">Carregando...</p>
+                        ) : logs.length === 0 ? (
+                          <p className="text-slate-500 text-sm">Nenhum log registrado</p>
+                        ) : (
+                          <div className="space-y-1 max-h-48 overflow-y-auto">
+                            {logs.map(l => (
+                              <div key={l.id} className="flex items-center gap-3 text-sm py-1 border-b border-white/5 last:border-0">
+                                <span className="text-slate-500 text-xs shrink-0">{formatDate(l.createdAt)}</span>
+                                <span className="text-primary font-medium">{l.acao}</span>
+                                {l.detalhes && (
+                                  <span className="text-slate-400 text-xs truncate">
+                                    {typeof l.detalhes === "object" ? Object.entries(l.detalhes).map(([k, v]) => `${k}: ${v}`).join(", ") : String(l.detalhes)}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   )}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>

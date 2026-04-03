@@ -23,7 +23,6 @@ async function handleSubscriptionEvent(subscription: any) {
   else if (status === 'trialing') subscriptionStatus = 'trial';
   else subscriptionStatus = status;
 
-  const priceId = subscription.items?.data?.[0]?.price?.id;
   const priceMetadata = subscription.items?.data?.[0]?.price?.metadata;
   const planTier = priceMetadata?.tier || null;
   const planPeriod = priceMetadata?.period || null;
@@ -34,24 +33,37 @@ async function handleSubscriptionEvent(subscription: any) {
     if (currentPeriodEnd) {
       planoVencimento = new Date(currentPeriodEnd * 1000);
     }
+  } else if (subscriptionStatus === 'inadimplente') {
+    const currentPeriodEnd = subscription.current_period_end;
+    if (currentPeriodEnd) {
+      const gracePeriodEnd = new Date(currentPeriodEnd * 1000);
+      gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7);
+      planoVencimento = gracePeriodEnd;
+    }
   } else if (subscriptionStatus === 'cancelado') {
     planoVencimento = barbearia.planoVencimento;
   }
 
+  const updates: any = {
+    stripeSubscriptionId: subscription.id,
+    subscriptionStatus,
+    subscriptionPlan: planTier || barbearia.subscriptionPlan,
+    subscriptionPeriod: planPeriod || barbearia.subscriptionPeriod,
+    planoStatus: subscriptionStatus === 'ativo' ? 'ativo' : subscriptionStatus,
+    planoNome: planTier || barbearia.planoNome,
+    planoVencimento,
+    updatedAt: new Date(),
+  };
+
+  if (subscriptionStatus === 'ativo') {
+    updates.ativo = true;
+  }
+
   await db.update(barbeariasTable)
-    .set({
-      stripeSubscriptionId: subscription.id,
-      subscriptionStatus,
-      subscriptionPlan: planTier,
-      subscriptionPeriod: planPeriod,
-      planoStatus: subscriptionStatus === 'ativo' ? 'ativo' : subscriptionStatus,
-      planoNome: planTier || barbearia.planoNome,
-      planoVencimento,
-      updatedAt: new Date(),
-    })
+    .set(updates)
     .where(eq(barbeariasTable.id, barbearia.id));
 
-  console.log(`Updated barbearia ${barbearia.id} subscription: status=${subscriptionStatus}, plan=${planTier}, period=${planPeriod}`);
+  console.log(`Updated barbearia ${barbearia.id} subscription: status=${subscriptionStatus}, plan=${planTier}, period=${planPeriod}, vencimento=${planoVencimento?.toISOString()}`);
 }
 
 export class WebhookHandlers {
@@ -77,6 +89,18 @@ export class WebhookHandlers {
         eventType === 'customer.subscription.deleted'
       ) {
         await handleSubscriptionEvent(event.data.object);
+      }
+
+      if (eventType === 'invoice.payment_failed') {
+        const invoice = event.data.object;
+        const custId = invoice.customer;
+        if (custId) {
+          const [barb] = await db.select().from(barbeariasTable)
+            .where(eq(barbeariasTable.stripeCustomerId, custId)).limit(1);
+          if (barb) {
+            console.log(`[webhook] Payment failed for barbearia ${barb.id} (${barb.nome}). Stripe will retry automatically.`);
+          }
+        }
       }
     } catch (err: any) {
       console.error('Error handling subscription webhook event:', err.message);

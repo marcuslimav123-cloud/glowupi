@@ -1,9 +1,11 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { usersTable, barbeariasTable, superAdminsTable, profissionaisTable, profissionaisPerfisTable, perfisAcessoTable, platformConfigTable } from "@workspace/db/schema";
+import { usersTable, barbeariasTable, superAdminsTable, profissionaisTable, profissionaisPerfisTable, perfisAcessoTable, platformConfigTable, passwordResetTokensTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { hashPassword, createSession, deleteSession, requireAuth } from "../lib/auth.js";
 import { OAuth2Client } from "google-auth-library";
+import { randomBytes } from "crypto";
+import { sendEmail } from "../lib/brevo.js";
 
 const router: IRouter = Router();
 
@@ -437,6 +439,81 @@ router.get("/me", requireAuth, async (req, res) => {
     });
   } catch (e) {
     console.error("me error:", e);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Email é obrigatório" });
+
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+    if (!user) {
+      return res.json({ success: true, message: "Se o email existir, enviaremos instruções de recuperação." });
+    }
+
+    const token = randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+    await db.insert(passwordResetTokensTable).values({
+      userId: user.id,
+      token,
+      expiresAt,
+    });
+
+    const baseUrl = process.env.REPLIT_DEV_DOMAIN
+      ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+      : "https://glowupi.com.br";
+    const resetLink = `${baseUrl}/redefinir-senha?token=${token}`;
+
+    await sendEmail({
+      to: [{ email: user.email, name: user.nome }],
+      subject: "Redefinir Senha - Glow Upi",
+      htmlContent: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #d4a853; margin: 0;">Glow Upi</h1>
+          </div>
+          <h2 style="color: #333;">Redefinir Senha</h2>
+          <p style="color: #666;">Olá ${user.nome},</p>
+          <p style="color: #666;">Recebemos um pedido para redefinir sua senha. Clique no botão abaixo:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetLink}" style="background: #d4a853; color: #000; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Redefinir Senha</a>
+          </div>
+          <p style="color: #999; font-size: 13px;">Este link expira em 1 hora. Se você não solicitou, ignore este email.</p>
+        </div>
+      `,
+    });
+
+    return res.json({ success: true, message: "Se o email existir, enviaremos instruções de recuperação." });
+  } catch (e) {
+    console.error("forgot-password error:", e);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { token, novaSenha } = req.body;
+    if (!token || !novaSenha) return res.status(400).json({ error: "Token e nova senha são obrigatórios" });
+    if (novaSenha.length < 6) return res.status(400).json({ error: "A senha deve ter pelo menos 6 caracteres" });
+
+    const [resetToken] = await db.select().from(passwordResetTokensTable)
+      .where(and(eq(passwordResetTokensTable.token, token), eq(passwordResetTokensTable.usado, false)))
+      .limit(1);
+
+    if (!resetToken) return res.status(400).json({ error: "Token inválido ou já utilizado" });
+    if (new Date() > resetToken.expiresAt) return res.status(400).json({ error: "Token expirado. Solicite um novo link." });
+
+    const senhaHash = await hashPassword(novaSenha);
+
+    await db.update(usersTable).set({ senhaHash, updatedAt: new Date() }).where(eq(usersTable.id, resetToken.userId));
+    await db.update(passwordResetTokensTable).set({ usado: true }).where(eq(passwordResetTokensTable.id, resetToken.id));
+
+    return res.json({ success: true, message: "Senha redefinida com sucesso" });
+  } catch (e) {
+    console.error("reset-password error:", e);
     return res.status(500).json({ error: "Erro interno" });
   }
 });

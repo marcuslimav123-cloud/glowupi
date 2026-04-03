@@ -44,3 +44,5 @@ export * from "./clubeVantagens";
 export * from "./comissoes";
 export * from "./contasProfissional";
 export * from "./pushTokens";
+export * from "./adminLogs";
+export * from "./passwordResetTokens";

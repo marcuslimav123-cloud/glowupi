@@ -13,6 +13,7 @@ import {
   X,
   Shield,
   ExternalLink,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -21,6 +22,7 @@ const ADMIN_NAV = [
   { name: "Assinantes", href: "/admin/assinantes", icon: Users },
   { name: "Configurações", href: "/admin/configuracoes", icon: Settings },
   { name: "Receita", href: "/admin/receita", icon: TrendingUp },
+  { name: "Logs", href: "/admin/logs", icon: History },
 ];
 
 interface AdminUser {

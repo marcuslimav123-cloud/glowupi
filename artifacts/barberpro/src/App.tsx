@@ -50,6 +50,8 @@ import PublicPesquisa from "@/pages/PublicPesquisa";
 
 import DirectSales from "@/pages/DirectSales";
 import DirectSalesSuccess from "@/pages/DirectSalesSuccess";
+import ForgotPassword from "@/pages/auth/ForgotPassword";
+import ResetPassword from "@/pages/auth/ResetPassword";
 
 import ComandasAbertas from "@/pages/comandas/ComandasAbertas";
 import ComandasHistorico from "@/pages/comandas/ComandasHistorico";
@@ -91,6 +93,7 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminTenants from "@/pages/admin/AdminTenants";
 import AdminSettings from "@/pages/admin/AdminSettings";
 import AdminRevenue from "@/pages/admin/AdminRevenue";
+import AdminLogs from "@/pages/admin/AdminLogs";
 
 const queryClient = new QueryClient();
 
@@ -102,6 +105,8 @@ function Router() {
       <Route path="/pdvd" component={Landing} />
       <Route path="/login" component={Login} />
       <Route path="/cadastro" component={Register} />
+      <Route path="/esqueci-senha" component={ForgotPassword} />
+      <Route path="/redefinir-senha" component={ResetPassword} />
 
       <Route path="/completar-perfil" component={CompleteProfile} />
       <Route path="/onboarding/barbearia" component={BarbeariaStep} />
@@ -196,6 +201,7 @@ function Router() {
       <Route path="/admin/assinantes" component={AdminTenants} />
       <Route path="/admin/configuracoes" component={AdminSettings} />
       <Route path="/admin/receita" component={AdminRevenue} />
+      <Route path="/admin/logs" component={AdminLogs} />
 
       <Route component={NotFound} />
     </Switch>
