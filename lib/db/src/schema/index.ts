@@ -46,3 +46,4 @@ export * from "./contasProfissional";
 export * from "./pushTokens";
 export * from "./adminLogs";
 export * from "./passwordResetTokens";
+export * from "./filiais";

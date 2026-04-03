@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable, avaliacoesTable, recompensasTable, produtosTable, profissionalServicosTable, pesquisaSatisfacaoTable, respostasPesquisaTable, categoriasServicoTable } from "@workspace/db/schema";
+import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable, avaliacoesTable, recompensasTable, produtosTable, profissionalServicosTable, pesquisaSatisfacaoTable, respostasPesquisaTable, categoriasServicoTable, filiaisTable } from "@workspace/db/schema";
 import { eq, and, desc, gte, inArray } from "drizzle-orm";
 import { sendPushToBarbearia } from "../lib/pushNotifications.js";
 import { requireClient } from "../lib/auth.js";
@@ -105,6 +105,10 @@ router.get("/:slug", async (req, res) => {
   const { getParametros: getPublicParams } = await import("../lib/parametros.js");
   const pubParams = await getPublicParams(barbearia.id);
 
+  const filiais = await db.select().from(filiaisTable).where(
+    and(eq(filiaisTable.barbeariaId, barbearia.id), eq(filiaisTable.ativo, true))
+  );
+
   const [servicos, profissionais, avaliacoes, recompensas, produtos, profServicos] = await Promise.all([
     db.select().from(servicosTable).where(and(eq(servicosTable.barbeariaId, barbearia.id), eq(servicosTable.ativo, true))),
     db.select().from(profissionaisTable).where(and(eq(profissionaisTable.barbeariaId, barbearia.id), eq(profissionaisTable.ativo, true))),
@@ -165,6 +169,16 @@ router.get("/:slug", async (req, res) => {
     permitirCancelamentoCliente,
     toleranciaCancelamento,
     categorias,
+    filiais: filiais.map(f => ({
+      id: f.id,
+      nome: f.nome,
+      logradouro: f.logradouro,
+      numero: f.numero,
+      bairro: f.bairro,
+      cidade: f.cidade,
+      uf: f.uf,
+      telefone: f.telefone,
+    })),
     servicos: servicos.map(s => ({
       ...s,
       preco: parseFloat(s.preco as string),
@@ -175,6 +189,7 @@ router.get("/:slug", async (req, res) => {
       ...(showSemPreferencia ? [{
         id: 0,
         barbeariaId: barbearia.id,
+        filialId: null,
         nomeExibicao: "Sem preferência",
         apelido: "Sem preferência",
         imagemUrl: null,
@@ -227,17 +242,34 @@ router.get("/:slug/slots", async (req, res) => {
     const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.slug, slug)).limit(1);
     if (!barbearia) return res.status(404).json({ error: "Barbearia não encontrada" });
 
-    const { data, profissionalId, servicoId } = req.query;
+    const { data, profissionalId, servicoId, filialId: filialIdParam } = req.query;
     if (!data || !servicoId) return res.status(400).json({ error: "data e servicoId são obrigatórios" });
 
     const sId = parseInt(servicoId as string);
     const [servico] = await db.select().from(servicosTable).where(and(eq(servicosTable.id, sId), eq(servicosTable.barbeariaId, barbearia.id))).limit(1);
     if (!servico) return res.status(404).json({ error: "Serviço não encontrado" });
 
+    const selectedFilialId = filialIdParam ? parseInt(filialIdParam as string) : null;
+
+    if (selectedFilialId) {
+      const [filial] = await db.select().from(filiaisTable).where(
+        and(eq(filiaisTable.id, selectedFilialId), eq(filiaisTable.barbeariaId, barbearia.id), eq(filiaisTable.ativo, true))
+      ).limit(1);
+      if (!filial) {
+        return res.status(400).json({ error: "Filial inválida" });
+      }
+      if (servico.filialId !== null && servico.filialId !== selectedFilialId) {
+        return res.status(400).json({ error: "Serviço não disponível na filial selecionada" });
+      }
+    }
+
     let profissionais;
     const pId = profissionalId ? parseInt(profissionalId as string) : 0;
     if (profissionalId && pId !== 0) {
       profissionais = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, pId), eq(profissionaisTable.barbeariaId, barbearia.id), eq(profissionaisTable.ativo, true)));
+      if (selectedFilialId && profissionais.length > 0) {
+        profissionais = profissionais.filter(p => p.filialId === selectedFilialId || p.filialId === null);
+      }
       if (profissionais.length > 0) {
         const profLinks = await db.select().from(profissionalServicosTable).where(and(eq(profissionalServicosTable.profissionalId, pId), eq(profissionalServicosTable.barbeariaId, barbearia.id)));
         if (profLinks.length > 0 && !profLinks.some(l => l.servicoId === sId)) {
@@ -246,6 +278,10 @@ router.get("/:slug/slots", async (req, res) => {
       }
     } else {
       profissionais = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.barbeariaId, barbearia.id), eq(profissionaisTable.ativo, true)));
+
+      if (selectedFilialId) {
+        profissionais = profissionais.filter(p => p.filialId === selectedFilialId || p.filialId === null);
+      }
 
       const allLinks = await db.select().from(profissionalServicosTable).where(eq(profissionalServicosTable.barbeariaId, barbearia.id));
       const hasAnyLinks = allLinks.length > 0;
@@ -333,14 +369,26 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
     const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.slug, slug)).limit(1);
     if (!barbearia) return res.status(404).json({ error: "Barbearia não encontrada" });
 
-    const { profissionalId, servicoId, data, horaInicio, semPreferencia, observacao } = req.body;
+    const { profissionalId, servicoId, data, horaInicio, semPreferencia, observacao, filialId } = req.body;
     if (!profissionalId || !servicoId || !data || !horaInicio) {
       return res.status(400).json({ error: "Dados inválidos" });
+    }
+
+    if (filialId) {
+      const [filial] = await db.select().from(filiaisTable).where(
+        and(eq(filiaisTable.id, filialId), eq(filiaisTable.barbeariaId, barbearia.id), eq(filiaisTable.ativo, true))
+      ).limit(1);
+      if (!filial) {
+        return res.status(400).json({ error: "Filial inválida" });
+      }
     }
 
     const { getParametros: getParams2, getLocalNow: getLocalNow2 } = await import("../lib/parametros.js");
     const params = await getParams2(barbearia.id);
     const localNow = getLocalNow2(params);
+
+    const gestorNotifHabilitada = (params["notif_mensagem_gestores"] || "Habilitado") === "Habilitado";
+    const clienteNotifHabilitada = (params["notif_mensagem_agendar_cancelar"] || "Habilitado") === "Habilitado";
 
     const limiteFuturoDias = parseInt(params["agenda_limite_futuro_dias"] || "30");
     const dataAgend = new Date(data + "T12:00:00");
@@ -373,6 +421,15 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
     if (!servico) return res.status(404).json({ error: "Serviço não encontrado" });
     const [profissional] = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, profissionalId), eq(profissionaisTable.barbeariaId, barbearia.id))).limit(1);
     if (!profissional) return res.status(404).json({ error: "Profissional não encontrado" });
+
+    if (filialId) {
+      if (profissional.filialId !== null && profissional.filialId !== filialId) {
+        return res.status(400).json({ error: "Profissional não pertence à filial selecionada" });
+      }
+      if (servico.filialId !== null && servico.filialId !== filialId) {
+        return res.status(400).json({ error: "Serviço não disponível na filial selecionada" });
+      }
+    }
 
     const profLinks = await db.select().from(profissionalServicosTable).where(and(eq(profissionalServicosTable.profissionalId, profissionalId), eq(profissionalServicosTable.barbeariaId, barbearia.id)));
     if (profLinks.length > 0 && !profLinks.some(l => l.servicoId === servicoId)) {
@@ -408,6 +465,7 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
 
     const [agend] = await db.insert(agendamentosTable).values({
       barbeariaId: barbearia.id,
+      filialId: filialId || null,
       clienteId: cliente.id,
       clienteNome: clienteUser.nome,
       clienteTelefone: clienteUser.telefone || "",
@@ -427,6 +485,47 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       vip: false,
       origem: "site",
     }).returning();
+
+    if (clienteNotifHabilitada && cliente.email) {
+      const { sendEmail } = await import("../lib/brevo.js");
+      const nomeEstab = barbearia.nome || "Glow Upi";
+      sendEmail({
+        to: [{ email: cliente.email, name: clienteUser.nome }],
+        subject: `${nomeEstab} — Agendamento Confirmado`,
+        htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>Olá <strong>${clienteUser.nome}</strong>, seu agendamento de <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${data}</strong> às <strong>${horaInicio}</strong> foi confirmado com sucesso!</p></div>`,
+      }).catch(err => console.error("[Notif] Error sending booking email to client:", err));
+    }
+
+    if (gestorNotifHabilitada) {
+      const { sendEmail } = await import("../lib/brevo.js");
+      const { usersTable } = await import("@workspace/db/schema");
+      const nomeEstab = barbearia.nome || "Glow Upi";
+      const gestores = await db.select().from(usersTable).where(
+        and(eq(usersTable.barbeariaId, barbearia.id), eq(usersTable.role, "gerente"))
+      );
+      const donoUsers = await db.select().from(usersTable).where(eq(usersTable.role, "dono"));
+      const allGestores = [...gestores];
+      for (const d of donoUsers) {
+        if (d.barbeariaId) continue;
+        const [b] = await db.select({ id: barbeariasTable.id }).from(barbeariasTable).where(eq(barbeariasTable.donoId, d.id)).limit(1);
+        if (b?.id === barbearia.id) allGestores.push(d);
+      }
+      for (const g of allGestores) {
+        if (g.email) {
+          sendEmail({
+            to: [{ email: g.email, name: g.nome || "Gestor" }],
+            subject: `${nomeEstab} — Novo agendamento pelo site: ${clienteUser.nome}`,
+            htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>O cliente <strong>${clienteUser.nome}</strong> agendou <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${data}</strong> às <strong>${horaInicio}</strong> pelo link público.</p></div>`,
+          }).catch(err => console.error("[Notif] Error sending booking email to manager:", err));
+        }
+      }
+    }
+
+    sendPushToBarbearia(barbearia.id, {
+      title: "Novo Agendamento pelo Site",
+      body: `${clienteUser.nome} agendou ${servico.nome} com ${profissional.nomeExibicao} em ${data} às ${horaInicio}`,
+      data: { agendamentoId: agend.id, type: "new_appointment" },
+    }).catch(err => console.error("[Push] Error on client booking:", err));
 
     return res.status(201).json({
       ...agend,
@@ -453,10 +552,20 @@ router.post("/:slug/agendar-simples", async (req, res) => {
       return res.status(403).json({ error: "Agendamento simples não está habilitado para este estabelecimento" });
     }
 
-    const { profissionalId, servicoId, data, horaInicio, semPreferencia, observacao, clienteNome, clienteWhatsapp } = req.body;
+    const { profissionalId, servicoId, data, horaInicio, semPreferencia, observacao, clienteNome, clienteWhatsapp, filialId } = req.body;
     if (!profissionalId || !servicoId || !data || !horaInicio) {
       return res.status(400).json({ error: "Dados inválidos" });
     }
+
+    if (filialId) {
+      const [filial] = await db.select().from(filiaisTable).where(
+        and(eq(filiaisTable.id, filialId), eq(filiaisTable.barbeariaId, barbearia.id), eq(filiaisTable.ativo, true))
+      ).limit(1);
+      if (!filial) {
+        return res.status(400).json({ error: "Filial inválida" });
+      }
+    }
+
     if (!clienteNome || !clienteWhatsapp) {
       return res.status(400).json({ error: "Nome e WhatsApp são obrigatórios" });
     }
@@ -467,6 +576,9 @@ router.post("/:slug/agendar-simples", async (req, res) => {
     }
 
     const localNowSimples = getLocalNowSimples(paramsSimples);
+
+    const gestorNotifHabilitada = (paramsSimples["notif_mensagem_gestores"] || "Habilitado") === "Habilitado";
+    const clienteNotifHabilitada = (paramsSimples["notif_mensagem_agendar_cancelar"] || "Habilitado") === "Habilitado";
 
     const limiteFuturoDias = parseInt(paramsSimples["agenda_limite_futuro_dias"] || "30");
     const dataAgend = new Date(data + "T12:00:00");
@@ -499,6 +611,15 @@ router.post("/:slug/agendar-simples", async (req, res) => {
     if (!servico) return res.status(404).json({ error: "Serviço não encontrado" });
     const [profissional] = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, profissionalId), eq(profissionaisTable.barbeariaId, barbearia.id))).limit(1);
     if (!profissional) return res.status(404).json({ error: "Profissional não encontrado" });
+
+    if (filialId) {
+      if (profissional.filialId !== null && profissional.filialId !== filialId) {
+        return res.status(400).json({ error: "Profissional não pertence à filial selecionada" });
+      }
+      if (servico.filialId !== null && servico.filialId !== filialId) {
+        return res.status(400).json({ error: "Serviço não disponível na filial selecionada" });
+      }
+    }
 
     const profLinks = await db.select().from(profissionalServicosTable).where(and(eq(profissionalServicosTable.profissionalId, profissionalId), eq(profissionalServicosTable.barbeariaId, barbearia.id)));
     if (profLinks.length > 0 && !profLinks.some(l => l.servicoId === servicoId)) {
@@ -534,6 +655,7 @@ router.post("/:slug/agendar-simples", async (req, res) => {
 
     const [agend] = await db.insert(agendamentosTable).values({
       barbeariaId: barbearia.id,
+      filialId: filialId || null,
       clienteId: cliente.id,
       clienteNome,
       clienteTelefone: whatsappLimpo,
@@ -553,6 +675,47 @@ router.post("/:slug/agendar-simples", async (req, res) => {
       vip: false,
       origem: "site",
     }).returning();
+
+    if (clienteNotifHabilitada && cliente.email) {
+      const { sendEmail } = await import("../lib/brevo.js");
+      const nomeEstab = barbearia.nome || "Glow Upi";
+      sendEmail({
+        to: [{ email: cliente.email, name: clienteNome }],
+        subject: `${nomeEstab} — Agendamento Confirmado`,
+        htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>Olá <strong>${clienteNome}</strong>, seu agendamento de <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${data}</strong> às <strong>${horaInicio}</strong> foi confirmado com sucesso!</p></div>`,
+      }).catch(err => console.error("[Notif] Error sending booking email to client:", err));
+    }
+
+    if (gestorNotifHabilitada) {
+      const { sendEmail } = await import("../lib/brevo.js");
+      const { usersTable } = await import("@workspace/db/schema");
+      const nomeEstab = barbearia.nome || "Glow Upi";
+      const gestores = await db.select().from(usersTable).where(
+        and(eq(usersTable.barbeariaId, barbearia.id), eq(usersTable.role, "gerente"))
+      );
+      const donoUsers = await db.select().from(usersTable).where(eq(usersTable.role, "dono"));
+      const allGestores = [...gestores];
+      for (const d of donoUsers) {
+        if (d.barbeariaId) continue;
+        const [b] = await db.select({ id: barbeariasTable.id }).from(barbeariasTable).where(eq(barbeariasTable.donoId, d.id)).limit(1);
+        if (b?.id === barbearia.id) allGestores.push(d);
+      }
+      for (const g of allGestores) {
+        if (g.email) {
+          sendEmail({
+            to: [{ email: g.email, name: g.nome || "Gestor" }],
+            subject: `${nomeEstab} — Novo agendamento pelo site: ${clienteNome}`,
+            htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>O cliente <strong>${clienteNome}</strong> agendou <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${data}</strong> às <strong>${horaInicio}</strong> pelo link público.</p></div>`,
+          }).catch(err => console.error("[Notif] Error sending booking email to manager:", err));
+        }
+      }
+    }
+
+    sendPushToBarbearia(barbearia.id, {
+      title: "Novo Agendamento pelo Site",
+      body: `${clienteNome} agendou ${servico.nome} com ${profissional.nomeExibicao} em ${data} às ${horaInicio}`,
+      data: { agendamentoId: agend.id, type: "new_appointment" },
+    }).catch(err => console.error("[Push] Error on client booking:", err));
 
     return res.status(201).json({
       ...agend,

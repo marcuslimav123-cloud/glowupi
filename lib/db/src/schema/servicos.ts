@@ -2,10 +2,12 @@ import { pgTable, serial, text, timestamp, integer, boolean, numeric } from "dri
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { barbeariasTable } from "./barbearias";
+import { filiaisTable } from "./filiais";
 
 export const servicosTable = pgTable("servicos", {
   id: serial("id").primaryKey(),
   barbeariaId: integer("barbearia_id").notNull().references(() => barbeariasTable.id),
+  filialId: integer("filial_id").references(() => filiaisTable.id),
   nome: text("nome").notNull(),
   preco: numeric("preco", { precision: 10, scale: 2 }).notNull(),
   duracaoMinutos: integer("duracao_minutos").notNull().default(30),

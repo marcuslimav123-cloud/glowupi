@@ -78,6 +78,7 @@ import ComandasItensReport from "@/pages/relatorios/ComandasItensReport";
 import DiasSemVir from "@/pages/relatorios/DiasSemVir";
 import LucroProdutos from "@/pages/relatorios/LucroProdutos";
 import ClienteDetalhe from "@/pages/gestao/ClienteDetalhe";
+import Filiais from "@/pages/gestao/Filiais";
 
 import Parametros from "@/pages/configuracoes/Parametros";
 import PerfisAcesso from "@/pages/configuracoes/PerfisAcesso";
@@ -122,6 +123,7 @@ function Router() {
       <Route path="/gestao/produtos" component={Produtos} />
       <Route path="/gestao/clientes/:clienteId" component={ClienteDetalhe} />
       <Route path="/gestao/clientes" component={Clientes} />
+      <Route path="/gestao/filiais" component={Filiais} />
 
       <Route path="/comandas/abertas" component={ComandasAbertas} />
       <Route path="/comandas/historico" component={ComandasHistorico} />

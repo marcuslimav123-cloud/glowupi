@@ -26,6 +26,17 @@ interface ClientUser {
   fotoUrl: string | null;
 }
 
+interface FilialData {
+  id: number;
+  nome: string;
+  logradouro: string | null;
+  numero: string | null;
+  bairro: string | null;
+  cidade: string | null;
+  uf: string | null;
+  telefone: string | null;
+}
+
 interface BarbeariaData {
   id: number;
   nome: string;
@@ -44,6 +55,7 @@ interface BarbeariaData {
   tipoLinkAgendamento?: "simples" | "com_login";
   permitirCancelamentoCliente?: boolean;
   toleranciaCancelamento?: number;
+  filiais?: FilialData[];
 }
 
 interface MeuAgendamento {
@@ -56,7 +68,6 @@ interface MeuAgendamento {
   status: string;
   valor: number;
 }
-}
 
 interface Slot {
   horaInicio: string;
@@ -66,7 +77,7 @@ interface Slot {
   disponivel: boolean;
 }
 
-type Step = "servico" | "profissional" | "data" | "horario" | "confirmar" | "sucesso";
+type Step = "filial" | "servico" | "profissional" | "data" | "horario" | "confirmar" | "sucesso";
 
 export default function PublicBooking() {
   const params = useParams<{ slug: string }>();
@@ -77,6 +88,7 @@ export default function PublicBooking() {
   const [error, setError] = useState("");
   const [step, setStep] = useState<Step>("servico");
 
+  const [selectedFilial, setSelectedFilial] = useState<FilialData | null>(null);
   const [selectedServico, setSelectedServico] = useState<any>(null);
   const [selectedProfissional, setSelectedProfissional] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<string>("");
@@ -118,6 +130,9 @@ export default function PublicBooking() {
       if (!res.ok) throw new Error("Estabelecimento não encontrado");
       const data = await res.json();
       setBarbearia(data);
+      if (data.filiais && data.filiais.length > 0) {
+        setStep("filial");
+      }
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -153,6 +168,7 @@ export default function PublicBooking() {
         data: date,
         servicoId: selectedServico.id.toString(),
         ...(selectedProfissional ? { profissionalId: selectedProfissional.id.toString() } : {}),
+        ...(selectedFilial ? { filialId: selectedFilial.id.toString() } : {}),
       });
       const res = await fetch(`${API_BASE}/public/${slug}/slots?${params}`, { credentials: "include" });
       if (res.ok) {
@@ -213,6 +229,7 @@ export default function PublicBooking() {
           data: selectedDate,
           horaInicio: selectedSlot.horaInicio,
           observacao: observacao || null,
+          filialId: selectedFilial?.id || null,
         }),
       });
       if (!res.ok) {
@@ -356,11 +373,15 @@ export default function PublicBooking() {
 
   if (!barbearia) return null;
 
-  const stepOrder: Step[] = ["servico", "profissional", "data", "horario", "confirmar"];
+  const hasFiliais = barbearia?.filiais && barbearia.filiais.length > 0;
+  const stepOrder: Step[] = hasFiliais
+    ? ["filial", "servico", "profissional", "data", "horario", "confirmar"]
+    : ["servico", "profissional", "data", "horario", "confirmar"];
   const currentStepIdx = stepOrder.indexOf(step === "sucesso" ? "confirmar" : step);
 
   function goBack() {
-    if (step === "profissional") setStep("servico");
+    if (step === "servico" && hasFiliais) setStep("filial");
+    else if (step === "profissional") setStep("servico");
     else if (step === "data") setStep("profissional");
     else if (step === "horario") setStep("data");
     else if (step === "confirmar") setStep("horario");
@@ -371,7 +392,7 @@ export default function PublicBooking() {
       <div className="max-w-lg mx-auto">
         <div className="sticky top-0 z-40 bg-[#111]/95 backdrop-blur-lg border-b border-white/5 px-4 py-4">
           <div className="flex items-center gap-3">
-            {step !== "servico" && step !== "sucesso" && !showMeusAgendamentos && (
+            {step !== "filial" && step !== "servico" && step !== "sucesso" && !showMeusAgendamentos && (
               <button onClick={goBack} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition">
                 <ChevronLeft className="h-5 w-5" />
               </button>
@@ -541,40 +562,82 @@ export default function PublicBooking() {
             </button>
           )}
 
+          {step === "filial" && hasFiliais && (
+            <div>
+              <h2 className="text-lg font-semibold mb-1">Escolha a unidade</h2>
+              <p className="text-white/30 text-sm mb-5">Em qual filial deseja agendar?</p>
+              <div className="space-y-2">
+                {barbearia.filiais!.map((f) => {
+                  const addressParts = [f.logradouro, f.numero, f.bairro, f.cidade, f.uf].filter(Boolean);
+                  const address = addressParts.join(", ");
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => { setSelectedFilial(f); setStep("servico"); }}
+                      className="w-full p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/20 transition-all text-left group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full flex items-center justify-center border border-white/10" style={{ background: `${accent}20` }}>
+                          <MapPin className="h-5 w-5" style={{ color: accent }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-[15px]">{f.nome}</p>
+                          {address && (
+                            <p className="text-white/30 text-xs mt-0.5 truncate">{address}</p>
+                          )}
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-white/20 group-hover:text-white/50 shrink-0" />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {!showMeusAgendamentos && step === "servico" && (
             <div>
               <h2 className="text-lg font-semibold mb-1">Escolha o serviço</h2>
               <p className="text-white/30 text-sm mb-5">Selecione o que deseja agendar</p>
               <div className="space-y-2">
-                {barbearia.servicos.map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => handleSelectServico(s)}
-                    className="w-full p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/20 transition-all text-left group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-[15px]">{s.nome}</p>
-                        <p className="text-white/30 text-xs mt-0.5">{s.duracaoMinutos} min</p>
+                {(() => {
+                  let servicosFiltrados = barbearia.servicos;
+                  if (selectedFilial) {
+                    servicosFiltrados = servicosFiltrados.filter((s: any) => s.filialId === selectedFilial.id || s.filialId === null);
+                  }
+                  return servicosFiltrados.map((s: any) => (
+                    <button
+                      key={s.id}
+                      onClick={() => handleSelectServico(s)}
+                      className="w-full p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/20 transition-all text-left group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-[15px]">{s.nome}</p>
+                          <p className="text-white/30 text-xs mt-0.5">{s.duracaoMinutos} min</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold" style={{ color: accent }}>
+                            R$ {s.preco.toFixed(2).replace(".", ",")}
+                          </p>
+                          <ChevronRight className="h-4 w-4 text-white/20 group-hover:text-white/50 ml-auto mt-1" />
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold" style={{ color: accent }}>
-                          R$ {s.preco.toFixed(2).replace(".", ",")}
-                        </p>
-                        <ChevronRight className="h-4 w-4 text-white/20 group-hover:text-white/50 ml-auto mt-1" />
-                      </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  ));
+                })()}
               </div>
             </div>
           )}
 
           {!showMeusAgendamentos && step === "profissional" && (() => {
             const hasAnyLinks = barbearia.profissionais.some((p: any) => p.servicoIds && p.servicoIds.length > 0);
-            const filtered = hasAnyLinks && selectedServico
+            let filtered = hasAnyLinks && selectedServico
               ? barbearia.profissionais.filter((p: any) => p.servicoIds && p.servicoIds.includes(selectedServico.id))
               : barbearia.profissionais;
+            if (selectedFilial) {
+              filtered = filtered.filter((p: any) => p.filialId === selectedFilial.id || p.filialId === null || p.semPreferencia);
+            }
             return (
             <div>
               <h2 className="text-lg font-semibold mb-1">Escolha o profissional</h2>
@@ -685,6 +748,12 @@ export default function PublicBooking() {
               <h2 className="text-lg font-semibold mb-5">Confirmar agendamento</h2>
               <div className="space-y-3 mb-6">
                 <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                  {selectedFilial && (
+                    <div className="flex items-center gap-3 mb-3">
+                      <MapPin className="h-4 w-4" style={{ color: accent }} />
+                      <span className="text-sm font-medium">{selectedFilial.nome}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-3 mb-3">
                     <Scissors className="h-4 w-4" style={{ color: accent }} />
                     <span className="text-sm font-medium">{selectedServico.nome}</span>
@@ -779,13 +848,15 @@ export default function PublicBooking() {
               <h2 className="text-xl font-bold mb-2">Agendamento Confirmado!</h2>
               <p className="text-white/40 text-sm mb-2">
                 {selectedServico?.nome} com {selectedSlot?.profissionalNome}
+                {selectedFilial ? ` - ${selectedFilial.nome}` : ""}
               </p>
               <p className="text-white/40 text-sm mb-8">
                 {selectedDate && new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })} às {selectedSlot?.horaInicio}
               </p>
               <button
                 onClick={() => {
-                  setStep("servico");
+                  setStep(hasFiliais ? "filial" : "servico");
+                  setSelectedFilial(null);
                   setSelectedServico(null);
                   setSelectedProfissional(null);
                   setSelectedDate("");

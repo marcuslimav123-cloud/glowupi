@@ -5,10 +5,12 @@ import { barbeariasTable } from "./barbearias";
 import { clientesTable } from "./clientes";
 import { profissionaisTable } from "./profissionais";
 import { servicosTable } from "./servicos";
+import { filiaisTable } from "./filiais";
 
 export const agendamentosTable = pgTable("agendamentos", {
   id: serial("id").primaryKey(),
   barbeariaId: integer("barbearia_id").notNull().references(() => barbeariasTable.id),
+  filialId: integer("filial_id").references(() => filiaisTable.id),
   clienteId: integer("cliente_id").references(() => clientesTable.id),
   clienteNome: text("cliente_nome").notNull(),
   clienteTelefone: text("cliente_telefone").notNull(),

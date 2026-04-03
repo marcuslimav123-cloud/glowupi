@@ -3,10 +3,12 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { barbeariasTable } from "./barbearias";
 import { usersTable } from "./users";
+import { filiaisTable } from "./filiais";
 
 export const profissionaisTable = pgTable("profissionais", {
   id: serial("id").primaryKey(),
   barbeariaId: integer("barbearia_id").notNull().references(() => barbeariasTable.id),
+  filialId: integer("filial_id").references(() => filiaisTable.id),
   usuarioId: integer("usuario_id").references(() => usersTable.id),
   nomeExibicao: text("nome_exibicao").notNull(),
   apelido: text("apelido"),
