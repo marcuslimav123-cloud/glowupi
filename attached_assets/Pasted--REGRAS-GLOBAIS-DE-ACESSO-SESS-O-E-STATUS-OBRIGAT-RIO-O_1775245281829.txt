@@ -1,0 +1,145 @@
+🔒 REGRAS GLOBAIS DE ACESSO, SESSÃO E STATUS (OBRIGATÓRIO)
+
+O sistema deve validar o status do estabelecimento e do usuário em todas as requisições autenticadas, sem exceção.
+
+As únicas condições que permitem acesso ao sistema são:
+
+Estabelecimento com status Ativo ou Trial
+Usuário com status Ativo
+
+Se qualquer uma dessas condições não for atendida, o acesso deve ser bloqueado imediatamente.
+
+Além disso, sempre que o status do estabelecimento ou do usuário for alterado para Inativo, Suspenso ou Pendente, todas as sessões ativas devem ser invalidadas imediatamente. Isso significa que qualquer usuário que esteja logado deve ser desconectado automaticamente e impedido de continuar utilizando o sistema.
+
+Essa verificação deve ocorrer tanto no login quanto durante o uso contínuo do sistema.
+
+💳 REGRA DE COBRANÇA PROPORCIONAL (UPGRADE)
+
+Quando o dono do estabelecimento realizar um upgrade de plano (para um plano com maior limite de profissionais), o sistema deve:
+
+Calcular o valor proporcional com base nos dias restantes do ciclo atual
+Cobrar apenas a diferença entre o plano atual e o novo plano
+Não alterar a data de vencimento atual
+
+Exemplo:
+
+Se o usuário está no dia 10 de um plano mensal e faz upgrade, o sistema deve cobrar apenas o valor proporcional referente aos 20 dias restantes, mantendo o mesmo ciclo de faturamento.
+
+📅 PADRÃO DE DATA E FUSO HORÁRIO
+
+Todas as datas e cálculos do sistema devem obrigatoriamente utilizar o fuso horário:
+
+UTC-3 (Horário de Brasília)
+
+Isso inclui:
+
+Início e fim de trial
+Datas de cobrança
+Expiração de plano
+Agendamentos
+Logs
+
+Nenhuma lógica deve depender do fuso horário do dispositivo do usuário.
+
+🔔 SISTEMA DE NOTIFICAÇÕES (COM FALLBACK OBRIGATÓRIO)
+
+O sistema deve implementar dois tipos de notificações:
+
+Notificações push (navegador/dispositivo)
+Notificações internas (in-app)
+
+Regra obrigatória:
+
+Caso o usuário não permita notificações push, ele deve obrigatoriamente receber notificações internas visíveis dentro do sistema.
+
+Nenhum evento importante pode depender exclusivamente de push.
+
+Eventos obrigatórios de notificação:
+
+Novo agendamento
+Cancelamento de agendamento
+Reagendamento
+👥 REMOÇÃO DE PROFISSIONAIS (REGRA DE INTEGRIDADE)
+
+Um profissional não pode ser removido se possuir agendamentos futuros ativos.
+
+Antes da remoção, o sistema deve obrigar uma das ações:
+
+Reagendar os atendimentos para outro profissional
+Cancelar os agendamentos existentes
+
+Somente após isso a exclusão é permitida.
+
+⚙️ CONTROLE DE CONCORRÊNCIA EM AGENDAMENTOS (OBRIGATÓRIO)
+
+O sistema deve garantir que não existam conflitos de horário para o mesmo profissional, mesmo em cenários de acesso simultâneo.
+
+Para isso, a criação de agendamentos deve ser tratada como uma operação atômica.
+
+Se dois usuários tentarem agendar o mesmo horário ao mesmo tempo:
+
+Apenas um agendamento deve ser confirmado
+O outro deve receber erro informando indisponibilidade
+
+Não pode existir duplicidade em nenhuma hipótese.
+
+🧾 EXCLUSÃO DE ESTABELECIMENTOS (REGRA DE NEGÓCIO)
+
+Estabelecimentos não devem ser excluídos permanentemente do sistema.
+
+A única ação permitida é a desativação (status Inativo), garantindo:
+
+Preservação de histórico
+Integridade de dados
+Rastreabilidade
+🔐 PERMISSÕES DO PROFISSIONAL (DEFINIÇÃO EXPLÍCITA)
+
+Usuários com perfil de profissional devem possuir acesso limitado às seguintes ações:
+
+Permitido:
+
+Visualizar seus próprios agendamentos
+Receber notificações
+Criar agendamentos (se permitido pelo dono do estabelecimento)
+Cancelar ou reagendar apenas seus próprios atendimentos
+
+Não permitido:
+
+Acessar configurações do sistema
+Gerenciar outros profissionais
+Acessar dados financeiros
+📊 DEFINIÇÃO DE RECEITA (SEM AMBIGUIDADE)
+
+O campo “receita” exibido no dashboard do estabelecimento refere-se exclusivamente a:
+
+👉 Faturamento do estabelecimento com base nos serviços agendados
+
+Não inclui:
+
+Cobranças do SaaS
+Assinaturas do sistema
+Valores administrativos
+🔁 REGRA DE SESSÃO E VALIDAÇÃO CONTÍNUA
+
+Além do login, o sistema deve validar o status do usuário e do estabelecimento em tempo real durante o uso.
+
+Se houver mudança de status enquanto o usuário está logado:
+
+A sessão deve ser invalidada imediatamente
+O usuário deve ser redirecionado para a tela de login
+Uma mensagem deve informar o motivo do bloqueio
+🚨 REGRA FINAL (SEM INTERPRETAÇÃO)
+
+Todas as regras acima são obrigatórias e devem ser implementadas exatamente como descritas.
+
+Nenhuma dessas regras pode ser ignorada, simplificada ou interpretada de forma diferente.
+
+Em caso de conflito entre regras, deve prevalecer sempre:
+
+👉 Segurança → Integridade de dados → Regras de cobrança → Experiência do usuário
+
+Se você juntar isso com o documento anterior, agora sim você tem:
+
+👉 um PRD nível SaaS grande (tipo produto pronto pra escalar)
+
+Se quiser, eu posso fazer a versão final unificada (tudo em um bloco só, pronto pra colar em IA tipo Cursor/Bolt e sair código direto).
