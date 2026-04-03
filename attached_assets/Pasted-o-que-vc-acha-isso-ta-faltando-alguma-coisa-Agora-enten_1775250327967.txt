@@ -1,0 +1,216 @@
+o que vc acha isso? ta faltando alguma coisa ? Agora entendi perfeitamente. Você é o dono do SaaS (o sistema Glow UPI), e seus clientes são os donos de estabelecimentos (cada um com seu próprio acesso e plano). Eu vou reescrever todo o documento do zero, distinguindo claramente esses dois papéis, incluindo a gestão de planos por quantidade de profissionais (conforme sua imagem), status de assinatura (trial, pendente, ativo), controle de dias/meses/anos de acesso, e também todas as regras anteriores (agendamentos, notificações, mobile, etc.). Nada ficará de fora.
+
+SISTEMA GLOW UPI – ESPECIFICAÇÃO COMPLETA E OBRIGATÓRIA (COM DISTINÇÃO ENTRE DONO DO SAAS E DONO DO ESTABELECIMENTO)
+0. DEFINIÇÃO DOS PAPÉIS (LEIA COM ATENÇÃO)
+Existem dois tipos de usuários com poder de administração, e eles não podem ser confundidos:
+
+Dono do SaaS (Admin SaaS): sou eu. Tenho acesso ao painel master do sistema. Posso ver todos os estabelecimentos (clientes), ativar/desativar o acesso de cada dono de estabelecimento, alterar o status de assinatura (trial, pendente, ativo), ver quantos dias/meses/anos de acesso cada cliente tem, e também ver quantos profissionais cada estabelecimento cadastrou para controlar limites. Sou o dono de todo o sistema.
+
+Dono do estabelecimento (Cliente do SaaS): é quem comprou o sistema para usar no seu próprio negócio. Ele gerencia seus profissionais, agendamentos, notificações, etc. Ele não tem acesso ao painel master do SaaS. Ele vê apenas o seu próprio estabelecimento.
+
+Profissional e Cliente (do estabelecimento): são usuários finais dentro de cada estabelecimento. O profissional é cadastrado pelo dono do estabelecimento. O cliente (pessoa que faz agendamento) é externo.
+
+Tudo o que foi descrito anteriormente sobre agendamentos, notificações, mobile, logo, etc., continua valendo para o sistema que o dono do estabelecimento enxerga. Agora vou acrescentar e reescrever as partes que envolvem o controle que EU (dono do SaaS) tenho sobre os donos de estabelecimento.
+
+1. PAINEL DO DONO DO SAAS (EU) – CONTROLE DE ACESSO DOS MEUS CLIENTES
+Eu preciso de uma área administrativa separada e segura onde eu possa gerenciar todos os estabelecimentos (donos de estabelecimento que assinaram o sistema).
+
+1.1 Lista de estabelecimentos (clientes do SaaS)
+O painel deve mostrar uma tabela com todos os estabelecimentos cadastrados, contendo no mínimo:
+
+Nome do estabelecimento
+
+Nome do dono (responsável)
+
+E-mail de contato
+
+Status atual (trial, pendente, ativo, inativo, suspenso – ver 1.2)
+
+Plano contratado (1 Profissional, 2 a 5 Profissionais, 6 a 15 Profissionais, +15 Profissionais)
+
+Quantidade de profissionais cadastrados no estabelecimento (no momento)
+
+Data de início do trial (se aplicável)
+
+Data de fim do trial (se aplicável)
+
+Data de início do plano ativo (última assinatura paga)
+
+Data de fim do período pago (próximo vencimento)
+
+Dias restantes de acesso (calculado automaticamente)
+
+Meses / anos de acesso (tempo total desde o primeiro cadastro ou desde a primeira assinatura – eu escolho)
+
+1.2 Status de assinatura do estabelecimento (controle manual e automático)
+Eu devo poder alterar manualmente o status de qualquer estabelecimento. Os status possíveis são:
+
+Status	Significado	Ação do sistema
+Trial	Está no período de teste grátis (ex: 30 dias)	Acesso liberado para o dono do estabelecimento e seus profissionais/clientes. O sistema conta os dias restantes.
+Pendente	Terminou o trial e ainda não assinou nenhum plano pago, ou está com pagamento atrasado (mas dentro da tolerância)	Acesso bloqueado para o dono do estabelecimento e todos os usuários do estabelecimento (profissionais e clientes não conseguem agendar).
+Ativo	Assinatura paga em dia	Acesso liberado. O sistema verifica o limite de profissionais conforme o plano (item 1.4).
+Inativo	Desativado manualmente por mim (dono do SaaS)	Acesso totalmente bloqueado. O dono do estabelecimento não consegue fazer login, nem profissionais, nem clientes. Útil em caso de violação ou problema.
+Suspenso	Bloqueio automático por inadimplência após fim do período pago (sem tolerância ou após grace period)	Mesmo comportamento de Pendente, mas com indicação de motivo "pagamento vencido".
+Regras automáticas:
+
+Quando o trial termina, o status muda automaticamente para Pendente.
+
+Quando o dono do estabelecimento assina um plano pago (através do sistema de pagamento integrado), o status muda para Ativo e as datas de início/fim do período pago são atualizadas.
+
+Quando o período pago expira sem renovação, o status muda para Suspenso.
+
+Eu (dono do SaaS) posso forçar qualquer status a qualquer momento, sobrescrevendo as regras automáticas.
+
+1.3 Controle de dias, meses e anos de acesso por cliente
+Para cada estabelecimento, o sistema deve calcular e exibir para mim:
+
+Dias restantes de acesso (considerando trial ou período pago).
+
+Meses de acesso (quantos meses completos o estabelecimento está conosco, desde o primeiro cadastro ou primeira assinatura – eu escolho o critério).
+
+Anos de acesso (mesmo raciocínio).
+
+Isso me permite saber, por exemplo, quem é cliente antigo, quem está perto de vencer, etc.
+
+1.4 Planos e limite de profissionais (baseado na imagem)
+Os planos disponíveis para o dono do estabelecimento assinar são exatamente estes (conforme sua imagem):
+
+Plano	Limite máximo de profissionais que o estabelecimento pode cadastrar
+1 Profissional	1 profissional
+2 a 5 Profissionais	5 profissionais
+6 a 15 Profissionais	15 profissionais
++15 Profissionais	Ilimitado (ou um número alto, ex: 999)
+Regras obrigatórias:
+
+O dono do estabelecimento não pode cadastrar um profissional se já tiver atingido o limite do seu plano.
+
+Se ele tentar, o sistema deve bloquear e mostrar mensagem: "Limite de profissionais atingido. Faça upgrade do plano."
+
+Eu (dono do SaaS) devo poder ver em tempo real quantos profissionais cada estabelecimento já cadastrou, ao lado do plano contratado.
+
+O dono do estabelecimento pode fazer upgrade (para um plano com mais profissionais) a qualquer momento – isso é imediato. O downgrade (para menos profissionais) só é permitido se o número atual de profissionais cadastrados for menor ou igual ao novo limite. Caso contrário, ele precisa demitir (remover) profissionais antes.
+
+1.5 Ações manuais que eu (dono do SaaS) posso executar
+No painel de cada estabelecimento, devo ter botões para:
+
+Desativar acesso (muda status para Inativo) – bloqueia completamente o login do dono do estabelecimento, profissionais e clientes.
+
+Reativar acesso (muda de Inativo para o status anterior, ex: Ativo ou Pendente) – restaura o acesso.
+
+Mudar status manualmente (Trial, Pendente, Ativo, Inativo, Suspenso) – com confirmação.
+
+Ajustar datas de trial/período pago (ex: adicionar dias de cortesia) – isso atualiza os dias restantes.
+
+Ver logs de ações do estabelecimento (quando foi criado, quando mudou de plano, quando foi desativado/reativado, etc.).
+
+Importante: todas essas ações devem ser registradas em um log master (acessível apenas por mim).
+
+2. SISTEMA QUE O DONO DO ESTABELECIMENTO ENXERGA (REVISADO)
+Agora vou reescrever os pontos anteriores (teste grátis, agendamentos, notificações, etc.) do ponto de vista do dono do estabelecimento e com as devidas adaptações.
+
+2.1 Teste grátis para novos estabelecimentos (corrigido)
+Quando um novo dono de estabelecimento se cadastra no SaaS, ele ganha um período de teste grátis (ex: 30 dias). As regras são:
+
+Enquanto estiver em status Trial, o acesso é liberado.
+
+Ao desativar a opção de "teste grátis" no nível do SaaS (eu como dono do SaaS posso desabilitar novos testes), não devem ser criados novos estabelecimentos com trial.
+
+Porém, os estabelecimentos que já estavam em trial devem continuar até o fim do período, sem perder acesso.
+
+Correção obrigatória: já ocorreu um bug onde uma conta em trial perdeu acesso ao desativar a opção. Isso não pode acontecer. A desativação de novos testes não afeta os testes existentes.
+
+2.2 Agendamentos (para o dono do estabelecimento)
+O dono do estabelecimento (e seus profissionais) recebem notificações (in-app + push) quando um cliente final faz um agendamento.
+
+O dono do estabelecimento pode configurar regras de cancelamento (ex: mínimo 2h de antecedência) e reagendamento (ex: 24h).
+
+O sistema impede conflito de horários para o mesmo profissional.
+
+O dono do estabelecimento tem um dashboard próprio com: total de agendamentos do seu negócio, faturamento (se integrado), clientes ativos, agenda do dia.
+
+2.3 Notificações (dentro do sistema do estabelecimento)
+O site (sistema do estabelecimento) deve pedir permissão para notificações push ao dono do estabelecimento e a cada profissional.
+
+Sempre que um cliente final faz, cancela ou reagenda um agendamento, o dono do estabelecimento e o profissional envolvido recebem notificação in-app + push.
+
+O dono do SaaS (eu) também pode querer receber notificações de problemas? Não é obrigatório, mas pode ser implementado depois.
+
+2.4 Cancelamento de plano (pelo dono do estabelecimento)
+Dentro do sistema que o dono do estabelecimento enxerga, deve haver um botão "Cancelar Plano" de fácil acesso. As regras são:
+
+Ao cancelar, as cobranças recorrentes param imediatamente.
+
+Porém, o dono do estabelecimento e todos os seus usuários (profissionais e clientes) continuam com acesso até o final do período já pago.
+
+Exemplo: ele pagou hoje por 30 dias, cancelou amanhã – ele ainda tem 29 dias de acesso.
+
+Após esse período, o status muda automaticamente para Pendente (ou Suspenso, conforme regra).
+
+2.5 Falha de pagamento (inadimplência do dono do estabelecimento)
+O sistema de assinaturas (integrado ao SaaS) deve tentar cobrar novamente 3 vezes em dias alternados.
+
+Período de tolerância: 7 dias após a primeira falha. Durante esses 7 dias, o status permanece Ativo.
+
+Se após 7 dias o pagamento não for efetuado, o status muda para Suspenso e o acesso de todo o estabelecimento é bloqueado (dono, profissionais, clientes não conseguem agendar).
+
+O dono do estabelecimento pode regularizar o pagamento e voltar a Ativo automaticamente.
+
+2.6 Botão de suporte (para o dono do estabelecimento)
+Dentro do sistema do estabelecimento, deve haver um botão "Suporte" que abre o WhatsApp com meu número (dono do SaaS). Assim, o dono do estabelecimento fala diretamente comigo.
+
+2.7 Otimização mobile (para todo o sistema)
+Aplica-se tanto ao painel do dono do SaaS quanto ao sistema do estabelecimento. Exigências:
+
+Menu hambúrguer em telas < 768px.
+
+Botões com tamanho mínimo 48x48px.
+
+Layout responsivo em todas as telas (login, dashboard, agendamentos, etc.).
+
+Carregamento rápido (até 2s em 4G).
+
+2.8 Logo maior
+A logo do sistema Glow UPI deve ficar maior em todos os lugares (tela de login, topo do sistema do estabelecimento, topo do painel do dono do SaaS). Aumento mínimo de 40% em relação ao tamanho atual.
+
+2.9 Histórico e logs (para o dono do estabelecimento)
+Cada estabelecimento tem seu próprio histórico de agendamentos, pagamentos e ações (quem cancelou, quem reagendou). O dono do estabelecimento pode visualizar, mas não apagar.
+
+2.10 Upgrade/downgrade de plano (pelo dono do estabelecimento)
+Upgrade (aumentar limite de profissionais): imediato, cobra diferença proporcional.
+
+Downgrade (reduzir limite): só permitido se o número atual de profissionais cadastrados for <= o novo limite. A mudança efetiva ocorre no próximo ciclo de cobrança, mas o limite já é reduzido imediatamente? Para evitar problemas, o sistema deve bloquear o downgrade se o número de profissionais exceder o limite desejado. O dono do estabelecimento precisa remover profissionais antes.
+
+3. SEGURANÇA (PARA AMBOS OS NÍVEIS)
+Reset de senha por e-mail (válido 1 hora).
+
+Confirmação de e-mail no cadastro do dono do estabelecimento.
+
+Proteção contra múltiplos logins? Não é obrigatório, mas cada requisição deve verificar o status atual (se foi desativado, desloga).
+
+Senhas com hash bcrypt.
+
+4. RESUMO FINAL PARA IMPLEMENTAÇÃO
+Você (dono do SaaS) terá um painel master onde:
+
+Vê todos os estabelecimentos (clientes) com status, plano, número de profissionais cadastrados, dias/meses/anos de acesso.
+
+Pode desativar/reativar manualmente qualquer estabelecimento.
+
+Pode mudar status entre Trial, Pendente, Ativo, Inativo, Suspenso.
+
+Controla se novos testes grátis estão disponíveis ou não (global).
+
+Os donos de estabelecimento terão seu próprio sistema com:
+
+Gestão de profissionais (respeitando o limite do plano).
+
+Agendamentos, notificações, cancelamento de plano, suporte via WhatsApp.
+
+Dashboard com métricas do seu negócio.
+
+Otimização mobile e logo grande.
+
+Todas as regras anteriores (teste grátis, notificações, agendamentos, falhas de pagamento, etc.) estão mantidas e agora corretamente atribuídas ao dono do estabelecimento ou ao dono do SaaS.
+
+Execute exatamente como descrito. Sem exceções. Sem ambiguidades.
+
