@@ -9,9 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ImageUpload } from "@/components/ImageUpload";
-import { formatPhone, stripPhone } from "@/lib/utils";
+import { formatPhone, stripPhone, apiUrl } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, MapPin, Clock, Palette, Save, Link2, Copy, Check, ExternalLink, ImageIcon } from "lucide-react";
+import { Building2, MapPin, Clock, Palette, Save, Link2, Copy, Check, ExternalLink, ImageIcon, XCircle, AlertTriangle, Loader2 } from "lucide-react";
 
 const DIAS = ["segunda","terca","quarta","quinta","sexta","sabado","domingo"];
 const DIA_LABEL: Record<string,string> = { segunda:"Segunda",terca:"Terça",quarta:"Quarta",quinta:"Quinta",sexta:"Sexta",sabado:"Sábado",domingo:"Domingo" };
@@ -40,6 +40,8 @@ export default function Empresa() {
   const [horarios, setHorarios] = useState<any>(DEFAULT_HORARIOS);
   const [loadingCep, setLoadingCep] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [cancellingPlan, setCancellingPlan] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   useEffect(() => {
     if (barbearia) {
@@ -81,6 +83,28 @@ export default function Empresa() {
 
   const setHorario = (dia: string, field: "inicio" | "fim", val: string) => {
     setHorarios((h: any) => ({ ...h, [dia]: { ...h[dia], [field]: val } }));
+  };
+
+  const handleCancelPlan = async () => {
+    setCancellingPlan(true);
+    try {
+      const res = await fetch(apiUrl("/checkout/cancel-subscription"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      let data: any;
+      try { data = await res.json(); } catch { data = {}; }
+      if (!res.ok) throw new Error(data.message || data.error || "Falha ao cancelar assinatura");
+      const endDate = data.periodEnd ? new Date(data.periodEnd).toLocaleDateString("pt-BR") : "";
+      toast({ title: "Assinatura cancelada", description: endDate ? `Você tem acesso até ${endDate}. Não haverá mais cobranças.` : "Não haverá mais cobranças." });
+      setShowCancelConfirm(false);
+      qc.invalidateQueries();
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message || "Falha ao cancelar assinatura. Tente novamente.", variant: "destructive" });
+    } finally {
+      setCancellingPlan(false);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -267,6 +291,46 @@ export default function Empresa() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-red-500/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-red-500">
+                <XCircle className="h-5 w-5" /> Cancelar Assinatura
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {!showCancelConfirm ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Ao cancelar, as cobranças param imediatamente, mas você mantém acesso até o final do período já pago.
+                  </p>
+                  <Button variant="outline" className="border-red-500/30 text-red-500 hover:bg-red-500/10" onClick={() => setShowCancelConfirm(true)}>
+                    Cancelar Meu Plano
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4 p-4 bg-red-500/5 rounded-xl border border-red-500/20">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-sm text-red-500">Tem certeza que deseja cancelar?</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Sua assinatura será cancelada e não haverá mais cobranças. Você poderá continuar usando até o final do período atual.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button variant="destructive" onClick={handleCancelPlan} disabled={cancellingPlan}>
+                      {cancellingPlan ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Cancelando...</> : "Sim, Cancelar Assinatura"}
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowCancelConfirm(false)} disabled={cancellingPlan}>
+                      Não, Manter Plano
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

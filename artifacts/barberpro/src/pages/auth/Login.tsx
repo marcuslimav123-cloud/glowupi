@@ -147,7 +147,7 @@ export default function Login() {
       <div className="w-full max-w-[380px]">
         <div className="flex flex-col items-center mb-10">
           <div className="mb-5">
-            <img src="/logo-icon.png" alt="Glow Upi" className="h-20 w-20 object-contain" />
+            <img src="/logo-icon.png" alt="Glow Upi" className="h-28 w-28 object-contain" />
           </div>
           <h1 className="text-[28px] font-bold text-white tracking-tight">{APP_NAME}</h1>
           <p className="text-white/40 text-[14px] mt-1">{APP_TAGLINE}</p>

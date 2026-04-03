@@ -220,6 +220,49 @@ router.post("/create-portal-session", requireAuth, requireBarbearia, async (req:
   }
 });
 
+router.post("/cancel-subscription", requireAuth, requireBarbearia, async (req: any, res) => {
+  try {
+    const barbearia = req.barbearia;
+    const user = req.user;
+
+    if (barbearia.donoId !== user.id) {
+      return res.status(403).json({ error: "Apenas o dono pode cancelar a assinatura." });
+    }
+
+    if (!barbearia.stripeSubscriptionId) {
+      return res.status(400).json({ error: "Nenhuma assinatura ativa encontrada." });
+    }
+
+    const stripeClient = await getUncachableStripeClient();
+    const subscription = await stripeClient.subscriptions.update(barbearia.stripeSubscriptionId, {
+      cancel_at_period_end: true,
+    });
+
+    const periodEnd = subscription.current_period_end
+      ? new Date(subscription.current_period_end * 1000)
+      : barbearia.planoVencimento;
+
+    await db.update(barbeariasTable)
+      .set({
+        planoVencimento: periodEnd,
+        updatedAt: new Date(),
+      })
+      .where(eq(barbeariasTable.id, barbearia.id));
+
+    console.log(`[cancel-subscription] barbeariaId=${barbearia.id} subscription=${barbearia.stripeSubscriptionId} cancel_at_period_end=true periodEnd=${periodEnd}`);
+
+    res.json({
+      success: true,
+      cancelAtPeriodEnd: true,
+      periodEnd: periodEnd?.toISOString(),
+      message: "Assinatura cancelada. Você continuará com acesso até o final do período pago.",
+    });
+  } catch (error: any) {
+    console.error("Cancel subscription error:", error);
+    res.status(500).json({ error: "Erro ao cancelar assinatura. Tente novamente." });
+  }
+});
+
 router.post("/create-direct-session", requireAuth, async (req: any, res) => {
   try {
     const { priceId, billingPeriod } = req.body;

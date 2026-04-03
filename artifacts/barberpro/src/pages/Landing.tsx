@@ -260,7 +260,7 @@ export default function Landing() {
       }`}>
         <div className="max-w-[1200px] mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3 font-semibold text-[18px] tracking-tight text-white">
-            <img src="/logo-icon.png" alt="Glow Upi" className="h-10 w-10 object-contain" />
+            <img src="/logo-icon.png" alt="Glow Upi" className="h-12 w-12 object-contain" />
             {APP_NAME}
           </div>
 

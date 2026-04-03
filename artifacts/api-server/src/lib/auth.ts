@@ -45,6 +45,10 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   if (!user) {
     return res.status(401).json({ error: "Usuário não encontrado" });
   }
+  if (user.ativo === false) {
+    SESSIONS.delete(token);
+    return res.status(403).json({ error: "user_deactivated", message: "Sua conta foi desativada. Entre em contato com o suporte." });
+  }
   (req as any).user = user;
   (req as any).token = token;
   next();
@@ -85,6 +89,13 @@ export async function requireActiveSubscription(req: Request, res: Response, nex
   const barbearia = (req as any).barbearia;
   if (!barbearia) {
     return res.status(403).json({ error: "Barbearia não encontrada" });
+  }
+
+  if (barbearia.ativo === false) {
+    return res.status(403).json({
+      error: "establishment_deactivated",
+      message: "Este estabelecimento foi desativado. Entre em contato com o suporte.",
+    });
   }
 
   const status = barbearia.subscriptionStatus || "trial";
