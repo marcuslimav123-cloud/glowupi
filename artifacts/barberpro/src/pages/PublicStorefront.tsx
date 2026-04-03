@@ -6,6 +6,7 @@ import {
   ShoppingBag, X, Instagram, Info
 } from "lucide-react";
 import ClientAuthModal from "@/components/ClientAuthModal";
+import { usePWA } from "@/hooks/usePWA";
 
 const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, "/");
 
@@ -134,6 +135,13 @@ export default function PublicStorefront() {
 
   const accent = barbearia?.corPrimaria || "#C4943C";
   const accentText = getContrastColor(accent);
+
+  usePWA({
+    slug,
+    nome: barbearia?.nome,
+    logoUrl: barbearia?.logoUrl,
+    corPrimaria: barbearia?.corPrimaria,
+  });
 
   useEffect(() => {
     fetchBarbearia();

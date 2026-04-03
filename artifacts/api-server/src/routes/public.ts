@@ -563,6 +563,50 @@ router.post("/:slug/agendar-simples", async (req, res) => {
   } catch (e) {
     console.error("public agendar-simples error:", e);
     return res.status(500).json({ error: "Erro ao criar agendamento" });
+
+  }
+});
+
+router.get("/:slug/manifest.json", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const [barbearia] = await db
+      .select()
+      .from(barbeariasTable)
+      .where(eq(barbeariasTable.slug, slug))
+      .limit(1);
+    if (!barbearia)
+      return res.status(404).json({ error: "Barbearia não encontrada" });
+
+    const basePath = process.env.BASE_PATH || "/";
+    const icons: { src: string; sizes: string; type?: string; purpose: string }[] = [];
+    if (barbearia.logoUrl) {
+      icons.push(
+        { src: barbearia.logoUrl, sizes: "192x192", purpose: "any" },
+        { src: barbearia.logoUrl, sizes: "512x512", purpose: "any" },
+      );
+    } else {
+      icons.push(
+        { src: `${basePath}logo-icon.png`, sizes: "192x192", type: "image/png", purpose: "any" },
+      );
+    }
+    const manifest = {
+      name: barbearia.nome,
+      short_name: barbearia.nome.length > 12 ? barbearia.nome.slice(0, 12) : barbearia.nome,
+      description: barbearia.descricaoPublica || `Agende com ${barbearia.nome}`,
+      start_url: `${basePath}agendar/${slug}`,
+      scope: basePath,
+      display: "standalone",
+      background_color: "#111111",
+      theme_color: barbearia.corPrimaria || "#C4943C",
+      icons,
+    };
+
+    res.setHeader("Content-Type", "application/manifest+json");
+    res.json(manifest);
+  } catch (e) {
+    console.error("manifest.json error:", e);
+    res.status(500).json({ error: "Erro ao gerar manifest" });
   }
 });
 

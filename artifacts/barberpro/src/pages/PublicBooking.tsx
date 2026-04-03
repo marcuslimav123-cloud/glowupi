@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useParams } from "wouter";
 import { Calendar, Clock, Scissors, User, ChevronLeft, ChevronRight, Check, MapPin, Phone, Loader2, LogOut, MessageCircle, XCircle, CalendarDays, AlertTriangle } from "lucide-react";
 import ClientAuthModal from "@/components/ClientAuthModal";
+import { usePWA } from "@/hooks/usePWA";
 
 const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, "/");
 
@@ -97,6 +98,13 @@ export default function PublicBooking() {
 
   const accent = barbearia?.corPrimaria || "#C4943C";
   const accentText = getContrastColor(accent);
+
+  usePWA({
+    slug,
+    nome: barbearia?.nome,
+    logoUrl: barbearia?.logoUrl,
+    corPrimaria: barbearia?.corPrimaria,
+  });
 
   useEffect(() => {
     fetchBarbearia();
