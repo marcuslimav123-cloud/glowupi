@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams } from "wouter";
-import { Calendar, Clock, Scissors, User, ChevronLeft, ChevronRight, Check, MapPin, Phone, Loader2, LogOut, MessageCircle } from "lucide-react";
+import { Calendar, Clock, Scissors, User, ChevronLeft, ChevronRight, Check, MapPin, Phone, Loader2, LogOut, MessageCircle, XCircle, CalendarDays, AlertTriangle } from "lucide-react";
 import ClientAuthModal from "@/components/ClientAuthModal";
 
 const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, "/");
@@ -41,6 +41,20 @@ interface BarbeariaData {
   servicos: any[];
   profissionais: any[];
   tipoLinkAgendamento?: "simples" | "com_login";
+  permitirCancelamentoCliente?: boolean;
+  toleranciaCancelamento?: number;
+}
+
+interface MeuAgendamento {
+  id: number;
+  servicoNome: string;
+  profissionalNome: string;
+  data: string;
+  horaInicio: string;
+  horaFim: string;
+  status: string;
+  valor: number;
+}
 }
 
 interface Slot {
@@ -74,6 +88,12 @@ export default function PublicBooking() {
   const [observacao, setObservacao] = useState("");
   const [simplesNome, setSimplesNome] = useState("");
   const [simplesWhatsapp, setSimplesWhatsapp] = useState("");
+  const [showMeusAgendamentos, setShowMeusAgendamentos] = useState(false);
+  const [meusAgendamentos, setMeusAgendamentos] = useState<MeuAgendamento[]>([]);
+  const [meusAgendamentosLoading, setMeusAgendamentosLoading] = useState(false);
+  const [cancelConfirmId, setCancelConfirmId] = useState<number | null>(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelFeedback, setCancelFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const accent = barbearia?.corPrimaria || "#C4943C";
   const accentText = getContrastColor(accent);
@@ -243,6 +263,54 @@ export default function PublicBooking() {
   async function handleLogout() {
     await fetch(`${API_BASE}/client/logout`, { method: "POST", credentials: "include" });
     setClientUser(null);
+    setShowMeusAgendamentos(false);
+    setMeusAgendamentos([]);
+  }
+
+  async function fetchMeusAgendamentos() {
+    if (!slug) return;
+    setMeusAgendamentosLoading(true);
+    setCancelFeedback(null);
+    try {
+      const res = await fetch(`${API_BASE}/public/${slug}/meus-agendamentos`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setMeusAgendamentos(data);
+      }
+    } catch {} finally {
+      setMeusAgendamentosLoading(false);
+    }
+  }
+
+  async function handleCancelAgendamento(agendamentoId: number) {
+    if (!slug) return;
+    setCancelLoading(true);
+    setCancelFeedback(null);
+    try {
+      const res = await fetch(`${API_BASE}/public/${slug}/agendamentos/${agendamentoId}/cancelar`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro ao cancelar");
+      setCancelFeedback({ type: "success", message: "Agendamento cancelado com sucesso!" });
+      setCancelConfirmId(null);
+      setMeusAgendamentos(prev => prev.filter(a => a.id !== agendamentoId));
+    } catch (e: any) {
+      setCancelFeedback({ type: "error", message: e.message });
+      setCancelConfirmId(null);
+    } finally {
+      setCancelLoading(false);
+    }
+  }
+
+  function handleOpenMeusAgendamentos() {
+    if (!clientUser) {
+      setShowAuthModal(true);
+      return;
+    }
+    setShowMeusAgendamentos(true);
+    fetchMeusAgendamentos();
   }
 
   const dates = useMemo(() => {
@@ -295,7 +363,7 @@ export default function PublicBooking() {
       <div className="max-w-lg mx-auto">
         <div className="sticky top-0 z-40 bg-[#111]/95 backdrop-blur-lg border-b border-white/5 px-4 py-4">
           <div className="flex items-center gap-3">
-            {step !== "servico" && step !== "sucesso" && (
+            {step !== "servico" && step !== "sucesso" && !showMeusAgendamentos && (
               <button onClick={goBack} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition">
                 <ChevronLeft className="h-5 w-5" />
               </button>
@@ -310,6 +378,16 @@ export default function PublicBooking() {
             </div>
             {!isSimpleMode && clientUser && (
               <div className="flex items-center gap-2">
+                {barbearia.permitirCancelamentoCliente && (
+                  <button
+                    onClick={() => { if (showMeusAgendamentos) { setShowMeusAgendamentos(false); } else { handleOpenMeusAgendamentos(); } }}
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition"
+                    title="Meus Agendamentos"
+                    style={showMeusAgendamentos ? { backgroundColor: `${accent}20`, borderColor: accent } : {}}
+                  >
+                    <CalendarDays className="h-4 w-4" style={showMeusAgendamentos ? { color: accent } : { color: "rgba(255,255,255,0.4)" }} />
+                  </button>
+                )}
                 <span className="text-xs text-white/40 hidden sm:block">{clientUser.nome.split(" ")[0]}</span>
                 <button onClick={handleLogout} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition" title="Sair">
                   <LogOut className="h-4 w-4 text-white/40" />
@@ -317,7 +395,7 @@ export default function PublicBooking() {
               </div>
             )}
           </div>
-          {step !== "sucesso" && (
+          {step !== "sucesso" && !showMeusAgendamentos && (
             <div className="flex gap-1.5 mt-3">
               {stepOrder.map((s, i) => (
                 <div key={s} className="flex-1 h-1 rounded-full transition-all" style={{ backgroundColor: i <= currentStepIdx ? accent : "rgba(255,255,255,0.08)" }} />
@@ -327,14 +405,135 @@ export default function PublicBooking() {
         </div>
 
         <div className="p-4">
-          {error && step !== "sucesso" && (
+          {error && step !== "sucesso" && !showMeusAgendamentos && (
             <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
               {error}
               <button onClick={() => setError("")} className="ml-2 underline text-xs">fechar</button>
             </div>
           )}
 
-          {step === "servico" && (
+          {showMeusAgendamentos && clientUser && (
+            <div>
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="text-lg font-semibold">Meus Agendamentos</h2>
+                  <p className="text-white/30 text-sm">Seus agendamentos futuros</p>
+                </div>
+                <button
+                  onClick={() => setShowMeusAgendamentos(false)}
+                  className="text-sm px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-white/40"
+                >
+                  Voltar
+                </button>
+              </div>
+
+              {cancelFeedback && (
+                <div className={`mb-4 p-3 rounded-xl text-sm flex items-center gap-2 ${
+                  cancelFeedback.type === "success"
+                    ? "bg-green-500/10 border border-green-500/20 text-green-400"
+                    : "bg-red-500/10 border border-red-500/20 text-red-400"
+                }`}>
+                  {cancelFeedback.type === "success" ? <Check className="h-4 w-4 flex-shrink-0" /> : <AlertTriangle className="h-4 w-4 flex-shrink-0" />}
+                  {cancelFeedback.message}
+                  <button onClick={() => setCancelFeedback(null)} className="ml-auto underline text-xs">fechar</button>
+                </div>
+              )}
+
+              {meusAgendamentosLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-white/30" />
+                </div>
+              ) : meusAgendamentos.length === 0 ? (
+                <div className="text-center py-12 text-white/30">
+                  <CalendarDays className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>Nenhum agendamento futuro encontrado</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {meusAgendamentos.map((agend) => (
+                    <div key={agend.id} className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Scissors className="h-4 w-4 flex-shrink-0" style={{ color: accent }} />
+                            <span className="font-medium text-sm truncate">{agend.servicoNome}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <User className="h-3.5 w-3.5 text-white/40 flex-shrink-0" />
+                            <span className="text-xs text-white/50">{agend.profissionalNome}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <Calendar className="h-3.5 w-3.5 text-white/40 flex-shrink-0" />
+                            <span className="text-xs text-white/50">
+                              {new Date(agend.data + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-3.5 w-3.5 text-white/40 flex-shrink-0" />
+                            <span className="text-xs text-white/50">{agend.horaInicio} — {agend.horaFim}</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2 ml-3">
+                          <span className="text-sm font-bold" style={{ color: accent }}>
+                            R$ {agend.valor.toFixed(2).replace(".", ",")}
+                          </span>
+                          {cancelConfirmId === agend.id ? (
+                            <div className="flex flex-col items-end gap-1.5">
+                              <span className="text-[10px] text-white/40">Confirmar cancelamento?</span>
+                              <div className="flex gap-1.5">
+                                <button
+                                  onClick={() => setCancelConfirmId(null)}
+                                  disabled={cancelLoading}
+                                  className="px-2.5 py-1 text-[11px] rounded-lg bg-white/5 hover:bg-white/10 transition text-white/50"
+                                >
+                                  Não
+                                </button>
+                                <button
+                                  onClick={() => handleCancelAgendamento(agend.id)}
+                                  disabled={cancelLoading}
+                                  className="px-2.5 py-1 text-[11px] rounded-lg bg-red-500/20 hover:bg-red-500/30 transition text-red-400 flex items-center gap-1"
+                                >
+                                  {cancelLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Sim, cancelar"}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => { setCancelConfirmId(agend.id); setCancelFeedback(null); }}
+                              className="flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg bg-red-500/10 hover:bg-red-500/20 transition text-red-400"
+                            >
+                              <XCircle className="h-3 w-3" /> Cancelar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {barbearia.toleranciaCancelamento && barbearia.toleranciaCancelamento > 0 && (
+                    <p className="text-white/20 text-[11px] text-center mt-2">
+                      Cancelamentos não são permitidos com menos de {barbearia.toleranciaCancelamento} hora(s) de antecedência
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {!showMeusAgendamentos && step === "servico" && clientUser && barbearia.permitirCancelamentoCliente && (
+            <button
+              onClick={handleOpenMeusAgendamentos}
+              className="mb-4 w-full p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/20 transition-all flex items-center gap-3 text-left"
+            >
+              <CalendarDays className="h-5 w-5" style={{ color: accent }} />
+              <div>
+                <p className="text-sm font-medium">Meus Agendamentos</p>
+                <p className="text-white/30 text-[11px]">Veja ou cancele seus agendamentos</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-white/20 ml-auto" />
+            </button>
+          )}
+
+          {!showMeusAgendamentos && step === "servico" && (
             <div>
               <h2 className="text-lg font-semibold mb-1">Escolha o serviço</h2>
               <p className="text-white/30 text-sm mb-5">Selecione o que deseja agendar</p>
@@ -363,7 +562,7 @@ export default function PublicBooking() {
             </div>
           )}
 
-          {step === "profissional" && (() => {
+          {!showMeusAgendamentos && step === "profissional" && (() => {
             const hasAnyLinks = barbearia.profissionais.some((p: any) => p.servicoIds && p.servicoIds.length > 0);
             const filtered = hasAnyLinks && selectedServico
               ? barbearia.profissionais.filter((p: any) => p.servicoIds && p.servicoIds.includes(selectedServico.id))
@@ -405,7 +604,7 @@ export default function PublicBooking() {
             );
           })()}
 
-          {step === "data" && (
+          {!showMeusAgendamentos && step === "data" && (
             <div>
               <h2 className="text-lg font-semibold mb-1">Escolha a data</h2>
               <p className="text-white/30 text-sm mb-5">Selecione o dia</p>
@@ -429,7 +628,7 @@ export default function PublicBooking() {
             </div>
           )}
 
-          {step === "horario" && (
+          {!showMeusAgendamentos && step === "horario" && (
             <div>
               <h2 className="text-lg font-semibold mb-1">Escolha o horário</h2>
               <p className="text-white/30 text-sm mb-5">
@@ -473,7 +672,7 @@ export default function PublicBooking() {
             </div>
           )}
 
-          {step === "confirmar" && selectedServico && selectedSlot && (isSimpleMode || clientUser) && (
+          {!showMeusAgendamentos && step === "confirmar" && selectedServico && selectedSlot && (isSimpleMode || clientUser) && (
             <div>
               <h2 className="text-lg font-semibold mb-5">Confirmar agendamento</h2>
               <div className="space-y-3 mb-6">
@@ -564,7 +763,7 @@ export default function PublicBooking() {
             </div>
           )}
 
-          {step === "sucesso" && (
+          {!showMeusAgendamentos && step === "sucesso" && (
             <div className="text-center py-12">
               <div className="h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ backgroundColor: `${accent}20` }}>
                 <Check className="h-8 w-8" style={{ color: accent }} />

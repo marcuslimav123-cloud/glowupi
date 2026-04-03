@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable, avaliacoesTable, recompensasTable, produtosTable, profissionalServicosTable, pesquisaSatisfacaoTable, respostasPesquisaTable, categoriasServicoTable } from "@workspace/db/schema";
-import { eq, and, desc, inArray } from "drizzle-orm";
+import { eq, and, desc, gte, inArray } from "drizzle-orm";
+import { sendPushToBarbearia } from "../lib/pushNotifications.js";
 import { requireClient } from "../lib/auth.js";
 
 const router: IRouter = Router();
@@ -136,6 +137,9 @@ router.get("/:slug", async (req, res) => {
   const esconderNaoQueroConversar = pubParams["app_nao_quero_conversar"] === "Sim";
   const tipoLinkAgendamento = pubParams["agenda_tipo_link"] === "Sem login (simples)" ? "simples" : "com_login";
 
+  const permitirCancelamentoCliente = pubParams["cancel_permitir_cliente_link_publico"] === "Sim";
+  const toleranciaCancelamento = parseInt(pubParams["cancel_tolerancia_cliente"] || "2");
+
   return res.json({
     id: barbearia.id,
     nome: barbearia.nome,
@@ -158,6 +162,8 @@ router.get("/:slug", async (req, res) => {
     semPreferenciaHabilitado: showSemPreferencia,
     naoQueroConversarOculto: esconderNaoQueroConversar,
     tipoLinkAgendamento,
+    permitirCancelamentoCliente,
+    toleranciaCancelamento,
     categorias,
     servicos: servicos.map(s => ({
       ...s,
@@ -557,6 +563,153 @@ router.post("/:slug/agendar-simples", async (req, res) => {
   } catch (e) {
     console.error("public agendar-simples error:", e);
     return res.status(500).json({ error: "Erro ao criar agendamento" });
+  }
+});
+
+router.get("/:slug/meus-agendamentos", requireClient, async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const clienteUser = (req as any).clienteUser;
+    const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.slug, slug)).limit(1);
+    if (!barbearia) return res.status(404).json({ error: "Barbearia não encontrada" });
+
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+
+    const [cliente] = await db.select().from(clientesTable).where(
+      and(eq(clientesTable.barbeariaId, barbearia.id), eq(clientesTable.email, clienteUser.email))
+    ).limit(1);
+    if (!cliente) return res.json([]);
+
+    const agendamentos = await db.select().from(agendamentosTable).where(
+      and(
+        eq(agendamentosTable.barbeariaId, barbearia.id),
+        eq(agendamentosTable.clienteId, cliente.id),
+        gte(agendamentosTable.data, todayStr),
+        eq(agendamentosTable.status, "confirmado")
+      )
+    );
+
+    const futureOnly = agendamentos.filter(a => {
+      const agendDateTime = new Date(a.data + "T" + a.horaFim + ":00");
+      return agendDateTime.getTime() > now.getTime();
+    });
+
+    return res.json(futureOnly.map(a => ({
+      id: a.id,
+      servicoNome: a.servicoNome,
+      profissionalNome: a.profissionalNome,
+      data: a.data,
+      horaInicio: a.horaInicio,
+      horaFim: a.horaFim,
+      status: a.status,
+      valor: parseFloat(a.valor as string),
+    })).sort((a, b) => {
+      if (a.data !== b.data) return a.data.localeCompare(b.data);
+      return a.horaInicio.localeCompare(b.horaInicio);
+    }));
+  } catch (e) {
+    console.error("public meus-agendamentos error:", e);
+    return res.status(500).json({ error: "Erro ao buscar agendamentos" });
+  }
+});
+
+router.post("/:slug/agendamentos/:id/cancelar", requireClient, async (req, res) => {
+  try {
+    const { slug, id } = req.params;
+    const agendamentoId = parseInt(id);
+    const clienteUser = (req as any).clienteUser;
+    if (isNaN(agendamentoId)) return res.status(400).json({ error: "ID inválido" });
+
+    const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.slug, slug)).limit(1);
+    if (!barbearia) return res.status(404).json({ error: "Barbearia não encontrada" });
+
+    const { getParametros } = await import("../lib/parametros.js");
+    const params = await getParametros(barbearia.id);
+
+    if (params["cancel_permitir_cliente_link_publico"] !== "Sim") {
+      return res.status(403).json({ error: "Cancelamento pelo cliente não está habilitado" });
+    }
+
+    const [cliente] = await db.select().from(clientesTable).where(
+      and(eq(clientesTable.barbeariaId, barbearia.id), eq(clientesTable.email, clienteUser.email))
+    ).limit(1);
+    if (!cliente) return res.status(404).json({ error: "Cliente não encontrado" });
+
+    const [agend] = await db.select().from(agendamentosTable).where(
+      and(
+        eq(agendamentosTable.id, agendamentoId),
+        eq(agendamentosTable.barbeariaId, barbearia.id),
+        eq(agendamentosTable.clienteId, cliente.id),
+        eq(agendamentosTable.status, "confirmado")
+      )
+    ).limit(1);
+    if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
+
+    if (agend.data && agend.horaInicio) {
+      const agendDate = new Date(agend.data + "T" + agend.horaInicio + ":00");
+      const agora = new Date();
+      const diffMs = agendDate.getTime() - agora.getTime();
+      const diffHoras = diffMs / (1000 * 60 * 60);
+      if (diffHoras < 0) {
+        return res.status(400).json({ error: "Não é possível cancelar um agendamento que já passou" });
+      }
+      const toleranciaHoras = parseInt(params["cancel_tolerancia_cliente"] || "2");
+      if (diffHoras < toleranciaHoras) {
+        return res.status(400).json({ error: `Não é possível cancelar com menos de ${toleranciaHoras} hora(s) de antecedência` });
+      }
+    }
+
+    await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(
+      and(eq(agendamentosTable.id, agendamentoId), eq(agendamentosTable.barbeariaId, barbearia.id))
+    );
+
+    const { sendEmail } = await import("../lib/brevo.js");
+    const nomeEstab = barbearia.nome || "Glow Upi";
+    const gestorNotifHabilitada = (params["notif_mensagem_gestores"] || "Habilitado") === "Habilitado";
+    const clienteNotifHabilitada = (params["notif_mensagem_agendar_cancelar"] || "Habilitado") === "Habilitado";
+
+    if (clienteNotifHabilitada && cliente.email) {
+      sendEmail({
+        to: [{ email: cliente.email, name: agend.clienteNome }],
+        subject: `${nomeEstab} — Agendamento Cancelado`,
+        htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>Seu agendamento de <strong>${agend.servicoNome}</strong> com <strong>${agend.profissionalNome}</strong> em ${agend.data} às ${agend.horaInicio} foi cancelado.</p></div>`,
+      }).catch(err => console.error("[Notif] Error sending cancel email to client:", err));
+    }
+
+    if (gestorNotifHabilitada) {
+      const { usersTable } = await import("@workspace/db/schema");
+      const gestores = await db.select().from(usersTable).where(
+        and(eq(usersTable.barbeariaId, barbearia.id), eq(usersTable.role, "gerente"))
+      );
+      const donoUsers = await db.select().from(usersTable).where(eq(usersTable.role, "dono"));
+      const allGestores = [...gestores];
+      for (const d of donoUsers) {
+        if (d.barbeariaId) continue;
+        const [b] = await db.select({ id: barbeariasTable.id }).from(barbeariasTable).where(eq(barbeariasTable.donoId, d.id)).limit(1);
+        if (b?.id === barbearia.id) allGestores.push(d);
+      }
+      for (const g of allGestores) {
+        if (g.email) {
+          sendEmail({
+            to: [{ email: g.email, name: g.nome || "Gestor" }],
+            subject: `${nomeEstab} — Agendamento cancelado pelo cliente: ${agend.clienteNome}`,
+            htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>O cliente <strong>${agend.clienteNome}</strong> cancelou o agendamento de <strong>${agend.servicoNome}</strong> com <strong>${agend.profissionalNome}</strong> em ${agend.data} às ${agend.horaInicio} pelo link público.</p></div>`,
+          }).catch(err => console.error("[Notif] Error sending cancel email to manager:", err));
+        }
+      }
+    }
+
+    sendPushToBarbearia(barbearia.id, {
+      title: "Agendamento Cancelado pelo Cliente",
+      body: `${agend.clienteNome} cancelou ${agend.servicoNome} com ${agend.profissionalNome} em ${agend.data} às ${agend.horaInicio}`,
+      data: { agendamentoId: agend.id, type: "cancelled_appointment" },
+    }).catch(err => console.error("[Push] Error on client cancelled appointment:", err));
+
+    return res.json({ success: true, message: "Agendamento cancelado com sucesso" });
+  } catch (e) {
+    console.error("public cancelar error:", e);
+    return res.status(500).json({ error: "Erro ao cancelar agendamento" });
   }
 });
 

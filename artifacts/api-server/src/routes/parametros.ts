@@ -34,6 +34,7 @@ export const PARAMETROS_DEFAULTS: ParamDef[] = [
   { chave: "agenda_mesmo_horario_cliente", label: "Permitir agendamento no mesmo horário pelo cliente (Aplicativo)", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Sim" },
   { chave: "comanda_obrigatoriedade_bandeira", label: "Obrigatoriedade da seleção de bandeira na comanda e na venda de pacotes", categoria: "Comandas & Caixa", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "agenda_limite_futuro_dias", label: "Limite de agendamento futuro pelo cliente (em dias)", categoria: "Agenda & Agendamentos", tipo: "input", valorPadrao: "365" },
+  { chave: "cancel_permitir_cliente_link_publico", label: "Permitir cancelamento pelo cliente no link público", categoria: "Cancelamentos & Tolerância", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "cancel_bloquear_profissional", label: "Não deixar cancelar horários (Profissional não-gestor)", categoria: "Cancelamentos & Tolerância", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "cliente_aprovar_cadastro_auto", label: "Aprovar solicitação de cadastro automaticamente", categoria: "Clientes & Cadastro", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Sim" },
   { chave: "comanda_somente_envolvidos", label: "No aplicativo, mostrar comandas abertas SOMENTE para profissionais envolvidos e gestores", categoria: "Comandas & Caixa", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Sim" },
