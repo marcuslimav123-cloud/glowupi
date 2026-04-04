@@ -20,7 +20,7 @@ router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) =>
 router.post("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
-  const { nome, preco, custo, quantidade, quantidadeMinima, codigoBarras, validade } = req.body;
+  const { nome, preco, custo, quantidade, quantidadeMinima, codigoBarras, validade, imagemUrl } = req.body;
   if (!nome || preco === undefined) return res.status(400).json({ error: "Dados inválidos" });
   const [produto] = await db.insert(produtosTable).values({
     barbeariaId,
@@ -31,6 +31,7 @@ router.post("/", requireAuth, requireRole("dono", "gerente"), async (req, res) =
     quantidadeMinima: quantidadeMinima ?? 5,
     codigoBarras: codigoBarras || null,
     validade: validade || null,
+    imagemUrl: imagemUrl || null,
   }).returning();
   return res.status(201).json(formatProduto(produto));
 });
@@ -39,7 +40,7 @@ router.put("/:produtoId", requireAuth, requireRole("dono", "gerente"), async (re
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const id = parseInt(req.params.produtoId);
-  const { nome, preco, custo, quantidade, quantidadeMinima, ativo, codigoBarras, validade } = req.body;
+  const { nome, preco, custo, quantidade, quantidadeMinima, ativo, codigoBarras, validade, imagemUrl } = req.body;
   const [existing] = await db.select().from(produtosTable).where(and(eq(produtosTable.id, id), eq(produtosTable.barbeariaId, barbeariaId))).limit(1);
   if (!existing) return res.status(404).json({ error: "Produto não encontrado" });
   const [updated] = await db.update(produtosTable).set({
@@ -51,6 +52,7 @@ router.put("/:produtoId", requireAuth, requireRole("dono", "gerente"), async (re
     ativo: ativo !== undefined ? ativo : existing.ativo,
     codigoBarras: codigoBarras !== undefined ? (codigoBarras || null) : existing.codigoBarras,
     validade: validade !== undefined ? (validade || null) : existing.validade,
+    imagemUrl: imagemUrl !== undefined ? (imagemUrl || null) : existing.imagemUrl,
     updatedAt: new Date(),
   }).where(eq(produtosTable.id, id)).returning();
   return res.json(formatProduto(updated));

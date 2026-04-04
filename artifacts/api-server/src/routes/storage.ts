@@ -18,9 +18,9 @@ router.post("/storage/uploads/request-url", requireAuth, async (req: Request, re
     return;
   }
 
-  const maxSize = 10 * 1024 * 1024;
+  const maxSize = 50 * 1024 * 1024;
   if (size > maxSize) {
-    res.status(400).json({ error: "Arquivo muito grande (máx 10MB)" });
+    res.status(400).json({ error: "Arquivo muito grande (máx 50MB)" });
     return;
   }
 

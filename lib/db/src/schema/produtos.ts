@@ -13,6 +13,7 @@ export const produtosTable = pgTable("produtos", {
   quantidadeMinima: integer("quantidade_minima").notNull().default(5),
   codigoBarras: text("codigo_barras"),
   validade: text("validade"),
+  imagemUrl: text("imagem_url"),
   ativo: boolean("ativo").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

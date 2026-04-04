@@ -15,8 +15,28 @@ import { Building2, MapPin, Clock, Palette, Save, Link2, Copy, Check, ExternalLi
 
 const DIAS = ["segunda","terca","quarta","quinta","sexta","sabado","domingo"];
 const DIA_LABEL: Record<string,string> = { segunda:"Segunda",terca:"Terça",quarta:"Quarta",quinta:"Quinta",sexta:"Sexta",sabado:"Sábado",domingo:"Domingo" };
+const FUNCIONAMENTO_TO_EMPRESA: Record<string,string> = { "Segunda":"segunda","Terça":"terca","Quarta":"quarta","Quinta":"quinta","Sexta":"sexta","Sábado":"sabado","Domingo":"domingo" };
 
 const DEFAULT_HORARIOS = Object.fromEntries(DIAS.map(d => [d, { aberto: d !== "domingo", inicio: "09:00", fim: "19:00" }]));
+
+function normalizeHorarios(raw: any): any {
+  if (!raw) return DEFAULT_HORARIOS;
+  if (Array.isArray(raw)) {
+    const result: any = { ...DEFAULT_HORARIOS };
+    for (const item of raw) {
+      const key = FUNCIONAMENTO_TO_EMPRESA[item.dia];
+      if (key) {
+        result[key] = {
+          aberto: item.ativo ?? true,
+          inicio: item.abertura || "09:00",
+          fim: item.fechamento || "19:00",
+        };
+      }
+    }
+    return result;
+  }
+  return raw;
+}
 
 export default function Empresa() {
   const { barbeariaId } = useAuth();
@@ -57,7 +77,7 @@ export default function Empresa() {
       setCidade(barbearia.cidade || "");
       setUf(barbearia.uf || "");
       setCorPrimaria(barbearia.corPrimaria || "#3b82f6");
-      setHorarios((barbearia.horarioFuncionamento as any) || DEFAULT_HORARIOS);
+      setHorarios(normalizeHorarios(barbearia.horarioFuncionamento));
       setLogoUrl((barbearia as any).logoUrl || null);
     }
   }, [barbearia]);

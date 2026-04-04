@@ -13,6 +13,7 @@ interface ImageUploadProps {
   className?: string;
   accept?: string;
   maxSizeMB?: number;
+  compressMaxDimension?: number;
 }
 
 const SIZES = {
@@ -20,6 +21,47 @@ const SIZES = {
   md: "h-24 w-24",
   lg: "h-32 w-32",
 };
+
+async function compressImage(file: File, maxDimension: number, quality = 0.85): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width <= maxDimension && height <= maxDimension && file.size <= 2 * 1024 * 1024) {
+        resolve(file);
+        return;
+      }
+      if (width > maxDimension || height > maxDimension) {
+        const ratio = Math.min(maxDimension / width, maxDimension / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }));
+          } else {
+            resolve(file);
+          }
+        },
+        "image/jpeg",
+        quality
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
+    img.src = url;
+  });
+}
 
 export function ImageUpload({
   value,
@@ -30,18 +72,14 @@ export function ImageUpload({
   placeholder,
   className,
   accept = "image/jpeg,image/png,image/webp",
-  maxSizeMB = 5,
+  maxSizeMB = 50,
+  compressMaxDimension = 1200,
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
-    if (file.size > maxSizeMB * 1024 * 1024) {
-      setError(`Arquivo muito grande (máx ${maxSizeMB}MB)`);
-      return;
-    }
-
     if (!file.type.startsWith("image/")) {
       setError("Selecione uma imagem válida");
       return;
@@ -51,14 +89,22 @@ export function ImageUpload({
     setUploading(true);
 
     try {
+      const compressed = await compressImage(file, compressMaxDimension);
+
+      if (compressed.size > maxSizeMB * 1024 * 1024) {
+        setError(`Arquivo muito grande mesmo após compressão (máx ${maxSizeMB}MB)`);
+        setUploading(false);
+        return;
+      }
+
       const res = await fetch(apiUrl("/storage/uploads/request-url"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          name: file.name,
-          size: file.size,
-          contentType: file.type,
+          name: compressed.name,
+          size: compressed.size,
+          contentType: compressed.type,
         }),
       });
 
@@ -67,8 +113,8 @@ export function ImageUpload({
 
       const uploadRes = await fetch(uploadURL, {
         method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
+        headers: { "Content-Type": compressed.type },
+        body: compressed,
       });
 
       if (!uploadRes.ok) throw new Error("Erro ao enviar arquivo");
@@ -139,7 +185,7 @@ export function ImageUpload({
               <><Upload className="h-4 w-4 mr-1" /> {value ? "Trocar" : "Enviar"} foto</>
             )}
           </Button>
-          <span className="text-xs text-muted-foreground">JPG, PNG ou WebP (máx {maxSizeMB}MB)</span>
+          <span className="text-xs text-muted-foreground">JPG, PNG ou WebP</span>
         </div>
       </div>
       {error && <p className="text-xs text-destructive">{error}</p>}

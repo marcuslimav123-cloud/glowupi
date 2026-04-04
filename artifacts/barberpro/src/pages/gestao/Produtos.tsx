@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ImageUpload } from "@/components/ImageUpload";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Package, AlertTriangle, Edit, Trash2, TrendingUp, ArrowDownCircle, ArrowUpCircle, History, Barcode, CalendarClock } from "lucide-react";
@@ -23,6 +24,7 @@ type Produto = {
   quantidadeMinima: number;
   codigoBarras?: string | null;
   validade?: string | null;
+  imagemUrl?: string | null;
   ativo: boolean;
 };
 
@@ -43,6 +45,7 @@ function ProdutoForm({ initial, onSave, onCancel }: { initial?: Partial<Produto>
   const [quantidadeMinima, setQuantidadeMinima] = useState(String(initial?.quantidadeMinima ?? "5"));
   const [codigoBarras, setCodigoBarras] = useState(initial?.codigoBarras ?? "");
   const [validade, setValidade] = useState(initial?.validade ?? "");
+  const [imagemUrl, setImagemUrl] = useState<string | null>(initial?.imagemUrl ?? null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,11 +57,23 @@ function ProdutoForm({ initial, onSave, onCancel }: { initial?: Partial<Produto>
       quantidadeMinima: parseInt(quantidadeMinima),
       codigoBarras: codigoBarras || null,
       validade: validade || null,
+      imagemUrl,
     });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label>Foto do Produto</Label>
+        <ImageUpload
+          value={imagemUrl}
+          onChange={setImagemUrl}
+          shape="square"
+          size="md"
+          placeholder={<Package className="h-6 w-6 text-muted-foreground" />}
+          compressMaxDimension={800}
+        />
+      </div>
       <div className="space-y-2">
         <Label>Nome do Produto</Label>
         <Input value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Esmalte em Gel, Creme Hidratante" required />
@@ -332,8 +347,12 @@ export default function Produtos() {
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-                        <Package className="h-5 w-5 text-primary" />
+                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 overflow-hidden shrink-0">
+                        {p.imagemUrl ? (
+                          <img src={p.imagemUrl} alt={p.nome} className="h-full w-full object-cover" />
+                        ) : (
+                          <Package className="h-5 w-5 text-primary" />
+                        )}
                       </div>
                       <div>
                         <h3 className="font-semibold text-foreground">{p.nome}</h3>
@@ -385,7 +404,7 @@ export default function Produtos() {
       )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Editar Produto" : "Novo Produto"}</DialogTitle>
           </DialogHeader>
