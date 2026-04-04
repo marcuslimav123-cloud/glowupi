@@ -16,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Edit2, Trash2, Users, Award, ToggleLeft, ToggleRight, Clock, Calendar, Scissors, Check, User, Phone } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatPhone } from "@/lib/utils";
 import { ImageUpload } from "@/components/ImageUpload";
 
 type ServicoOverride = {
@@ -208,7 +208,7 @@ function ProfForm({
             <Phone className="h-3.5 w-3.5" />
             Celular
           </Label>
-          <Input value={celular} onChange={e => setCelular(e.target.value)} placeholder="(11) 99999-0000" className="bg-background" />
+          <Input value={celular} onChange={e => setCelular(formatPhone(e.target.value))} placeholder="(11) 99999-0000" className="bg-background" />
         </div>
       </div>
 

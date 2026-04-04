@@ -8,7 +8,7 @@ import {
   useListClientes
 } from "@workspace/api-client-react";
 import { useApiList } from "@/hooks/useCrudApi";
-import { generateTimeSlots, formatCurrency, apiUrl } from "@/lib/utils";
+import { generateTimeSlots, formatCurrency, apiUrl, formatPhone } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -251,18 +251,33 @@ export default function Agenda() {
   }, [daySchedule]);
 
   const availableTimeSlots = useMemo(() => {
-    if (!formProfId || bloqueios.length === 0) return timeSlots;
-    const profBloqueios = bloqueios.filter(b => b.profissionalId === parseInt(formProfId));
-    if (profBloqueios.length === 0) return timeSlots;
-    return timeSlots.filter(slot => {
-      const slotMin = timeToMinutes(slot);
-      return !profBloqueios.some(b => {
-        const bStart = timeToMinutes(b.horaInicio);
-        const bEnd = timeToMinutes(b.horaFim);
-        return slotMin >= bStart && slotMin < bEnd;
-      });
-    });
-  }, [timeSlots, formProfId, bloqueios]);
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const isToday = date === today;
+    const nowMin = isToday ? new Date().getHours() * 60 + new Date().getMinutes() : 0;
+
+    let filtered = timeSlots;
+
+    if (isToday) {
+      filtered = filtered.filter(slot => timeToMinutes(slot) > nowMin);
+    }
+
+    if (formProfId && bloqueios.length > 0) {
+      const profBloqueios = bloqueios.filter(b => b.profissionalId === parseInt(formProfId));
+      if (profBloqueios.length > 0) {
+        filtered = filtered.filter(slot => {
+          const slotMin = timeToMinutes(slot);
+          return !profBloqueios.some(b => {
+            const bStart = timeToMinutes(b.horaInicio);
+            const bEnd = timeToMinutes(b.horaFim);
+            return slotMin >= bStart && slotMin < bEnd;
+          });
+        });
+      }
+    }
+
+    return filtered;
+  }, [timeSlots, formProfId, bloqueios, date]);
 
   const filteredAgendamentos = useMemo(() => {
     const all = agendamentos as Agendamento[];
@@ -978,7 +993,7 @@ export default function Agenda() {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">WhatsApp *</Label>
-                    <Input value={formTelefone} onChange={e => setFormTelefone(e.target.value)} placeholder="(11) 99999-9999" className="bg-background h-9 text-sm" />
+                    <Input value={formTelefone} onChange={e => setFormTelefone(formatPhone(e.target.value))} placeholder="(11) 99999-9999" className="bg-background h-9 text-sm" />
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" className="text-xs" onClick={() => { setUseNewClient(false); setFormNome(""); setFormTelefone(""); }}>

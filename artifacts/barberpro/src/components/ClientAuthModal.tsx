@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X, Eye, EyeOff, Loader2 } from "lucide-react";
+import { formatPhone } from "@/lib/utils";
 
 interface ClientUser {
   id: number;
@@ -260,7 +261,7 @@ export default function ClientAuthModal({ open, onClose, onAuthenticated, accent
                 <input
                   type="tel"
                   value={regTelefone}
-                  onChange={(e) => setRegTelefone(e.target.value)}
+                  onChange={(e) => setRegTelefone(formatPhone(e.target.value))}
                   className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/25 text-sm focus:outline-none focus:border-white/30"
                   placeholder="(11) 99999-9999"
                 />

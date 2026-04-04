@@ -96,6 +96,7 @@ export const PARAMETROS_DEFAULTS: ParamDef[] = [
   { chave: "assinatura_dias_semana", label: "Mostrar opção de assinatura por dias da semana", categoria: "Outros", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "avaliacao_individual", label: "Mostrar avaliação individual dos profissionais", categoria: "Outros", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "agenda_tipo_link", label: "Tipo de link de agendamento", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Com login", "Sem login (simples)"], valorPadrao: "Com login" },
+  { chave: "agenda_whatsapp_encaixe", label: "Mostrar botão 'Tentar encaixe via WhatsApp' no link público de agendamento", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
 ];
 
 async function ensureDefaults(barbeariaId: number) {

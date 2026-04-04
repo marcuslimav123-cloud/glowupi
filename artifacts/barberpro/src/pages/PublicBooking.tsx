@@ -56,6 +56,7 @@ interface BarbeariaData {
   tipoLinkAgendamento?: "simples" | "com_login";
   permitirCancelamentoCliente?: boolean;
   toleranciaCancelamento?: number;
+  whatsappEncaixeHabilitado?: boolean;
   filiais?: FilialData[];
 }
 
@@ -929,6 +930,27 @@ export default function PublicBooking() {
                   ))}
                 </div>
               )}
+
+              {barbearia?.whatsappEncaixeHabilitado && barbearia?.telefone && (() => {
+                const digits = barbearia.telefone.replace(/\D/g, "");
+                if (digits.length < 10) return null;
+                const normalized = digits.length <= 11 ? `55${digits}` : digits;
+                return (
+                  <div className="mt-6 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] text-center">
+                    <p className="text-sm text-white/50 mb-3">Quer tentar um encaixe no WhatsApp?</p>
+                    <a
+                      href={`https://wa.me/${normalized}?text=${encodeURIComponent(`Olá! Gostaria de verificar a possibilidade de um encaixe. Obrigado(a)!`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all"
+                      style={{ backgroundColor: "#25D366", color: "#fff" }}
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      Falar no WhatsApp
+                    </a>
+                  </div>
+                );
+              })()}
             </div>
           )}
 

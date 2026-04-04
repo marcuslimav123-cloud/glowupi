@@ -143,6 +143,7 @@ router.get("/:slug", async (req, res) => {
 
   const permitirCancelamentoCliente = pubParams["cancel_permitir_cliente_link_publico"] === "Sim";
   const toleranciaCancelamento = parseInt(pubParams["cancel_tolerancia_cliente"] || "2");
+  const whatsappEncaixeHabilitado = pubParams["agenda_whatsapp_encaixe"] === "Sim";
 
   return res.json({
     id: barbearia.id,
@@ -168,6 +169,7 @@ router.get("/:slug", async (req, res) => {
     tipoLinkAgendamento,
     permitirCancelamentoCliente,
     toleranciaCancelamento,
+    whatsappEncaixeHabilitado,
     categorias,
     filiais: filiais.map(f => ({
       id: f.id,
