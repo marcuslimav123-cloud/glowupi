@@ -54,6 +54,7 @@ import { Button } from "@/components/ui/button";
 import { APP_NAME, getRoleLabel } from "@/lib/utils";
 import { HeaderBar, applyTheme } from "./HeaderBar";
 import { MobileBottomBar } from "./MobileBottomBar";
+import { usePWA } from "@/hooks/usePWA";
 
 type NavItem = {
   name: string;
@@ -472,8 +473,17 @@ function CollapsibleGroup({ item, location, onNavigate, mainRef }: { item: NavIt
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { user, logout, isLoading, barbeariaId, role, perfilPermissoes, logoUrl, barbeariaNome, isDono } = useAuth();
+  const { user, logout, isLoading, barbeariaId, role, perfilPermissoes, logoUrl, barbeariaNome, isDono, barbeariaSlug } = useAuth();
   const { canAccess, status, shouldShowUpgrade, trialDaysLeft } = useSubscriptionGuard();
+
+  const basePath = import.meta.env.BASE_URL || "/";
+  usePWA({
+    slug: barbeariaSlug || undefined,
+    nome: barbeariaNome || undefined,
+    logoUrl: logoUrl || null,
+    corPrimaria: undefined,
+    startUrl: `${basePath}agenda`,
+  });
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const mainContentRef = React.useRef<HTMLDivElement>(null);
   const updateBarbearia = useUpdateBarbearia();
@@ -633,7 +643,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
           <div className="font-semibold text-[15px] text-foreground tracking-tight flex items-center gap-1.5">
-            <img src="/logo-icon.png" alt={APP_NAME} className="h-[26px] w-[26px] object-contain" /> {APP_NAME}
+            {logoUrl ? (
+              <img src={logoUrl} alt={barbeariaNome || APP_NAME} className="h-[26px] w-[26px] object-contain rounded-full" />
+            ) : (
+              <img src="/logo-icon.png" alt={APP_NAME} className="h-[26px] w-[26px] object-contain" />
+            )}
+            {barbeariaNome || APP_NAME}
           </div>
         </div>
         <HeaderBar />
@@ -713,7 +728,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       <main className="flex-1 flex flex-col min-h-0 relative">
-        <div className="flex items-center justify-end px-3 md:px-6 py-2 md:py-2.5 border-b border-border bg-card shrink-0">
+        <div className="hidden md:flex items-center justify-end px-6 py-2.5 border-b border-border bg-card shrink-0">
           <HeaderBar />
         </div>
         {shouldShowUpgrade && (

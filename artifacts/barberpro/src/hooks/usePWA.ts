@@ -5,42 +5,92 @@ interface PWAOptions {
   nome: string | undefined;
   logoUrl: string | null | undefined;
   corPrimaria: string | undefined;
+  startUrl?: string;
 }
 
-export function usePWA({ slug, nome, logoUrl, corPrimaria }: PWAOptions) {
+export function usePWA({ slug, nome, logoUrl, corPrimaria, startUrl }: PWAOptions) {
   const swRegistered = useRef(false);
+  const blobUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!slug) return;
+    if (!slug && !nome) return;
 
     if ("serviceWorker" in navigator && !swRegistered.current) {
       const basePath = import.meta.env.BASE_URL || "/";
       navigator.serviceWorker.register(`${basePath}sw.js`).catch(() => {});
       swRegistered.current = true;
     }
-  }, [slug]);
+  }, [slug, nome]);
 
   useEffect(() => {
-    if (!slug) return;
+    if (!nome) return;
 
-    const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, "/");
-    const manifestUrl = `${API_BASE}/public/${slug}/manifest.json`;
+    const basePath = import.meta.env.BASE_URL || "/";
 
-    let manifestLink = document.querySelector<HTMLLinkElement>(
-      'link[rel="manifest"]'
-    );
-    if (!manifestLink) {
-      manifestLink = document.createElement("link");
-      manifestLink.rel = "manifest";
-      document.head.appendChild(manifestLink);
+    if (slug && !startUrl) {
+      const API_BASE = `${basePath}api`.replace(/\/+/g, "/");
+      const manifestUrl = `${API_BASE}/public/${slug}/manifest.json`;
+
+      let manifestLink = document.querySelector<HTMLLinkElement>(
+        'link[rel="manifest"]'
+      );
+      if (!manifestLink) {
+        manifestLink = document.createElement("link");
+        manifestLink.rel = "manifest";
+        document.head.appendChild(manifestLink);
+      }
+      manifestLink.href = manifestUrl;
+    } else {
+      const icons: { src: string; sizes: string; type?: string; purpose: string }[] = [];
+      if (logoUrl) {
+        icons.push(
+          { src: logoUrl, sizes: "192x192", purpose: "any" },
+          { src: logoUrl, sizes: "512x512", purpose: "any" },
+        );
+      } else {
+        icons.push(
+          { src: `${basePath}logo-icon.png`, sizes: "192x192", type: "image/png", purpose: "any" },
+        );
+      }
+
+      const manifest = {
+        name: nome,
+        short_name: nome.length > 12 ? nome.slice(0, 12) : nome,
+        description: `Painel - ${nome}`,
+        start_url: startUrl || basePath,
+        scope: basePath,
+        display: "standalone",
+        background_color: "#111111",
+        theme_color: corPrimaria || "#C4943C",
+        icons,
+      };
+
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+      }
+      const blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
+      blobUrlRef.current = URL.createObjectURL(blob);
+
+      let manifestLink = document.querySelector<HTMLLinkElement>(
+        'link[rel="manifest"]'
+      );
+      if (!manifestLink) {
+        manifestLink = document.createElement("link");
+        manifestLink.rel = "manifest";
+        document.head.appendChild(manifestLink);
+      }
+      manifestLink.href = blobUrlRef.current;
     }
-    manifestLink.href = manifestUrl;
 
     return () => {
       const ml = document.querySelector('link[rel="manifest"]');
       if (ml) ml.remove();
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+        blobUrlRef.current = null;
+      }
     };
-  }, [slug]);
+  }, [slug, nome, logoUrl, corPrimaria, startUrl]);
 
   useEffect(() => {
     if (!logoUrl) return;
@@ -54,6 +104,13 @@ export function usePWA({ slug, nome, logoUrl, corPrimaria }: PWAOptions) {
       document.head.appendChild(appleTouchIcon);
     }
     appleTouchIcon.href = logoUrl;
+
+    let favicon = document.querySelector<HTMLLinkElement>(
+      'link[rel="icon"]'
+    );
+    if (favicon) {
+      favicon.href = logoUrl;
+    }
 
     return () => {
       const ati = document.querySelector('link[rel="apple-touch-icon"]');

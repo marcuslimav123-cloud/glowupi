@@ -20,6 +20,7 @@ interface AuthContextType {
   perfilPermissoes: string[] | null;
   barbeariaNome: string | null;
   logoUrl: string | null;
+  barbeariaSlug: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -60,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     perfilPermissoes,
     barbeariaNome: barbearia?.nome ?? null,
     logoUrl: barbearia?.logoUrl ?? null,
+    barbeariaSlug: (barbearia as any)?.slug ?? null,
     logout,
   };
 
