@@ -107,6 +107,8 @@ export default function PublicBooking() {
   const [cancelConfirmId, setCancelConfirmId] = useState<number | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelFeedback, setCancelFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [simplesLookupWhatsapp, setSimplesLookupWhatsapp] = useState("");
+  const [simplesLookupDone, setSimplesLookupDone] = useState(false);
 
   const accent = barbearia?.corPrimaria || "#C4943C";
   const accentText = getContrastColor(accent);
@@ -405,22 +407,35 @@ export default function PublicBooking() {
                 </p>
               )}
             </div>
-            {!isSimpleMode && clientUser && (
+            {barbearia.permitirCancelamentoCliente && (isSimpleMode || clientUser) && (
               <div className="flex items-center gap-2">
-                {barbearia.permitirCancelamentoCliente && (
-                  <button
-                    onClick={() => { if (showMeusAgendamentos) { setShowMeusAgendamentos(false); } else { handleOpenMeusAgendamentos(); } }}
-                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition"
-                    title="Meus Agendamentos"
-                    style={showMeusAgendamentos ? { backgroundColor: `${accent}20`, borderColor: accent } : {}}
-                  >
-                    <CalendarDays className="h-4 w-4" style={showMeusAgendamentos ? { color: accent } : { color: "rgba(255,255,255,0.4)" }} />
-                  </button>
-                )}
-                <span className="text-xs text-white/40 hidden sm:block">{clientUser.nome.split(" ")[0]}</span>
-                <button onClick={handleLogout} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition" title="Sair">
-                  <LogOut className="h-4 w-4 text-white/40" />
+                <button
+                  onClick={() => {
+                    if (showMeusAgendamentos) {
+                      setShowMeusAgendamentos(false);
+                      setSimplesLookupDone(false);
+                    } else if (isSimpleMode && !clientUser) {
+                      setShowMeusAgendamentos(true);
+                      setSimplesLookupDone(false);
+                      setMeusAgendamentos([]);
+                    } else {
+                      handleOpenMeusAgendamentos();
+                    }
+                  }}
+                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition"
+                  title="Meus Agendamentos"
+                  style={showMeusAgendamentos ? { backgroundColor: `${accent}20`, borderColor: accent } : {}}
+                >
+                  <CalendarDays className="h-4 w-4" style={showMeusAgendamentos ? { color: accent } : { color: "rgba(255,255,255,0.4)" }} />
                 </button>
+                {!isSimpleMode && clientUser && (
+                  <>
+                    <span className="text-xs text-white/40 hidden sm:block">{clientUser.nome.split(" ")[0]}</span>
+                    <button onClick={handleLogout} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition" title="Sair">
+                      <LogOut className="h-4 w-4 text-white/40" />
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -438,6 +453,163 @@ export default function PublicBooking() {
             <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
               {error}
               <button onClick={() => setError("")} className="ml-2 underline text-xs">fechar</button>
+            </div>
+          )}
+
+          {showMeusAgendamentos && isSimpleMode && !clientUser && !simplesLookupDone && (
+            <div>
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="text-lg font-semibold">Meus Agendamentos</h2>
+                  <p className="text-white/30 text-sm">Informe seu WhatsApp para consultar</p>
+                </div>
+                <button onClick={() => { setShowMeusAgendamentos(false); setSimplesLookupDone(false); }} className="text-sm px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-white/40">Voltar</button>
+              </div>
+              <div className="space-y-4">
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
+                  <input
+                    type="tel"
+                    value={simplesLookupWhatsapp}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, "").slice(0, 11);
+                      let masked = raw;
+                      if (raw.length > 2) masked = `(${raw.slice(0, 2)}) ${raw.slice(2)}`;
+                      else if (raw.length > 0) masked = `(${raw}`;
+                      if (raw.length > 7) masked = `(${raw.slice(0, 2)}) ${raw.slice(2, 7)}-${raw.slice(7)}`;
+                      setSimplesLookupWhatsapp(masked);
+                    }}
+                    maxLength={15}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/25 text-sm focus:outline-none focus:border-white/30"
+                    placeholder="(11) 99999-9999"
+                  />
+                </div>
+                <button
+                  onClick={async () => {
+                    const raw = simplesLookupWhatsapp.replace(/\D/g, "");
+                    if (raw.length < 10) return;
+                    setMeusAgendamentosLoading(true);
+                    try {
+                      const resp = await fetch(`${API_BASE}/public/${slug}/agendamentos-por-whatsapp`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ whatsapp: raw }),
+                      });
+                      if (resp.ok) {
+                        const data = await resp.json();
+                        setMeusAgendamentos(data);
+                      }
+                    } catch {} finally {
+                      setMeusAgendamentosLoading(false);
+                      setSimplesLookupDone(true);
+                    }
+                  }}
+                  disabled={simplesLookupWhatsapp.replace(/\D/g, "").length < 10 || meusAgendamentosLoading}
+                  className="w-full py-3 rounded-xl font-semibold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{ backgroundColor: accent, color: accentText }}
+                >
+                  {meusAgendamentosLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Buscar Agendamentos"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {showMeusAgendamentos && isSimpleMode && !clientUser && simplesLookupDone && (
+            <div>
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="text-lg font-semibold">Meus Agendamentos</h2>
+                  <p className="text-white/30 text-sm">Seus agendamentos futuros</p>
+                </div>
+                <button onClick={() => { setShowMeusAgendamentos(false); setSimplesLookupDone(false); }} className="text-sm px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-white/40">Voltar</button>
+              </div>
+              {cancelFeedback && (
+                <div className={`mb-4 p-3 rounded-xl text-sm flex items-center gap-2 ${cancelFeedback.type === "success" ? "bg-green-500/10 border border-green-500/20 text-green-400" : "bg-red-500/10 border border-red-500/20 text-red-400"}`}>
+                  {cancelFeedback.type === "success" ? <Check className="h-4 w-4 flex-shrink-0" /> : <AlertTriangle className="h-4 w-4 flex-shrink-0" />}
+                  {cancelFeedback.message}
+                  <button onClick={() => setCancelFeedback(null)} className="ml-auto underline text-xs">fechar</button>
+                </div>
+              )}
+              {meusAgendamentos.length === 0 ? (
+                <div className="text-center py-12 text-white/30">
+                  <CalendarDays className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>Nenhum agendamento futuro encontrado</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {meusAgendamentos.map((agend) => (
+                    <div key={agend.id} className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Scissors className="h-4 w-4 flex-shrink-0" style={{ color: accent }} />
+                            <span className="font-medium text-sm truncate">{agend.servicoNome}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <User className="h-3.5 w-3.5 text-white/40 flex-shrink-0" />
+                            <span className="text-xs text-white/50">{agend.profissionalNome}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <Calendar className="h-3.5 w-3.5 text-white/40 flex-shrink-0" />
+                            <span className="text-xs text-white/50">
+                              {new Date(agend.data + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-3.5 w-3.5 text-white/40 flex-shrink-0" />
+                            <span className="text-xs text-white/50">{agend.horaInicio} — {agend.horaFim}</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2 ml-3">
+                          {cancelConfirmId === agend.id ? (
+                            <div className="flex flex-col items-end gap-1.5">
+                              <span className="text-[10px] text-white/40">Confirmar cancelamento?</span>
+                              <div className="flex gap-1.5">
+                                <button onClick={() => setCancelConfirmId(null)} disabled={cancelLoading} className="px-2.5 py-1 text-[11px] rounded-lg bg-white/5 hover:bg-white/10 transition text-white/50">Não</button>
+                                <button
+                                  onClick={async () => {
+                                    setCancelLoading(true);
+                                    try {
+                                      const resp = await fetch(`${API_BASE}/public/${slug}/agendamentos/${agend.id}/cancelar-simples`, {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ whatsapp: simplesLookupWhatsapp }),
+                                      });
+                                      const data = await resp.json();
+                                      if (resp.ok) {
+                                        setCancelFeedback({ type: "success", message: data.message || "Cancelado!" });
+                                        setMeusAgendamentos(prev => prev.filter(a => a.id !== agend.id));
+                                      } else {
+                                        setCancelFeedback({ type: "error", message: data.error || "Erro ao cancelar" });
+                                      }
+                                    } catch {
+                                      setCancelFeedback({ type: "error", message: "Erro ao cancelar" });
+                                    } finally {
+                                      setCancelLoading(false);
+                                      setCancelConfirmId(null);
+                                    }
+                                  }}
+                                  disabled={cancelLoading}
+                                  className="px-2.5 py-1 text-[11px] rounded-lg bg-red-500/20 hover:bg-red-500/30 transition text-red-400 flex items-center gap-1"
+                                >
+                                  {cancelLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Sim, cancelar"}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => { setCancelConfirmId(agend.id); setCancelFeedback(null); }}
+                              className="flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg bg-red-500/10 hover:bg-red-500/20 transition text-red-400"
+                            >
+                              <XCircle className="h-3 w-3" /> Cancelar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -801,7 +973,15 @@ export default function PublicBooking() {
                         <input
                           type="tel"
                           value={simplesWhatsapp}
-                          onChange={(e) => setSimplesWhatsapp(e.target.value)}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/\D/g, "").slice(0, 11);
+                            let masked = raw;
+                            if (raw.length > 2) masked = `(${raw.slice(0, 2)}) ${raw.slice(2)}`;
+                            else if (raw.length > 0) masked = `(${raw}`;
+                            if (raw.length > 7) masked = `(${raw.slice(0, 2)}) ${raw.slice(2, 7)}-${raw.slice(7)}`;
+                            setSimplesWhatsapp(masked);
+                          }}
+                          maxLength={15}
                           className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/25 text-sm focus:outline-none focus:border-white/30"
                           placeholder="(11) 99999-9999"
                           required

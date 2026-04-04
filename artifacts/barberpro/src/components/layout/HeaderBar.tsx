@@ -4,9 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiUrl } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications, requestNotificationPermission } from "@/hooks/useNotifications";
 import {
   CalendarDays, DollarSign, FileText, Cake, Mail, UserPlus,
-  User, LogOut, Palette, Shield, Settings, X, Check,
+  User, LogOut, Palette, Shield, Settings, X, Check, Bell, CheckCheck, Loader2,
 } from "lucide-react";
 
 export const THEMES = [
@@ -56,6 +57,7 @@ export function HeaderBar() {
   const [activePopup, setActivePopup] = useState<string | null>(null);
   const [themeOpen, setThemeOpen] = useState(false);
   const [solTab, setSolTab] = useState("todos");
+  const { notificacoes, unreadCount, loading: notifLoading, fetchNotificacoes, markAsRead, markAllAsRead } = useNotifications();
 
   const toggle = (key: string) => setActivePopup(prev => prev === key ? null : key);
 
@@ -275,6 +277,69 @@ export function HeaderBar() {
           </Popup>
         </div>
       )}
+
+      <div className="relative">
+        <button
+          onClick={() => {
+            if (activePopup === "notificacoes") {
+              setActivePopup(null);
+            } else {
+              requestNotificationPermission();
+              fetchNotificacoes();
+              toggle("notificacoes");
+            }
+          }}
+          className={iconBtn}
+          title="Notificações"
+        >
+          <Bell className={iconCls} />
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </button>
+        <Popup open={activePopup === "notificacoes"} onClose={() => setActivePopup(null)} className="w-80">
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-[14px] text-foreground">Notificações</h3>
+              {unreadCount > 0 && (
+                <button
+                  onClick={() => markAllAsRead()}
+                  className="flex items-center gap-1 text-[11px] text-primary hover:underline"
+                >
+                  <CheckCheck className="h-3 w-3" /> Marcar todas como lidas
+                </button>
+              )}
+            </div>
+            {notifLoading ? (
+              <div className="flex justify-center py-6">
+                <Loader2 className="h-5 w-5 animate-spin text-foreground/30" />
+              </div>
+            ) : notificacoes.length === 0 ? (
+              <p className="text-[13px] text-foreground/40 py-4 text-center">Nenhuma notificação</p>
+            ) : (
+              <div className="space-y-1 max-h-72 overflow-y-auto -mx-1 px-1">
+                {notificacoes.slice(0, 20).map((n) => (
+                  <div
+                    key={n.id}
+                    onClick={() => { if (!n.lida) markAsRead(n.id); }}
+                    className={`p-2.5 rounded-lg cursor-pointer transition-colors ${
+                      n.lida ? "opacity-60 hover:bg-muted/50" : "bg-primary/5 hover:bg-primary/10"
+                    }`}
+                  >
+                    <p className="text-[13px] font-medium text-foreground leading-tight">{n.titulo}</p>
+                    <p className="text-[11px] text-foreground/50 mt-0.5 leading-snug">{n.corpo}</p>
+                    <p className="text-[10px] text-foreground/30 mt-1">
+                      {new Date(n.createdAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Popup>
+      </div>
 
       <div className="hidden md:block w-px h-5 bg-border mx-1" />
 

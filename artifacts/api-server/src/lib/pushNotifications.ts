@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { pushTokensTable, usersTable, agendamentosTable, barbeariasTable } from "@workspace/db/schema";
+import { pushTokensTable, usersTable, agendamentosTable, barbeariasTable, notificacoesTable } from "@workspace/db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
 
 interface PushMessage {
@@ -52,6 +52,18 @@ export async function sendPushToBarbearia(barbeariaId: number, message: PushMess
     }
 
     if (excludeUserId) allUserIds.delete(excludeUserId);
+
+    try {
+      await db.insert(notificacoesTable).values({
+        barbeariaId,
+        titulo: message.title,
+        corpo: message.body,
+        tipo: message.data?.type || "geral",
+        dados: message.data || {},
+      });
+    } catch (dbErr) {
+      console.error(`[Push] Error storing notification in DB:`, dbErr);
+    }
 
     for (const userId of allUserIds) {
       await sendPushToUser(userId, message);

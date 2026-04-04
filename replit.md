@@ -149,4 +149,23 @@ Dashboard → Agenda → Cadastros (Clientes, Profissionais, Serviços, Pacotes 
 - Push sent on appointment creation and cancellation (non-blocking via `.catch()`)
 - Enhanced `Agenda.tsx`: horizontal calendar strip, professional avatar filter with badges, red current-time indicator line, FAB (+) button, appointment detail modal (confirm/cancel/checkout actions), multi-step new appointment flow (client search → service → professional → time slot)
 
+**Web Push Notifications & In-App Notification Bell (T008):**
+- `notificacoes` table: stores notifications per barbearia (barbeariaId, titulo, corpo, tipo, dados, createdAt)
+- `notificacoes_lidas` table: per-user read tracking (notificacaoId, userId, lidaAt) — ensures marking as read is user-scoped
+- API routes at `/barbearias/:id/notificacoes-internas`: GET `/` (list with per-user lida status), GET `/nao-lidas` (unread count), POST `/:id/lida`, POST `/ler-todas`
+- `sendPushToBarbearia()` automatically inserts into `notificacoes` table when sending push notifications
+- Frontend `useNotifications` hook: polls unread count every 20s, plays Web Audio API sound (sine wave chirp) on new notifications, shows browser Notification API desktop notification
+- Bell icon in HeaderBar with red badge (unread count), dropdown showing recent notifications with "mark all as read" button
+- `requestNotificationPermission()` called on bell click to prompt browser permission
+
+**Simple Mode Cancellation (T007):**
+- Public endpoints: `POST /public/:slug/agendamentos-por-whatsapp` (lookup by phone), `POST /public/:slug/agendamentos/:id/cancelar-simples` (cancel by WhatsApp verification)
+- Only available when `agenda_tipo_link = "Sem login (simples)"` and `cancel_permitir_cliente_link_publico = "Sim"`
+- Cancellation respects `cancel_tolerancia_cliente` hours tolerance
+- Frontend: CalendarDays icon visible in simple mode header, WhatsApp lookup form, appointment list with cancel buttons
+
+**Double Booking Prevention:**
+- Server-side overlap check in both `agendamentos.ts` POST and `public.ts` agendar/agendar-simples routes
+- Returns 409 on professional time conflict: `horaInicio < existing.horaFim && horaFim > existing.horaInicio`
+
 **DB Schema Path:** `lib/db/src/schema/` (each table in its own file, exported from `index.ts`)

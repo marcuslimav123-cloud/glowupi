@@ -39,6 +39,17 @@ async function getCroppedImg(imageSrc: string, pixelCrop: Area, rotation: number
   canvas.height = pixelCrop.height;
   const ctx = canvas.getContext("2d")!;
 
+  const maxDim = 800;
+  let outW = pixelCrop.width;
+  let outH = pixelCrop.height;
+  if (outW > maxDim || outH > maxDim) {
+    const scale = maxDim / Math.max(outW, outH);
+    outW = Math.round(outW * scale);
+    outH = Math.round(outH * scale);
+  }
+  canvas.width = outW;
+  canvas.height = outH;
+
   ctx.drawImage(
     rotCanvas,
     pixelCrop.x,
@@ -47,8 +58,8 @@ async function getCroppedImg(imageSrc: string, pixelCrop: Area, rotation: number
     pixelCrop.height,
     0,
     0,
-    pixelCrop.width,
-    pixelCrop.height
+    outW,
+    outH
   );
 
   return new Promise((resolve, reject) => {
@@ -57,8 +68,8 @@ async function getCroppedImg(imageSrc: string, pixelCrop: Area, rotation: number
         if (blob) resolve(blob);
         else reject(new Error("Erro ao gerar imagem cortada"));
       },
-      "image/png",
-      1
+      "image/jpeg",
+      0.85
     );
   });
 }
@@ -83,8 +94,8 @@ export function LogoUpload({ value, onChange }: LogoUploadProps) {
     if (!file) return;
     e.target.value = "";
 
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Arquivo muito grande (máx 5MB)");
+    if (file.size > 25 * 1024 * 1024) {
+      setError("Arquivo muito grande (máx 25MB)");
       return;
     }
     if (!file.type.startsWith("image/")) {
@@ -111,7 +122,7 @@ export function LogoUpload({ value, onChange }: LogoUploadProps) {
 
     try {
       const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels, rotation);
-      const file = new File([croppedBlob], "logo.png", { type: "image/png" });
+      const file = new File([croppedBlob], "logo.jpg", { type: "image/jpeg" });
 
       const res = await fetch(apiUrl("/storage/uploads/request-url"), {
         method: "POST",

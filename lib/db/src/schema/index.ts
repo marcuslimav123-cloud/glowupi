@@ -47,3 +47,4 @@ export * from "./pushTokens";
 export * from "./adminLogs";
 export * from "./passwordResetTokens";
 export * from "./filiais";
+export * from "./notificacoes";

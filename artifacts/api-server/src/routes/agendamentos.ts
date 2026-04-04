@@ -213,11 +213,16 @@ router.post("/", requireAuth, async (req, res) => {
     }
   }
 
-  const limiteAntecedencia = parseInt(params["agenda_limite_antecedencia"] || "2");
   const agendDataObj = new Date(data + "T" + horaInicio + ":00");
   const agoraDate = new Date();
   const diffMs = agendDataObj.getTime() - agoraDate.getTime();
   const diffHoras = diffMs / (1000 * 60 * 60);
+
+  if (diffMs < 0) {
+    return res.status(400).json({ error: "Não é possível agendar em um horário que já passou" });
+  }
+
+  const limiteAntecedencia = parseInt(params["agenda_limite_antecedencia"] || "2");
   if (diffHoras < limiteAntecedencia && diffHoras >= 0) {
     return res.status(400).json({ error: `Agendamento requer no mínimo ${limiteAntecedencia} hora(s) de antecedência` });
   }
@@ -251,6 +256,19 @@ router.post("/", requireAuth, async (req, res) => {
     const overlaps = bloqueios.some(b => horaInicio < b.horaFim && horaFim > b.horaInicio);
     if (overlaps) {
       return res.status(409).json({ error: "Este horário está bloqueado para o profissional selecionado" });
+    }
+
+    const existingAppointments = await db.select().from(agendamentosTable).where(
+      and(
+        eq(agendamentosTable.barbeariaId, barbeariaId),
+        eq(agendamentosTable.profissionalId, profissionalId),
+        eq(agendamentosTable.data, data),
+        eq(agendamentosTable.status, "confirmado"),
+      )
+    );
+    const hasConflict = existingAppointments.some(a => horaInicio < a.horaFim && horaFim > a.horaInicio);
+    if (hasConflict) {
+      return res.status(409).json({ error: "Já existe um agendamento neste horário para o profissional selecionado" });
     }
   }
   let isAniversario = false;

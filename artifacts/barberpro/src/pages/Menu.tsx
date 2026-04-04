@@ -142,11 +142,11 @@ export default function MenuPage() {
 
   const handleDarkMode = async (mode: string) => {
     try {
-      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/parametros`), {
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/parametros/tema_layout`), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ chave: "tema_layout", valor: mode }),
+        body: JSON.stringify({ valor: mode }),
       });
       if (!res.ok) throw new Error("Falha ao salvar modo");
       qc.invalidateQueries({ queryKey: ["parametros-layout"] });

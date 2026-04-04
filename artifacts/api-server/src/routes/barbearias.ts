@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { barbeariasTable, parametrosConfigTable } from "@workspace/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { requireAuth, requireRole } from "../lib/auth.js";
 import { slugify } from "../lib/slugify.js";
 import { PARAMETROS_DEFAULTS } from "./parametros.js";
@@ -110,6 +110,28 @@ router.put("/me", requireAuth, requireRole("dono"), async (req, res) => {
       })
       .where(eq(barbeariasTable.id, existing.id))
       .returning();
+    if (horarioFuncionamento && Array.isArray(horarioFuncionamento)) {
+      try {
+        const activeDays = horarioFuncionamento.filter((d: any) => d.ativo);
+        if (activeDays.length > 0) {
+          const earliest = activeDays.reduce((min: string, d: any) => d.abertura < min ? d.abertura : min, activeDays[0].abertura);
+          const latest = activeDays.reduce((max: string, d: any) => d.fechamento > max ? d.fechamento : max, activeDays[0].fechamento);
+          for (const [chave, valor] of [["agenda_horario_inicio", earliest], ["agenda_horario_fim", latest]]) {
+            const [existingParam] = await db.select().from(parametrosConfigTable).where(
+              and(eq(parametrosConfigTable.barbeariaId, updated.id), eq(parametrosConfigTable.chave, chave))
+            );
+            if (existingParam) {
+              await db.update(parametrosConfigTable).set({ valor }).where(eq(parametrosConfigTable.id, existingParam.id));
+            } else {
+              await db.insert(parametrosConfigTable).values({ barbeariaId: updated.id, chave, valor, tipo: "input" });
+            }
+          }
+        }
+      } catch (syncErr) {
+        console.error("horario param sync error:", syncErr);
+      }
+    }
+
     return res.json(formatBarbearia(updated));
   } catch (e) {
     return res.status(500).json({ error: "Erro interno" });

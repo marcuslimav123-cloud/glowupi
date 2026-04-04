@@ -463,6 +463,18 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       return res.status(400).json({ error: `Horário após o fim permitido (${paramHoraFim})` });
     }
 
+    const existingAppts = await db.select().from(agendamentosTable).where(
+      and(
+        eq(agendamentosTable.barbeariaId, barbearia.id),
+        eq(agendamentosTable.profissionalId, profissionalId),
+        eq(agendamentosTable.data, data),
+        eq(agendamentosTable.status, "confirmado"),
+      )
+    );
+    if (existingAppts.some(a => horaInicio < a.horaFim && horaFim > a.horaInicio)) {
+      return res.status(409).json({ error: "Este horário já está ocupado para o profissional selecionado" });
+    }
+
     const [agend] = await db.insert(agendamentosTable).values({
       barbeariaId: barbearia.id,
       filialId: filialId || null,
@@ -651,6 +663,18 @@ router.post("/:slug/agendar-simples", async (req, res) => {
     }
     if (paramHoraFim && timeToMinutes(horaFim) > timeToMinutes(paramHoraFim)) {
       return res.status(400).json({ error: `Horário após o fim permitido (${paramHoraFim})` });
+    }
+
+    const existingApptsSimples = await db.select().from(agendamentosTable).where(
+      and(
+        eq(agendamentosTable.barbeariaId, barbearia.id),
+        eq(agendamentosTable.profissionalId, profissionalId),
+        eq(agendamentosTable.data, data),
+        eq(agendamentosTable.status, "confirmado"),
+      )
+    );
+    if (existingApptsSimples.some(a => horaInicio < a.horaFim && horaFim > a.horaInicio)) {
+      return res.status(409).json({ error: "Este horário já está ocupado para o profissional selecionado" });
     }
 
     const [agend] = await db.insert(agendamentosTable).values({
@@ -916,6 +940,116 @@ router.post("/:slug/agendamentos/:id/cancelar", requireClient, async (req, res) 
     return res.json({ success: true, message: "Agendamento cancelado com sucesso" });
   } catch (e) {
     console.error("public cancelar error:", e);
+    return res.status(500).json({ error: "Erro ao cancelar agendamento" });
+  }
+});
+
+router.post("/:slug/agendamentos-por-whatsapp", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { whatsapp } = req.body;
+    if (!whatsapp) return res.status(400).json({ error: "WhatsApp é obrigatório" });
+
+    const whatsappLimpo = whatsapp.replace(/\D/g, "");
+    if (whatsappLimpo.length < 10) return res.status(400).json({ error: "Número inválido" });
+
+    const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.slug, slug)).limit(1);
+    if (!barbearia) return res.status(404).json({ error: "Barbearia não encontrada" });
+
+    const { getParametros } = await import("../lib/parametros.js");
+    const params = await getParametros(barbearia.id);
+    if (params["agenda_tipo_link"] !== "Sem login (simples)") {
+      return res.status(403).json({ error: "Esta funcionalidade não está disponível" });
+    }
+
+    const [cliente] = await db.select().from(clientesTable).where(
+      and(eq(clientesTable.barbeariaId, barbearia.id), eq(clientesTable.telefone, whatsappLimpo))
+    ).limit(1);
+    if (!cliente) return res.json([]);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const agendamentos = await db.select().from(agendamentosTable).where(
+      and(
+        eq(agendamentosTable.barbeariaId, barbearia.id),
+        eq(agendamentosTable.clienteId, cliente.id),
+        eq(agendamentosTable.status, "confirmado"),
+        gte(agendamentosTable.data, today)
+      )
+    );
+
+    return res.json(agendamentos.map(a => ({
+      id: a.id,
+      servicoNome: a.servicoNome,
+      profissionalNome: a.profissionalNome,
+      data: a.data,
+      horaInicio: a.horaInicio,
+      horaFim: a.horaFim,
+      status: a.status,
+    })).sort((a, b) => a.data.localeCompare(b.data) || a.horaInicio.localeCompare(b.horaInicio)));
+  } catch (e) {
+    console.error("agendamentos-por-whatsapp error:", e);
+    return res.status(500).json({ error: "Erro ao buscar agendamentos" });
+  }
+});
+
+router.post("/:slug/agendamentos/:id/cancelar-simples", async (req, res) => {
+  try {
+    const { slug, id } = req.params;
+    const { whatsapp } = req.body;
+    const agendamentoId = parseInt(id);
+    if (isNaN(agendamentoId) || !whatsapp) return res.status(400).json({ error: "Dados inválidos" });
+
+    const whatsappLimpo = whatsapp.replace(/\D/g, "");
+    const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.slug, slug)).limit(1);
+    if (!barbearia) return res.status(404).json({ error: "Barbearia não encontrada" });
+
+    const { getParametros } = await import("../lib/parametros.js");
+    const params = await getParametros(barbearia.id);
+    if (params["agenda_tipo_link"] !== "Sem login (simples)") {
+      return res.status(403).json({ error: "Funcionalidade não disponível" });
+    }
+    if (params["cancel_permitir_cliente_link_publico"] !== "Sim") {
+      return res.status(403).json({ error: "Cancelamento pelo cliente não está habilitado" });
+    }
+
+    const [cliente] = await db.select().from(clientesTable).where(
+      and(eq(clientesTable.barbeariaId, barbearia.id), eq(clientesTable.telefone, whatsappLimpo))
+    ).limit(1);
+    if (!cliente) return res.status(404).json({ error: "Cliente não encontrado" });
+
+    const [agend] = await db.select().from(agendamentosTable).where(
+      and(
+        eq(agendamentosTable.id, agendamentoId),
+        eq(agendamentosTable.barbeariaId, barbearia.id),
+        eq(agendamentosTable.clienteId, cliente.id),
+        eq(agendamentosTable.status, "confirmado")
+      )
+    ).limit(1);
+    if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
+
+    if (agend.data && agend.horaInicio) {
+      const agendDate = new Date(agend.data + "T" + agend.horaInicio + ":00");
+      const diffMs = agendDate.getTime() - Date.now();
+      if (diffMs < 0) return res.status(400).json({ error: "Não é possível cancelar um agendamento que já passou" });
+      const toleranciaHoras = parseInt(params["cancel_tolerancia_cliente"] || "2");
+      if (diffMs / (1000 * 60 * 60) < toleranciaHoras) {
+        return res.status(400).json({ error: `Não é possível cancelar com menos de ${toleranciaHoras} hora(s) de antecedência` });
+      }
+    }
+
+    await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(
+      and(eq(agendamentosTable.id, agendamentoId), eq(agendamentosTable.barbeariaId, barbearia.id))
+    );
+
+    sendPushToBarbearia(barbearia.id, {
+      title: "Agendamento Cancelado pelo Cliente",
+      body: `${agend.clienteNome} cancelou ${agend.servicoNome} com ${agend.profissionalNome} em ${agend.data} às ${agend.horaInicio}`,
+      data: { agendamentoId: agend.id, type: "cancelled_appointment" },
+    }).catch(err => console.error("[Push] Error on simple cancel:", err));
+
+    return res.json({ success: true, message: "Agendamento cancelado com sucesso" });
+  } catch (e) {
+    console.error("cancelar-simples error:", e);
     return res.status(500).json({ error: "Erro ao cancelar agendamento" });
   }
 });
