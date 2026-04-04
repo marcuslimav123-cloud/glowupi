@@ -42,8 +42,8 @@ function Popup({ open, onClose, children, className = "" }: { open: boolean; onC
   if (!open) return null;
   return (
     <>
-      <div className="md:hidden fixed inset-0 bg-black/30 z-[99]" onClick={onClose} />
-      <div ref={ref} className={`fixed md:absolute left-2 right-2 bottom-16 md:left-auto md:right-0 md:bottom-auto md:top-full md:mt-2 bg-card rounded-xl shadow-xl border border-border z-[100] md:w-auto ${className}`}>
+      <div className="fixed inset-0 bg-black/30 z-[99] md:bg-transparent" onClick={onClose} />
+      <div ref={ref} className={`fixed left-2 right-2 top-14 md:left-auto md:right-0 md:top-auto md:absolute md:top-full md:mt-2 max-h-[70vh] overflow-y-auto bg-card rounded-xl shadow-xl border border-border z-[100] md:w-auto ${className}`}>
         {children}
       </div>
     </>
@@ -131,7 +131,7 @@ export function HeaderBar() {
   const iconCls = "h-[18px] w-[18px] text-foreground/50";
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5 md:gap-1">
       <div className="hidden md:flex items-center gap-1">
         <Link href="/agenda" className={iconBtn} title="Agenda">
           <CalendarDays className={iconCls} />
