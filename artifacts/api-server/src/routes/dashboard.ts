@@ -69,11 +69,24 @@ router.get("/", requireAuth, async (req, res) => {
   const { periodo = "semana", dataInicio, dataFim } = req.query;
   const { inicio, fim } = getDateRange(periodo as string, dataInicio as string, dataFim as string);
 
-  const [comandas, agendamentos, clientes, profissionais, produtos] = await Promise.all([
+  const inicioMs = new Date(inicio).getTime();
+  const fimMs = new Date(fim).getTime();
+  const diffMs = fimMs - inicioMs;
+  const prevFimDate = new Date(inicioMs - 86400000);
+  const prevInicioDate = new Date(prevFimDate.getTime() - diffMs);
+  const prevInicio = prevInicioDate.toISOString().slice(0, 10);
+  const prevFim = prevFimDate.toISOString().slice(0, 10);
+
+  const [comandas, comandasAnterior, agendamentos, clientes, profissionais, produtos] = await Promise.all([
     db.select().from(comandasTable).where(and(
       eq(comandasTable.barbeariaId, barbeariaId),
       sql`DATE(${comandasTable.dataFechamento}) >= ${inicio}`,
       sql`DATE(${comandasTable.dataFechamento}) <= ${fim}`
+    )),
+    db.select().from(comandasTable).where(and(
+      eq(comandasTable.barbeariaId, barbeariaId),
+      sql`DATE(${comandasTable.dataFechamento}) >= ${prevInicio}`,
+      sql`DATE(${comandasTable.dataFechamento}) <= ${prevFim}`
     )),
     db.select().from(agendamentosTable).where(and(
       eq(agendamentosTable.barbeariaId, barbeariaId),
@@ -86,6 +99,10 @@ router.get("/", requireAuth, async (req, res) => {
   ]);
 
   const faturamentoTotal = comandas.reduce((sum, c) => sum + parseFloat(c.valorTotal as string), 0);
+  const faturamentoAnterior = comandasAnterior.reduce((sum, c) => sum + parseFloat(c.valorTotal as string), 0);
+  const faturamentoVariacao = faturamentoAnterior > 0
+    ? Math.round(((faturamentoTotal - faturamentoAnterior) / faturamentoAnterior) * 1000) / 10
+    : faturamentoTotal > 0 ? 100 : 0;
   const totalAgendamentos = agendamentos.length;
   const agendamentosPagos = agendamentos.filter(a => a.pago).length;
 
@@ -148,7 +165,7 @@ router.get("/", requireAuth, async (req, res) => {
 
   return res.json({
     faturamentoTotal: Math.round(faturamentoTotal * 100) / 100,
-    faturamentoVariacao: 5.2,
+    faturamentoVariacao,
     totalAgendamentos,
     totalClientes: clientes.length,
     clientesNovos,
