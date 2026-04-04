@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -30,8 +31,16 @@ export const THEMES = [
   { id: "light-brown", label: "Light Brown", color: "#d97706" },
 ];
 
-function Popup({ open, onClose, children, className = "" }: { open: boolean; onClose: () => void; children: React.ReactNode; className?: string }) {
+function Popup({ open, onClose, children, className = "", anchorRef }: { open: boolean; onClose: () => void; children: React.ReactNode; className?: string; anchorRef?: React.RefObject<HTMLElement | null> }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+
+  useEffect(() => {
+    if (!open || !anchorRef?.current) return;
+    const rect = anchorRef.current.getBoundingClientRect();
+    setPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+  }, [open, anchorRef]);
+
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
@@ -39,15 +48,31 @@ function Popup({ open, onClose, children, className = "" }: { open: boolean; onC
     if (open) document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open, onClose]);
+
   if (!open) return null;
-  return (
+
+  const isMobile = window.innerWidth < 768;
+
+  const content = (
     <>
-      <div className="fixed inset-0 bg-black/30 z-[99] md:bg-transparent" onClick={onClose} />
-      <div ref={ref} className={`fixed left-2 right-2 top-14 md:left-auto md:right-0 md:top-auto md:absolute md:top-full md:mt-2 max-h-[70vh] overflow-y-auto bg-card rounded-xl shadow-xl border border-border z-[100] md:w-auto ${className}`}>
+      <div className="fixed inset-0 bg-black/30 md:bg-transparent z-[9998]" onClick={onClose} />
+      <div
+        ref={ref}
+        className={`fixed z-[9999] max-h-[70vh] overflow-y-auto bg-card rounded-xl shadow-xl border border-border ${className}`}
+        style={
+          isMobile
+            ? { left: 8, right: 8, top: 56 }
+            : pos
+            ? { top: pos.top, right: pos.right, minWidth: 280 }
+            : { right: 16, top: 56, minWidth: 280 }
+        }
+      >
         {children}
       </div>
     </>
   );
+
+  return createPortal(content, document.body);
 }
 
 export function HeaderBar() {
@@ -58,6 +83,12 @@ export function HeaderBar() {
   const [themeOpen, setThemeOpen] = useState(false);
   const [solTab, setSolTab] = useState("todos");
   const { notificacoes, unreadCount, loading: notifLoading, fetchNotificacoes, markAsRead, markAllAsRead } = useNotifications();
+
+  const anivBtnRef = useRef<HTMLButtonElement>(null);
+  const msgBtnRef = useRef<HTMLButtonElement>(null);
+  const solBtnRef = useRef<HTMLButtonElement>(null);
+  const notifBtnRef = useRef<HTMLButtonElement>(null);
+  const perfilBtnRef = useRef<HTMLButtonElement>(null);
 
   const toggle = (key: string) => setActivePopup(prev => prev === key ? null : key);
 
@@ -147,10 +178,10 @@ export function HeaderBar() {
       </div>
 
       <div className="relative">
-        <button onClick={() => toggle("aniversarios")} className={iconBtn} title="Aniversários">
+        <button ref={anivBtnRef} onClick={() => toggle("aniversarios")} className={iconBtn} title="Aniversários">
           <Cake className={iconCls} />
         </button>
-        <Popup open={activePopup === "aniversarios"} onClose={() => setActivePopup(null)} className="w-72">
+        <Popup open={activePopup === "aniversarios"} onClose={() => setActivePopup(null)} className="w-72" anchorRef={anivBtnRef}>
           <div className="p-4">
             <h3 className="font-semibold text-[14px] text-foreground mb-3">Aniversariantes</h3>
             {aniversariantes?.hoje?.length > 0 ? (
@@ -193,10 +224,10 @@ export function HeaderBar() {
       </div>
 
       <div className="relative">
-        <button onClick={() => toggle("mensagens")} className={iconBtn} title="Mensagens">
+        <button ref={msgBtnRef} onClick={() => toggle("mensagens")} className={iconBtn} title="Mensagens">
           <Mail className={iconCls} />
         </button>
-        <Popup open={activePopup === "mensagens"} onClose={() => setActivePopup(null)} className="w-72">
+        <Popup open={activePopup === "mensagens"} onClose={() => setActivePopup(null)} className="w-72" anchorRef={msgBtnRef}>
           <div className="p-4">
             <h3 className="font-semibold text-[14px] text-foreground mb-3">Mensagens</h3>
             {Array.isArray(mensagens) && mensagens.length > 0 ? (
@@ -223,10 +254,10 @@ export function HeaderBar() {
 
       {(isDono || isGerente) && (
         <div className="relative">
-          <button onClick={() => toggle("solicitacoes")} className={iconBtn} title="Solicitações de Cadastro">
+          <button ref={solBtnRef} onClick={() => toggle("solicitacoes")} className={iconBtn} title="Solicitações de Cadastro">
             <UserPlus className={iconCls} />
           </button>
-          <Popup open={activePopup === "solicitacoes"} onClose={() => setActivePopup(null)} className="w-80">
+          <Popup open={activePopup === "solicitacoes"} onClose={() => setActivePopup(null)} className="w-80" anchorRef={solBtnRef}>
             <div className="p-4">
               <h3 className="font-semibold text-[14px] text-foreground mb-3">Solicitações de Cadastro</h3>
               <div className="flex gap-1 mb-3">
@@ -280,6 +311,7 @@ export function HeaderBar() {
 
       <div className="relative">
         <button
+          ref={notifBtnRef}
           onClick={() => {
             if (activePopup === "notificacoes") {
               setActivePopup(null);
@@ -299,7 +331,7 @@ export function HeaderBar() {
             </span>
           )}
         </button>
-        <Popup open={activePopup === "notificacoes"} onClose={() => setActivePopup(null)} className="w-80">
+        <Popup open={activePopup === "notificacoes"} onClose={() => setActivePopup(null)} className="w-80" anchorRef={notifBtnRef}>
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-[14px] text-foreground">Notificações</h3>
@@ -344,12 +376,12 @@ export function HeaderBar() {
       <div className="hidden md:block w-px h-5 bg-border mx-1" />
 
       <div className="relative">
-        <button onClick={() => toggle("perfil")} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-muted transition-colors cursor-pointer">
+        <button ref={perfilBtnRef} onClick={() => toggle("perfil")} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-muted transition-colors cursor-pointer">
           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-semibold text-[12px]">
             {user.nome.charAt(0).toUpperCase()}
           </div>
         </button>
-        <Popup open={activePopup === "perfil"} onClose={() => setActivePopup(null)} className="w-56">
+        <Popup open={activePopup === "perfil"} onClose={() => setActivePopup(null)} className="w-56" anchorRef={perfilBtnRef}>
           <div className="bg-primary/10 rounded-t-xl px-4 py-4 flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-[14px]">
               {user.nome.charAt(0).toUpperCase()}
