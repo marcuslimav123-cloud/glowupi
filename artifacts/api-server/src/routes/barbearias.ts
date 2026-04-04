@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { barbeariasTable, parametrosConfigTable, platformConfigTable } from "@workspace/db/schema";
+import { barbeariasTable, parametrosConfigTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAuth, requireRole } from "../lib/auth.js";
 import { slugify } from "../lib/slugify.js";
@@ -33,13 +33,8 @@ router.post("/", requireAuth, requireRole("dono"), async (req, res) => {
     if (existing2.length > 0) {
       baseSlug = `${baseSlug}-${Date.now()}`;
     }
-    const [trialConfig] = await db.select().from(platformConfigTable).where(eq(platformConfigTable.chave, "free_trial_enabled")).limit(1);
-    const freeTrialEnabled = !trialConfig || trialConfig.valor !== "false";
-
     const planoVencimento = new Date();
-    if (freeTrialEnabled) {
-      planoVencimento.setDate(planoVencimento.getDate() + 30);
-    }
+    planoVencimento.setDate(planoVencimento.getDate() + 30);
     const [barbearia] = await db.insert(barbeariasTable).values({
       donoId: user.id,
       nome,
@@ -55,7 +50,7 @@ router.post("/", requireAuth, requireRole("dono"), async (req, res) => {
       uf: uf || null,
       onboardingStep: 2,
       planoVencimento,
-      subscriptionStatus: freeTrialEnabled ? undefined : "trial_expired",
+      subscriptionStatus: "trial",
     }).returning();
 
     try {
