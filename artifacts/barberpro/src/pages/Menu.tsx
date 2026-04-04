@@ -200,6 +200,14 @@ export default function MenuPage() {
           </div>
         </div>
 
+        <div className="mb-5 md:hidden">
+          <InstallAppButton
+            nome={barbeariaNome || undefined}
+            className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+            variant="default"
+          />
+        </div>
+
         {filteredSections.map((section) => (
           <div key={section.label} className="mb-5">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
@@ -299,14 +307,6 @@ export default function MenuPage() {
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="mb-4 md:hidden">
-          <InstallAppButton
-            nome={barbeariaNome || undefined}
-            className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-            variant="default"
-          />
         </div>
 
         <div className="mb-8">
