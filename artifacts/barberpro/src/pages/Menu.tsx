@@ -29,6 +29,7 @@ import {
   GitBranch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { InstallAppButton } from "@/components/InstallAppButton";
 
 type LucideIcon = React.ForwardRefExoticComponent<LucideProps & React.RefAttributes<SVGSVGElement>>;
 
@@ -298,6 +299,14 @@ export default function MenuPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="mb-4 md:hidden">
+          <InstallAppButton
+            nome={barbeariaNome || undefined}
+            className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+            variant="default"
+          />
         </div>
 
         <div className="mb-8">

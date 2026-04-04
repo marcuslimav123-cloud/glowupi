@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams } from "wouter";
-import { Calendar, Clock, Scissors, User, ChevronLeft, ChevronRight, Check, MapPin, Phone, Loader2, LogOut, MessageCircle, XCircle, CalendarDays, AlertTriangle } from "lucide-react";
+import { Calendar, Clock, Scissors, User, ChevronLeft, ChevronRight, Check, MapPin, Phone, Loader2, LogOut, MessageCircle, XCircle, CalendarDays, AlertTriangle, Download, Share, X } from "lucide-react";
 import ClientAuthModal from "@/components/ClientAuthModal";
 import { usePWA } from "@/hooks/usePWA";
+import { useInstallPWA } from "@/hooks/useInstallPWA";
 
 const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, "/");
 
@@ -119,6 +120,9 @@ export default function PublicBooking() {
     logoUrl: barbearia?.logoUrl,
     corPrimaria: barbearia?.corPrimaria,
   });
+
+  const { canInstall, isInstalled, install, showIOSInstructions } = useInstallPWA();
+  const [showIOSModal, setShowIOSModal] = useState(false);
 
   useEffect(() => {
     fetchBarbearia();
@@ -407,6 +411,19 @@ export default function PublicBooking() {
                 </p>
               )}
             </div>
+            {!isInstalled && (
+              <button
+                onClick={async () => {
+                  if (canInstall) { await install(); }
+                  else { setShowIOSModal(true); }
+                }}
+                className="p-1.5 rounded-lg transition text-xs font-medium flex items-center gap-1"
+                style={{ backgroundColor: `${accent}20`, color: accent }}
+                title="Baixar App"
+              >
+                <Download className="h-4 w-4" />
+              </button>
+            )}
             {barbearia.permitirCancelamentoCliente && (isSimpleMode || clientUser) && (
               <div className="flex items-center gap-2">
                 <button
@@ -1062,6 +1079,49 @@ export default function PublicBooking() {
           onAuthenticated={handleClientAuth}
           accentColor={accent}
         />
+      )}
+
+      {showIOSModal && (
+        <div className="fixed inset-0 bg-black/60 z-[10000] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowIOSModal(false)}>
+          <div className="bg-[#1a1a1a] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm border border-white/10 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 pt-5 pb-3">
+              <h3 className="font-semibold text-[16px] text-white">
+                Instalar {barbearia?.nome || "Aplicativo"}
+              </h3>
+              <button onClick={() => setShowIOSModal(false)} className="h-8 w-8 rounded-lg hover:bg-white/10 flex items-center justify-center">
+                <X className="h-4 w-4 text-white/40" />
+              </button>
+            </div>
+            <div className="px-5 pb-6 space-y-4">
+              <p className="text-[13px] text-white/60">
+                Para instalar na tela inicial do seu celular:
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="h-7 w-7 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0" style={{ backgroundColor: `${accent}20`, color: accent }}>1</div>
+                  <p className="text-[13px] text-white/80 pt-1">
+                    Toque no ícone <Share className="inline h-4 w-4 text-blue-400 mx-0.5" /> <strong>Compartilhar</strong> (na barra do navegador)
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="h-7 w-7 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0" style={{ backgroundColor: `${accent}20`, color: accent }}>2</div>
+                  <p className="text-[13px] text-white/80 pt-1">
+                    Role e toque em <strong>"Adicionar à Tela de Início"</strong>
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="h-7 w-7 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0" style={{ backgroundColor: `${accent}20`, color: accent }}>3</div>
+                  <p className="text-[13px] text-white/80 pt-1">
+                    Confirme tocando em <strong>"Adicionar"</strong>
+                  </p>
+                </div>
+              </div>
+              <p className="text-[11px] text-white/30 text-center pt-2">
+                O app será salvo com o nome e logo de {barbearia?.nome || "seu estabelecimento"}
+              </p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
