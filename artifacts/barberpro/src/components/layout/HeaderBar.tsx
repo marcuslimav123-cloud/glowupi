@@ -55,16 +55,16 @@ function Popup({ open, onClose, children, className = "", anchorRef }: { open: b
 
   const content = (
     <>
-      <div className="fixed inset-0 bg-black/30 md:bg-transparent z-[9998]" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/60 md:bg-black/30 z-[9998]" onClick={onClose} />
       <div
         ref={ref}
-        className={`fixed z-[9999] max-h-[70vh] overflow-y-auto bg-card rounded-xl shadow-xl border border-border ${className}`}
+        className={`fixed z-[9999] overflow-y-auto bg-card rounded-xl shadow-xl border border-border ${className}`}
         style={
           isMobile
-            ? { left: 8, right: 8, top: 56 }
+            ? { left: 8, right: 8, top: 56, maxHeight: "calc(100vh - 72px)" }
             : pos
-            ? { top: pos.top, right: pos.right, minWidth: 280 }
-            : { right: 16, top: 56, minWidth: 280 }
+            ? { top: pos.top, right: pos.right, minWidth: 280, maxHeight: "70vh" }
+            : { right: 16, top: 56, minWidth: 280, maxHeight: "70vh" }
         }
       >
         {children}
