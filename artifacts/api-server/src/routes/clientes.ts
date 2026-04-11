@@ -4,6 +4,8 @@ import { clientesTable, barbeariasTable, agendamentosTable, comandasTable, resga
 import { eq, and, ilike, or, desc, sql, inArray, gte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
+import multer from "multer";
+import * as XLSX from "xlsx";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -287,6 +289,210 @@ router.put("/:clienteId", requireAuth, requireRole("dono", "gerente"), async (re
     updatedAt: new Date(),
   }).where(eq(clientesTable.id, id)).returning();
   return res.json(formatCliente(updated));
+});
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+const FIELD_SYNONYMS: Record<string, string[]> = {
+  nome: ["nome", "name", "cliente", "client", "nome completo", "full name", "nome do cliente", "customer name", "customer"],
+  telefone: ["telefone", "phone", "celular", "cel", "mobile", "whatsapp", "tel", "numero", "phone number", "contato", "contact"],
+  email: ["email", "e-mail", "e mail", "correio", "mail"],
+  aniversario: ["aniversario", "aniversário", "nascimento", "data de nascimento", "birthday", "birth date", "data nasc", "dt nascimento", "dt nasc"],
+  observacoes: ["observacoes", "observações", "observacao", "observação", "obs", "notas", "notes", "comentarios", "comentários"],
+};
+
+function detectColumnMapping(headers: string[]): Record<number, string> {
+  const mapping: Record<number, string> = {};
+  const normalizedHeaders = headers.map(h => h.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+
+  for (let i = 0; i < normalizedHeaders.length; i++) {
+    const header = normalizedHeaders[i];
+    for (const [field, synonyms] of Object.entries(FIELD_SYNONYMS)) {
+      const normalizedSynonyms = synonyms.map(s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+      if (normalizedSynonyms.includes(header)) {
+        if (!Object.values(mapping).includes(field)) {
+          mapping[i] = field;
+        }
+        break;
+      }
+    }
+  }
+  return mapping;
+}
+
+router.post("/import/preview", requireAuth, requireRole("dono", "gerente"), upload.single("file"), async (req: any, res) => {
+  try {
+    const barbeariaId = await checkAccess(req, res);
+    if (!barbeariaId) return;
+
+    if (!req.file) {
+      return res.status(400).json({ error: "Nenhum arquivo enviado" });
+    }
+
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    if (!sheetName) {
+      return res.status(400).json({ error: "Planilha vazia" });
+    }
+
+    const sheet = workbook.Sheets[sheetName];
+    const rawData: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+
+    if (rawData.length < 2) {
+      return res.status(400).json({ error: "A planilha precisa ter pelo menos um cabeçalho e uma linha de dados" });
+    }
+
+    const headers = rawData[0].map((h: any) => String(h || "").trim());
+    const autoMapping = detectColumnMapping(headers);
+
+    const previewRows = rawData.slice(1, 6).map(row =>
+      headers.map((_: any, i: number) => String(row[i] ?? "").trim())
+    );
+
+    res.json({
+      headers,
+      autoMapping,
+      totalRows: rawData.length - 1,
+      previewRows,
+      sheetName,
+    });
+  } catch (error: any) {
+    console.error("Import preview error:", error);
+    res.status(500).json({ error: "Erro ao processar arquivo. Verifique o formato." });
+  }
+});
+
+function normalizePhone(raw: string): string {
+  return raw.replace(/\D/g, "");
+}
+
+router.post("/import/execute", requireAuth, requireRole("dono", "gerente"), upload.single("file"), async (req: any, res) => {
+  try {
+    const barbeariaId = await checkAccess(req, res);
+    if (!barbeariaId) return;
+
+    if (!req.file) {
+      return res.status(400).json({ error: "Nenhum arquivo enviado" });
+    }
+
+    let columnMapping: Record<string, number>;
+    try {
+      columnMapping = JSON.parse(req.body.columnMapping || "{}");
+    } catch {
+      return res.status(400).json({ error: "Mapeamento de colunas inválido" });
+    }
+
+    if (!columnMapping.nome && columnMapping.nome !== 0) {
+      return res.status(400).json({ error: "A coluna 'Nome' é obrigatória no mapeamento" });
+    }
+
+    const params = await getParametros(barbeariaId);
+    const autoAprovar = params["cliente_aprovar_cadastro_auto"] !== "Não";
+    const controleCelular = params["cliente_controle_celular"] === "Sim";
+
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const rawData: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+
+    if (rawData.length < 2) {
+      return res.status(400).json({ error: "Planilha vazia" });
+    }
+
+    const MAX_ROWS = 5000;
+    if (rawData.length - 1 > MAX_ROWS) {
+      return res.status(400).json({ error: `Limite de ${MAX_ROWS} clientes por importação. Sua planilha tem ${rawData.length - 1} linhas.` });
+    }
+
+    let existingPhones = new Set<string>();
+    if (controleCelular) {
+      const existing = await db.select({ telefone: clientesTable.telefone }).from(clientesTable)
+        .where(eq(clientesTable.barbeariaId, barbeariaId));
+      existingPhones = new Set(existing.map(e => normalizePhone(e.telefone)).filter(p => p.length > 0));
+    }
+
+    const rows = rawData.slice(1);
+    let imported = 0;
+    let skipped = 0;
+    let errors: string[] = [];
+    const BATCH_SIZE = 100;
+
+    for (let batchStart = 0; batchStart < rows.length; batchStart += BATCH_SIZE) {
+      const batch = rows.slice(batchStart, batchStart + BATCH_SIZE);
+      const valuesToInsert: any[] = [];
+
+      for (let i = 0; i < batch.length; i++) {
+        const row = batch[i];
+        const rowNum = batchStart + i + 2;
+
+        const nome = String(row[columnMapping.nome] ?? "").trim();
+        if (!nome) {
+          skipped++;
+          continue;
+        }
+
+        const rawTelefone = columnMapping.telefone !== undefined ? String(row[columnMapping.telefone] ?? "").trim() : "";
+        const telefone = normalizePhone(rawTelefone);
+        const email = columnMapping.email !== undefined ? String(row[columnMapping.email] ?? "").trim().toLowerCase() : "";
+        const aniversario = columnMapping.aniversario !== undefined ? String(row[columnMapping.aniversario] ?? "").trim() : "";
+        const observacoes = columnMapping.observacoes !== undefined ? String(row[columnMapping.observacoes] ?? "").trim() : "";
+
+        if (!telefone) {
+          skipped++;
+          errors.push(`Linha ${rowNum}: "${nome}" sem telefone`);
+          continue;
+        }
+
+        if (controleCelular && existingPhones.has(telefone)) {
+          skipped++;
+          errors.push(`Linha ${rowNum}: "${nome}" telefone duplicado (${rawTelefone})`);
+          continue;
+        }
+
+        if (controleCelular) existingPhones.add(telefone);
+
+        let parsedAniversario = "";
+        if (aniversario) {
+          const num = Number(aniversario);
+          if (!isNaN(num) && num > 30000) {
+            const d = XLSX.SSF.parse_date_code(num);
+            if (d) parsedAniversario = `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
+          } else if (/\d{2}\/\d{2}\/\d{4}/.test(aniversario)) {
+            const [dd, mm, yyyy] = aniversario.split("/");
+            parsedAniversario = `${yyyy}-${mm}-${dd}`;
+          } else if (/\d{4}-\d{2}-\d{2}/.test(aniversario)) {
+            parsedAniversario = aniversario;
+          }
+        }
+
+        valuesToInsert.push({
+          barbeariaId,
+          nome,
+          telefone,
+          email: email || null,
+          aniversario: parsedAniversario || null,
+          observacoes: observacoes || null,
+          vip: false,
+          status: autoAprovar ? "aprovado" : "pendente",
+        });
+      }
+
+      if (valuesToInsert.length > 0) {
+        await db.insert(clientesTable).values(valuesToInsert);
+        imported += valuesToInsert.length;
+      }
+    }
+
+    res.json({
+      imported,
+      skipped,
+      total: rows.length,
+      errors: errors.slice(0, 50),
+    });
+  } catch (error: any) {
+    console.error("Import execute error:", error);
+    res.status(500).json({ error: "Erro ao importar clientes. Tente novamente." });
+  }
 });
 
 export default router;

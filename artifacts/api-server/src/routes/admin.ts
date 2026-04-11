@@ -325,6 +325,13 @@ router.put("/config", requireAdmin, async (req: any, res) => {
   const { chave, valor } = req.body;
   if (!chave || valor === undefined) return res.status(400).json({ error: "chave e valor obrigatórios" });
 
+  if (chave === "trial_days") {
+    const days = parseInt(valor);
+    if (isNaN(days) || days < 1 || days > 90) {
+      return res.status(400).json({ error: "Dias de teste deve ser entre 1 e 90" });
+    }
+  }
+
   const [existing] = await db.select().from(platformConfigTable).where(eq(platformConfigTable.chave, chave)).limit(1);
   if (existing) {
     await db.update(platformConfigTable).set({ valor, updatedAt: new Date() }).where(eq(platformConfigTable.chave, chave));

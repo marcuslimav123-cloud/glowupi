@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { barbeariasTable, parametrosConfigTable } from "@workspace/db/schema";
+import { barbeariasTable, parametrosConfigTable, platformConfigTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, requireRole } from "../lib/auth.js";
 import { slugify } from "../lib/slugify.js";
@@ -33,8 +33,10 @@ router.post("/", requireAuth, requireRole("dono"), async (req, res) => {
     if (existing2.length > 0) {
       baseSlug = `${baseSlug}-${Date.now()}`;
     }
+    const [trialDaysCfg] = await db.select().from(platformConfigTable).where(eq(platformConfigTable.chave, "trial_days")).limit(1);
+    const trialDays = Math.min(90, Math.max(1, parseInt(trialDaysCfg?.valor || "7") || 7));
     const planoVencimento = new Date();
-    planoVencimento.setDate(planoVencimento.getDate() + 30);
+    planoVencimento.setDate(planoVencimento.getDate() + trialDays);
     const [barbearia] = await db.insert(barbeariasTable).values({
       donoId: user.id,
       nome,

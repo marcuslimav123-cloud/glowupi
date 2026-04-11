@@ -14,10 +14,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Search, UserRound, Star, Crown, Phone, Mail,
-  Cake, TrendingUp, Edit2, Award, MessageCircle, Eye
+  Cake, TrendingUp, Edit2, Award, MessageCircle, Eye, FileSpreadsheet
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
+import { ImportExcelDialog } from "@/components/ImportExcelDialog";
 
 type Cliente = {
   id: number;
@@ -102,6 +103,7 @@ export default function Clientes() {
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Cliente | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["/api/barbearias", barbeariaId, "clientes"] });
 
@@ -143,9 +145,14 @@ export default function Clientes() {
           <h1 className="text-3xl font-display font-bold text-foreground">Clientes</h1>
           <p className="text-muted-foreground mt-1">Cadastro e histórico de clientes</p>
         </div>
-        <Button className="shadow-lg shadow-primary/25 w-fit" onClick={() => { setEditing(null); setModalOpen(true); }}>
-          <Plus className="mr-2 h-4 w-4" /> Novo Cliente
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" className="w-fit" onClick={() => setImportOpen(true)}>
+            <FileSpreadsheet className="mr-2 h-4 w-4" /> Importar Excel
+          </Button>
+          <Button className="shadow-lg shadow-primary/25 w-fit" onClick={() => { setEditing(null); setModalOpen(true); }}>
+            <Plus className="mr-2 h-4 w-4" /> Novo Cliente
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -257,6 +264,15 @@ export default function Clientes() {
           />
         </DialogContent>
       </Dialog>
+
+      {barbeariaId && (
+        <ImportExcelDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          barbeariaId={barbeariaId}
+          onImportComplete={invalidate}
+        />
+      )}
     </AppLayout>
   );
 }

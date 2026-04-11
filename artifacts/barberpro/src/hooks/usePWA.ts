@@ -46,6 +46,8 @@ export function usePWA({ slug, nome, logoUrl, corPrimaria, startUrl }: PWAOption
         icons.push(
           { src: logoUrl, sizes: "192x192", purpose: "any" },
           { src: logoUrl, sizes: "512x512", purpose: "any" },
+          { src: logoUrl, sizes: "192x192", purpose: "maskable" },
+          { src: logoUrl, sizes: "512x512", purpose: "maskable" },
         );
       } else {
         icons.push(

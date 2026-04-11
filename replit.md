@@ -20,7 +20,7 @@ The design adopts a "luxury clinic aesthetic" with a color palette of warm gold,
 - **Reporting & Exports:** Data export to `XLSX` and `PDF` formats.
 - **Monorepo Structure:** Divided into `artifacts` (api-server, barberpro), `lib` (shared code), and `scripts`.
 - **Multi-tenancy:** Each salon operates in an isolated environment.
-- **Subscription Management:** Features a 30-day free trial, trial expiration lockout, professional limits per plan, and differentiated billing periods.
+- **Subscription Management:** Configurable trial period (default 7 days, adjustable in Admin Settings via `trial_days` platform config). Trial expiration lockout, professional limits per plan, and differentiated billing periods. Data is fully preserved across plan changes (trial→paid, upgrades, downgrades).
 - **Appointment & Schedule Management:** Visual agenda, professional schedules, and peak hours analysis. Double booking prevention is implemented server-side.
 - **Client & Product Management:** Detailed client profiles, product inventory, and movement history.
 - **Financial & Reporting:** Commission calculations, split payments, discounts, financial accounts, and various analytical reports, including daily cash register management.
@@ -45,6 +45,8 @@ The design adopts a "luxury clinic aesthetic" with a color palette of warm gold,
 - **AppBeleza Clone Overhaul:** Significant expansion to clone AppBeleza functionality, including 14 new database tables for enhanced features like daily cash register, service categories, suppliers, anamnesis forms, card brands, remunerations, satisfaction surveys, and professional rotation.
 - **Task #59 - Performance & Bug Fixes:** React.lazy + Suspense for 70+ route components in App.tsx (code splitting). Optimistic CRUD updates with snapshot/rollback pattern for Produtos, Servicos, Profissionais (create/update/toggle/delete). Fixed 5 silent catch blocks in BarbeariaStep.tsx onboarding to show user-facing toast messages. WhatsApp clickable links in Agenda detail view. Backend error responses sanitized across checkout.ts (no raw error.message leaks).
 - **Task #60 - Web Push Notifications & WhatsApp in PublicBooking:** Real web push notifications via `web-push` library with VAPID keys. Service worker handles `push` and `notificationclick` events. Frontend auto-subscribes to push via `PushManager` when notification permission is granted, with retry on failure. Public VAPID key endpoint at `/api/push/vapid-public-key`. Backend sends web push to subscribed browsers and auto-deactivates expired/invalid tokens (410/404). WhatsApp optional field added to `com_login` mode confirmation step in PublicBooking, with server-side digits-only validation (10-11 chars).
+- **Excel Client Import:** Upload Excel/CSV files to bulk import clients. Smart header detection maps columns automatically (supports Portuguese and English column names). Two-step process: preview with column mapping, then batch import (100 rows at a time). Handles date parsing (Excel serial numbers, DD/MM/YYYY, YYYY-MM-DD), duplicate phone detection, and provides detailed import results. Tutorial/instructions guide included in the import dialog.
+- **PWA Icons for Android:** Dynamic manifest now includes `maskable` purpose icons alongside `any` purpose for proper Android home screen icon display. Both admin panel (blob manifest) and public booking (API manifest) support establishment-branded icons.
 
 ## External Dependencies
 - **Stripe:** Payment processing, subscription management, and billing.

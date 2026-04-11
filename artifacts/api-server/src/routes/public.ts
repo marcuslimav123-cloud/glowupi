@@ -778,6 +778,8 @@ router.get("/:slug/manifest.json", async (req, res) => {
       icons.push(
         { src: barbearia.logoUrl, sizes: "192x192", purpose: "any" },
         { src: barbearia.logoUrl, sizes: "512x512", purpose: "any" },
+        { src: barbearia.logoUrl, sizes: "192x192", purpose: "maskable" },
+        { src: barbearia.logoUrl, sizes: "512x512", purpose: "maskable" },
       );
     } else {
       icons.push(

@@ -19,6 +19,8 @@ export default function AdminSettings() {
   const [pricingMode, setPricingMode] = useState("all_plans");
   const [freeTrialEnabled, setFreeTrialEnabled] = useState(true);
   const [savingTrial, setSavingTrial] = useState(false);
+  const [trialDays, setTrialDays] = useState("7");
+  const [savingTrialDays, setSavingTrialDays] = useState(false);
   const [privacyPolicy, setPrivacyPolicy] = useState("");
   const [termsOfUse, setTermsOfUse] = useState("");
   const [savingPrivacy, setSavingPrivacy] = useState(false);
@@ -32,6 +34,7 @@ export default function AdminSettings() {
         setConfig(data);
         setPricingMode(data.pricing_mode || "all_plans");
         setFreeTrialEnabled(data.free_trial_enabled !== "false");
+        setTrialDays(data.trial_days || "7");
         setPrivacyPolicy(data.lgpd_privacy_policy || "");
         setTermsOfUse(data.lgpd_terms_of_use || "");
       })
@@ -182,7 +185,7 @@ export default function AdminSettings() {
                       <ToggleLeft className="h-5 w-5 text-slate-500" />
                     )}
                   </div>
-                  <p className="text-xs text-slate-400">Novos cadastros ganham 30 dias grátis. A landing page exibe CTAs de "Teste Grátis".</p>
+                  <p className="text-xs text-slate-400">Novos cadastros ganham período de teste grátis (configurável abaixo). A landing page exibe CTAs de "Teste Grátis".</p>
                 </button>
                 <button
                   onClick={() => saveTrialMode(false)}
@@ -206,6 +209,32 @@ export default function AdminSettings() {
                   <p className="text-xs text-slate-400">Sem trial grátis. Landing page mostra CTAs de compra direta ("Assinar Agora"). Novos cadastros precisam pagar.</p>
                 </button>
               </div>
+
+              {freeTrialEnabled && (
+                <div className="border-t border-white/10 pt-4 mt-4">
+                  <label className="block text-sm font-medium text-white mb-2">Duração do Período de Teste (dias)</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="number"
+                      min="1"
+                      max="90"
+                      value={trialDays}
+                      onChange={(e) => setTrialDays(e.target.value)}
+                      className="w-24 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                    <Button
+                      onClick={() => saveConfig("trial_days", trialDays, setSavingTrialDays, "Dias de teste")}
+                      disabled={savingTrialDays}
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      {savingTrialDays ? "Salvando..." : "Salvar"}
+                    </Button>
+                    <span className="text-xs text-slate-400">Padrão: 7 dias</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-6">
