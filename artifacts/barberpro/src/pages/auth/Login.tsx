@@ -105,6 +105,10 @@ export default function Login() {
       if (!res.ok) throw new Error(data.error || "Falha no login com Google");
       if (data.isNew || !data.user?.telefone) {
         window.location.href = "/completar-perfil";
+      } else if (data.hasBarbearia === false) {
+        window.location.href = "/onboarding/barbearia";
+      } else if (data.onboardingComplete === false) {
+        window.location.href = "/onboarding/barbearia";
       } else {
         window.location.href = "/dashboard";
       }

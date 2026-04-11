@@ -101,6 +101,8 @@ export default function Register() {
       if (!res.ok) throw new Error(data.error || "Falha no cadastro com Google");
       if (data.isNew || !data.user?.telefone) {
         window.location.href = "/completar-perfil";
+      } else if (data.onboardingComplete) {
+        window.location.href = "/dashboard";
       } else {
         window.location.href = "/onboarding/barbearia";
       }

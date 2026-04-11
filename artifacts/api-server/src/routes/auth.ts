@@ -109,10 +109,19 @@ router.post("/google", async (req, res) => {
       }).returning();
     }
 
+    const [existingBarbearia] = await db.select({ id: barbeariasTable.id, onboardingStep: barbeariasTable.onboardingStep })
+      .from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
+
     const token = createSession(user.id);
     res.cookie("session", token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: "lax" });
     const { senhaHash: _, ...userWithoutPass } = user;
-    return res.json({ token, user: { ...userWithoutPass, createdAt: user.createdAt.toISOString() }, isNew });
+    return res.json({
+      token,
+      user: { ...userWithoutPass, createdAt: user.createdAt.toISOString() },
+      isNew,
+      hasBarbearia: !!existingBarbearia,
+      onboardingComplete: existingBarbearia ? (existingBarbearia.onboardingStep ?? 0) >= 5 : false,
+    });
   } catch (e: any) {
     console.error("Google auth error:", e);
     return res.status(401).json({ error: "Falha na autenticação com Google" });
