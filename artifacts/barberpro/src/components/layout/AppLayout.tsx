@@ -242,6 +242,17 @@ const NAV_ITEMS: NavItem[] = [
 
 function CreditCardIcon(props: any) { return <DollarSign {...props} />; }
 
+const HREF_TO_TUTORIAL: Record<string, string> = {
+  "/dashboard": "dashboard",
+  "/agenda": "agenda",
+  "/gestao/servicos": "servicos",
+  "/gestao/profissionais": "profissionais",
+  "/gestao/clientes": "clientes",
+  "/comandas/abertas": "comandas",
+  "/empresa": "empresa",
+  "/configuracoes/parametros": "parametros",
+};
+
 const HREF_TO_PERMISSION: Record<string, string> = {
   "/dashboard": "dashboard",
   "/agenda": "agenda",
@@ -389,7 +400,7 @@ function CollapsibleSubgroup({ sg, location, onLinkClick }: { sg: { label: strin
               loc === sub.href?.split("?")[0]
                 ? "bg-foreground text-background"
                 : "text-foreground/45 hover:text-foreground hover:bg-muted/50"
-            )} onClick={onLinkClick}>
+            )} onClick={onLinkClick} {...(sub.href && HREF_TO_TUTORIAL[sub.href.split("?")[0]] ? { "data-tutorial": HREF_TO_TUTORIAL[sub.href.split("?")[0]] } : {})}>
               <sub.icon className="h-[14px] w-[14px]" />
               {sub.name}
             </Link>
@@ -452,7 +463,7 @@ function CollapsibleGroup({ item, location, onNavigate, mainRef }: { item: NavIt
               loc === child.href?.split("?")[0]
                 ? "bg-foreground text-background"
                 : "text-foreground/45 hover:text-foreground hover:bg-muted/50"
-            )} onClick={handleLinkClick}>
+            )} onClick={handleLinkClick} {...(child.href && HREF_TO_TUTORIAL[child.href.split("?")[0]] ? { "data-tutorial": HREF_TO_TUTORIAL[child.href.split("?")[0]] } : {})}>
               <child.icon className="h-[14px] w-[14px]" />
               {child.name}
             </Link>
@@ -721,7 +732,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   location === item.href || location.startsWith(item.href + '/')
                     ? "bg-foreground text-background" 
                     : "text-foreground/50 hover:text-foreground hover:bg-muted/50"
-                )} onClick={handleNavClick}>
+                )} onClick={handleNavClick} {...(HREF_TO_TUTORIAL[item.href!] ? { "data-tutorial": HREF_TO_TUTORIAL[item.href!] } : {})}>
                   <item.icon className="h-[16px] w-[16px]" />
                   {item.name}
                 </Link>

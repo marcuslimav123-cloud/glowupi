@@ -310,7 +310,7 @@ export default function MenuPage() {
           </div>
         </div>
 
-        {(isDono || isGerente) && (
+        {isDono && (
           <div className="mb-5">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
               Ajuda

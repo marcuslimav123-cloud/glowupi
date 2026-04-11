@@ -323,6 +323,7 @@ export function HeaderBar() {
           }}
           className={iconBtn}
           title="Notificações"
+          data-tutorial="notificacoes"
         >
           <Bell className={iconCls} />
           {unreadCount > 0 && (
