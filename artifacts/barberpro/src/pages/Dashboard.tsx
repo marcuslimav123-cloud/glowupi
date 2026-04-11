@@ -82,17 +82,17 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-[24px] font-bold text-foreground">Dashboard</h1>
-          <p className="text-foreground/40 text-[14px] mt-0.5">Visão geral do seu negócio</p>
+          <h1 className="text-[22px] sm:text-[24px] font-bold text-foreground">Dashboard</h1>
+          <p className="text-foreground/40 text-[13px] mt-0.5">Visão geral do seu negócio</p>
         </div>
         <div className="flex bg-card p-1 rounded-full border border-border w-fit">
           {["hoje", "semana", "mes"].map((p) => (
             <button
               key={p}
               onClick={() => setPeriodo(p as any)}
-              className={`px-4 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200 ${periodo === p ? 'bg-foreground text-background' : 'text-foreground/40 hover:text-foreground'}`}
+              className={`px-3 sm:px-4 py-1.5 rounded-full text-[12px] sm:text-[13px] font-medium transition-all duration-200 ${periodo === p ? 'bg-foreground text-background' : 'text-foreground/40 hover:text-foreground'}`}
             >
               {p.charAt(0).toUpperCase() + p.slice(1)}
             </button>
@@ -100,7 +100,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <MetricCard 
           title="Faturamento" 
           value={formatCurrency(data.faturamentoTotal)} 
@@ -124,13 +124,13 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
         <Card className="lg:col-span-2 bg-card border-border shadow-none">
-          <CardHeader>
-            <CardTitle className="text-[15px] font-semibold">Faturamento ({periodo})</CardTitle>
+          <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
+            <CardTitle className="text-[14px] sm:text-[15px] font-semibold">Faturamento ({periodo})</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-[220px] sm:h-[280px] w-full">
+          <CardContent className="px-2 sm:px-6 pb-4 sm:pb-6">
+            <div className="h-[180px] sm:h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.faturamentoPorDia} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <XAxis dataKey="data" stroke="hsl(var(--foreground) / 0.25)" fontSize={11} tickLine={false} axisLine={false} />
@@ -184,7 +184,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
         <Card className="bg-card border-border shadow-none">
           <CardHeader>
             <CardTitle className="text-[15px] font-semibold flex items-center gap-2"><Award className="h-4 w-4 text-primary" /> Ranking Profissionais</CardTitle>
@@ -238,18 +238,18 @@ export default function Dashboard() {
 function MetricCard({ title, value, icon: Icon, trend }: any) {
   return (
     <Card className="bg-card border-border shadow-none hover:shadow-lg hover:shadow-foreground/[0.02] transition-all duration-300">
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-[13px] font-medium text-foreground/40">{title}</p>
-          <div className="p-1.5 rounded-lg bg-primary/8 text-primary">
-            <Icon className="h-4 w-4" />
+      <CardContent className="p-3 sm:p-5">
+        <div className="flex items-center justify-between mb-2 sm:mb-3">
+          <p className="text-[11px] sm:text-[13px] font-medium text-foreground/40">{title}</p>
+          <div className="p-1 sm:p-1.5 rounded-lg bg-primary/8 text-primary">
+            <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </div>
         </div>
-        <div className="flex items-end gap-2">
-          <h3 className="text-[26px] font-bold text-foreground tracking-tight">{value}</h3>
+        <div className="flex items-end gap-1.5">
+          <h3 className="text-[20px] sm:text-[26px] font-bold text-foreground tracking-tight leading-none">{value}</h3>
           {trend !== undefined && (
-            <span className={`flex items-center text-[12px] font-medium mb-0.5 ${trend >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {trend >= 0 ? <ArrowUpRight className="h-3.5 w-3.5 mr-0.5" /> : <ArrowDownRight className="h-3.5 w-3.5 mr-0.5" />}
+            <span className={`flex items-center text-[10px] sm:text-[12px] font-medium mb-0.5 ${trend >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {trend >= 0 ? <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5" /> : <ArrowDownRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5" />}
               {Math.abs(trend)}%
             </span>
           )}

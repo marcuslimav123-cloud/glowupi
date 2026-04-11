@@ -668,20 +668,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="h-screen overflow-hidden flex flex-col md:flex-row bg-background">
       <div className="md:hidden flex items-center justify-between px-3 py-2 border-b border-border bg-card/95 backdrop-blur-lg safe-area-top">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="h-9 w-9 shrink-0">
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
-          <div className="font-semibold text-[15px] text-foreground tracking-tight flex items-center gap-1.5">
+          <div className="font-semibold text-[14px] text-foreground tracking-tight flex items-center gap-1.5 min-w-0">
             {logoUrl ? (
-              <img src={logoUrl} alt={barbeariaNome || APP_NAME} className="h-[26px] w-[26px] object-contain rounded-full" />
+              <img src={logoUrl} alt={barbeariaNome || APP_NAME} className="h-[24px] w-[24px] object-contain rounded-full shrink-0" />
             ) : (
-              <img src="/logo-icon.png" alt={APP_NAME} className="h-[26px] w-[26px] object-contain" />
+              <img src="/logo-icon.png" alt={APP_NAME} className="h-[24px] w-[24px] object-contain shrink-0" />
             )}
-            {barbeariaNome || APP_NAME}
+            <span className="truncate">{barbeariaNome || APP_NAME}</span>
           </div>
         </div>
-        <HeaderBar />
+        <div className="shrink-0">
+          <HeaderBar />
+        </div>
       </div>
 
       <aside className={cn(
@@ -689,7 +691,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="hidden md:flex flex-col shrink-0">
-          <div className="px-5 pt-4 pb-2 text-center font-semibold text-[15px] text-foreground tracking-tight">
+          <div className="px-4 pt-4 pb-2 text-center font-semibold text-[14px] text-foreground tracking-tight truncate">
             {barbeariaNome || APP_NAME}
           </div>
           <div className="px-4 pb-4">
@@ -762,7 +764,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <HeaderBar />
         </div>
         {shouldShowUpgrade && (
-          <div className={`border-b px-4 py-2 flex items-center justify-center gap-3 z-20 shrink-0 ${
+          <div className={`border-b px-3 py-1.5 sm:px-4 sm:py-2 flex items-center justify-center gap-2 sm:gap-3 z-20 shrink-0 ${
             trialDaysLeft >= 0 && trialDaysLeft <= 5
               ? "bg-red-50 dark:bg-red-950/30 border-red-100 dark:border-red-900/30"
               : trialDaysLeft >= 0 && trialDaysLeft <= 10
@@ -774,7 +776,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             ) : (
               <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
             )}
-            <span className={`text-[13px] ${trialDaysLeft >= 0 && trialDaysLeft <= 5 ? "text-red-600 dark:text-red-400 font-medium" : trialDaysLeft >= 0 && trialDaysLeft <= 10 ? "text-amber-700 dark:text-amber-400" : "text-foreground/60"}`}>
+            <span className={`text-[11px] sm:text-[13px] ${trialDaysLeft >= 0 && trialDaysLeft <= 5 ? "text-red-600 dark:text-red-400 font-medium" : trialDaysLeft >= 0 && trialDaysLeft <= 10 ? "text-amber-700 dark:text-amber-400" : "text-foreground/60"}`}>
               {trialDaysLeft > 0
                 ? `${trialDaysLeft} dia${trialDaysLeft !== 1 ? "s" : ""} restante${trialDaysLeft !== 1 ? "s" : ""} de teste grátis`
                 : "Período de teste gratuito ativo"}
@@ -790,7 +792,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
         )}
-        <div ref={mainContentRef} className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 z-10 main-scroll">
+        <div ref={mainContentRef} className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-8 pb-24 md:pb-8 z-10 main-scroll">
           {children}
         </div>
       </main>

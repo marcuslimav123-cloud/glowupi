@@ -158,8 +158,8 @@ export function HeaderBar() {
 
   const currentTema = user?.tema || "blue";
 
-  const iconBtn = "relative flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted transition-colors cursor-pointer";
-  const iconCls = "h-[18px] w-[18px] text-foreground/50";
+  const iconBtn = "relative flex items-center justify-center h-8 w-8 md:h-9 md:w-9 rounded-lg hover:bg-muted transition-colors cursor-pointer";
+  const iconCls = "h-[16px] w-[16px] md:h-[18px] md:w-[18px] text-foreground/50";
 
   return (
     <div className="flex items-center gap-0.5 md:gap-1">
@@ -177,7 +177,7 @@ export function HeaderBar() {
         </Link>
       </div>
 
-      <div className="relative">
+      <div className="relative hidden md:block">
         <button ref={anivBtnRef} onClick={() => toggle("aniversarios")} className={iconBtn} title="Aniversários">
           <Cake className={iconCls} />
         </button>
@@ -223,7 +223,7 @@ export function HeaderBar() {
         </Popup>
       </div>
 
-      <div className="relative">
+      <div className="relative hidden md:block">
         <button ref={msgBtnRef} onClick={() => toggle("mensagens")} className={iconBtn} title="Mensagens">
           <Mail className={iconCls} />
         </button>
@@ -253,7 +253,7 @@ export function HeaderBar() {
       </div>
 
       {(isDono || isGerente) && (
-        <div className="relative">
+        <div className="relative hidden md:block">
           <button ref={solBtnRef} onClick={() => toggle("solicitacoes")} className={iconBtn} title="Solicitações de Cadastro">
             <UserPlus className={iconCls} />
           </button>

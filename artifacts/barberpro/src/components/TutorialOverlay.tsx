@@ -237,25 +237,45 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
   const StepIcon = step.icon;
 
   const getTooltipStyle = (): React.CSSProperties => {
+    const isMobile = window.innerWidth < 768;
+
     if (!spotlightRect || tooltipPos === "center") {
       return {
         position: "fixed",
-        top: "50%",
+        bottom: isMobile ? "80px" : "auto",
+        top: isMobile ? "auto" : "50%",
         left: "50%",
-        transform: "translate(-50%, -50%)",
+        transform: isMobile ? "translateX(-50%)" : "translate(-50%, -50%)",
+      };
+    }
+    if (isMobile) {
+      const spaceBelow = window.innerHeight - (spotlightRect.top + spotlightRect.height);
+      if (spaceBelow > 280) {
+        return {
+          position: "fixed",
+          top: `${spotlightRect.top + spotlightRect.height + 12}px`,
+          left: "50%",
+          transform: "translateX(-50%)",
+        };
+      }
+      return {
+        position: "fixed",
+        bottom: "80px",
+        left: "50%",
+        transform: "translateX(-50%)",
       };
     }
     if (tooltipPos === "bottom") {
       return {
         position: "fixed",
-        top: `${spotlightRect.top + spotlightRect.height + 16}px`,
+        top: `${Math.min(spotlightRect.top + spotlightRect.height + 16, window.innerHeight - 320)}px`,
         left: "50%",
         transform: "translateX(-50%)",
       };
     }
     return {
       position: "fixed",
-      bottom: `${window.innerHeight - spotlightRect.top + 16}px`,
+      bottom: `${Math.max(window.innerHeight - spotlightRect.top + 16, 40)}px`,
       left: "50%",
       transform: "translateX(-50%)",
     };
@@ -328,7 +348,7 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
 
       <div
         style={getTooltipStyle()}
-        className={`w-[92%] max-w-md bg-card border border-border rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 z-[10000] ${
+        className={`w-[90%] max-w-sm bg-card border border-border rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 z-[10000] ${
           isAnimating ? "scale-95 opacity-50" : "scale-100 opacity-100"
         }`}
       >
@@ -339,45 +359,45 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
           />
         </div>
 
-        <div className="flex items-center justify-between px-5 pt-4 pb-2">
-          <div className="flex items-center gap-2 text-primary">
-            <GraduationCap className="h-4 w-4" />
-            <span className="text-xs font-semibold uppercase tracking-wider">Tutorial</span>
+        <div className="flex items-center justify-between px-4 pt-3 pb-1">
+          <div className="flex items-center gap-1.5 text-primary">
+            <GraduationCap className="h-3.5 w-3.5" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider">Tutorial</span>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground font-medium">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-muted-foreground font-medium">
               {currentStep + 1} / {TUTORIAL_STEPS.length}
             </span>
             <button
               onClick={handleSkip}
-              className="h-7 w-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="h-6 w-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
 
-        <div className="px-5 py-5">
-          <div className="flex items-start gap-4">
-            <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-              <StepIcon className="h-6 w-6 text-primary" />
+        <div className="px-4 py-3">
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <StepIcon className="h-5 w-5 text-primary" />
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-foreground mb-1">{step.title}</h2>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+            <div className="min-w-0">
+              <h2 className="text-[15px] font-bold text-foreground mb-0.5">{step.title}</h2>
+              <p className="text-[13px] text-muted-foreground leading-snug">
                 {step.description}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 justify-center pb-3">
+        <div className="flex items-center gap-1.5 justify-center pb-2">
           {TUTORIAL_STEPS.map((_, i) => (
             <div
               key={i}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
+              className={`h-1 rounded-full transition-all duration-300 ${
                 i === currentStep
-                  ? "w-6 bg-primary"
+                  ? "w-5 bg-primary"
                   : i < currentStep
                   ? "w-1.5 bg-primary/40"
                   : "w-1.5 bg-muted-foreground/20"
@@ -386,35 +406,35 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
           ))}
         </div>
 
-        <div className="flex items-center gap-3 px-5 pb-5 pt-2">
+        <div className="flex items-center gap-2 px-4 pb-4 pt-1">
           {!isFirst && (
             <button
               onClick={handlePrev}
-              className="h-11 px-4 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors flex items-center justify-center gap-1.5"
+              className="h-9 px-3 rounded-lg border border-border text-[13px] font-medium text-foreground hover:bg-muted transition-colors flex items-center justify-center gap-1"
             >
-              <ChevronLeft className="h-4 w-4" />
-              Anterior
+              <ChevronLeft className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Anterior</span>
             </button>
           )}
           <button
             onClick={handleSkip}
-            className="h-11 px-4 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="h-9 px-3 rounded-lg border border-border text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             Pular
           </button>
           <button
             onClick={handleNext}
-            className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-1.5"
+            className="flex-1 h-9 rounded-lg bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-1"
           >
             {isLast ? (
               <>
-                <Sparkles className="h-4 w-4" />
+                <Sparkles className="h-3.5 w-3.5" />
                 Concluir
               </>
             ) : (
               <>
                 Próximo
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3.5 w-3.5" />
               </>
             )}
           </button>
