@@ -101,7 +101,7 @@ export default function BarbeariaStep() {
           }
         })
         .catch(() => {
-          console.warn("[onboarding] Não foi possível carregar dados do usuário para auto-preenchimento");
+          toast({ title: "Aviso", description: "Não foi possível carregar seus dados automaticamente.", variant: "destructive" });
         });
     }
   }, [currentStep]);
@@ -309,7 +309,7 @@ export default function BarbeariaStep() {
             });
           }
         } catch (e) {
-          console.warn("[onboarding] Erro ao criar profissional do dono automaticamente:", e);
+          toast({ title: "Aviso", description: "Não foi possível adicionar seu perfil automaticamente. Adicione manualmente.", variant: "destructive" });
         }
       }
       const res = await fetch(apiUrl("/barbearias/me"), {

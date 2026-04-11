@@ -80,7 +80,8 @@ router.get("/pricing-config", async (_req, res) => {
     });
   } catch (error: any) {
     console.error("Error fetching pricing config:", error);
-    res.json({
+    res.status(500).json({
+      error: "Erro ao carregar configuração de preços. Tente novamente.",
       pricingMode: "all_plans",
       products: [],
       publishableKey: null,
@@ -165,7 +166,7 @@ router.post("/create-checkout-session", requireAuth, requireBarbearia, async (re
     res.json({ url: session.url });
   } catch (error: any) {
     console.error("Checkout session error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Erro ao criar sessão de pagamento. Tente novamente." });
   }
 });
 
@@ -195,7 +196,7 @@ router.get("/subscription-status", requireAuth, requireBarbearia, async (req: an
     });
   } catch (error: any) {
     console.error("Subscription status error:", error);
-    res.json({ status: "trial", subscription: null });
+    res.status(500).json({ error: "Erro ao verificar status da assinatura.", status: "trial", subscription: null });
   }
 });
 
@@ -216,7 +217,7 @@ router.post("/create-portal-session", requireAuth, requireBarbearia, async (req:
     res.json({ url: session.url });
   } catch (error: any) {
     console.error("Portal session error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Erro ao acessar portal de assinatura. Tente novamente." });
   }
 });
 
@@ -364,7 +365,7 @@ router.post("/create-direct-session", requireAuth, async (req: any, res) => {
     res.json({ url: session.url, sessionId: session.id });
   } catch (error: any) {
     console.error("Direct checkout session error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Erro ao criar sessão de pagamento. Tente novamente." });
   }
 });
 
@@ -409,7 +410,7 @@ router.post("/verify-direct-session", requireAuth, async (req: any, res) => {
     });
   } catch (error: any) {
     console.error("Verify direct session error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Erro ao verificar sessão de pagamento." });
   }
 });
 
@@ -520,7 +521,7 @@ router.post("/complete-direct-onboarding", requireAuth, async (req: any, res) =>
     });
   } catch (error: any) {
     console.error("Complete direct onboarding error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Erro ao finalizar cadastro. Tente novamente." });
   }
 });
 

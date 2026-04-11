@@ -43,7 +43,7 @@ The design adopts a "luxury clinic aesthetic" with a color palette of warm gold,
 - **Push Notifications & Agenda:** Push notification system using Expo Push API for appointment reminders and updates, with a `push_tokens` table for managing device tokens.
 - **Web Push Notifications & In-App Notification Bell:** Internal notification system with `notificacoes` table, per-user read tracking, and browser desktop notifications.
 - **AppBeleza Clone Overhaul:** Significant expansion to clone AppBeleza functionality, including 14 new database tables for enhanced features like daily cash register, service categories, suppliers, anamnesis forms, card brands, remunerations, satisfaction surveys, and professional rotation.
-- **Task #59 - Performance & Bug Fixes:** React.lazy + Suspense for 70+ route components (code splitting), optimistic updates for CRUD pages (Produtos, Servicos, Profissionais), fixed empty catch blocks in onboarding (BarbeariaStep.tsx), WhatsApp clickable links in Agenda detail view. Stripe payment flow verified (checkout, webhooks, trial scheduler all correct).
+- **Task #59 - Performance & Bug Fixes:** React.lazy + Suspense for 70+ route components in App.tsx (code splitting). Optimistic CRUD updates with snapshot/rollback pattern for Produtos, Servicos, Profissionais (create/update/toggle/delete). Fixed 5 silent catch blocks in BarbeariaStep.tsx onboarding to show user-facing toast messages. WhatsApp clickable links in Agenda detail view. Backend error responses sanitized across checkout.ts (no raw error.message leaks).
 
 ## External Dependencies
 - **Stripe:** Payment processing, subscription management, and billing.

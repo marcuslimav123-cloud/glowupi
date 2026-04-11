@@ -215,6 +215,7 @@ export default function Servicos() {
   const queryKey = ["/api/barbearias", barbeariaId, "servicos"];
 
   const handleSave = async (data: any) => {
+    const snapshot = qc.getQueryData<Servico[]>(queryKey);
     try {
       if (editing) {
         qc.setQueryData(queryKey, (old: Servico[] | undefined) =>
@@ -223,44 +224,53 @@ export default function Servicos() {
         await updateMutation.mutateAsync({ barbeariaId: barbeariaId!, servicoId: editing.id, data });
         toast({ title: "Serviço atualizado!" });
       } else {
+        const tempId = -Date.now();
+        qc.setQueryData(queryKey, (old: Servico[] | undefined) =>
+          [...(old || []), { ...data, id: tempId, ativo: true } as Servico]
+        );
         await createMutation.mutateAsync({ barbeariaId: barbeariaId!, data });
         toast({ title: "Serviço criado!" });
       }
-      invalidate();
       setModalOpen(false);
       setEditing(null);
     } catch {
-      invalidate();
+      qc.setQueryData(queryKey, snapshot);
       toast({ title: "Erro ao salvar serviço", variant: "destructive" });
+    } finally {
+      invalidate();
     }
   };
 
   const handleToggle = async (s: Servico) => {
+    const snapshot = qc.getQueryData<Servico[]>(queryKey);
     qc.setQueryData(queryKey, (old: Servico[] | undefined) =>
       (old || []).map(item => item.id === s.id ? { ...item, ativo: !item.ativo } : item)
     );
     try {
       await updateMutation.mutateAsync({ barbeariaId: barbeariaId!, servicoId: s.id, data: { ativo: !s.ativo } });
-      invalidate();
     } catch {
-      invalidate();
+      qc.setQueryData(queryKey, snapshot);
       toast({ title: "Erro ao alterar status", variant: "destructive" });
+    } finally {
+      invalidate();
     }
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    const snapshot = qc.getQueryData<Servico[]>(queryKey);
     qc.setQueryData(queryKey, (old: Servico[] | undefined) =>
       (old || []).filter(s => s.id !== deleteTarget.id)
     );
     try {
       await deleteMutation.mutateAsync({ barbeariaId: barbeariaId!, servicoId: deleteTarget.id });
-      invalidate();
       toast({ title: "Serviço removido" });
       setDeleteTarget(null);
     } catch {
-      invalidate();
+      qc.setQueryData(queryKey, snapshot);
       toast({ title: "Erro ao remover", variant: "destructive" });
+    } finally {
+      invalidate();
     }
   };
 

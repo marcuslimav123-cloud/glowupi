@@ -374,6 +374,7 @@ export default function Profissionais() {
   const queryKey = ["/api/barbearias", barbeariaId, "profissionais"];
 
   const handleSave = async (data: any) => {
+    const snapshot = qc.getQueryData<Prof[]>(queryKey);
     try {
       if (editing) {
         qc.setQueryData(queryKey, (old: Prof[] | undefined) =>
@@ -382,14 +383,17 @@ export default function Profissionais() {
         await updateMutation.mutateAsync({ barbeariaId: barbeariaId!, profissionalId: editing.id, data });
         toast({ title: "Profissional atualizado!" });
       } else {
+        const tempId = -Date.now();
+        qc.setQueryData(queryKey, (old: Prof[] | undefined) =>
+          [...(old || []), { ...data, id: tempId, ativo: true } as Prof]
+        );
         await createMutation.mutateAsync({ barbeariaId: barbeariaId!, data });
         toast({ title: "Profissional adicionado!" });
       }
-      invalidate();
       setModalOpen(false);
       setEditing(null);
     } catch (err: any) {
-      invalidate();
+      qc.setQueryData(queryKey, snapshot);
       const errorBody = err?.response?.data || err?.body;
       if (errorBody?.error === "professional_limit_reached") {
         toast({
@@ -400,36 +404,42 @@ export default function Profissionais() {
       } else {
         toast({ title: "Erro ao salvar", variant: "destructive" });
       }
+    } finally {
+      invalidate();
     }
   };
 
   const handleToggleAtivo = async (p: Prof) => {
+    const snapshot = qc.getQueryData<Prof[]>(queryKey);
     qc.setQueryData(queryKey, (old: Prof[] | undefined) =>
       (old || []).map(item => item.id === p.id ? { ...item, ativo: !item.ativo } : item)
     );
     try {
       await updateMutation.mutateAsync({ barbeariaId: barbeariaId!, profissionalId: p.id, data: { ativo: !p.ativo } });
-      invalidate();
       toast({ title: p.ativo ? "Profissional desativado" : "Profissional reativado" });
     } catch {
-      invalidate();
+      qc.setQueryData(queryKey, snapshot);
       toast({ title: "Erro", variant: "destructive" });
+    } finally {
+      invalidate();
     }
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    const snapshot = qc.getQueryData<Prof[]>(queryKey);
     qc.setQueryData(queryKey, (old: Prof[] | undefined) =>
       (old || []).filter(p => p.id !== deleteTarget.id)
     );
     try {
       await deleteMutation.mutateAsync({ barbeariaId: barbeariaId!, profissionalId: deleteTarget.id });
-      invalidate();
       toast({ title: "Profissional removido" });
       setDeleteTarget(null);
     } catch {
-      invalidate();
+      qc.setQueryData(queryKey, snapshot);
       toast({ title: "Erro ao remover", variant: "destructive" });
+    } finally {
+      invalidate();
     }
   };
 

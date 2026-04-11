@@ -253,6 +253,7 @@ export default function Produtos() {
   const queryKey = ["/api/barbearias", barbeariaId, "produtos"];
 
   const handleSave = async (data: any) => {
+    const snapshot = qc.getQueryData<Produto[]>(queryKey);
     try {
       if (editing) {
         qc.setQueryData(queryKey, (old: Produto[] | undefined) =>
@@ -261,43 +262,52 @@ export default function Produtos() {
         await updateMutation.mutateAsync({ barbeariaId: barbeariaId!, produtoId: editing.id, data });
         toast({ title: "Produto atualizado!" });
       } else {
+        const tempId = -Date.now();
+        qc.setQueryData(queryKey, (old: Produto[] | undefined) =>
+          [...(old || []), { ...data, id: tempId, ativo: true } as Produto]
+        );
         await createMutation.mutateAsync({ barbeariaId: barbeariaId!, data });
         toast({ title: "Produto criado!" });
       }
-      invalidate();
       setModalOpen(false);
       setEditing(null);
     } catch {
-      invalidate();
+      qc.setQueryData(queryKey, snapshot);
       toast({ title: "Erro ao salvar produto", variant: "destructive" });
+    } finally {
+      invalidate();
     }
   };
 
   const handleToggle = async (p: Produto) => {
+    const snapshot = qc.getQueryData<Produto[]>(queryKey);
     qc.setQueryData(queryKey, (old: Produto[] | undefined) =>
       (old || []).map(item => item.id === p.id ? { ...item, ativo: !item.ativo } : item)
     );
     try {
       await updateMutation.mutateAsync({ barbeariaId: barbeariaId!, produtoId: p.id, data: { ativo: !p.ativo } });
-      invalidate();
     } catch {
-      invalidate();
+      qc.setQueryData(queryKey, snapshot);
       toast({ title: "Erro ao alterar status", variant: "destructive" });
+    } finally {
+      invalidate();
     }
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm("Remover produto?")) return;
+    const snapshot = qc.getQueryData<Produto[]>(queryKey);
     qc.setQueryData(queryKey, (old: Produto[] | undefined) =>
       (old || []).filter(p => p.id !== id)
     );
     try {
       await deleteMutation.mutateAsync({ barbeariaId: barbeariaId!, produtoId: id });
-      invalidate();
       toast({ title: "Produto removido" });
     } catch {
-      invalidate();
+      qc.setQueryData(queryKey, snapshot);
       toast({ title: "Erro ao remover produto", variant: "destructive" });
+    } finally {
+      invalidate();
     }
   };
 
