@@ -11,11 +11,6 @@ const router: IRouter = Router();
 
 router.post("/register", async (req, res) => {
   try {
-    const [trialCfg] = await db.select().from(platformConfigTable).where(eq(platformConfigTable.chave, "free_trial_enabled")).limit(1);
-    if (trialCfg && trialCfg.valor === "false") {
-      return res.status(403).json({ error: "O cadastro gratuito está desativado. Assine um plano para começar." });
-    }
-
     const { nome, email, senha } = req.body;
     if (!nome || !email || !senha) {
       return res.status(400).json({ error: "Nome, email e senha são obrigatórios" });
@@ -104,10 +99,6 @@ router.post("/google", async (req, res) => {
         [user] = await db.update(usersTable).set({ googleId, fotoUrl: fotoUrl || user.fotoUrl }).where(eq(usersTable.id, user.id)).returning();
       }
     } else {
-      const [trialCfg] = await db.select().from(platformConfigTable).where(eq(platformConfigTable.chave, "free_trial_enabled")).limit(1);
-      if (trialCfg && trialCfg.valor === "false") {
-        return res.status(403).json({ error: "O cadastro gratuito está desativado. Assine um plano em glowupi.com.br para começar." });
-      }
       isNew = true;
       [user] = await db.insert(usersTable).values({
         nome,
