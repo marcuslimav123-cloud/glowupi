@@ -109,6 +109,7 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
+    setLocation(TUTORIAL_STEPS[0].route);
   }, []);
 
   const findAndHighlight = useCallback((stepIndex: number) => {
