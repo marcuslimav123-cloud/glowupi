@@ -12,26 +12,14 @@ export default function Register() {
   const [googleFailed, setGoogleFailed] = useState(false);
   const googleInitRef = useRef(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [freeTrialEnabled, setFreeTrialEnabled] = useState<boolean | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    fetch(apiUrl("/checkout/pricing-config"))
-      .then(r => r.json())
-      .then(data => {
-        const enabled = data.freeTrialEnabled !== false;
-        setFreeTrialEnabled(enabled);
-        if (!enabled) {
-          window.location.href = "/";
-        }
-      })
-      .catch(() => {
-        setFreeTrialEnabled(false);
-        window.location.href = "/";
-      });
+    setReady(true);
   }, []);
 
   useEffect(() => {
-    if (freeTrialEnabled === false) return;
+    if (!ready) return;
 
     const timeout = setTimeout(() => {
       if (!googleInitRef.current) setGoogleFailed(true);
@@ -49,7 +37,7 @@ export default function Register() {
       .catch(() => setGoogleFailed(true));
 
     return () => clearTimeout(timeout);
-  }, [freeTrialEnabled]);
+  }, [ready]);
 
   const loadGoogleScript = (clientId: string) => {
     if (document.getElementById("google-gsi-script")) {
@@ -117,7 +105,7 @@ export default function Register() {
     }
   };
 
-  if (freeTrialEnabled === null || freeTrialEnabled === false) {
+  if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0f0f0f] via-[#141210] to-[#0f0f0f]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

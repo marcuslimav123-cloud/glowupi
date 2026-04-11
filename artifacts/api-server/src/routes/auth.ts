@@ -439,7 +439,7 @@ router.get("/me", requireAuth, async (req, res) => {
         planoVencimento: barbearia.planoVencimento?.toISOString() ?? null,
       } : null,
       barbeariaId: barbearia?.id ?? null,
-      onboardingCompleto: barbearia ? barbearia.onboardingStep >= 3 : false,
+      onboardingCompleto: barbearia ? (barbearia.onboardingStep ?? 0) >= 5 : false,
       tutorialCompleto: barbearia?.tutorialCompleto ?? false,
       perfilPermissoes,
       lgpdConsentido: !!lastConsent,
