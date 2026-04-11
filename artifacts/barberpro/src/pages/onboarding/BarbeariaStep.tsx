@@ -100,7 +100,9 @@ export default function BarbeariaStep() {
             }
           }
         })
-        .catch(() => {});
+        .catch(() => {
+          console.warn("[onboarding] Não foi possível carregar dados do usuário para auto-preenchimento");
+        });
     }
   }, [currentStep]);
 
@@ -119,7 +121,9 @@ export default function BarbeariaStep() {
             uf: data.uf || prev.uf
           }));
         }
-      } catch (e) {}
+      } catch (e) {
+        toast({ title: "Erro ao buscar CEP", description: "Não foi possível consultar o CEP. Preencha manualmente.", variant: "destructive" });
+      }
     }
   };
 
@@ -231,7 +235,9 @@ export default function BarbeariaStep() {
           method: "DELETE",
           credentials: "include"
         });
-      } catch (e) {}
+      } catch (e) {
+        toast({ title: "Aviso", description: "Serviço removido localmente, mas houve erro ao remover do servidor.", variant: "destructive" });
+      }
     }
     setServices(prev => prev.filter((_, i) => i !== index));
   };
@@ -282,7 +288,9 @@ export default function BarbeariaStep() {
           method: "DELETE",
           credentials: "include"
         });
-      } catch (e) {}
+      } catch (e) {
+        toast({ title: "Aviso", description: "Profissional removido localmente, mas houve erro ao remover do servidor.", variant: "destructive" });
+      }
     }
     setProfessionals(prev => prev.filter((_, i) => i !== index));
   };
@@ -300,7 +308,9 @@ export default function BarbeariaStep() {
               return copy;
             });
           }
-        } catch (e) {}
+        } catch (e) {
+          console.warn("[onboarding] Erro ao criar profissional do dono automaticamente:", e);
+        }
       }
       const res = await fetch(apiUrl("/barbearias/me"), {
         method: "PUT",

@@ -212,9 +212,14 @@ export default function Servicos() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["/api/barbearias", barbeariaId, "servicos"] });
 
+  const queryKey = ["/api/barbearias", barbeariaId, "servicos"];
+
   const handleSave = async (data: any) => {
     try {
       if (editing) {
+        qc.setQueryData(queryKey, (old: Servico[] | undefined) =>
+          (old || []).map(s => s.id === editing.id ? { ...s, ...data } : s)
+        );
         await updateMutation.mutateAsync({ barbeariaId: barbeariaId!, servicoId: editing.id, data });
         toast({ title: "Serviço atualizado!" });
       } else {
@@ -225,23 +230,36 @@ export default function Servicos() {
       setModalOpen(false);
       setEditing(null);
     } catch {
+      invalidate();
       toast({ title: "Erro ao salvar serviço", variant: "destructive" });
     }
   };
 
   const handleToggle = async (s: Servico) => {
-    await updateMutation.mutateAsync({ barbeariaId: barbeariaId!, servicoId: s.id, data: { ativo: !s.ativo } });
-    invalidate();
+    qc.setQueryData(queryKey, (old: Servico[] | undefined) =>
+      (old || []).map(item => item.id === s.id ? { ...item, ativo: !item.ativo } : item)
+    );
+    try {
+      await updateMutation.mutateAsync({ barbeariaId: barbeariaId!, servicoId: s.id, data: { ativo: !s.ativo } });
+      invalidate();
+    } catch {
+      invalidate();
+      toast({ title: "Erro ao alterar status", variant: "destructive" });
+    }
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    qc.setQueryData(queryKey, (old: Servico[] | undefined) =>
+      (old || []).filter(s => s.id !== deleteTarget.id)
+    );
     try {
       await deleteMutation.mutateAsync({ barbeariaId: barbeariaId!, servicoId: deleteTarget.id });
       invalidate();
       toast({ title: "Serviço removido" });
       setDeleteTarget(null);
     } catch {
+      invalidate();
       toast({ title: "Erro ao remover", variant: "destructive" });
     }
   };

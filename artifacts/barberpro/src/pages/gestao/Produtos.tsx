@@ -250,9 +250,14 @@ export default function Produtos() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["/api/barbearias", barbeariaId, "produtos"] });
 
+  const queryKey = ["/api/barbearias", barbeariaId, "produtos"];
+
   const handleSave = async (data: any) => {
     try {
       if (editing) {
+        qc.setQueryData(queryKey, (old: Produto[] | undefined) =>
+          (old || []).map(p => p.id === editing.id ? { ...p, ...data } : p)
+        );
         await updateMutation.mutateAsync({ barbeariaId: barbeariaId!, produtoId: editing.id, data });
         toast({ title: "Produto atualizado!" });
       } else {
@@ -263,20 +268,37 @@ export default function Produtos() {
       setModalOpen(false);
       setEditing(null);
     } catch {
+      invalidate();
       toast({ title: "Erro ao salvar produto", variant: "destructive" });
     }
   };
 
   const handleToggle = async (p: Produto) => {
-    await updateMutation.mutateAsync({ barbeariaId: barbeariaId!, produtoId: p.id, data: { ativo: !p.ativo } });
-    invalidate();
+    qc.setQueryData(queryKey, (old: Produto[] | undefined) =>
+      (old || []).map(item => item.id === p.id ? { ...item, ativo: !item.ativo } : item)
+    );
+    try {
+      await updateMutation.mutateAsync({ barbeariaId: barbeariaId!, produtoId: p.id, data: { ativo: !p.ativo } });
+      invalidate();
+    } catch {
+      invalidate();
+      toast({ title: "Erro ao alterar status", variant: "destructive" });
+    }
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm("Remover produto?")) return;
-    await deleteMutation.mutateAsync({ barbeariaId: barbeariaId!, produtoId: id });
-    invalidate();
-    toast({ title: "Produto removido" });
+    qc.setQueryData(queryKey, (old: Produto[] | undefined) =>
+      (old || []).filter(p => p.id !== id)
+    );
+    try {
+      await deleteMutation.mutateAsync({ barbeariaId: barbeariaId!, produtoId: id });
+      invalidate();
+      toast({ title: "Produto removido" });
+    } catch {
+      invalidate();
+      toast({ title: "Erro ao remover produto", variant: "destructive" });
+    }
   };
 
   const baixoEstoque = (produtos as Produto[]).filter(p => p.ativo && p.quantidade <= p.quantidadeMinima).length;

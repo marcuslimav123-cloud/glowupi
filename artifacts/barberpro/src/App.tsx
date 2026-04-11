@@ -1,3 +1,4 @@
+import React, { Suspense } from "react";
 import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -6,100 +7,110 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import NotFound from "@/pages/not-found";
 import LgpdPopup from "@/components/LgpdPopup";
 
+import DirectSales from "@/pages/DirectSales";
 import Landing from "@/pages/Landing";
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
-import CompleteProfile from "@/pages/auth/CompleteProfile";
-import BarbeariaStep from "@/pages/onboarding/BarbeariaStep";
-import CheckoutSuccess from "@/pages/checkout/CheckoutSuccess";
-import CheckoutCancel from "@/pages/checkout/CheckoutCancel";
-import Dashboard from "@/pages/Dashboard";
-import Agenda from "@/pages/Agenda";
-import Profissionais from "@/pages/gestao/Profissionais";
-import Servicos from "@/pages/gestao/Servicos";
-import Produtos from "@/pages/gestao/Produtos";
-import Clientes from "@/pages/gestao/Clientes";
-import Relatorios from "@/pages/Relatorios";
-import Caixa from "@/pages/Caixa";
-import Financeiro from "@/pages/Financeiro";
-import Empresa from "@/pages/Empresa";
-import MenuPage from "@/pages/Menu";
-import Clube from "@/pages/Clube";
-import Pacotes from "@/pages/Pacotes";
-import ListaEspera from "@/pages/ListaEspera";
-import Avaliacoes from "@/pages/Avaliacoes";
-import Mensagens from "@/pages/Mensagens";
-import Equipe from "@/pages/Equipe";
-import Picos from "@/pages/agenda/Picos";
-import AcceptInvite from "@/pages/auth/AcceptInvite";
-import PoliticaPrivacidade from "@/pages/PoliticaPrivacidade";
-import TermosDeUso from "@/pages/TermosDeUso";
 
-import Tipos from "@/pages/cadastros/Tipos";
-import Cupons from "@/pages/cadastros/Cupons";
-import Lembretes from "@/pages/cadastros/Lembretes";
-import ClubesAssinatura from "@/pages/cadastros/Clubes";
-import Noticias from "@/pages/cadastros/Noticias";
-import GruposClientes from "@/pages/cadastros/GruposClientes";
-import Pesquisa from "@/pages/cadastros/Pesquisa";
-import ClubeVantagens from "@/pages/cadastros/ClubeVantagens";
-import VendaPacotes from "@/pages/VendaPacotes";
-import PublicBooking from "@/pages/PublicBooking";
-import PublicStorefront from "@/pages/PublicStorefront";
-import PublicPesquisa from "@/pages/PublicPesquisa";
+const CompleteProfile = React.lazy(() => import("@/pages/auth/CompleteProfile"));
+const BarbeariaStep = React.lazy(() => import("@/pages/onboarding/BarbeariaStep"));
+const CheckoutSuccess = React.lazy(() => import("@/pages/checkout/CheckoutSuccess"));
+const CheckoutCancel = React.lazy(() => import("@/pages/checkout/CheckoutCancel"));
+const Dashboard = React.lazy(() => import("@/pages/Dashboard"));
+const Agenda = React.lazy(() => import("@/pages/Agenda"));
+const Profissionais = React.lazy(() => import("@/pages/gestao/Profissionais"));
+const Servicos = React.lazy(() => import("@/pages/gestao/Servicos"));
+const Produtos = React.lazy(() => import("@/pages/gestao/Produtos"));
+const Clientes = React.lazy(() => import("@/pages/gestao/Clientes"));
+const Relatorios = React.lazy(() => import("@/pages/Relatorios"));
+const Caixa = React.lazy(() => import("@/pages/Caixa"));
+const Financeiro = React.lazy(() => import("@/pages/Financeiro"));
+const Empresa = React.lazy(() => import("@/pages/Empresa"));
+const MenuPage = React.lazy(() => import("@/pages/Menu"));
+const Clube = React.lazy(() => import("@/pages/Clube"));
+const Pacotes = React.lazy(() => import("@/pages/Pacotes"));
+const ListaEspera = React.lazy(() => import("@/pages/ListaEspera"));
+const Avaliacoes = React.lazy(() => import("@/pages/Avaliacoes"));
+const Mensagens = React.lazy(() => import("@/pages/Mensagens"));
+const Equipe = React.lazy(() => import("@/pages/Equipe"));
+const Picos = React.lazy(() => import("@/pages/agenda/Picos"));
+const AcceptInvite = React.lazy(() => import("@/pages/auth/AcceptInvite"));
+const PoliticaPrivacidade = React.lazy(() => import("@/pages/PoliticaPrivacidade"));
+const TermosDeUso = React.lazy(() => import("@/pages/TermosDeUso"));
 
-import DirectSales from "@/pages/DirectSales";
-import DirectSalesSuccess from "@/pages/DirectSalesSuccess";
-import ForgotPassword from "@/pages/auth/ForgotPassword";
-import ResetPassword from "@/pages/auth/ResetPassword";
+const Tipos = React.lazy(() => import("@/pages/cadastros/Tipos"));
+const Cupons = React.lazy(() => import("@/pages/cadastros/Cupons"));
+const Lembretes = React.lazy(() => import("@/pages/cadastros/Lembretes"));
+const ClubesAssinatura = React.lazy(() => import("@/pages/cadastros/Clubes"));
+const Noticias = React.lazy(() => import("@/pages/cadastros/Noticias"));
+const GruposClientes = React.lazy(() => import("@/pages/cadastros/GruposClientes"));
+const Pesquisa = React.lazy(() => import("@/pages/cadastros/Pesquisa"));
+const ClubeVantagens = React.lazy(() => import("@/pages/cadastros/ClubeVantagens"));
+const VendaPacotes = React.lazy(() => import("@/pages/VendaPacotes"));
+const PublicBooking = React.lazy(() => import("@/pages/PublicBooking"));
+const PublicStorefront = React.lazy(() => import("@/pages/PublicStorefront"));
+const PublicPesquisa = React.lazy(() => import("@/pages/PublicPesquisa"));
 
-import ComandasAbertas from "@/pages/comandas/ComandasAbertas";
-import ComandasHistorico from "@/pages/comandas/ComandasHistorico";
+const DirectSalesSuccess = React.lazy(() => import("@/pages/DirectSalesSuccess"));
+const ForgotPassword = React.lazy(() => import("@/pages/auth/ForgotPassword"));
+const ResetPassword = React.lazy(() => import("@/pages/auth/ResetPassword"));
 
-import CaixaDiario from "@/pages/financeiro/CaixaDiario";
-import HistoricoCaixa from "@/pages/financeiro/HistoricoCaixa";
-import MovCaixa from "@/pages/financeiro/MovCaixa";
-import ComissoesPage from "@/pages/financeiro/Comissoes";
-import ContaCliente from "@/pages/financeiro/ContaCliente";
-import FluxoCaixa from "@/pages/financeiro/FluxoCaixa";
-import ContaProfissional from "@/pages/financeiro/ContaProfissional";
-import CaixinhaPage from "@/pages/financeiro/Caixinha";
+const ComandasAbertas = React.lazy(() => import("@/pages/comandas/ComandasAbertas"));
+const ComandasHistorico = React.lazy(() => import("@/pages/comandas/ComandasHistorico"));
 
-import Resumo from "@/pages/relatorios/Resumo";
-import Aniversariantes from "@/pages/relatorios/Aniversariantes";
-import AgendamentosReport from "@/pages/relatorios/AgendamentosReport";
-import FinanceiroReport from "@/pages/relatorios/FinanceiroReport";
-import ComandasCanceladas from "@/pages/relatorios/ComandasCanceladas";
-import RankingsReport from "@/pages/relatorios/RankingsReport";
-import PerfilCliente from "@/pages/relatorios/PerfilCliente";
-import EstoqueReport from "@/pages/relatorios/EstoqueReport";
-import PacotesReport from "@/pages/relatorios/PacotesReport";
-import ComandasItensReport from "@/pages/relatorios/ComandasItensReport";
-import DiasSemVir from "@/pages/relatorios/DiasSemVir";
-import LucroProdutos from "@/pages/relatorios/LucroProdutos";
-import ClienteDetalhe from "@/pages/gestao/ClienteDetalhe";
-import Filiais from "@/pages/gestao/Filiais";
+const CaixaDiario = React.lazy(() => import("@/pages/financeiro/CaixaDiario"));
+const HistoricoCaixa = React.lazy(() => import("@/pages/financeiro/HistoricoCaixa"));
+const MovCaixa = React.lazy(() => import("@/pages/financeiro/MovCaixa"));
+const ComissoesPage = React.lazy(() => import("@/pages/financeiro/Comissoes"));
+const ContaCliente = React.lazy(() => import("@/pages/financeiro/ContaCliente"));
+const FluxoCaixa = React.lazy(() => import("@/pages/financeiro/FluxoCaixa"));
+const ContaProfissional = React.lazy(() => import("@/pages/financeiro/ContaProfissional"));
+const CaixinhaPage = React.lazy(() => import("@/pages/financeiro/Caixinha"));
 
-import Parametros from "@/pages/configuracoes/Parametros";
-import PerfisAcesso from "@/pages/configuracoes/PerfisAcesso";
+const Resumo = React.lazy(() => import("@/pages/relatorios/Resumo"));
+const Aniversariantes = React.lazy(() => import("@/pages/relatorios/Aniversariantes"));
+const AgendamentosReport = React.lazy(() => import("@/pages/relatorios/AgendamentosReport"));
+const FinanceiroReport = React.lazy(() => import("@/pages/relatorios/FinanceiroReport"));
+const ComandasCanceladas = React.lazy(() => import("@/pages/relatorios/ComandasCanceladas"));
+const RankingsReport = React.lazy(() => import("@/pages/relatorios/RankingsReport"));
+const PerfilCliente = React.lazy(() => import("@/pages/relatorios/PerfilCliente"));
+const EstoqueReport = React.lazy(() => import("@/pages/relatorios/EstoqueReport"));
+const PacotesReport = React.lazy(() => import("@/pages/relatorios/PacotesReport"));
+const ComandasItensReport = React.lazy(() => import("@/pages/relatorios/ComandasItensReport"));
+const DiasSemVir = React.lazy(() => import("@/pages/relatorios/DiasSemVir"));
+const LucroProdutos = React.lazy(() => import("@/pages/relatorios/LucroProdutos"));
+const ClienteDetalhe = React.lazy(() => import("@/pages/gestao/ClienteDetalhe"));
+const Filiais = React.lazy(() => import("@/pages/gestao/Filiais"));
+
+const Parametros = React.lazy(() => import("@/pages/configuracoes/Parametros"));
+const PerfisAcesso = React.lazy(() => import("@/pages/configuracoes/PerfisAcesso"));
 import { RodizioPage, OrdemChegadaPage, ListaEsperaConfigPage, AlertasPage } from "@/pages/configuracoes/PlaceholderConfig";
-import EmailTemplates from "@/pages/configuracoes/EmailTemplates";
+const EmailTemplates = React.lazy(() => import("@/pages/configuracoes/EmailTemplates"));
 import { AnamneseFormularios, AnamneseClientes } from "@/pages/configuracoes/Anamnese";
 import { DocumentosPage, DocumentosClientePage, DocumentosProfissionalPage } from "@/pages/configuracoes/Documentos";
-import RestricaoCliente from "@/pages/configuracoes/RestricaoCliente";
-import Funcionamento from "@/pages/configuracoes/Funcionamento";
+const RestricaoCliente = React.lazy(() => import("@/pages/configuracoes/RestricaoCliente"));
+const Funcionamento = React.lazy(() => import("@/pages/configuracoes/Funcionamento"));
 
-import AdminLogin from "@/pages/admin/AdminLogin";
-import AdminDashboard from "@/pages/admin/AdminDashboard";
-import AdminTenants from "@/pages/admin/AdminTenants";
-import AdminSettings from "@/pages/admin/AdminSettings";
-import AdminRevenue from "@/pages/admin/AdminRevenue";
-import AdminLogs from "@/pages/admin/AdminLogs";
+const AdminLogin = React.lazy(() => import("@/pages/admin/AdminLogin"));
+const AdminDashboard = React.lazy(() => import("@/pages/admin/AdminDashboard"));
+const AdminTenants = React.lazy(() => import("@/pages/admin/AdminTenants"));
+const AdminSettings = React.lazy(() => import("@/pages/admin/AdminSettings"));
+const AdminRevenue = React.lazy(() => import("@/pages/admin/AdminRevenue"));
+const AdminLogs = React.lazy(() => import("@/pages/admin/AdminLogs"));
 
 const queryClient = new QueryClient();
 
+function LazyFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
 function Router() {
   return (
+    <Suspense fallback={<LazyFallback />}>
     <Switch>
       <Route path="/" component={DirectSales} />
       <Route path="/sucesso" component={DirectSalesSuccess} />
@@ -207,6 +218,7 @@ function Router() {
 
       <Route component={NotFound} />
     </Switch>
+    </Suspense>
   );
 }
 

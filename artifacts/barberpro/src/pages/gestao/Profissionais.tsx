@@ -371,9 +371,14 @@ export default function Profissionais() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["/api/barbearias", barbeariaId, "profissionais"] });
 
+  const queryKey = ["/api/barbearias", barbeariaId, "profissionais"];
+
   const handleSave = async (data: any) => {
     try {
       if (editing) {
+        qc.setQueryData(queryKey, (old: Prof[] | undefined) =>
+          (old || []).map(p => p.id === editing.id ? { ...p, ...data } : p)
+        );
         await updateMutation.mutateAsync({ barbeariaId: barbeariaId!, profissionalId: editing.id, data });
         toast({ title: "Profissional atualizado!" });
       } else {
@@ -384,6 +389,7 @@ export default function Profissionais() {
       setModalOpen(false);
       setEditing(null);
     } catch (err: any) {
+      invalidate();
       const errorBody = err?.response?.data || err?.body;
       if (errorBody?.error === "professional_limit_reached") {
         toast({
@@ -398,23 +404,31 @@ export default function Profissionais() {
   };
 
   const handleToggleAtivo = async (p: Prof) => {
+    qc.setQueryData(queryKey, (old: Prof[] | undefined) =>
+      (old || []).map(item => item.id === p.id ? { ...item, ativo: !item.ativo } : item)
+    );
     try {
       await updateMutation.mutateAsync({ barbeariaId: barbeariaId!, profissionalId: p.id, data: { ativo: !p.ativo } });
       invalidate();
       toast({ title: p.ativo ? "Profissional desativado" : "Profissional reativado" });
     } catch {
+      invalidate();
       toast({ title: "Erro", variant: "destructive" });
     }
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    qc.setQueryData(queryKey, (old: Prof[] | undefined) =>
+      (old || []).filter(p => p.id !== deleteTarget.id)
+    );
     try {
       await deleteMutation.mutateAsync({ barbeariaId: barbeariaId!, profissionalId: deleteTarget.id });
       invalidate();
       toast({ title: "Profissional removido" });
       setDeleteTarget(null);
     } catch {
+      invalidate();
       toast({ title: "Erro ao remover", variant: "destructive" });
     }
   };
