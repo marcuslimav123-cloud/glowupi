@@ -228,7 +228,7 @@ export async function sendAgendamentoReminders(): Promise<void> {
         await sendPushToUser(user.id, {
           title: "Lembrete de Agendamento",
           body: `${agend.clienteNome} - ${agend.servicoNome} às ${agend.horaInicio}`,
-          data: { agendamentoId: agend.id, type: "reminder" },
+          data: { agendamentoId: agend.id, type: "reminder", url: "/agenda" },
         });
       }
     }

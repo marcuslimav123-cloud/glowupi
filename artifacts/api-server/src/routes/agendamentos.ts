@@ -348,7 +348,7 @@ router.post("/", requireAuth, async (req, res) => {
   sendPushToBarbearia(barbeariaId, {
     title: "Novo Agendamento",
     body: `${clienteNome} agendou ${servico.nome} com ${profissional.apelido || profissional.nomeExibicao} em ${data} às ${horaInicio}`,
-    data: { agendamentoId: agend.id, type: "new_appointment" },
+    data: { agendamentoId: agend.id, type: "new_appointment", url: "/agenda" },
   }).catch(err => console.error("[Push] Error on new appointment:", err));
 
   return res.status(201).json({ ...formatAgend(agend), pacoteClienteId: pacoteClienteAssociado });
@@ -457,7 +457,7 @@ router.delete("/:agendamentoId", requireAuth, async (req, res) => {
   sendPushToBarbearia(barbeariaId, {
     title: "Agendamento Cancelado",
     body: `${agend.clienteNome} cancelou ${agend.servicoNome} com ${agend.profissionalNome} em ${agend.data} às ${agend.horaInicio}`,
-    data: { agendamentoId: agend.id, type: "cancelled_appointment" },
+    data: { agendamentoId: agend.id, type: "cancelled_appointment", url: "/agenda" },
   }).catch(err => console.error("[Push] Error on cancelled appointment:", err));
 
   return res.json({ success: true, message: "Agendamento cancelado" });

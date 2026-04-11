@@ -545,7 +545,7 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
     sendPushToBarbearia(barbearia.id, {
       title: "Novo Agendamento pelo Site",
       body: `${clienteUser.nome} agendou ${servico.nome} com ${profissional.nomeExibicao} em ${data} às ${horaInicio}`,
-      data: { agendamentoId: agend.id, type: "new_appointment" },
+      data: { agendamentoId: agend.id, type: "new_appointment", url: "/agenda" },
     }).catch(err => console.error("[Push] Error on client booking:", err));
 
     return res.status(201).json({
@@ -747,7 +747,7 @@ router.post("/:slug/agendar-simples", async (req, res) => {
     sendPushToBarbearia(barbearia.id, {
       title: "Novo Agendamento pelo Site",
       body: `${clienteNome} agendou ${servico.nome} com ${profissional.nomeExibicao} em ${data} às ${horaInicio}`,
-      data: { agendamentoId: agend.id, type: "new_appointment" },
+      data: { agendamentoId: agend.id, type: "new_appointment", url: "/agenda" },
     }).catch(err => console.error("[Push] Error on client booking:", err));
 
     return res.status(201).json({
@@ -943,7 +943,7 @@ router.post("/:slug/agendamentos/:id/cancelar", requireClient, async (req, res) 
     sendPushToBarbearia(barbearia.id, {
       title: "Agendamento Cancelado pelo Cliente",
       body: `${agend.clienteNome} cancelou ${agend.servicoNome} com ${agend.profissionalNome} em ${agend.data} às ${agend.horaInicio}`,
-      data: { agendamentoId: agend.id, type: "cancelled_appointment" },
+      data: { agendamentoId: agend.id, type: "cancelled_appointment", url: "/agenda" },
     }).catch(err => console.error("[Push] Error on client cancelled appointment:", err));
 
     return res.json({ success: true, message: "Agendamento cancelado com sucesso" });
@@ -1053,7 +1053,7 @@ router.post("/:slug/agendamentos/:id/cancelar-simples", async (req, res) => {
     sendPushToBarbearia(barbearia.id, {
       title: "Agendamento Cancelado pelo Cliente",
       body: `${agend.clienteNome} cancelou ${agend.servicoNome} com ${agend.profissionalNome} em ${agend.data} às ${agend.horaInicio}`,
-      data: { agendamentoId: agend.id, type: "cancelled_appointment" },
+      data: { agendamentoId: agend.id, type: "cancelled_appointment", url: "/agenda" },
     }).catch(err => console.error("[Push] Error on simple cancel:", err));
 
     return res.json({ success: true, message: "Agendamento cancelado com sucesso" });
