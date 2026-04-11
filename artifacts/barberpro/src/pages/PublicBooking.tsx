@@ -225,9 +225,13 @@ export default function PublicBooking() {
     }
 
     if (!clientUser) return;
+    const rawWa = comLoginWhatsapp.replace(/\D/g, "");
+    if (rawWa.length < 10 || rawWa.length > 11) {
+      setError("Preencha seu WhatsApp para agendar");
+      return;
+    }
     setBookingLoading(true);
     try {
-      const rawWa = comLoginWhatsapp.replace(/\D/g, "");
       const res = await fetch(`${API_BASE}/public/${slug}/agendar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -239,7 +243,7 @@ export default function PublicBooking() {
           horaInicio: selectedSlot.horaInicio,
           observacao: observacao || null,
           filialId: selectedFilial?.id || null,
-          ...(rawWa.length >= 10 ? { clienteWhatsapp: rawWa } : {}),
+          clienteWhatsapp: rawWa,
         }),
       });
       if (!res.ok) {
@@ -1039,7 +1043,7 @@ export default function PublicBooking() {
                       <p className="text-xs text-white/40">{clientUser.email}</p>
                     </div>
                     <div>
-                      <label className="text-white/40 text-xs font-medium mb-1.5 block">WhatsApp (opcional)</label>
+                      <label className="text-white/40 text-xs font-medium mb-1.5 block">WhatsApp *</label>
                       <div className="relative">
                         <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
                         <input

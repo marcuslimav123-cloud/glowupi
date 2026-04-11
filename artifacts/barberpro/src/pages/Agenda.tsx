@@ -729,7 +729,26 @@ export default function Agenda() {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="opacity-70">{agend.horaInicio.slice(0,5)} – {agend.horaFim.slice(0,5)}</span>
-                        {agend.status === 'pago' && <CheckCircle className="h-3 w-3" />}
+                        <div className="flex items-center gap-1">
+                          {agend.clienteTelefone && (() => {
+                            const digits = agend.clienteTelefone.replace(/\D/g, '');
+                            if (digits.length < 10) return null;
+                            const normalized = digits.startsWith('55') && digits.length >= 12 ? digits : '55' + digits;
+                            return (
+                              <a
+                                href={`https://wa.me/${normalized}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-green-500 hover:text-green-400 z-20"
+                                onClick={e => e.stopPropagation()}
+                                title={agend.clienteTelefone}
+                              >
+                                <Phone className="h-3 w-3" />
+                              </a>
+                            );
+                          })()}
+                          {agend.status === 'pago' && <CheckCircle className="h-3 w-3" />}
+                        </div>
                       </div>
                     </div>
                   ))}

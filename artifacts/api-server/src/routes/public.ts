@@ -375,13 +375,11 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
     if (!profissionalId || !servicoId || !data || !horaInicio) {
       return res.status(400).json({ error: "Dados inválidos" });
     }
-    let clienteWhatsapp: string | undefined;
-    if (rawWhatsapp) {
-      const digits = String(rawWhatsapp).replace(/\D/g, "");
-      if (digits.length >= 10 && digits.length <= 11) {
-        clienteWhatsapp = digits;
-      }
+    const whatsappDigits = rawWhatsapp ? String(rawWhatsapp).replace(/\D/g, "") : "";
+    if (!whatsappDigits || whatsappDigits.length < 10 || whatsappDigits.length > 11) {
+      return res.status(400).json({ error: "WhatsApp é obrigatório (10 ou 11 dígitos)" });
     }
+    const clienteWhatsapp = whatsappDigits;
 
     if (filialId) {
       const [filial] = await db.select().from(filiaisTable).where(
