@@ -382,20 +382,18 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
           {!isFirst && (
             <button
               onClick={handlePrev}
-              className="flex-1 h-11 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors flex items-center justify-center gap-1.5"
+              className="h-11 px-4 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors flex items-center justify-center gap-1.5"
             >
               <ChevronLeft className="h-4 w-4" />
               Anterior
             </button>
           )}
-          {isFirst && (
-            <button
-              onClick={handleSkip}
-              className="flex-1 h-11 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            >
-              Pular tutorial
-            </button>
-          )}
+          <button
+            onClick={handleSkip}
+            className="h-11 px-4 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            Pular
+          </button>
           <button
             onClick={handleNext}
             className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-1.5"

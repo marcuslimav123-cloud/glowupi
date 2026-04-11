@@ -5,6 +5,8 @@ import { useLocation } from "wouter";
 type UserWithPerfilPermissoes = UserWithBarbearia & {
   perfilPermissoes?: string[] | null;
   tema?: string;
+  onboardingCompleto?: boolean;
+  tutorialCompleto?: boolean;
 };
 
 interface AuthContextType {

@@ -595,20 +595,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     if (!user || isLoading) return;
     if (role !== "dono") return;
-    const userData = user as any;
-    const onboardingCompleto = userData.onboardingCompleto ?? (userData.barbearia?.onboardingStep >= 3);
-    const tutorialCompleto = userData.tutorialCompleto ?? userData.barbearia?.tutorialCompleto ?? false;
+    const onboardingCompleto = user.onboardingCompleto ?? false;
+    const tutorialCompleto = user.tutorialCompleto ?? false;
     if (onboardingCompleto && !tutorialCompleto) {
       setShowTutorial(true);
     }
   }, [user, isLoading, role]);
 
   React.useEffect(() => {
-    const handler = () => {
-      fetch(apiUrl("/barbearias/me/tutorial-reset"), { method: "PUT", credentials: "include" })
-        .catch(() => {});
-      setShowTutorial(true);
-    };
+    const handler = () => setShowTutorial(true);
     window.addEventListener("open-tutorial", handler);
     return () => window.removeEventListener("open-tutorial", handler);
   }, []);
