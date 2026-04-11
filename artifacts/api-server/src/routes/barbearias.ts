@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { barbeariasTable, parametrosConfigTable, platformConfigTable } from "@workspace/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { requireAuth, requireRole } from "../lib/auth.js";
 import { slugify } from "../lib/slugify.js";
 import { PARAMETROS_DEFAULTS } from "./parametros.js";
@@ -33,21 +33,10 @@ router.post("/", requireAuth, requireRole("dono"), async (req, res) => {
     if (existing2.length > 0) {
       baseSlug = `${baseSlug}-${Date.now()}`;
     }
-    const configs = await db.select().from(platformConfigTable).where(
-      sql`${platformConfigTable.chave} IN ('trial_days', 'free_trial_enabled')`
-    );
-    const configMap: Record<string, string> = {};
-    for (const c of configs) configMap[c.chave] = c.valor;
-    const freeTrialEnabled = configMap["free_trial_enabled"] !== "false";
-    const trialDays = Math.min(90, Math.max(1, parseInt(configMap["trial_days"] || "7") || 7));
-
-    let planoVencimento: Date | null = null;
-    let subscriptionStatus = "pendente";
-    if (freeTrialEnabled) {
-      planoVencimento = new Date();
-      planoVencimento.setDate(planoVencimento.getDate() + trialDays);
-      subscriptionStatus = "trial";
-    }
+    const [trialDaysCfg] = await db.select().from(platformConfigTable).where(eq(platformConfigTable.chave, "trial_days")).limit(1);
+    const trialDays = Math.min(90, Math.max(1, parseInt(trialDaysCfg?.valor || "7") || 7));
+    const planoVencimento = new Date();
+    planoVencimento.setDate(planoVencimento.getDate() + trialDays);
 
     const [barbearia] = await db.insert(barbeariasTable).values({
       donoId: user.id,
@@ -64,7 +53,7 @@ router.post("/", requireAuth, requireRole("dono"), async (req, res) => {
       uf: uf || null,
       onboardingStep: 2,
       planoVencimento,
-      subscriptionStatus,
+      subscriptionStatus: "trial",
     }).returning();
 
     try {
