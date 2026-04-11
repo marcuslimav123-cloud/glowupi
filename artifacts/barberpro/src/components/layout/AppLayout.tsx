@@ -55,6 +55,7 @@ import { APP_NAME, getRoleLabel } from "@/lib/utils";
 import { HeaderBar, applyTheme } from "./HeaderBar";
 import { MobileBottomBar } from "./MobileBottomBar";
 import { usePWA } from "@/hooks/usePWA";
+import { TutorialOverlay } from "@/components/TutorialOverlay";
 
 type NavItem = {
   name: string;
@@ -485,6 +486,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     startUrl: `${basePath}agenda`,
   });
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [showTutorial, setShowTutorial] = React.useState(false);
   const mainContentRef = React.useRef<HTMLDivElement>(null);
   const updateBarbearia = useUpdateBarbearia();
   const queryClient = useQueryClient();
@@ -578,6 +580,27 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     document.documentElement.style.setProperty("--font-sans", `${fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`);
     document.documentElement.style.setProperty("--font-display", `${fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`);
   }, [layoutParams]);
+
+  React.useEffect(() => {
+    if (!user || isLoading) return;
+    if (role !== "dono") return;
+    const userData = user as any;
+    const onboardingCompleto = userData.onboardingCompleto ?? (userData.barbearia?.onboardingStep >= 3);
+    const tutorialCompleto = userData.tutorialCompleto ?? userData.barbearia?.tutorialCompleto ?? false;
+    if (onboardingCompleto && !tutorialCompleto) {
+      setShowTutorial(true);
+    }
+  }, [user, isLoading, role]);
+
+  React.useEffect(() => {
+    const handler = () => {
+      fetch(apiUrl("/barbearias/me/tutorial-reset"), { method: "PUT", credentials: "include" })
+        .catch(() => {});
+      setShowTutorial(true);
+    };
+    window.addEventListener("open-tutorial", handler);
+    return () => window.removeEventListener("open-tutorial", handler);
+  }, []);
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div></div>;
@@ -768,6 +791,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <MobileBottomBar />
       {mobileMenuOpen && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden" onClick={() => setMobileMenuOpen(false)} />
+      )}
+
+      {showTutorial && (
+        <TutorialOverlay
+          onClose={() => {
+            setShowTutorial(false);
+            queryClient.invalidateQueries({ queryKey: ["getCurrentUser"] });
+          }}
+          onComplete={() => {
+            setShowTutorial(false);
+            queryClient.invalidateQueries({ queryKey: ["getCurrentUser"] });
+          }}
+        />
       )}
 
       {location === "/empresa" && (

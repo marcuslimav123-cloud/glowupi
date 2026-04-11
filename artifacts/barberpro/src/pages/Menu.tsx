@@ -27,6 +27,7 @@ import {
   UsersRound,
   Check,
   GitBranch,
+  GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InstallAppButton } from "@/components/InstallAppButton";
@@ -308,6 +309,29 @@ export default function MenuPage() {
             </div>
           </div>
         </div>
+
+        {(isDono || isGerente) && (
+          <div className="mb-5">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
+              Ajuda
+            </h3>
+            <div className="bg-card border border-border rounded-2xl overflow-hidden">
+              <button
+                onClick={() => window.dispatchEvent(new Event("open-tutorial"))}
+                className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors"
+              >
+                <div className="h-9 w-9 rounded-xl bg-primary/8 flex items-center justify-center shrink-0">
+                  <GraduationCap className="h-4.5 w-4.5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-sm font-medium text-foreground">Tutorial do Sistema</p>
+                  <p className="text-xs text-muted-foreground">Reveja o guia passo-a-passo</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="mb-8">
           <Button

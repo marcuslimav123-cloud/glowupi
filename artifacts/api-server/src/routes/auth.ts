@@ -435,6 +435,7 @@ router.get("/me", requireAuth, async (req, res) => {
       } : null,
       barbeariaId: barbearia?.id ?? null,
       onboardingCompleto: barbearia ? barbearia.onboardingStep >= 3 : false,
+      tutorialCompleto: barbearia?.tutorialCompleto ?? false,
       perfilPermissoes,
     });
   } catch (e) {

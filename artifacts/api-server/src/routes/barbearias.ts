@@ -138,4 +138,34 @@ router.put("/me", requireAuth, requireRole("dono"), async (req, res) => {
   }
 });
 
+router.put("/me/tutorial-completo", requireAuth, requireRole("dono"), async (req, res) => {
+  try {
+    const user = (req as any).user;
+    const [existing] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
+    if (!existing) return res.status(404).json({ error: "Barbearia não encontrada" });
+    await db.update(barbeariasTable)
+      .set({ tutorialCompleto: true, updatedAt: new Date() })
+      .where(eq(barbeariasTable.id, existing.id));
+    return res.json({ success: true });
+  } catch (e) {
+    console.error("tutorial-completo error:", e);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+router.put("/me/tutorial-reset", requireAuth, requireRole("dono"), async (req, res) => {
+  try {
+    const user = (req as any).user;
+    const [existing] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
+    if (!existing) return res.status(404).json({ error: "Barbearia não encontrada" });
+    await db.update(barbeariasTable)
+      .set({ tutorialCompleto: false, updatedAt: new Date() })
+      .where(eq(barbeariasTable.id, existing.id));
+    return res.json({ success: true });
+  } catch (e) {
+    console.error("tutorial-reset error:", e);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 export default router;
