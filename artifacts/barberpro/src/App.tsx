@@ -97,6 +97,7 @@ const AdminTenants = React.lazy(() => import("@/pages/admin/AdminTenants"));
 const AdminSettings = React.lazy(() => import("@/pages/admin/AdminSettings"));
 const AdminRevenue = React.lazy(() => import("@/pages/admin/AdminRevenue"));
 const AdminLogs = React.lazy(() => import("@/pages/admin/AdminLogs"));
+const AdminLgpdConsents = React.lazy(() => import("@/pages/admin/AdminLgpdConsents"));
 
 const queryClient = new QueryClient();
 
@@ -215,6 +216,7 @@ function Router() {
       <Route path="/admin/configuracoes" component={AdminSettings} />
       <Route path="/admin/receita" component={AdminRevenue} />
       <Route path="/admin/logs" component={AdminLogs} />
+      <Route path="/admin/lgpd" component={AdminLgpdConsents} />
 
       <Route component={NotFound} />
     </Switch>

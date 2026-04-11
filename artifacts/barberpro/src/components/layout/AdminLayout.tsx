@@ -23,6 +23,7 @@ const ADMIN_NAV = [
   { name: "Configurações", href: "/admin/configuracoes", icon: Settings },
   { name: "Receita", href: "/admin/receita", icon: TrendingUp },
   { name: "Logs", href: "/admin/logs", icon: History },
+  { name: "LGPD", href: "/admin/lgpd", icon: Shield },
 ];
 
 interface AdminUser {

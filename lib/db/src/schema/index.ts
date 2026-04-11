@@ -48,3 +48,4 @@ export * from "./adminLogs";
 export * from "./passwordResetTokens";
 export * from "./filiais";
 export * from "./notificacoes";
+export * from "./lgpdConsents";

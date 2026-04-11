@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { superAdminsTable, barbeariasTable, usersTable, platformConfigTable, comandasTable, brevoEmailLogTable, profissionaisTable, adminLogsTable } from "@workspace/db/schema";
+import { superAdminsTable, barbeariasTable, usersTable, platformConfigTable, comandasTable, brevoEmailLogTable, profissionaisTable, adminLogsTable, lgpdConsentsTable } from "@workspace/db/schema";
 import { eq, sql, desc, count, and, gte } from "drizzle-orm";
 import { verifyAdminPassword, createAdminSession, deleteAdminSession, requireAdmin } from "../lib/adminAuth.js";
 import { getEmailStats } from "../lib/brevo.js";
@@ -417,6 +417,46 @@ router.get("/email-stats", requireAdmin, async (req, res) => {
     return res.json({ hoje: stats, historico: last7 });
   } catch (e) {
     console.error("email-stats error:", e);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+router.get("/lgpd-consents", requireAdmin, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
+    const offset = (page - 1) * limit;
+
+    const consents = await db
+      .select({
+        id: lgpdConsentsTable.id,
+        userId: lgpdConsentsTable.userId,
+        tipo: lgpdConsentsTable.tipo,
+        ipAddress: lgpdConsentsTable.ipAddress,
+        userAgent: lgpdConsentsTable.userAgent,
+        acceptedAt: lgpdConsentsTable.acceptedAt,
+        userName: usersTable.nome,
+        userEmail: usersTable.email,
+      })
+      .from(lgpdConsentsTable)
+      .leftJoin(usersTable, eq(lgpdConsentsTable.userId, usersTable.id))
+      .orderBy(desc(lgpdConsentsTable.acceptedAt))
+      .limit(limit)
+      .offset(offset);
+
+    const [{ total }] = await db.select({ total: count() }).from(lgpdConsentsTable);
+
+    return res.json({
+      consents: consents.map(c => ({
+        ...c,
+        acceptedAt: c.acceptedAt?.toISOString(),
+      })),
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (e) {
+    console.error("lgpd-consents error:", e);
     return res.status(500).json({ error: "Erro interno" });
   }
 });

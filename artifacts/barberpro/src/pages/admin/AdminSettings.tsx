@@ -1,9 +1,158 @@
 import React, { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
-import { apiUrl } from "@/lib/utils";
+import { apiUrl, APP_NAME } from "@/lib/utils";
 import { Settings, Save, ToggleLeft, ToggleRight, Info, Shield, FileText, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+
+const DEFAULT_PRIVACY_POLICY = `1. INFORMAÇÕES GERAIS
+
+A presente Política de Privacidade contém informações sobre coleta, uso, armazenamento, tratamento e proteção dos dados pessoais dos usuários do ${APP_NAME}, com a finalidade de demonstrar absoluta transparência quanto ao assunto e esclarecer a todos interessados sobre os tipos de dados que são coletados, os motivos da coleta e a forma como os usuários podem gerenciar ou excluir as suas informações pessoais.
+
+Esta Política de Privacidade aplica-se a todos os usuários e visitantes do ${APP_NAME} e integra os Termos de Uso. O presente documento foi elaborado em conformidade com a Lei Geral de Proteção de Dados Pessoais (Lei 13.709/18 - LGPD), o Marco Civil da Internet (Lei 12.965/14) e o Regulamento da UE n. 2016/679 (GDPR).
+
+2. DADOS PESSOAIS COLETADOS
+
+Os dados pessoais coletados incluem:
+- Nome completo
+- Endereço de e-mail
+- Número de telefone/WhatsApp
+- Dados de agendamentos e serviços utilizados
+- Informações de pagamento (processados via Stripe, nosso parceiro de pagamentos)
+- Dados de navegação (cookies, endereço IP, tipo de navegador)
+- Dados fornecidos voluntariamente pelo usuário ao utilizar nossos formulários
+
+3. FINALIDADE DO TRATAMENTO DOS DADOS
+
+Os dados pessoais são tratados com as seguintes finalidades:
+- Prestação dos serviços de agendamento e gestão de salões
+- Comunicação entre o salão e seus clientes
+- Envio de notificações e lembretes de agendamentos
+- Processamento de pagamentos e transações financeiras
+- Melhoria da experiência do usuário na plataforma
+- Geração de relatórios e análises para os proprietários dos salões
+- Cumprimento de obrigações legais e regulatórias
+
+4. BASE LEGAL PARA O TRATAMENTO
+
+O tratamento dos dados pessoais é realizado com base nas seguintes hipóteses legais:
+- Consentimento do titular (Art. 7º, I da LGPD)
+- Execução de contrato (Art. 7º, V da LGPD)
+- Legítimo interesse do controlador (Art. 7º, IX da LGPD)
+- Cumprimento de obrigação legal (Art. 7º, II da LGPD)
+
+5. COMPARTILHAMENTO DE DADOS
+
+Os dados pessoais poderão ser compartilhados com:
+- Stripe Inc. — para processamento de pagamentos
+- Google LLC — para serviços de autenticação (quando o usuário opta por login com Google)
+- Prestadores de serviços essenciais à operação da plataforma
+
+Não vendemos, alugamos ou compartilhamos dados pessoais com terceiros para fins de marketing.
+
+6. SEGURANÇA DOS DADOS
+
+Empregamos medidas técnicas e organizacionais adequadas para proteger os dados pessoais, incluindo:
+- Criptografia de dados em trânsito (HTTPS/TLS)
+- Armazenamento seguro de senhas com hash criptográfico (bcrypt)
+- Controle de acesso baseado em autenticação
+- Monitoramento contínuo de segurança
+
+7. COOKIES E TECNOLOGIAS SIMILARES
+
+Utilizamos cookies para:
+- Cookies essenciais: manter sua sessão de login ativa
+- Cookies de preferências: salvar suas configurações e consentimento LGPD
+- Cookies de análise: entender como você utiliza a plataforma
+
+Você pode gerenciar suas preferências de cookies a qualquer momento nas configurações do seu navegador.
+
+8. DIREITOS DO TITULAR DOS DADOS
+
+Em conformidade com a LGPD, você tem direito a:
+- Confirmação da existência de tratamento
+- Acesso aos dados pessoais
+- Correção de dados incompletos, inexatos ou desatualizados
+- Anonimização, bloqueio ou eliminação de dados desnecessários
+- Portabilidade dos dados
+- Eliminação dos dados tratados com consentimento
+- Informação sobre compartilhamento de dados
+- Revogação do consentimento
+
+Para exercer seus direitos, entre em contato conosco.
+
+9. RETENÇÃO DE DADOS
+
+Os dados pessoais são mantidos pelo período necessário para a prestação dos serviços contratados e cumprimento de obrigações legais. Após o encerramento da conta, os dados serão eliminados em até 30 dias, exceto quando houver obrigação legal de retenção.
+
+10. ALTERAÇÕES NA POLÍTICA
+
+Esta política pode ser atualizada a qualquer momento. Recomendamos que consulte esta página periodicamente. Alterações significativas serão comunicadas por e-mail ou aviso na plataforma.`;
+
+const DEFAULT_TERMS_OF_USE = `1. TERMOS GERAIS
+
+Ao acessar e utilizar o ${APP_NAME}, você concorda com estes Termos de Uso. Por favor, leia-os atentamente antes de utilizar nossos serviços.
+
+O ${APP_NAME} é uma plataforma SaaS (Software como Serviço) de gestão para profissionais e salões de beleza, estética e bem-estar, oferecendo ferramentas de agendamento, gestão financeira, controle de clientes e demais funcionalidades descritas na plataforma.
+
+2. CADASTRO E CONTA
+
+Para utilizar os serviços, é necessário criar uma conta fornecendo informações verdadeiras, completas e atualizadas. Você é responsável por manter a confidencialidade de suas credenciais de acesso e por todas as atividades realizadas em sua conta.
+
+3. PLANOS E PAGAMENTOS
+
+O ${APP_NAME} oferece diferentes planos de assinatura com período de teste gratuito. Após o período de teste, é necessário escolher um plano pago para continuar utilizando os serviços.
+
+Os pagamentos são processados pela Stripe, nosso parceiro de pagamentos. As cobranças são realizadas conforme o plano e período escolhidos (mensal, semestral ou anual).
+
+4. USO ADEQUADO DA PLATAFORMA
+
+Ao utilizar o ${APP_NAME}, você se compromete a:
+- Não utilizar a plataforma para fins ilegais ou não autorizados
+- Não tentar acessar áreas restritas do sistema sem autorização
+- Não transmitir vírus, malware ou qualquer código malicioso
+- Não sobrecarregar intencionalmente os servidores da plataforma
+- Manter seus dados cadastrais atualizados
+- Respeitar a privacidade dos dados de seus clientes
+
+5. RESPONSABILIDADES DO USUÁRIO
+
+O proprietário do salão/estúdio é responsável por:
+- Garantir o consentimento de seus clientes para coleta e tratamento de dados
+- Manter os dados de seus clientes seguros e atualizados
+- Utilizar a plataforma em conformidade com a LGPD e demais legislações aplicáveis
+- Realizar backups de informações críticas para seu negócio
+
+6. PROPRIEDADE INTELECTUAL
+
+Todo o conteúdo, design, código-fonte, marcas e logos do ${APP_NAME} são de propriedade exclusiva da empresa e estão protegidos por leis de propriedade intelectual.
+
+7. DISPONIBILIDADE DOS SERVIÇOS
+
+Nos esforçamos para manter a plataforma disponível 24/7, mas não garantimos disponibilidade ininterrupta. Manutenções programadas serão comunicadas com antecedência sempre que possível.
+
+8. LIMITAÇÃO DE RESPONSABILIDADE
+
+O ${APP_NAME} não se responsabiliza por:
+- Perdas ou danos decorrentes de uso inadequado da plataforma
+- Interrupções causadas por fatores externos (internet, energia, etc.)
+- Conteúdo inserido pelos usuários na plataforma
+- Decisões de negócio tomadas com base nos dados da plataforma
+
+9. CANCELAMENTO
+
+Você pode cancelar sua assinatura a qualquer momento. Após o cancelamento:
+- O acesso será mantido até o final do período já pago
+- Seus dados serão preservados por 30 dias após o encerramento
+- Após esse período, os dados serão permanentemente excluídos
+
+10. ALTERAÇÕES NOS TERMOS
+
+Reservamo-nos o direito de modificar estes Termos a qualquer momento. Alterações significativas serão comunicadas por e-mail ou aviso na plataforma. O uso continuado após as alterações constitui aceitação dos novos termos.
+
+11. LEGISLAÇÃO APLICÁVEL
+
+Estes Termos são regidos pela legislação brasileira. Quaisquer disputas serão resolvidas no foro da comarca da sede da empresa.`;
 
 const PRICING_MODES = [
   { value: "all_plans", label: "Todos os Planos", description: "Exibe todos os 4 planos com toggle mensal/semestral/anual" },
@@ -35,8 +184,8 @@ export default function AdminSettings() {
         setPricingMode(data.pricing_mode || "all_plans");
         setFreeTrialEnabled(data.free_trial_enabled !== "false");
         setTrialDays(data.trial_days || "7");
-        setPrivacyPolicy(data.lgpd_privacy_policy || "");
-        setTermsOfUse(data.lgpd_terms_of_use || "");
+        setPrivacyPolicy(data.lgpd_privacy_policy || DEFAULT_PRIVACY_POLICY);
+        setTermsOfUse(data.lgpd_terms_of_use || DEFAULT_TERMS_OF_USE);
       })
       .catch(console.error)
       .finally(() => setLoading(false));

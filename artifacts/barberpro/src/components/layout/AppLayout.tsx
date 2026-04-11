@@ -56,6 +56,7 @@ import { HeaderBar, applyTheme } from "./HeaderBar";
 import { MobileBottomBar } from "./MobileBottomBar";
 import { usePWA } from "@/hooks/usePWA";
 import { TutorialOverlay } from "@/components/TutorialOverlay";
+import LgpdConsentDialog from "@/components/LgpdConsentDialog";
 
 type NavItem = {
   name: string;
@@ -811,6 +812,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           }}
         />
       )}
+
+      <LgpdConsentDialog open={!!user && !(user as any).lgpdConsentido && !showTutorial} />
 
       {location === "/empresa" && (
         <a

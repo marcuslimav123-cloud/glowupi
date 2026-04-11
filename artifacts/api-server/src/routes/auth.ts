@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { usersTable, barbeariasTable, superAdminsTable, profissionaisTable, profissionaisPerfisTable, perfisAcessoTable, platformConfigTable, passwordResetTokensTable } from "@workspace/db/schema";
-import { eq, and } from "drizzle-orm";
+import { usersTable, barbeariasTable, superAdminsTable, profissionaisTable, profissionaisPerfisTable, perfisAcessoTable, platformConfigTable, passwordResetTokensTable, lgpdConsentsTable } from "@workspace/db/schema";
+import { eq, and, desc } from "drizzle-orm";
 import { hashPassword, createSession, deleteSession, requireAuth } from "../lib/auth.js";
 import { OAuth2Client } from "google-auth-library";
 import { randomBytes } from "crypto";
@@ -423,6 +423,11 @@ router.get("/me", requireAuth, async (req, res) => {
     const [superAdmin] = await db.select().from(superAdminsTable).where(eq(superAdminsTable.email, user.email)).limit(1);
     const isSuperAdmin = !!superAdmin && superAdmin.ativo;
 
+    const [lastConsent] = await db.select().from(lgpdConsentsTable)
+      .where(eq(lgpdConsentsTable.userId, user.id))
+      .orderBy(desc(lgpdConsentsTable.acceptedAt))
+      .limit(1);
+
     return res.json({
       ...userWithoutPass,
       createdAt: user.createdAt.toISOString(),
@@ -437,6 +442,7 @@ router.get("/me", requireAuth, async (req, res) => {
       onboardingCompleto: barbearia ? barbearia.onboardingStep >= 3 : false,
       tutorialCompleto: barbearia?.tutorialCompleto ?? false,
       perfilPermissoes,
+      lgpdConsentido: !!lastConsent,
     });
   } catch (e) {
     console.error("me error:", e);
@@ -515,6 +521,29 @@ router.post("/reset-password", async (req, res) => {
     return res.json({ success: true, message: "Senha redefinida com sucesso" });
   } catch (e) {
     console.error("reset-password error:", e);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+router.post("/lgpd-consent", requireAuth, async (req: any, res) => {
+  try {
+    const user = req.user;
+    const tipo = req.body.tipo || "full";
+    const ipAddress = req.headers["x-forwarded-for"] || req.ip || null;
+    const userAgent = req.headers["user-agent"] || null;
+
+    const [consent] = await db.insert(lgpdConsentsTable).values({
+      userId: user.id,
+      tipo,
+      ipAddress: typeof ipAddress === "string" ? ipAddress : Array.isArray(ipAddress) ? ipAddress[0] : null,
+      userAgent,
+    }).returning();
+
+    console.log(`[lgpd] User ${user.id} (${user.email}) accepted LGPD consent type=${tipo} ip=${ipAddress}`);
+
+    return res.json({ success: true, consentId: consent.id, acceptedAt: consent.acceptedAt.toISOString() });
+  } catch (e) {
+    console.error("lgpd-consent error:", e);
     return res.status(500).json({ error: "Erro interno" });
   }
 });

@@ -7,6 +7,7 @@ type UserWithPerfilPermissoes = UserWithBarbearia & {
   tema?: string;
   onboardingCompleto?: boolean;
   tutorialCompleto?: boolean;
+  lgpdConsentido?: boolean;
 };
 
 interface AuthContextType {
