@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "wouter";
 import {
@@ -106,7 +106,6 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
   const [visible, setVisible] = useState(false);
   const [spotlightRect, setSpotlightRect] = useState<Rect | null>(null);
   const [tooltipPos, setTooltipPos] = useState<"bottom" | "top" | "center">("center");
-  const rafRef = useRef<number>(0);
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
@@ -117,7 +116,15 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
     const PAD = 8;
 
     const tryFind = (attempt: number) => {
-      const el = document.querySelector(step.selector);
+      const candidates = document.querySelectorAll(step.selector);
+      let el: Element | null = null;
+      for (const c of candidates) {
+        const r = c.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) {
+          el = c;
+          break;
+        }
+      }
       if (el) {
         const rect = el.getBoundingClientRect();
         const sr: Rect = {

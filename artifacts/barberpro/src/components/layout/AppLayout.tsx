@@ -803,11 +803,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <TutorialOverlay
           onClose={() => {
             setShowTutorial(false);
-            queryClient.invalidateQueries({ queryKey: ["getCurrentUser"] });
+            queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() });
           }}
           onComplete={() => {
             setShowTutorial(false);
-            queryClient.invalidateQueries({ queryKey: ["getCurrentUser"] });
+            queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() });
           }}
         />
       )}
