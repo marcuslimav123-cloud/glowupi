@@ -196,7 +196,7 @@ router.get("/subscription-status", requireAuth, requireBarbearia, async (req: an
     });
   } catch (error: any) {
     console.error("Subscription status error:", error);
-    res.status(500).json({ error: "Erro ao verificar status da assinatura.", status: "trial", subscription: null });
+    res.json({ status: "trial", subscription: null });
   }
 });
 
