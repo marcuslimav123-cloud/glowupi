@@ -371,9 +371,16 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
     const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.slug, slug)).limit(1);
     if (!barbearia) return res.status(404).json({ error: "Barbearia não encontrada" });
 
-    const { profissionalId, servicoId, data, horaInicio, semPreferencia, observacao, filialId } = req.body;
+    const { profissionalId, servicoId, data, horaInicio, semPreferencia, observacao, filialId, clienteWhatsapp: rawWhatsapp } = req.body;
     if (!profissionalId || !servicoId || !data || !horaInicio) {
       return res.status(400).json({ error: "Dados inválidos" });
+    }
+    let clienteWhatsapp: string | undefined;
+    if (rawWhatsapp) {
+      const digits = String(rawWhatsapp).replace(/\D/g, "");
+      if (digits.length >= 10 && digits.length <= 11) {
+        clienteWhatsapp = digits;
+      }
     }
 
     if (filialId) {
@@ -482,7 +489,7 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       filialId: filialId || null,
       clienteId: cliente.id,
       clienteNome: clienteUser.nome,
-      clienteTelefone: clienteUser.telefone || "",
+      clienteTelefone: clienteWhatsapp || clienteUser.telefone || "",
       profissionalId,
       profissionalNome: profissional.nomeExibicao,
       servicoId,

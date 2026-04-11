@@ -103,6 +103,7 @@ export default function PublicBooking() {
   const [observacao, setObservacao] = useState("");
   const [simplesNome, setSimplesNome] = useState("");
   const [simplesWhatsapp, setSimplesWhatsapp] = useState("");
+  const [comLoginWhatsapp, setComLoginWhatsapp] = useState("");
   const [showMeusAgendamentos, setShowMeusAgendamentos] = useState(false);
   const [meusAgendamentos, setMeusAgendamentos] = useState<MeuAgendamento[]>([]);
   const [meusAgendamentosLoading, setMeusAgendamentosLoading] = useState(false);
@@ -226,6 +227,7 @@ export default function PublicBooking() {
     if (!clientUser) return;
     setBookingLoading(true);
     try {
+      const rawWa = comLoginWhatsapp.replace(/\D/g, "");
       const res = await fetch(`${API_BASE}/public/${slug}/agendar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -237,6 +239,7 @@ export default function PublicBooking() {
           horaInicio: selectedSlot.horaInicio,
           observacao: observacao || null,
           filialId: selectedFilial?.id || null,
+          ...(rawWa.length >= 10 ? { clienteWhatsapp: rawWa } : {}),
         }),
       });
       if (!res.ok) {
@@ -1029,10 +1032,33 @@ export default function PublicBooking() {
                     </div>
                   </div>
                 ) : clientUser && (
-                  <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                    <p className="text-xs text-white/30 mb-1">Agendando como</p>
-                    <p className="text-sm font-medium">{clientUser.nome}</p>
-                    <p className="text-xs text-white/40">{clientUser.email}</p>
+                  <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-3">
+                    <div>
+                      <p className="text-xs text-white/30 mb-1">Agendando como</p>
+                      <p className="text-sm font-medium">{clientUser.nome}</p>
+                      <p className="text-xs text-white/40">{clientUser.email}</p>
+                    </div>
+                    <div>
+                      <label className="text-white/40 text-xs font-medium mb-1.5 block">WhatsApp (opcional)</label>
+                      <div className="relative">
+                        <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
+                        <input
+                          type="tel"
+                          value={comLoginWhatsapp}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/\D/g, "").slice(0, 11);
+                            let masked = raw;
+                            if (raw.length > 2) masked = `(${raw.slice(0, 2)}) ${raw.slice(2)}`;
+                            else if (raw.length > 0) masked = `(${raw}`;
+                            if (raw.length > 7) masked = `(${raw.slice(0, 2)}) ${raw.slice(2, 7)}-${raw.slice(7)}`;
+                            setComLoginWhatsapp(masked);
+                          }}
+                          maxLength={15}
+                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/25 text-sm focus:outline-none focus:border-white/30"
+                          placeholder="(11) 99999-9999"
+                        />
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1083,6 +1109,7 @@ export default function PublicBooking() {
                   setObservacao("");
                   setSimplesNome("");
                   setSimplesWhatsapp("");
+                  setComLoginWhatsapp("");
                   setError("");
                 }}
                 className="px-6 py-2.5 rounded-xl border border-white/10 text-sm font-medium hover:bg-white/5 transition"

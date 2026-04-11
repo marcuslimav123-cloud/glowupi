@@ -51,6 +51,7 @@ import fornecedoresRouter from "./fornecedoresRoutes.js";
 import remuneracoesRouter from "./remuneracoesRoutes.js";
 import equipamentosRouter from "./equipamentosRoutes.js";
 import pushTokensRouter from "./pushTokens.js";
+import { getVapidPublicKey } from "../lib/pushNotifications.js";
 import filiaisRouter from "./filiais.js";
 import notificacoesInternasRouter from "./notificacoesInternas.js";
 
@@ -80,6 +81,13 @@ router.use("/admin", adminRouter);
 router.use("/auth", authRouter);
 router.use("/client", clientAuthRouter);
 router.use("/barbearias", barbeariasRouter);
+
+router.get("/push/vapid-public-key", (_req, res) => {
+  const key = getVapidPublicKey();
+  if (!key) return res.status(404).json({ error: "VAPID key not configured" });
+  return res.json({ publicKey: key });
+});
+
 router.use("/barbearias/:barbeariaId", requireAuth, subscriptionGuardMiddleware);
 router.use("/barbearias/:barbeariaId/profissionais", profissionaisRouter);
 router.use("/barbearias/:barbeariaId/servicos", servicosRouter);

@@ -1,11 +1,27 @@
 import { db } from "@workspace/db";
 import { pushTokensTable, usersTable, agendamentosTable, barbeariasTable, notificacoesTable } from "@workspace/db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
+import webpush from "web-push";
+
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:marcuslimav123@gmail.com";
+
+if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+  console.log("[Push] VAPID keys configured for web push");
+} else {
+  console.warn("[Push] VAPID keys not found — web push disabled");
+}
 
 interface PushMessage {
   title: string;
   body: string;
   data?: Record<string, any>;
+}
+
+export function getVapidPublicKey(): string {
+  return VAPID_PUBLIC_KEY;
 }
 
 export async function sendPushToUser(userId: number, message: PushMessage): Promise<void> {
@@ -26,7 +42,7 @@ export async function sendPushToUser(userId: number, message: PushMessage): Prom
     }
 
     if (webPushTokens.length > 0) {
-      console.log(`[Push] Web push tokens found for user ${userId}, but web push is not yet configured. ${webPushTokens.length} token(s) skipped.`);
+      await sendWebPush(webPushTokens.map(t => ({ id: t.id, token: t.token })), message);
     }
   } catch (err) {
     console.error(`[Push] Error sending push to user ${userId}:`, err);
@@ -70,6 +86,36 @@ export async function sendPushToBarbearia(barbeariaId: number, message: PushMess
     }
   } catch (err) {
     console.error(`[Push] Error sending push to barbearia ${barbeariaId}:`, err);
+  }
+}
+
+async function sendWebPush(tokens: { id: number; token: string }[], message: PushMessage): Promise<void> {
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    console.log(`[Push] Web push skipped — VAPID keys not configured`);
+    return;
+  }
+
+  const payload = JSON.stringify({
+    title: message.title,
+    body: message.body,
+    data: message.data || {},
+    tag: `glow-upi-${message.data?.type || "notification"}`,
+  });
+
+  for (const tokenRecord of tokens) {
+    try {
+      const subscription = JSON.parse(tokenRecord.token);
+      await webpush.sendNotification(subscription, payload);
+      console.log(`[Push] Web push sent to token ${tokenRecord.id}`);
+    } catch (err: any) {
+      if (err.statusCode === 410 || err.statusCode === 404) {
+        console.log(`[Push] Web push token ${tokenRecord.id} expired/invalid — deactivating`);
+        await db.update(pushTokensTable).set({ ativo: false, updatedAt: new Date() })
+          .where(eq(pushTokensTable.id, tokenRecord.id));
+      } else {
+        console.error(`[Push] Web push error for token ${tokenRecord.id}:`, err.statusCode || err.message);
+      }
+    }
   }
 }
 
