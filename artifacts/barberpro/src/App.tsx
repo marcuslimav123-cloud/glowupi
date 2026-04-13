@@ -98,6 +98,8 @@ const AdminSettings = React.lazy(() => import("@/pages/admin/AdminSettings"));
 const AdminRevenue = React.lazy(() => import("@/pages/admin/AdminRevenue"));
 const AdminLogs = React.lazy(() => import("@/pages/admin/AdminLogs"));
 const AdminLgpdConsents = React.lazy(() => import("@/pages/admin/AdminLgpdConsents"));
+const AdminTrialLinks = React.lazy(() => import("@/pages/admin/AdminTrialLinks"));
+const TrialRegister = React.lazy(() => import("@/pages/TrialRegister"));
 
 const queryClient = new QueryClient();
 
@@ -217,6 +219,9 @@ function Router() {
       <Route path="/admin/receita" component={AdminRevenue} />
       <Route path="/admin/logs" component={AdminLogs} />
       <Route path="/admin/lgpd" component={AdminLgpdConsents} />
+      <Route path="/admin/trial-links" component={AdminTrialLinks} />
+
+      <Route path="/trial/:token" component={TrialRegister} />
 
       <Route component={NotFound} />
     </Switch>

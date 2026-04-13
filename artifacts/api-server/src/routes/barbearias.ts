@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { barbeariasTable, parametrosConfigTable, platformConfigTable } from "@workspace/db/schema";
+import { barbeariasTable, parametrosConfigTable, platformConfigTable, trialLinksTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, requireRole } from "../lib/auth.js";
 import { slugify } from "../lib/slugify.js";
@@ -66,6 +66,19 @@ router.post("/", requireAuth, requireRole("dono"), async (req, res) => {
       await db.insert(parametrosConfigTable).values(paramRows);
     } catch (seedErr) {
       console.error("parametros seed error (non-fatal):", seedErr);
+    }
+
+    try {
+      await db.update(trialLinksTable).set({
+        usedByBarbeariaId: barbearia.id,
+      }).where(
+        and(
+          eq(trialLinksTable.usedByUserId, user.id),
+          eq(trialLinksTable.used, true)
+        )
+      );
+    } catch (tlErr) {
+      console.error("trial link barbearia update (non-fatal):", tlErr);
     }
 
     return res.status(201).json(formatBarbearia(barbearia));

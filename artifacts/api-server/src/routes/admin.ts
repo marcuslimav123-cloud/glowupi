@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
+import crypto from "crypto";
 import { db } from "@workspace/db";
-import { superAdminsTable, barbeariasTable, usersTable, platformConfigTable, comandasTable, brevoEmailLogTable, profissionaisTable, adminLogsTable, lgpdConsentsTable } from "@workspace/db/schema";
-import { eq, sql, desc, count, and, gte } from "drizzle-orm";
+import { superAdminsTable, barbeariasTable, usersTable, platformConfigTable, comandasTable, brevoEmailLogTable, profissionaisTable, adminLogsTable, lgpdConsentsTable, trialLinksTable } from "@workspace/db/schema";
+import { eq, sql, desc, count, and, gte, lt, isNull } from "drizzle-orm";
 import { verifyAdminPassword, createAdminSession, deleteAdminSession, requireAdmin } from "../lib/adminAuth.js";
 import { getEmailStats } from "../lib/brevo.js";
 
@@ -457,6 +458,69 @@ router.get("/lgpd-consents", requireAdmin, async (req, res) => {
     });
   } catch (e) {
     console.error("lgpd-consents error:", e);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+router.post("/trial-links", requireAdmin, async (req, res) => {
+  try {
+    const admin = (req as any).admin;
+    const token = crypto.randomBytes(24).toString("hex");
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    const [link] = await db.insert(trialLinksTable).values({
+      token,
+      createdByAdminId: admin.id,
+      trialDays: 7,
+      expiresAt,
+    }).returning();
+
+    await logAdminAction(admin.id, "trial_link_created", undefined, { token, expiresAt: expiresAt.toISOString() });
+
+    const domain = process.env.REPLIT_DEV_DOMAIN || process.env.REPL_SLUG + ".repl.co";
+    const baseUrl = `https://${domain}`;
+    return res.status(201).json({
+      ...link,
+      url: `${baseUrl}/trial/${token}`,
+      createdAt: link.createdAt.toISOString(),
+      expiresAt: link.expiresAt.toISOString(),
+      usedAt: link.usedAt?.toISOString() || null,
+    });
+  } catch (e) {
+    console.error("create trial link error:", e);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+router.get("/trial-links", requireAdmin, async (req, res) => {
+  try {
+    const links = await db.select({
+      id: trialLinksTable.id,
+      token: trialLinksTable.token,
+      trialDays: trialLinksTable.trialDays,
+      used: trialLinksTable.used,
+      usedAt: trialLinksTable.usedAt,
+      usedByEmail: trialLinksTable.usedByEmail,
+      usedByBarbeariaId: trialLinksTable.usedByBarbeariaId,
+      expiresAt: trialLinksTable.expiresAt,
+      createdAt: trialLinksTable.createdAt,
+      adminNome: superAdminsTable.nome,
+    })
+    .from(trialLinksTable)
+    .leftJoin(superAdminsTable, eq(trialLinksTable.createdByAdminId, superAdminsTable.id))
+    .orderBy(desc(trialLinksTable.createdAt));
+
+    const domain = process.env.REPLIT_DEV_DOMAIN || process.env.REPL_SLUG + ".repl.co";
+    const baseUrl = `https://${domain}`;
+    return res.json(links.map(l => ({
+      ...l,
+      url: `${baseUrl}/trial/${l.token}`,
+      createdAt: l.createdAt?.toISOString(),
+      expiresAt: l.expiresAt?.toISOString(),
+      usedAt: l.usedAt?.toISOString() || null,
+    })));
+  } catch (e) {
+    console.error("list trial links error:", e);
     return res.status(500).json({ error: "Erro interno" });
   }
 });

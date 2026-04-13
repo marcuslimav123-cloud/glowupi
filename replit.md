@@ -33,7 +33,8 @@ The design adopts a "luxury clinic aesthetic" with a color palette of warm gold,
 - **Mobile Bottom Tab Navigation:** Fixed bottom navigation for mobile with key app sections.
 - **Menu Page:** Mobile-friendly access to app sections, user profile, organized settings, and appearance controls.
 - **Filiais (Múltiplas Unidades):** Branch/multi-location support for specific plans, integrating branch association into professionals, services, and appointments.
-- **Admin Panel:** Separate super admin interface for platform-level management.
+- **Admin Panel:** Separate super admin interface for platform-level management, including trial link generation.
+- **One-Time Trial Links:** Super admins generate unique single-use links (`/trial/:token`) enabling 7-day free trials. Links are valid for 30 days. Atomic claim prevents concurrent redemption. Trial user data auto-deleted after 3 months without paid subscription (daily cleanup scheduler). Admin UI at `/admin/trial-links` with stats, link generation, and usage log.
 - **Email:** Round-robin email sending via Brevo for invites and transactional emails, with daily usage tracking.
 - **Team Invite Flow:** Owners can invite team members with specific roles and access profiles.
 - **Google-Only Registration:** New user registration is exclusively via Google Sign-In.

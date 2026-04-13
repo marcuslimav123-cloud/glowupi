@@ -14,6 +14,7 @@ import {
   Shield,
   ExternalLink,
   History,
+  Link2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -24,6 +25,7 @@ const ADMIN_NAV = [
   { name: "Receita", href: "/admin/receita", icon: TrendingUp },
   { name: "Logs", href: "/admin/logs", icon: History },
   { name: "LGPD", href: "/admin/lgpd", icon: Shield },
+  { name: "Links de Trial", href: "/admin/trial-links", icon: Link2 },
 ];
 
 interface AdminUser {
