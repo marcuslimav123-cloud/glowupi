@@ -44,10 +44,6 @@ export function InstallAppButton({ nome, logoUrl, accentColor, className = "", v
   const handleClick = async () => {
     if (canInstall) {
       await install();
-    } else if (showIOSInstructions) {
-      setShowIOSModal(true);
-    } else if (isAndroid) {
-      setShowIOSModal(true);
     } else {
       setShowIOSModal(true);
     }
