@@ -254,6 +254,14 @@ const HREF_TO_TUTORIAL: Record<string, string> = {
   "/configuracoes/parametros": "parametros",
 };
 
+const NAV_GROUP_TUTORIAL_IDS: Record<string, string> = {
+  "Cadastros": "cadastros-group",
+  "Comandas": "comandas-group",
+  "Configurações": "configuracoes-group",
+  "Financeiro": "financeiro-group",
+  "Relatórios": "relatorios-group",
+};
+
 const HREF_TO_PERMISSION: Record<string, string> = {
   "/dashboard": "dashboard",
   "/agenda": "agenda",
@@ -438,6 +446,7 @@ function CollapsibleGroup({ item, location, onNavigate, mainRef }: { item: NavIt
     <div>
       <button
         onClick={() => setOpen(!open)}
+        {...(NAV_GROUP_TUTORIAL_IDS[item.name] ? { "data-tutorial": NAV_GROUP_TUTORIAL_IDS[item.name] } : {})}
         className={cn(
           "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150",
           active
