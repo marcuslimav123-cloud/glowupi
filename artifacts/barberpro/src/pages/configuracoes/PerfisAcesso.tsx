@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn, apiUrl } from "@/lib/utils";
+import { useLocation } from "wouter";
 import {
   Plus,
   Pencil,
@@ -18,7 +19,24 @@ import {
   ChevronRight,
   Search,
   ChevronLeft,
+  ArrowUpCircle,
 } from "lucide-react";
+
+const PLAN_PERFIL_LIMITS: Record<string, number> = {
+  "1_pro": 0,
+  "2_5_pro": 5,
+  "6_15_pro": 15,
+  "15_plus_pro": 999,
+  "single": 999,
+  "trial": 999,
+};
+
+const PLAN_LABELS: Record<string, string> = {
+  "1_pro": "1 Profissional",
+  "2_5_pro": "2 a 5 Profissionais",
+  "6_15_pro": "6 a 15 Profissionais",
+  "15_plus_pro": "15+ Profissionais",
+};
 
 const WEB_PERMISSION_GROUPS = [
   {
@@ -156,8 +174,14 @@ type Profissional = {
 const PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
 
 export default function PerfisAcesso() {
-  const { barbeariaId, role } = useAuth();
+  const { barbeariaId, role, user } = useAuth();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
+
+  const rawPlan = ((user as any)?.barbearia?.subscriptionPlan || (user as any)?.barbearia?.planoNome || "").toLowerCase().replace(/\s+/g, "_");
+  const isTrial = (user as any)?.barbearia?.subscriptionStatus === "trial";
+  const isOnePro = rawPlan === "1_pro" && !isTrial;
+  const perfilLimit = isTrial ? 999 : (PLAN_PERFIL_LIMITS[rawPlan] ?? (rawPlan ? 0 : 999));
   const [perfis, setPerfis] = useState<Perfil[]>([]);
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
   const [loading, setLoading] = useState(true);
@@ -346,6 +370,8 @@ export default function PerfisAcesso() {
   }
 
   const currentGroups = getGroupsForTipo(tipo);
+  const totalPerfilCount = perfis.length;
+  const atLimit = perfilLimit !== 999 && totalPerfilCount >= perfilLimit;
 
   return (
     <AppLayout>
@@ -355,12 +381,64 @@ export default function PerfisAcesso() {
             <h1 className="text-[22px] font-bold text-foreground tracking-tight">Perfis de Acesso</h1>
             <p className="text-[13px] text-foreground/45 mt-1">Controle granular de permissões por menu para gerentes e colaboradores</p>
           </div>
-          {role === "dono" && !showForm && (
-            <Button onClick={startNew} className="rounded-xl h-9 text-[13px] gap-1.5">
-              <Plus className="h-3.5 w-3.5" /> Novo Perfil
-            </Button>
+          {role === "dono" && !showForm && !isOnePro && (
+            <div className="flex items-center gap-3">
+              {perfilLimit !== 999 && (
+                <span className={cn(
+                  "text-[12px] font-medium px-2.5 py-1 rounded-lg",
+                  atLimit ? "bg-red-50 text-red-600" : "bg-muted text-foreground/50"
+                )}>
+                  {totalPerfilCount}/{perfilLimit} perfis
+                </span>
+              )}
+              <Button onClick={startNew} disabled={atLimit} className="rounded-xl h-9 text-[13px] gap-1.5">
+                <Plus className="h-3.5 w-3.5" /> Novo Perfil
+              </Button>
+            </div>
           )}
         </div>
+
+        {isOnePro && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex gap-4">
+            <div className="shrink-0 h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center">
+              <ArrowUpCircle className="h-5 w-5 text-amber-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[14px] font-semibold text-amber-900">Plano não permite perfis de acesso</p>
+              <p className="text-[13px] text-amber-700 mt-0.5">
+                O plano <strong>{PLAN_LABELS[rawPlan] || rawPlan}</strong> é para uso individual e não inclui gerenciamento de equipe.
+                Faça upgrade para o plano <strong>2 a 5 Profissionais</strong> ou superior para criar perfis e adicionar colaboradores.
+              </p>
+              <Button
+                size="sm"
+                className="mt-3 rounded-xl h-9 text-[13px] bg-amber-600 hover:bg-amber-700 text-white border-0"
+                onClick={() => navigate("/empresa")}
+              >
+                Ver planos e fazer upgrade
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {atLimit && !isOnePro && (
+          <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 flex items-start gap-3">
+            <ArrowUpCircle className="h-5 w-5 text-orange-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-[13px] font-semibold text-orange-900">Limite de perfis atingido</p>
+              <p className="text-[12px] text-orange-700 mt-0.5">
+                Você atingiu o limite de <strong>{perfilLimit} perfis</strong> do seu plano. Faça upgrade para adicionar mais.
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2 rounded-xl h-8 text-[12px] border-orange-300 text-orange-700 hover:bg-orange-50"
+                onClick={() => navigate("/empresa")}
+              >
+                Fazer upgrade
+              </Button>
+            </div>
+          </div>
+        )}
 
         {!showForm && (
           <>

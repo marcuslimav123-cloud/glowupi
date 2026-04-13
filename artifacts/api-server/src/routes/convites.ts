@@ -38,16 +38,24 @@ router.post("/", requireAuth, async (req, res) => {
     const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
     if (!barbearia) return res.status(404).json({ error: "Estabelecimento não encontrado" });
 
-    const plan = barbearia.subscriptionPlan || barbearia.planoNome || "";
+    const plan = barbearia.subscriptionPlan || (barbearia as any).planoNome || "";
     const normalizedPlan = plan.toLowerCase().replace(/\s+/g, "_");
     const isTrialOrPaid = barbearia.subscriptionStatus === "trial" || barbearia.subscriptionStatus === "ativo";
-    if (!isTrialOrPaid || (!PLANS_WITH_TEAM.includes(normalizedPlan) && normalizedPlan !== "trial")) {
-      return res.status(403).json({ error: "Seu plano não permite adicionar membros à equipe. Faça upgrade para o plano '2 a 5 Profissionais' ou superior." });
+    const isTrial = barbearia.subscriptionStatus === "trial";
+    if (!isTrialOrPaid) {
+      return res.status(403).json({ error: "Sua assinatura está inativa. Renove seu plano para continuar.", code: "subscription_inactive" });
+    }
+    if (!isTrial && !PLANS_WITH_TEAM.includes(normalizedPlan)) {
+      return res.status(403).json({ error: "Seu plano não permite adicionar membros à equipe. Faça upgrade para o plano '2 a 5 Profissionais' ou superior.", code: "plan_upgrade_required" });
     }
 
     const { email, role, nomeConvidado, perfilAcessoId, enviarEmail } = req.body;
     if (!email || !role) return res.status(400).json({ error: "Email e cargo são obrigatórios" });
     if (!["gerente", "colaborador"].includes(role)) return res.status(400).json({ error: "Cargo deve ser 'gerente' ou 'colaborador'" });
+
+    if (role === "colaborador" && !perfilAcessoId) {
+      return res.status(400).json({ error: "É obrigatório selecionar um perfil de acesso para colaboradores. Crie um perfil em Configurações → Perfis de Acesso antes de convidar.", code: "perfil_required" });
+    }
 
     if (perfilAcessoId) {
       const pid = parseInt(perfilAcessoId);

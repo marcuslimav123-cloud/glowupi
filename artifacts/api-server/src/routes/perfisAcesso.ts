@@ -1,8 +1,17 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { perfisAcessoTable, profissionaisPerfisTable, profissionaisTable } from "@workspace/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { perfisAcessoTable, profissionaisPerfisTable, profissionaisTable, barbeariasTable } from "@workspace/db/schema";
+import { eq, and, inArray, count } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
+
+const PLAN_PERFIL_LIMITS: Record<string, number> = {
+  "1_pro": 0,
+  "2_5_pro": 5,
+  "6_15_pro": 15,
+  "15_plus_pro": 999,
+  "single": 999,
+  "trial": 999,
+};
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -77,6 +86,27 @@ router.post("/", requireAuth, requireRole("dono"), async (req, res) => {
   try {
     const barbeariaId = await checkAccess(req, res);
     if (!barbeariaId) return;
+
+    const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
+    if (barbearia) {
+      const rawPlan = (barbearia.subscriptionPlan || (barbearia as any).planoNome || "").toLowerCase().replace(/\s+/g, "_");
+      const isTrial = barbearia.subscriptionStatus === "trial";
+      const limit = isTrial ? 999 : (PLAN_PERFIL_LIMITS[rawPlan] ?? (rawPlan ? 0 : 999));
+      if (limit === 0) {
+        return res.status(403).json({
+          error: "Seu plano atual não permite criar perfis de acesso. Faça upgrade para o plano '2 a 5 Profissionais' ou superior.",
+          code: "perfil_limit_reached",
+        });
+      }
+      const [{ total }] = await db.select({ total: count() }).from(perfisAcessoTable).where(eq(perfisAcessoTable.barbeariaId, barbeariaId));
+      if (Number(total) >= limit) {
+        return res.status(403).json({
+          error: `Você atingiu o limite de ${limit} perfis de acesso do seu plano. Faça upgrade para adicionar mais.`,
+          code: "perfil_limit_reached",
+        });
+      }
+    }
+
     const { descricao, tipo, permissoes, profissionalIds } = req.body;
     if (!descricao || typeof descricao !== "string" || descricao.trim().length === 0) {
       return res.status(400).json({ error: "Descrição é obrigatória" });
