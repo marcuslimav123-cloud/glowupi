@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "1cLEOM0wmAzydbwDUrYSv"
+uri = "file://exports/glow-upi-copywriting.docx"
+type = "word_document"
+title = "Glow Upi — Copywriting para Prospecção de Leads"
