@@ -485,7 +485,7 @@ function CollapsibleGroup({ item, location, onNavigate, mainRef }: { item: NavIt
 }
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
   const { user, logout, isLoading, barbeariaId, role, perfilPermissoes, logoUrl, barbeariaNome, isDono, barbeariaSlug } = useAuth();
   const { canAccess, status, shouldShowUpgrade, trialDaysLeft } = useSubscriptionGuard();
 
@@ -498,11 +498,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     startUrl: `${basePath}agenda`,
   });
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-  const [showTutorial, setShowTutorial] = React.useState(() => {
-    try {
-      return sessionStorage.getItem("tutorial_current_step") !== null;
-    } catch { return false; }
-  });
+  const [showTutorial, setShowTutorial] = React.useState(false);
   const mainContentRef = React.useRef<HTMLDivElement>(null);
   const updateBarbearia = useUpdateBarbearia();
   const queryClient = useQueryClient();
@@ -810,13 +806,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <TutorialOverlay
           onClose={() => {
             setShowTutorial(false);
-            setLocation("/dashboard");
             queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() });
             queryClient.refetchQueries({ queryKey: getGetCurrentUserQueryKey() });
           }}
           onComplete={() => {
             setShowTutorial(false);
-            setLocation("/dashboard");
             queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() });
             queryClient.refetchQueries({ queryKey: getGetCurrentUserQueryKey() });
           }}

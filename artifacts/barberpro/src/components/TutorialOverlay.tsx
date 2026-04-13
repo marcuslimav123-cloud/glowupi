@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { useLocation } from "wouter";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -22,8 +21,7 @@ type TutorialStep = {
   title: string;
   description: string;
   icon: React.ElementType;
-  route: string;
-  selector: string;
+  menuSelector: string;
 };
 
 const TUTORIAL_STEPS: TutorialStep[] = [
@@ -31,87 +29,57 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Dashboard",
     description: "Aqui você acompanha o faturamento, agendamentos, ticket médio, ranking de profissionais e alertas do seu negócio.",
     icon: LayoutDashboard,
-    route: "/dashboard",
-    selector: "[data-tutorial='dashboard']",
+    menuSelector: "[data-tutorial='dashboard']",
   },
   {
     title: "Agenda",
     description: "Gerencie todos os agendamentos. Crie novos horários, visualize por dia ou semana, e acompanhe o status de cada atendimento.",
     icon: CalendarDays,
-    route: "/agenda",
-    selector: "[data-tutorial='agenda']",
+    menuSelector: "[data-tutorial='agenda']",
   },
   {
     title: "Serviços",
     description: "Cadastre todos os serviços que você oferece, defina preços, duração e comissões para cada profissional.",
     icon: Heart,
-    route: "/gestao/servicos",
-    selector: "[data-tutorial='servicos']",
+    menuSelector: "[data-tutorial='servicos']",
   },
   {
     title: "Profissionais",
     description: "Adicione sua equipe, configure horários de trabalho, comissões e permissões de acesso ao sistema.",
     icon: Users,
-    route: "/gestao/profissionais",
-    selector: "[data-tutorial='profissionais']",
+    menuSelector: "[data-tutorial='profissionais']",
   },
   {
     title: "Clientes",
     description: "Visualize todos os seus clientes, histórico de atendimentos, aniversários e dados de contato.",
     icon: Users,
-    route: "/gestao/clientes",
-    selector: "[data-tutorial='clientes']",
+    menuSelector: "[data-tutorial='clientes']",
   },
   {
     title: "Comandas",
     description: "Controle as comandas abertas e finalizadas. Adicione serviços, produtos e processe pagamentos.",
     icon: Receipt,
-    route: "/comandas/abertas",
-    selector: "[data-tutorial='comandas']",
+    menuSelector: "[data-tutorial='comandas']",
   },
   {
     title: "Link Público",
     description: "Compartilhe seu link de agendamento online para que clientes agendem diretamente pelo celular.",
     icon: Link2,
-    route: "/empresa",
-    selector: "[data-tutorial='empresa']",
+    menuSelector: "[data-tutorial='empresa']",
   },
   {
     title: "Parâmetros",
     description: "Configure regras do sistema como antecedência mínima, cancelamento, intervalos entre agendamentos e mais.",
     icon: Settings,
-    route: "/configuracoes/parametros",
-    selector: "[data-tutorial='parametros']",
+    menuSelector: "[data-tutorial='parametros']",
   },
   {
     title: "Notificações",
     description: "Ative as notificações push para receber alertas de novos agendamentos, cancelamentos e lembretes em tempo real.",
     icon: Bell,
-    route: "/dashboard",
-    selector: "[data-tutorial='notificacoes']",
+    menuSelector: "[data-tutorial='notificacoes']",
   },
 ];
-
-const STORAGE_KEY = "tutorial_current_step";
-
-function getSavedStep(): number {
-  try {
-    const v = sessionStorage.getItem(STORAGE_KEY);
-    if (v !== null) {
-      const n = parseInt(v, 10);
-      if (!isNaN(n) && n >= 0 && n < TUTORIAL_STEPS.length) return n;
-    }
-  } catch {}
-  return 0;
-}
-
-function saveStep(step: number) {
-  try { sessionStorage.setItem(STORAGE_KEY, String(step)); } catch {}
-}
-
-function clearSavedStep() {
-  try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
-}
 
 interface TutorialOverlayProps {
   onClose: () => void;
@@ -121,36 +89,24 @@ interface TutorialOverlayProps {
 type Rect = { top: number; left: number; width: number; height: number };
 
 export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
-  const initialStep = getSavedStep();
-  const [currentStep, setCurrentStep] = useState(initialStep);
-  const [location, setLocation] = useLocation();
+  const [currentStep, setCurrentStep] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [visible, setVisible] = useState(false);
   const [spotlightRect, setSpotlightRect] = useState<Rect | null>(null);
-  const [tooltipPos, setTooltipPos] = useState<"bottom" | "top" | "center">("center");
   const closingRef = useRef(false);
-  const stepRef = useRef(currentStep);
-
-  useEffect(() => {
-    stepRef.current = currentStep;
-    saveStep(currentStep);
-  }, [currentStep]);
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
-    const targetRoute = TUTORIAL_STEPS[initialStep].route;
-    if (location !== targetRoute) {
-      setLocation(targetRoute);
-    }
   }, []);
 
   const findAndHighlight = useCallback((stepIndex: number) => {
     const step = TUTORIAL_STEPS[stepIndex];
+    if (!step) return;
     const PAD = 8;
 
     const tryFind = (attempt: number) => {
       if (closingRef.current) return;
-      const candidates = document.querySelectorAll(step.selector);
+      const candidates = document.querySelectorAll(step.menuSelector);
       let el: Element | null = null;
       for (const c of candidates) {
         const r = c.getBoundingClientRect();
@@ -161,45 +117,25 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
       }
       if (el) {
         const rect = el.getBoundingClientRect();
-        const sr: Rect = {
+        setSpotlightRect({
           top: rect.top - PAD,
           left: rect.left - PAD,
           width: rect.width + PAD * 2,
           height: rect.height + PAD * 2,
-        };
-        setSpotlightRect(sr);
-
-        const viewH = window.innerHeight;
-        const centerY = sr.top + sr.height / 2;
-        if (centerY < viewH * 0.4) {
-          setTooltipPos("bottom");
-        } else if (centerY > viewH * 0.6) {
-          setTooltipPos("top");
-        } else {
-          setTooltipPos("bottom");
-        }
-      } else if (attempt < 8) {
-        setTimeout(() => tryFind(attempt + 1), 300);
+        });
+      } else if (attempt < 5) {
+        setTimeout(() => tryFind(attempt + 1), 200);
       } else {
         setSpotlightRect(null);
-        setTooltipPos("center");
       }
     };
 
-    setTimeout(() => tryFind(0), 150);
+    setTimeout(() => tryFind(0), 100);
   }, []);
 
   useEffect(() => {
     findAndHighlight(currentStep);
   }, [currentStep, findAndHighlight]);
-
-  useEffect(() => {
-    const expectedRoute = TUTORIAL_STEPS[stepRef.current]?.route;
-    if (expectedRoute && location === expectedRoute) {
-      const timer = setTimeout(() => findAndHighlight(stepRef.current), 300);
-      return () => clearTimeout(timer);
-    }
-  }, [location, findAndHighlight]);
 
   useEffect(() => {
     if (!spotlightRect) return;
@@ -212,13 +148,6 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
   const isFirst = currentStep === 0;
   const isLast = currentStep === TUTORIAL_STEPS.length - 1;
   const progress = ((currentStep + 1) / TUTORIAL_STEPS.length) * 100;
-
-  const navigateToStep = useCallback((stepIndex: number) => {
-    const targetStep = TUTORIAL_STEPS[stepIndex];
-    if (targetStep.route) {
-      setLocation(targetStep.route);
-    }
-  }, [setLocation]);
 
   const markTutorialComplete = useCallback(async () => {
     try {
@@ -233,34 +162,24 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
     if (isAnimating) return;
     if (isLast) {
       closingRef.current = true;
-      clearSavedStep();
       markTutorialComplete().then(() => onComplete());
       return;
     }
     setIsAnimating(true);
-    const next = currentStep + 1;
-    setCurrentStep(next);
-    navigateToStep(next);
-    setTimeout(() => {
-      setIsAnimating(false);
-    }, 300);
-  }, [currentStep, isLast, navigateToStep, isAnimating, markTutorialComplete, onComplete]);
+    setCurrentStep(prev => prev + 1);
+    setTimeout(() => setIsAnimating(false), 250);
+  }, [isLast, isAnimating, markTutorialComplete, onComplete]);
 
   const handlePrev = useCallback(() => {
     if (isFirst || isAnimating) return;
     setIsAnimating(true);
-    const prev = currentStep - 1;
-    setCurrentStep(prev);
-    navigateToStep(prev);
-    setTimeout(() => {
-      setIsAnimating(false);
-    }, 300);
-  }, [currentStep, isFirst, navigateToStep, isAnimating]);
+    setCurrentStep(prev => prev - 1);
+    setTimeout(() => setIsAnimating(false), 250);
+  }, [isFirst, isAnimating]);
 
   const handleSkip = useCallback(() => {
     if (closingRef.current) return;
     closingRef.current = true;
-    clearSavedStep();
     markTutorialComplete().then(() => onClose());
   }, [onClose, markTutorialComplete]);
 
@@ -279,25 +198,16 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
   const getTooltipStyle = (): React.CSSProperties => {
     const isMobile = window.innerWidth < 768;
 
-    if (!spotlightRect || tooltipPos === "center") {
+    if (!spotlightRect) {
       return {
         position: "fixed",
-        bottom: isMobile ? "80px" : "auto",
-        top: isMobile ? "auto" : "50%",
+        top: "50%",
         left: "50%",
-        transform: isMobile ? "translateX(-50%)" : "translate(-50%, -50%)",
+        transform: "translate(-50%, -50%)",
       };
     }
+
     if (isMobile) {
-      const spaceBelow = window.innerHeight - (spotlightRect.top + spotlightRect.height);
-      if (spaceBelow > 280) {
-        return {
-          position: "fixed",
-          top: `${spotlightRect.top + spotlightRect.height + 12}px`,
-          left: "50%",
-          transform: "translateX(-50%)",
-        };
-      }
       return {
         position: "fixed",
         bottom: "80px",
@@ -305,14 +215,30 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
         transform: "translateX(-50%)",
       };
     }
-    if (tooltipPos === "bottom") {
+
+    const tooltipHeight = 280;
+    const spaceBelow = window.innerHeight - (spotlightRect.top + spotlightRect.height);
+    const tooltipLeft = spotlightRect.left + spotlightRect.width + 16;
+    const fitsRight = tooltipLeft + 380 < window.innerWidth;
+
+    if (fitsRight) {
+      const topPos = Math.max(20, Math.min(spotlightRect.top, window.innerHeight - tooltipHeight - 20));
       return {
         position: "fixed",
-        top: `${Math.min(spotlightRect.top + spotlightRect.height + 16, window.innerHeight - 320)}px`,
+        top: `${topPos}px`,
+        left: `${tooltipLeft}px`,
+      };
+    }
+
+    if (spaceBelow > tooltipHeight + 20) {
+      return {
+        position: "fixed",
+        top: `${spotlightRect.top + spotlightRect.height + 16}px`,
         left: "50%",
         transform: "translateX(-50%)",
       };
     }
+
     return {
       position: "fixed",
       bottom: `${Math.max(window.innerHeight - spotlightRect.top + 16, 40)}px`,
@@ -323,7 +249,7 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
 
   const renderSpotlightMask = () => {
     if (!spotlightRect) {
-      return <div className="absolute inset-0 bg-black/60" onClick={handleSkip} />;
+      return <div className="absolute inset-0 bg-black/60" />;
     }
 
     const { top, left, width, height } = spotlightRect;
@@ -360,7 +286,6 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
           fill="rgba(0,0,0,0.6)"
           mask="url(#tutorial-spotlight-mask)"
           style={{ pointerEvents: "auto", cursor: "default" }}
-          onClick={handleSkip}
         />
         <rect
           x={left}
