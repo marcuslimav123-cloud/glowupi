@@ -27,7 +27,7 @@ export default function CheckoutCancel() {
           </p>
         </div>
         <div className="flex flex-col gap-3">
-          <Link href="/#precos">
+          <Link href="/#pricing">
             <Button size="lg" className="w-full rounded-xl h-11 text-[14px] font-medium">
               Ver Planos Novamente
             </Button>

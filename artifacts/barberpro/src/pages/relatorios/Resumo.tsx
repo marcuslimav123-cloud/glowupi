@@ -90,7 +90,7 @@ export default function Resumo() {
               Período de teste — <strong>{data.diasRestantesTrial}</strong> {data.diasRestantesTrial === 1 ? "dia restante" : "dias restantes"}
             </span>
           </div>
-          <Link href="/#precos">
+          <Link href="/#pricing">
             <Button size="sm" className="rounded-full text-xs">Contratar</Button>
           </Link>
         </div>

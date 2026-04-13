@@ -106,7 +106,14 @@ export default function Empresa() {
     setHorarios((h: any) => ({ ...h, [dia]: { ...h[dia], [field]: val } }));
   };
 
+  const isTrial = !barbearia?.stripeCustomerId || (barbearia as any)?.subscriptionStatus === "trial";
+
   const openStripePortal = async () => {
+    if (isTrial) {
+      const basePath = import.meta.env.BASE_URL || "/";
+      window.location.href = `${basePath}#pricing`;
+      return;
+    }
     setOpeningPortal(true);
     try {
       const res = await fetch(apiUrl("/checkout/create-portal-session"), {
@@ -240,7 +247,7 @@ export default function Empresa() {
               </div>
               <Button variant="outline" onClick={openStripePortal} disabled={openingPortal}>
                 {openingPortal ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ArrowUpRight className="h-4 w-4 mr-2" />}
-                Gerenciar Plano / Upgrade
+                {isTrial ? "Escolher Plano" : "Gerenciar Plano / Upgrade"}
               </Button>
             </div>
           </CardContent>

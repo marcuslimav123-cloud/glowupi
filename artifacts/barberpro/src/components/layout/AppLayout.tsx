@@ -677,7 +677,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </p>
           </div>
           <div className="flex flex-col gap-3">
-            <Link href="/#precos">
+            <Link href="/#pricing">
               <Button size="lg" className="w-full rounded-xl h-11 text-[14px] font-medium">
                 {isTrialExpired ? "Escolher Plano" : "Ver Planos"}
               </Button>
@@ -815,7 +815,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 ? `${trialDaysLeft} dia${trialDaysLeft !== 1 ? "s" : ""} restante${trialDaysLeft !== 1 ? "s" : ""} de teste grátis`
                 : "Período de teste gratuito ativo"}
             </span>
-            <Link href="/#precos">
+            <Link href="/#pricing">
               <Button size="sm" variant="outline" className={`text-[11px] h-6 px-2.5 rounded-full ${
                 trialDaysLeft >= 0 && trialDaysLeft <= 5
                   ? "border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50"
