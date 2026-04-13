@@ -95,6 +95,7 @@ export function usePWA({ slug, nome, logoUrl, corPrimaria, startUrl }: PWAOption
     };
   }, [slug, nome, logoUrl, corPrimaria, startUrl]);
 
+
   useEffect(() => {
     const iconUrl = logoUrl || `${import.meta.env.BASE_URL || "/"}logo-icon.png`;
 

@@ -141,7 +141,7 @@ router.get("/:slug", async (req, res) => {
   const esconderNaoQueroConversar = pubParams["app_nao_quero_conversar"] === "Sim";
   const tipoLinkAgendamento = pubParams["agenda_tipo_link"] === "Sem login (simples)" ? "simples" : "com_login";
 
-  const permitirCancelamentoCliente = pubParams["cancel_permitir_cliente_link_publico"] === "Sim";
+  const permitirCancelamentoCliente = (pubParams["cancel_permitir_cliente_link_publico"] ?? "Sim") !== "Não";
   const toleranciaCancelamento = parseInt(pubParams["cancel_tolerancia_cliente"] || "2");
   const whatsappEncaixeHabilitado = pubParams["agenda_whatsapp_encaixe"] === "Sim";
 
@@ -883,7 +883,7 @@ router.post("/:slug/agendamentos/:id/cancelar", requireClient, async (req, res) 
     const { getParametros } = await import("../lib/parametros.js");
     const params = await getParametros(barbearia.id);
 
-    if (params["cancel_permitir_cliente_link_publico"] !== "Sim") {
+    if ((params["cancel_permitir_cliente_link_publico"] ?? "Sim") === "Não") {
       return res.status(403).json({ error: "Cancelamento pelo cliente não está habilitado" });
     }
 
@@ -1033,7 +1033,7 @@ router.post("/:slug/agendamentos/:id/cancelar-simples", async (req, res) => {
     if (params["agenda_tipo_link"] !== "Sem login (simples)") {
       return res.status(403).json({ error: "Funcionalidade não disponível" });
     }
-    if (params["cancel_permitir_cliente_link_publico"] !== "Sim") {
+    if ((params["cancel_permitir_cliente_link_publico"] ?? "Sim") === "Não") {
       return res.status(403).json({ error: "Cancelamento pelo cliente não está habilitado" });
     }
 

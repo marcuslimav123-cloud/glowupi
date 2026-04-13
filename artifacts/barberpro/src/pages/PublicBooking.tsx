@@ -150,6 +150,17 @@ export default function PublicBooking() {
     fetchGoogleClientId();
   }, [slug]);
 
+  useEffect(() => {
+    if (clientUser?.telefone && !comLoginWhatsapp) {
+      const raw = clientUser.telefone.replace(/\D/g, "").slice(0, 11);
+      let masked = raw;
+      if (raw.length > 7) masked = `(${raw.slice(0, 2)}) ${raw.slice(2, 7)}-${raw.slice(7)}`;
+      else if (raw.length > 2) masked = `(${raw.slice(0, 2)}) ${raw.slice(2)}`;
+      else if (raw.length > 0) masked = `(${raw}`;
+      setComLoginWhatsapp(masked);
+    }
+  }, [clientUser]);
+
   async function fetchBarbearia() {
     try {
       const res = await fetch(`${API_BASE}/public/${slug}`, { credentials: "include" });
@@ -1169,13 +1180,13 @@ export default function PublicBooking() {
                     </div>
                   </div>
                 ) : clientUser && (
-                  <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-3">
-                    <div>
+                  <>
+                    <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                       <p className="text-xs text-white/30 mb-1">Agendando como</p>
                       <p className="text-sm font-medium">{clientUser.nome}</p>
                       <p className="text-xs text-white/40">{clientUser.email}</p>
                     </div>
-                    <div>
+                    <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                       <label className="text-white/40 text-xs font-medium mb-1.5 block">WhatsApp *</label>
                       <div className="relative">
                         <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
@@ -1193,10 +1204,11 @@ export default function PublicBooking() {
                           maxLength={15}
                           className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/25 text-sm focus:outline-none focus:border-white/30"
                           placeholder="(11) 99999-9999"
+                          required
                         />
                       </div>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
 
