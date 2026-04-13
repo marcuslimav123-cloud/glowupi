@@ -28,9 +28,13 @@ import {
   Check,
   GitBranch,
   GraduationCap,
+  Bell,
+  BellOff,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InstallAppButton } from "@/components/InstallAppButton";
+import { requestNotificationPermission } from "@/hooks/useNotifications";
 
 type LucideIcon = React.ForwardRefExoticComponent<LucideProps & React.RefAttributes<SVGSVGElement>>;
 
@@ -107,6 +111,65 @@ export default function MenuPage() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [themeOpen, setThemeOpen] = useState(false);
+
+  const [notifStatus, setNotifStatus] = useState<"loading" | "granted" | "denied" | "default">("loading");
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  React.useEffect(() => {
+    if ("Notification" in window) {
+      setNotifStatus(Notification.permission as any);
+    } else {
+      setNotifStatus("denied");
+    }
+  }, []);
+
+  const handleToggleNotifications = async () => {
+    if (notifStatus === "granted") {
+      toast({ title: "Notificações já ativas", description: "Para desativar, use as configurações do seu navegador." });
+      return;
+    }
+    setNotifLoading(true);
+    try {
+      const perm = await requestNotificationPermission();
+      setNotifStatus(perm as any);
+      if (perm === "granted") {
+        toast({ title: "Notificações ativadas!" });
+        if ("serviceWorker" in navigator && barbeariaId) {
+          const registration = await navigator.serviceWorker.ready;
+          const vapidResp = await fetch(apiUrl("/push/vapid-public-key"), { credentials: "include" });
+          if (vapidResp.ok) {
+            const { publicKey } = await vapidResp.json();
+            if (publicKey) {
+              const existingSub = await registration.pushManager.getSubscription();
+              const sub = existingSub || await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: (() => {
+                  const padding = "=".repeat((4 - (publicKey.length % 4)) % 4);
+                  const base64 = (publicKey + padding).replace(/-/g, "+").replace(/_/g, "/");
+                  const rawData = window.atob(base64);
+                  const arr = new Uint8Array(rawData.length);
+                  for (let i = 0; i < rawData.length; i++) arr[i] = rawData.charCodeAt(i);
+                  return arr;
+                })(),
+              });
+              await fetch(apiUrl(`/barbearias/${barbeariaId}/push-tokens/register`), {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ token: JSON.stringify(sub.toJSON()), platform: "web" }),
+              });
+            }
+          }
+        }
+      } else if (perm === "denied") {
+        toast({ title: "Notificações bloqueadas", description: "Permita nas configurações do navegador.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Erro ao ativar notificações", variant: "destructive" });
+    } finally {
+      setNotifLoading(false);
+    }
+  };
 
   const { data: layoutParams } = useQuery({
     queryKey: ["parametros-layout", barbeariaId],
@@ -239,6 +302,49 @@ export default function MenuPage() {
             </div>
           </div>
         ))}
+
+        <div className="mb-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
+            Notificações
+          </h3>
+          <div className="bg-card border border-border rounded-2xl overflow-hidden">
+            <button
+              onClick={handleToggleNotifications}
+              disabled={notifLoading}
+              className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors"
+            >
+              <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
+                notifStatus === "granted" ? "bg-green-500/10" : "bg-primary/8"
+              }`}>
+                {notifLoading
+                  ? <Loader2 className="h-4.5 w-4.5 text-primary animate-spin" />
+                  : notifStatus === "granted"
+                    ? <Bell className="h-4.5 w-4.5 text-green-600" />
+                    : <BellOff className="h-4.5 w-4.5 text-muted-foreground" />
+                }
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm font-medium text-foreground">
+                  {notifStatus === "granted" ? "Notificações Ativas" : "Ativar Notificações"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {notifStatus === "granted"
+                    ? "Você receberá alertas de agendamentos"
+                    : notifStatus === "denied"
+                      ? "Bloqueadas — permita nas configurações do navegador"
+                      : "Receba alertas de novos agendamentos"}
+                </p>
+              </div>
+              <div className={`h-7 w-12 rounded-full p-0.5 transition-colors ${
+                notifStatus === "granted" ? "bg-green-500" : "bg-muted-foreground/20"
+              }`}>
+                <div className={`h-6 w-6 rounded-full bg-white shadow-sm transition-transform ${
+                  notifStatus === "granted" ? "translate-x-5" : "translate-x-0"
+                }`} />
+              </div>
+            </button>
+          </div>
+        </div>
 
         <div className="mb-5">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
