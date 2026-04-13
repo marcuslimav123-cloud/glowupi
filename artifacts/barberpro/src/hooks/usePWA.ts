@@ -23,9 +23,11 @@ export function usePWA({ slug, nome, logoUrl, corPrimaria, startUrl }: PWAOption
   }, [slug, nome]);
 
   useEffect(() => {
-    if (!nome) return;
+    if (!slug || startUrl) return;
 
     const basePath = import.meta.env.BASE_URL || "/";
+    const API_BASE = `${basePath}api`.replace(/\/+/g, "/");
+    const manifestUrl = `${API_BASE}/public/${slug}/manifest.json`;
 
     let manifestLink = document.querySelector<HTMLLinkElement>(
       'link[rel="manifest"]'
@@ -35,45 +37,55 @@ export function usePWA({ slug, nome, logoUrl, corPrimaria, startUrl }: PWAOption
       manifestLink.rel = "manifest";
       document.head.appendChild(manifestLink);
     }
+    manifestLink.href = manifestUrl;
+  }, [slug, startUrl]);
 
-    if (slug && !startUrl) {
-      const API_BASE = `${basePath}api`.replace(/\/+/g, "/");
-      const manifestUrl = `${API_BASE}/public/${slug}/manifest.json`;
-      manifestLink.href = manifestUrl;
+  useEffect(() => {
+    if (slug && !startUrl) return;
+    if (!nome) return;
+
+    const basePath = import.meta.env.BASE_URL || "/";
+    const icons: { src: string; sizes: string; type?: string; purpose: string }[] = [];
+    if (logoUrl) {
+      icons.push(
+        { src: logoUrl, sizes: "192x192", purpose: "any" },
+        { src: logoUrl, sizes: "512x512", purpose: "any" },
+        { src: logoUrl, sizes: "192x192", purpose: "maskable" },
+        { src: logoUrl, sizes: "512x512", purpose: "maskable" },
+      );
     } else {
-      const icons: { src: string; sizes: string; type?: string; purpose: string }[] = [];
-      if (logoUrl) {
-        icons.push(
-          { src: logoUrl, sizes: "192x192", purpose: "any" },
-          { src: logoUrl, sizes: "512x512", purpose: "any" },
-          { src: logoUrl, sizes: "192x192", purpose: "maskable" },
-          { src: logoUrl, sizes: "512x512", purpose: "maskable" },
-        );
-      } else {
-        icons.push(
-          { src: `${basePath}logo-icon.png`, sizes: "192x192", type: "image/png", purpose: "any" },
-        );
-      }
-
-      const manifest = {
-        name: nome,
-        short_name: nome.length > 12 ? nome.slice(0, 12) : nome,
-        description: `Painel - ${nome}`,
-        start_url: startUrl || basePath,
-        scope: basePath,
-        display: "standalone",
-        background_color: "#111111",
-        theme_color: corPrimaria || "#C4943C",
-        icons,
-      };
-
-      if (blobUrlRef.current) {
-        URL.revokeObjectURL(blobUrlRef.current);
-      }
-      const blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
-      blobUrlRef.current = URL.createObjectURL(blob);
-      manifestLink.href = blobUrlRef.current;
+      icons.push(
+        { src: `${basePath}logo-icon.png`, sizes: "192x192", type: "image/png", purpose: "any" },
+      );
     }
+
+    const manifest = {
+      name: nome,
+      short_name: nome.length > 12 ? nome.slice(0, 12) : nome,
+      description: `Painel - ${nome}`,
+      start_url: startUrl || basePath,
+      scope: basePath,
+      display: "standalone",
+      background_color: "#111111",
+      theme_color: corPrimaria || "#C4943C",
+      icons,
+    };
+
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+    }
+    const blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
+    blobUrlRef.current = URL.createObjectURL(blob);
+
+    let manifestLink = document.querySelector<HTMLLinkElement>(
+      'link[rel="manifest"]'
+    );
+    if (!manifestLink) {
+      manifestLink = document.createElement("link");
+      manifestLink.rel = "manifest";
+      document.head.appendChild(manifestLink);
+    }
+    manifestLink.href = blobUrlRef.current;
 
     return () => {
       if (blobUrlRef.current) {

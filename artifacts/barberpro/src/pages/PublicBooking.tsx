@@ -3,6 +3,7 @@ import { useParams } from "wouter";
 import { Calendar, Clock, Scissors, User, ChevronLeft, ChevronRight, Check, MapPin, Phone, Loader2, LogOut, MessageCircle, XCircle, CalendarDays, AlertTriangle, Download, Share, X } from "lucide-react";
 import ClientAuthModal from "@/components/ClientAuthModal";
 import { usePWA } from "@/hooks/usePWA";
+import { useInstallPWA } from "@/hooks/useInstallPWA";
 import { InstallAppButton } from "@/components/InstallAppButton";
 import { useClientNotifications } from "@/hooks/useClientNotifications";
 
@@ -139,7 +140,7 @@ export default function PublicBooking() {
     corPrimaria: barbearia?.corPrimaria,
   });
 
-  const isInstalled = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true;
+  const { isInstalled } = useInstallPWA();
 
   useClientNotifications(!!clientUser);
 

@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import ClientAuthModal from "@/components/ClientAuthModal";
 import { usePWA } from "@/hooks/usePWA";
+import { useInstallPWA } from "@/hooks/useInstallPWA";
 import { InstallAppButton } from "@/components/InstallAppButton";
 
 const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, "/");
@@ -144,7 +145,7 @@ export default function PublicStorefront() {
     corPrimaria: barbearia?.corPrimaria,
   });
 
-  const isInstalled = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true;
+  const { isInstalled } = useInstallPWA();
 
   useEffect(() => {
     fetchBarbearia();
