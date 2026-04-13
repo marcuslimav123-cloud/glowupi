@@ -295,7 +295,7 @@ export default function Equipe() {
                 size="sm"
                 variant="outline"
                 className="mt-3 rounded-xl h-9 text-[13px] border-blue-300 text-blue-700 hover:bg-blue-50"
-                onClick={() => navigate("/configuracoes/perfis-acesso")}
+                onClick={() => navigate("/configuracoes/acessos")}
               >
                 <Shield className="h-3.5 w-3.5 mr-1.5" /> Criar Perfil de Acesso
               </Button>
@@ -383,7 +383,7 @@ export default function Equipe() {
                           <button
                             type="button"
                             className="underline font-medium"
-                            onClick={() => navigate("/configuracoes/perfis-acesso")}
+                            onClick={() => navigate("/configuracoes/acessos")}
                           >
                             Criar agora
                           </button>
@@ -575,7 +575,7 @@ export default function Equipe() {
             ) : (
               <Button
                 variant="outline"
-                onClick={() => navigate("/configuracoes/perfis-acesso")}
+                onClick={() => navigate("/configuracoes/acessos")}
                 className="rounded-xl h-10 text-[13px] gap-2"
               >
                 <Shield className="h-4 w-4" /> Criar Perfil de Acesso Primeiro
