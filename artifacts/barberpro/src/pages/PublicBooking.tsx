@@ -1179,13 +1179,15 @@ export default function PublicBooking() {
                       </div>
                     </div>
                   </div>
-                ) : clientUser && (
+                ) : (
                   <>
-                    <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                      <p className="text-xs text-white/30 mb-1">Agendando como</p>
-                      <p className="text-sm font-medium">{clientUser.nome}</p>
-                      <p className="text-xs text-white/40">{clientUser.email}</p>
-                    </div>
+                    {clientUser && (
+                      <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                        <p className="text-xs text-white/30 mb-1">Agendando como</p>
+                        <p className="text-sm font-medium">{clientUser.nome}</p>
+                        <p className="text-xs text-white/40">{clientUser.email}</p>
+                      </div>
+                    )}
                     <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                       <label className="text-white/40 text-xs font-medium mb-1.5 block">WhatsApp *</label>
                       <div className="relative">
