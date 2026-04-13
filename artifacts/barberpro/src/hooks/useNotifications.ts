@@ -42,7 +42,6 @@ export function playNotificationSound() {
 export function requestNotificationPermission(): Promise<NotificationPermission> {
   if (!("Notification" in window)) return Promise.resolve("denied" as NotificationPermission);
   if (Notification.permission === "granted") return Promise.resolve("granted");
-  if (Notification.permission === "denied") return Promise.resolve("denied");
   return Notification.requestPermission();
 }
 

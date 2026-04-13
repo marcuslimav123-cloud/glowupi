@@ -164,7 +164,8 @@ export default function MenuPage() {
       } else if (perm === "denied") {
         toast({ title: "Notificações bloqueadas", description: "Permita nas configurações do navegador.", variant: "destructive" });
       }
-    } catch {
+    } catch (err) {
+      console.error("Notification error:", err);
       toast({ title: "Erro ao ativar notificações", variant: "destructive" });
     } finally {
       setNotifLoading(false);
