@@ -3,6 +3,7 @@ import { Shield, FileText, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiUrl } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
+import { getGetCurrentUserQueryKey } from "@workspace/api-client-react";
 
 interface LgpdConsentDialogProps {
   open: boolean;
@@ -11,13 +12,15 @@ interface LgpdConsentDialogProps {
 export default function LgpdConsentDialog({ open }: LgpdConsentDialogProps) {
   const [accepted, setAccepted] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   if (!open) return null;
 
   const handleAccept = async () => {
-    if (!accepted) return;
+    if (!accepted || saving) return;
     setSaving(true);
+    setError(null);
     try {
       const res = await fetch(apiUrl("/auth/lgpd-consent"), {
         method: "POST",
@@ -26,10 +29,15 @@ export default function LgpdConsentDialog({ open }: LgpdConsentDialogProps) {
         body: JSON.stringify({ tipo: "full" }),
       });
       if (res.ok) {
-        queryClient.invalidateQueries({ queryKey: ["/auth/me"] });
+        await queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() });
+        await queryClient.refetchQueries({ queryKey: getGetCurrentUserQueryKey() });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Erro ao registrar consentimento. Tente novamente.");
       }
     } catch (e) {
       console.error("lgpd consent error:", e);
+      setError("Erro de conexão. Verifique sua internet e tente novamente.");
     } finally {
       setSaving(false);
     }
@@ -106,7 +114,10 @@ export default function LgpdConsentDialog({ open }: LgpdConsentDialogProps) {
           </label>
         </div>
 
-        <div className="px-6 py-4 border-t border-white/10 bg-white/[0.02]">
+        <div className="px-6 py-4 border-t border-white/10 bg-white/[0.02] space-y-2">
+          {error && (
+            <p className="text-sm text-red-400 text-center">{error}</p>
+          )}
           <Button
             onClick={handleAccept}
             disabled={!accepted || saving}

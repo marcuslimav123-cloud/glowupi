@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "wouter";
 import {
@@ -92,6 +92,27 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   },
 ];
 
+const STORAGE_KEY = "tutorial_current_step";
+
+function getSavedStep(): number {
+  try {
+    const v = sessionStorage.getItem(STORAGE_KEY);
+    if (v !== null) {
+      const n = parseInt(v, 10);
+      if (!isNaN(n) && n >= 0 && n < TUTORIAL_STEPS.length) return n;
+    }
+  } catch {}
+  return 0;
+}
+
+function saveStep(step: number) {
+  try { sessionStorage.setItem(STORAGE_KEY, String(step)); } catch {}
+}
+
+function clearSavedStep() {
+  try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
+}
+
 interface TutorialOverlayProps {
   onClose: () => void;
   onComplete: () => void;
@@ -100,16 +121,27 @@ interface TutorialOverlayProps {
 type Rect = { top: number; left: number; width: number; height: number };
 
 export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [, setLocation] = useLocation();
+  const initialStep = getSavedStep();
+  const [currentStep, setCurrentStep] = useState(initialStep);
+  const [location, setLocation] = useLocation();
   const [isAnimating, setIsAnimating] = useState(false);
   const [visible, setVisible] = useState(false);
   const [spotlightRect, setSpotlightRect] = useState<Rect | null>(null);
   const [tooltipPos, setTooltipPos] = useState<"bottom" | "top" | "center">("center");
+  const closingRef = useRef(false);
+  const stepRef = useRef(currentStep);
+
+  useEffect(() => {
+    stepRef.current = currentStep;
+    saveStep(currentStep);
+  }, [currentStep]);
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
-    setLocation(TUTORIAL_STEPS[0].route);
+    const targetRoute = TUTORIAL_STEPS[initialStep].route;
+    if (location !== targetRoute) {
+      setLocation(targetRoute);
+    }
   }, []);
 
   const findAndHighlight = useCallback((stepIndex: number) => {
@@ -117,6 +149,7 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
     const PAD = 8;
 
     const tryFind = (attempt: number) => {
+      if (closingRef.current) return;
       const candidates = document.querySelectorAll(step.selector);
       let el: Element | null = null;
       for (const c of candidates) {
@@ -145,20 +178,28 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
         } else {
           setTooltipPos("bottom");
         }
-      } else if (attempt < 5) {
-        setTimeout(() => tryFind(attempt + 1), 200);
+      } else if (attempt < 8) {
+        setTimeout(() => tryFind(attempt + 1), 300);
       } else {
         setSpotlightRect(null);
         setTooltipPos("center");
       }
     };
 
-    setTimeout(() => tryFind(0), 100);
+    setTimeout(() => tryFind(0), 150);
   }, []);
 
   useEffect(() => {
     findAndHighlight(currentStep);
   }, [currentStep, findAndHighlight]);
+
+  useEffect(() => {
+    const expectedRoute = TUTORIAL_STEPS[stepRef.current]?.route;
+    if (expectedRoute && location === expectedRoute) {
+      const timer = setTimeout(() => findAndHighlight(stepRef.current), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [location, findAndHighlight]);
 
   useEffect(() => {
     if (!spotlightRect) return;
@@ -179,50 +220,49 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
     }
   }, [setLocation]);
 
+  const markTutorialComplete = useCallback(async () => {
+    try {
+      await fetch(apiUrl("/barbearias/me/tutorial-completo"), {
+        method: "PUT",
+        credentials: "include",
+      });
+    } catch {}
+  }, []);
+
   const handleNext = useCallback(() => {
+    if (isAnimating) return;
     if (isLast) {
-      handleComplete();
+      closingRef.current = true;
+      clearSavedStep();
+      markTutorialComplete().then(() => onComplete());
       return;
     }
     setIsAnimating(true);
+    const next = currentStep + 1;
+    setCurrentStep(next);
+    navigateToStep(next);
     setTimeout(() => {
-      const next = currentStep + 1;
-      setCurrentStep(next);
-      navigateToStep(next);
       setIsAnimating(false);
-    }, 200);
-  }, [currentStep, isLast, navigateToStep]);
+    }, 300);
+  }, [currentStep, isLast, navigateToStep, isAnimating, markTutorialComplete, onComplete]);
 
   const handlePrev = useCallback(() => {
-    if (isFirst) return;
+    if (isFirst || isAnimating) return;
     setIsAnimating(true);
+    const prev = currentStep - 1;
+    setCurrentStep(prev);
+    navigateToStep(prev);
     setTimeout(() => {
-      const prev = currentStep - 1;
-      setCurrentStep(prev);
-      navigateToStep(prev);
       setIsAnimating(false);
-    }, 200);
-  }, [currentStep, isFirst, navigateToStep]);
+    }, 300);
+  }, [currentStep, isFirst, navigateToStep, isAnimating]);
 
-  const handleComplete = useCallback(async () => {
-    try {
-      await fetch(apiUrl("/barbearias/me/tutorial-completo"), {
-        method: "PUT",
-        credentials: "include",
-      });
-    } catch {}
-    onComplete();
-  }, [onComplete]);
-
-  const handleSkip = useCallback(async () => {
-    try {
-      await fetch(apiUrl("/barbearias/me/tutorial-completo"), {
-        method: "PUT",
-        credentials: "include",
-      });
-    } catch {}
-    onClose();
-  }, [onClose]);
+  const handleSkip = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    clearSavedStep();
+    markTutorialComplete().then(() => onClose());
+  }, [onClose, markTutorialComplete]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -410,7 +450,8 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
           {!isFirst && (
             <button
               onClick={handlePrev}
-              className="h-9 px-3 rounded-lg border border-border text-[13px] font-medium text-foreground hover:bg-muted transition-colors flex items-center justify-center gap-1"
+              disabled={isAnimating}
+              className="h-9 px-3 rounded-lg border border-border text-[13px] font-medium text-foreground hover:bg-muted transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Anterior</span>
@@ -424,7 +465,8 @@ export function TutorialOverlay({ onClose, onComplete }: TutorialOverlayProps) {
           </button>
           <button
             onClick={handleNext}
-            className="flex-1 h-9 rounded-lg bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-1"
+            disabled={isAnimating}
+            className="flex-1 h-9 rounded-lg bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
           >
             {isLast ? (
               <>
