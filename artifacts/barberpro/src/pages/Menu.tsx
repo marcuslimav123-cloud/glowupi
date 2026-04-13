@@ -204,6 +204,7 @@ export default function MenuPage() {
         <div className="mb-5 md:hidden">
           <InstallAppButton
             nome={barbeariaNome || undefined}
+            logoUrl={logoUrl}
             className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
             variant="default"
           />

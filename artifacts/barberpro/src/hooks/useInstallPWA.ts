@@ -52,8 +52,10 @@ export function useInstallPWA() {
     return false;
   }, []);
 
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+  const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+  const isAndroid = /android/i.test(ua);
 
   return {
     canInstall,
@@ -62,5 +64,6 @@ export function useInstallPWA() {
     showIOSInstructions: isIOS && !isInstalled,
     isIOS,
     isSafari,
+    isAndroid,
   };
 }

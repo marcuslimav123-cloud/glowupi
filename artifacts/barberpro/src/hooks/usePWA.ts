@@ -27,18 +27,18 @@ export function usePWA({ slug, nome, logoUrl, corPrimaria, startUrl }: PWAOption
 
     const basePath = import.meta.env.BASE_URL || "/";
 
+    let manifestLink = document.querySelector<HTMLLinkElement>(
+      'link[rel="manifest"]'
+    );
+    if (!manifestLink) {
+      manifestLink = document.createElement("link");
+      manifestLink.rel = "manifest";
+      document.head.appendChild(manifestLink);
+    }
+
     if (slug && !startUrl) {
       const API_BASE = `${basePath}api`.replace(/\/+/g, "/");
       const manifestUrl = `${API_BASE}/public/${slug}/manifest.json`;
-
-      let manifestLink = document.querySelector<HTMLLinkElement>(
-        'link[rel="manifest"]'
-      );
-      if (!manifestLink) {
-        manifestLink = document.createElement("link");
-        manifestLink.rel = "manifest";
-        document.head.appendChild(manifestLink);
-      }
       manifestLink.href = manifestUrl;
     } else {
       const icons: { src: string; sizes: string; type?: string; purpose: string }[] = [];
@@ -72,21 +72,10 @@ export function usePWA({ slug, nome, logoUrl, corPrimaria, startUrl }: PWAOption
       }
       const blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
       blobUrlRef.current = URL.createObjectURL(blob);
-
-      let manifestLink = document.querySelector<HTMLLinkElement>(
-        'link[rel="manifest"]'
-      );
-      if (!manifestLink) {
-        manifestLink = document.createElement("link");
-        manifestLink.rel = "manifest";
-        document.head.appendChild(manifestLink);
-      }
       manifestLink.href = blobUrlRef.current;
     }
 
     return () => {
-      const ml = document.querySelector('link[rel="manifest"]');
-      if (ml) ml.remove();
       if (blobUrlRef.current) {
         URL.revokeObjectURL(blobUrlRef.current);
         blobUrlRef.current = null;
@@ -95,7 +84,7 @@ export function usePWA({ slug, nome, logoUrl, corPrimaria, startUrl }: PWAOption
   }, [slug, nome, logoUrl, corPrimaria, startUrl]);
 
   useEffect(() => {
-    if (!logoUrl) return;
+    const iconUrl = logoUrl || `${import.meta.env.BASE_URL || "/"}logo-icon.png`;
 
     let appleTouchIcon = document.querySelector<HTMLLinkElement>(
       'link[rel="apple-touch-icon"]'
@@ -105,19 +94,14 @@ export function usePWA({ slug, nome, logoUrl, corPrimaria, startUrl }: PWAOption
       appleTouchIcon.rel = "apple-touch-icon";
       document.head.appendChild(appleTouchIcon);
     }
-    appleTouchIcon.href = logoUrl;
+    appleTouchIcon.href = iconUrl;
 
     let favicon = document.querySelector<HTMLLinkElement>(
       'link[rel="icon"]'
     );
     if (favicon) {
-      favicon.href = logoUrl;
+      favicon.href = iconUrl;
     }
-
-    return () => {
-      const ati = document.querySelector('link[rel="apple-touch-icon"]');
-      if (ati) ati.remove();
-    };
   }, [logoUrl]);
 
   useEffect(() => {
