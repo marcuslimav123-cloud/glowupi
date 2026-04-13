@@ -17,6 +17,13 @@ export function useInstallPWA() {
       return;
     }
 
+    const globalPrompt = (window as any).__pwaInstallPrompt;
+    if (globalPrompt) {
+      deferredPrompt.current = globalPrompt as BeforeInstallPromptEvent;
+      setCanInstall(true);
+      (window as any).__pwaInstallPrompt = null;
+    }
+
     const handler = (e: Event) => {
       e.preventDefault();
       deferredPrompt.current = e as BeforeInstallPromptEvent;
@@ -39,13 +46,18 @@ export function useInstallPWA() {
 
   const install = useCallback(async (): Promise<boolean> => {
     if (deferredPrompt.current) {
-      await deferredPrompt.current.prompt();
-      const { outcome } = await deferredPrompt.current.userChoice;
-      deferredPrompt.current = null;
-      if (outcome === "accepted") {
-        setCanInstall(false);
-        setIsInstalled(true);
-        return true;
+      try {
+        await deferredPrompt.current.prompt();
+        const { outcome } = await deferredPrompt.current.userChoice;
+        deferredPrompt.current = null;
+        (window as any).__pwaInstallPrompt = null;
+        if (outcome === "accepted") {
+          setCanInstall(false);
+          setIsInstalled(true);
+          return true;
+        }
+      } catch {
+        deferredPrompt.current = null;
       }
       return false;
     }
