@@ -51,6 +51,8 @@ import fornecedoresRouter from "./fornecedoresRoutes.js";
 import remuneracoesRouter from "./remuneracoesRoutes.js";
 import equipamentosRouter from "./equipamentosRoutes.js";
 import pushTokensRouter from "./pushTokens.js";
+import clientPushTokensRouter from "./clientPushTokens.js";
+import { clientRouter as agendamentoMensagensClientRouter, staffRouter as agendamentoMensagensStaffRouter } from "./agendamentoMensagens.js";
 import { getVapidPublicKey } from "../lib/pushNotifications.js";
 import filiaisRouter from "./filiais.js";
 import notificacoesInternasRouter from "./notificacoesInternas.js";
@@ -136,6 +138,9 @@ router.use("/barbearias/:barbeariaId/equipamentos", equipamentosRouter);
 router.use("/barbearias/:barbeariaId/push-tokens", pushTokensRouter);
 router.use("/barbearias/:barbeariaId/filiais", filiaisRouter);
 router.use("/barbearias/:barbeariaId/notificacoes-internas", notificacoesInternasRouter);
+router.use("/barbearias/:barbeariaId/agendamento-mensagens", agendamentoMensagensStaffRouter);
+router.use("/agendamento-mensagens", agendamentoMensagensClientRouter);
+router.use("/client-push-tokens", clientPushTokensRouter);
 
 router.get("/lgpd/terms", async (_req, res) => {
   try {

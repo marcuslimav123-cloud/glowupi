@@ -4,6 +4,7 @@ import { Calendar, Clock, Scissors, User, ChevronLeft, ChevronRight, Check, MapP
 import ClientAuthModal from "@/components/ClientAuthModal";
 import { usePWA } from "@/hooks/usePWA";
 import { useInstallPWA } from "@/hooks/useInstallPWA";
+import { useClientNotifications } from "@/hooks/useClientNotifications";
 
 const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, "/");
 
@@ -104,7 +105,10 @@ export default function PublicBooking() {
   const [simplesNome, setSimplesNome] = useState("");
   const [simplesWhatsapp, setSimplesWhatsapp] = useState("");
   const [comLoginWhatsapp, setComLoginWhatsapp] = useState("");
-  const [showMeusAgendamentos, setShowMeusAgendamentos] = useState(false);
+  const [showMeusAgendamentos, setShowMeusAgendamentos] = useState(() => {
+    const sp = new URLSearchParams(window.location.search);
+    return sp.has("agendamentoId") || sp.has("mensagem");
+  });
   const [meusAgendamentos, setMeusAgendamentos] = useState<MeuAgendamento[]>([]);
   const [meusAgendamentosLoading, setMeusAgendamentosLoading] = useState(false);
   const [cancelConfirmId, setCancelConfirmId] = useState<number | null>(null);
@@ -112,6 +116,18 @@ export default function PublicBooking() {
   const [cancelFeedback, setCancelFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [simplesLookupWhatsapp, setSimplesLookupWhatsapp] = useState("");
   const [simplesLookupDone, setSimplesLookupDone] = useState(false);
+  const [openMessageAgendId, setOpenMessageAgendId] = useState<number | null>(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const agendId = sp.get("agendamentoId");
+    const msg = sp.get("mensagem");
+    if (agendId && msg === "1") return parseInt(agendId);
+    return null;
+  });
+  const [messageThread, setMessageThread] = useState<{ remetente: string; mensagem: string; createdAt: string }[]>([]);
+  const [messageThreadLoading, setMessageThreadLoading] = useState(false);
+  const [newMessage, setNewMessage] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [messagingEnabled, setMessagingEnabled] = useState(false);
 
   const accent = barbearia?.corPrimaria || "#C4943C";
   const accentText = getContrastColor(accent);
@@ -125,6 +141,8 @@ export default function PublicBooking() {
 
   const { canInstall, isInstalled, install, showIOSInstructions } = useInstallPWA();
   const [showIOSModal, setShowIOSModal] = useState(false);
+
+  useClientNotifications(!!clientUser);
 
   useEffect(() => {
     fetchBarbearia();
@@ -351,6 +369,62 @@ export default function PublicBooking() {
     setShowMeusAgendamentos(true);
     fetchMeusAgendamentos();
   }
+
+  async function fetchMessageThread(agendamentoId: number) {
+    setMessageThreadLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/agendamento-mensagens/${agendamentoId}`, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        setMessageThread(await res.json());
+      }
+    } catch {} finally {
+      setMessageThreadLoading(false);
+    }
+  }
+
+  async function handleOpenMessages(agendamentoId: number) {
+    if (openMessageAgendId === agendamentoId) {
+      setOpenMessageAgendId(null);
+      return;
+    }
+    setOpenMessageAgendId(agendamentoId);
+    await fetchMessageThread(agendamentoId);
+  }
+
+  async function handleSendMessage(agendamentoId: number) {
+    if (!newMessage.trim() || !barbearia) return;
+    setSendingMessage(true);
+    try {
+      const res = await fetch(`${API_BASE}/agendamento-mensagens/enviar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ agendamentoId, mensagem: newMessage.trim(), barbeariaId: barbearia.id }),
+      });
+      if (res.ok) {
+        setNewMessage("");
+        await fetchMessageThread(agendamentoId);
+      }
+    } catch {} finally {
+      setSendingMessage(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!barbearia?.id) return;
+    fetch(`${API_BASE}/public/${slug}/config`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data && typeof data.mensagensAgendamentoHabilitadas === "boolean") {
+          setMessagingEnabled(data.mensagensAgendamentoHabilitadas);
+        } else {
+          setMessagingEnabled(true);
+        }
+      })
+      .catch(() => setMessagingEnabled(true));
+  }, [barbearia?.id, slug]);
 
   const dates = useMemo(() => {
     const result: { date: string; label: string; dayName: string }[] = [];
@@ -733,6 +807,67 @@ export default function PublicBooking() {
                           )}
                         </div>
                       </div>
+
+                      {messagingEnabled && (
+                        <div className="mt-3 pt-3 border-t border-white/[0.06]">
+                          <button
+                            onClick={() => handleOpenMessages(agend.id)}
+                            className="flex items-center gap-1.5 text-[11px] text-white/40 hover:text-white/70 transition-colors"
+                          >
+                            <MessageCircle className="h-3.5 w-3.5" />
+                            {openMessageAgendId === agend.id ? "Fechar mensagens" : "Enviar mensagem ao estabelecimento"}
+                          </button>
+
+                          {openMessageAgendId === agend.id && (
+                            <div className="mt-3">
+                              {messageThreadLoading ? (
+                                <div className="flex justify-center py-4">
+                                  <Loader2 className="h-4 w-4 animate-spin text-white/30" />
+                                </div>
+                              ) : (
+                                <div className="space-y-2 mb-3 max-h-48 overflow-y-auto">
+                                  {messageThread.length === 0 ? (
+                                    <p className="text-[11px] text-white/30 text-center py-2">Nenhuma mensagem ainda. Envie a primeira!</p>
+                                  ) : (
+                                    messageThread.map((msg, i) => (
+                                      <div key={i} className={`flex ${msg.remetente === "cliente" ? "justify-end" : "justify-start"}`}>
+                                        <div className={`max-w-[80%] px-3 py-2 rounded-xl text-[12px] ${
+                                          msg.remetente === "cliente"
+                                            ? "text-white rounded-br-none"
+                                            : "bg-white/[0.06] text-white/70 rounded-bl-none"
+                                        }`} style={msg.remetente === "cliente" ? { backgroundColor: accent + "33" } : {}}>
+                                          <p>{msg.mensagem}</p>
+                                          <p className={`text-[10px] mt-1 ${msg.remetente === "cliente" ? "text-white/40 text-right" : "text-white/30"}`}>
+                                            {new Date(msg.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    ))
+                                  )}
+                                </div>
+                              )}
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  value={newMessage}
+                                  onChange={e => setNewMessage(e.target.value)}
+                                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(agend.id); } }}
+                                  placeholder="Digite sua mensagem..."
+                                  className="flex-1 bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2 text-[12px] text-white placeholder:text-white/30 focus:outline-none focus:border-white/20"
+                                />
+                                <button
+                                  onClick={() => handleSendMessage(agend.id)}
+                                  disabled={!newMessage.trim() || sendingMessage}
+                                  className="p-2.5 rounded-xl disabled:opacity-40 transition-opacity flex items-center justify-center"
+                                  style={{ backgroundColor: accent }}
+                                >
+                                  {sendingMessage ? <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: accentText }} /> : <MessageCircle className="h-3.5 w-3.5" style={{ color: accentText }} />}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                   {barbearia.toleranciaCancelamento && barbearia.toleranciaCancelamento > 0 && (

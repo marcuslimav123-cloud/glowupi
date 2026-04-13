@@ -28,6 +28,24 @@ self.addEventListener("push", (event) => {
       data.body = event.data.text();
     }
   }
+
+  const isAgendamentoNotif = data.data && (
+    data.data.type === "agendamento_lembrete" || data.data.type === "agendamento_mensagem"
+  );
+
+  const actions = isAgendamentoNotif
+    ? [
+        {
+          action: "enviar_mensagem",
+          title: "Enviar mensagem",
+        },
+        {
+          action: "ver_agendamento",
+          title: "Ver agendamento",
+        },
+      ]
+    : [];
+
   const options = {
     body: data.body,
     icon: data.icon || "/favicon.ico",
@@ -35,14 +53,29 @@ self.addEventListener("push", (event) => {
     tag: data.tag || "glow-upi-push",
     data: data.data || {},
     vibrate: [200, 100, 200],
-    requireInteraction: false,
+    requireInteraction: isAgendamentoNotif,
+    actions,
   };
   event.waitUntil(self.registration.showNotification(data.title, options));
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const urlToOpen = event.notification.data?.url || "/";
+
+  const notifData = event.notification.data || {};
+  const action = event.action;
+  const agendamentoId = notifData.agendamentoId;
+  const slug = notifData.slug;
+
+  let urlToOpen;
+  if (action === "enviar_mensagem" && agendamentoId && slug) {
+    urlToOpen = `/${slug}?mensagem=1&agendamentoId=${agendamentoId}`;
+  } else if (action === "ver_agendamento" && agendamentoId && slug) {
+    urlToOpen = `/${slug}?agendamentoId=${agendamentoId}`;
+  } else {
+    urlToOpen = notifData.url || (slug ? `/${slug}` : "/");
+  }
+
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {

@@ -49,6 +49,7 @@ import {
   Clock,
   ShieldAlert,
   Search,
+  Inbox,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { APP_NAME, getRoleLabel } from "@/lib/utils";
@@ -113,6 +114,7 @@ const NAV_ITEMS: NavItem[] = [
         label: "Comunicação",
         items: [
           { name: "Mensagens", href: "/mensagens", icon: MessageSquare },
+          { name: "Inbox Agendamentos", href: "/comunicacao/inbox", icon: Inbox },
           { name: "Notícias", href: "/cadastros/noticias", icon: Newspaper },
           { name: "Grupos de Clientes", href: "/cadastros/grupos", icon: UsersRound },
           { name: "Pesquisa Satisfação", href: "/cadastros/pesquisa", icon: ClipboardList },
@@ -372,7 +374,7 @@ function isSubgroupActive(sg: { label: string; items: NavItem[] }, location: str
   return sg.items.some(s => s.href && (loc === s.href.split("?")[0] || loc.startsWith(s.href.split("?")[0] + '/')));
 }
 
-function CollapsibleSubgroup({ sg, location, onLinkClick }: { sg: { label: string; items: NavItem[] }; location: string; onLinkClick: () => void }) {
+function CollapsibleSubgroup({ sg, location, onLinkClick, badgeCounts }: { sg: { label: string; items: NavItem[] }; location: string; onLinkClick: () => void; badgeCounts?: Record<string, number> }) {
   const active = isSubgroupActive(sg, location);
   const [open, setOpen] = React.useState(active);
   const loc = location.split("?")[0];
@@ -403,7 +405,9 @@ function CollapsibleSubgroup({ sg, location, onLinkClick }: { sg: { label: strin
         open ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
       )}>
         <div className="space-y-0.5 mt-0.5">
-          {sg.items.map(sub => (
+          {sg.items.map(sub => {
+            const badgeCount = sub.href && badgeCounts ? badgeCounts[sub.href] : 0;
+            return (
             <Link key={sub.name + (sub.href || '')} href={sub.href!} className={cn(
               "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150",
               loc === sub.href?.split("?")[0]
@@ -411,16 +415,22 @@ function CollapsibleSubgroup({ sg, location, onLinkClick }: { sg: { label: strin
                 : "text-foreground/45 hover:text-foreground hover:bg-muted/50"
             )} onClick={onLinkClick} {...(sub.href && HREF_TO_TUTORIAL[sub.href.split("?")[0]] ? { "data-tutorial": HREF_TO_TUTORIAL[sub.href.split("?")[0]] } : {})}>
               <sub.icon className="h-[14px] w-[14px]" />
-              {sub.name}
+              <span className="flex-1">{sub.name}</span>
+              {badgeCount > 0 && (
+                <span className="bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] text-center leading-none">
+                  {badgeCount}
+                </span>
+              )}
             </Link>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
   );
 }
 
-function CollapsibleGroup({ item, location, onNavigate, mainRef }: { item: NavItem; location: string; onNavigate: () => void; mainRef: React.RefObject<HTMLDivElement | null> }) {
+function CollapsibleGroup({ item, location, onNavigate, mainRef, badgeCounts }: { item: NavItem; location: string; onNavigate: () => void; mainRef: React.RefObject<HTMLDivElement | null>; badgeCounts?: Record<string, number> }) {
   const active = isGroupActive(item, location);
   const [open, setOpen] = React.useState(active);
   const clickedRef = React.useRef(false);
@@ -485,6 +495,7 @@ function CollapsibleGroup({ item, location, onNavigate, mainRef }: { item: NavIt
               sg={sg}
               location={location}
               onLinkClick={handleLinkClick}
+              badgeCounts={badgeCounts}
             />
           ))}
         </div>
@@ -542,6 +553,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       applyTheme(user.tema);
     }
   }, [user]);
+
+  const { data: inboxCount } = useQuery<{ count: number }>({
+    queryKey: ["agendamento-mensagens-inbox-count", barbeariaId],
+    queryFn: async () => {
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/agendamento-mensagens/inbox/count`), {
+        credentials: "include",
+      });
+      if (!res.ok) return { count: 0 };
+      return res.json();
+    },
+    enabled: !!barbeariaId && !!user,
+    refetchInterval: 30000,
+  });
 
   const { data: layoutParams } = useQuery({
     queryKey: ["parametros-layout", barbeariaId],
@@ -732,6 +756,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   location={location}
                   onNavigate={handleNavClick}
                   mainRef={mainContentRef}
+                  badgeCounts={{ "/comunicacao/inbox": inboxCount?.count || 0 }}
                 />
               ) : (
                 <Link href={item.href!} className={cn(

@@ -97,6 +97,10 @@ export const PARAMETROS_DEFAULTS: ParamDef[] = [
   { chave: "avaliacao_individual", label: "Mostrar avaliação individual dos profissionais", categoria: "Outros", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "agenda_tipo_link", label: "Tipo de link de agendamento", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Com login", "Sem login (simples)"], valorPadrao: "Com login" },
   { chave: "agenda_whatsapp_encaixe", label: "Mostrar botão 'Tentar encaixe via WhatsApp' no link público de agendamento", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
+  { chave: "notif_cliente_lembrete_1dia", label: "Enviar lembrete push para clientes 1 dia antes do agendamento", categoria: "Notificações para Clientes", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
+  { chave: "notif_cliente_lembrete_2h", label: "Enviar lembrete push para clientes 2 horas antes do agendamento", categoria: "Notificações para Clientes", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
+  { chave: "notif_cliente_lembrete_30min", label: "Enviar lembrete push para clientes 30 minutos antes do agendamento", categoria: "Notificações para Clientes", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
+  { chave: "notif_cliente_mensagem", label: "Habilitar canal de mensagens entre clientes e o estabelecimento (agendamentos)", categoria: "Notificações para Clientes", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
 ];
 
 async function ensureDefaults(barbeariaId: number) {
@@ -144,6 +148,13 @@ router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) =>
   return res.json(result);
 });
 
+const CLIENT_NOTIF_CHAVES = [
+  "notif_cliente_lembrete_1dia",
+  "notif_cliente_lembrete_2h",
+  "notif_cliente_lembrete_30min",
+  "notif_cliente_mensagem",
+];
+
 router.put("/:chave", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = parseInt(req.params.barbeariaId);
   if (isNaN(barbeariaId)) return res.status(400).json({ error: "ID inválido" });
@@ -155,6 +166,16 @@ router.put("/:chave", requireAuth, requireRole("dono", "gerente"), async (req, r
   const { chave } = req.params;
   const { valor } = req.body;
   if (valor === undefined || valor === null) return res.status(400).json({ error: "Valor é obrigatório" });
+
+  if (CLIENT_NOTIF_CHAVES.includes(chave) && valor === "Sim") {
+    const googleClientId = process.env.GOOGLE_CLIENT_ID;
+    if (!googleClientId) {
+      return res.status(400).json({
+        error: "Esta função requer que o login com Google esteja ativo. Configure o Google Client ID nos parâmetros antes de ativar.",
+        code: "google_client_id_required",
+      });
+    }
+  }
 
   const [existing] = await db.select().from(parametrosConfigTable).where(
     and(eq(parametrosConfigTable.barbeariaId, barbeariaId), eq(parametrosConfigTable.chave, chave))

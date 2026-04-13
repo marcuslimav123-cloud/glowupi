@@ -806,6 +806,22 @@ router.get("/:slug/manifest.json", async (req, res) => {
   }
 });
 
+router.get("/:slug/config", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.slug, slug)).limit(1);
+    if (!barbearia) return res.status(404).json({ error: "Barbearia não encontrada" });
+    const { getParametros: getParams } = await import("../lib/parametros.js");
+    const params = await getParams(barbearia.id);
+    return res.json({
+      mensagensAgendamentoHabilitadas: params["notif_cliente_mensagem"] === "Sim",
+    });
+  } catch (e) {
+    console.error("public config error:", e);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 router.get("/:slug/meus-agendamentos", requireClient, async (req, res) => {
   try {
     const { slug } = req.params;

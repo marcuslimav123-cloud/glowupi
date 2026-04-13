@@ -83,6 +83,7 @@ const ClienteDetalhe = React.lazy(() => import("@/pages/gestao/ClienteDetalhe"))
 const Filiais = React.lazy(() => import("@/pages/gestao/Filiais"));
 
 const Parametros = React.lazy(() => import("@/pages/configuracoes/Parametros"));
+const InboxMensagens = React.lazy(() => import("@/pages/comunicacao/InboxMensagens"));
 const PerfisAcesso = React.lazy(() => import("@/pages/configuracoes/PerfisAcesso"));
 import { RodizioPage, OrdemChegadaPage, ListaEsperaConfigPage, AlertasPage } from "@/pages/configuracoes/PlaceholderConfig";
 const EmailTemplates = React.lazy(() => import("@/pages/configuracoes/EmailTemplates"));
@@ -184,6 +185,7 @@ function Router() {
       <Route path="/lista-espera" component={ListaEspera} />
       <Route path="/avaliacoes" component={Avaliacoes} />
       <Route path="/mensagens" component={Mensagens} />
+      <Route path="/comunicacao/inbox" component={InboxMensagens} />
       <Route path="/equipe" component={Equipe} />
       <Route path="/convite/:token" component={AcceptInvite} />
 

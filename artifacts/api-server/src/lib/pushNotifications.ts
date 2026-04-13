@@ -1,7 +1,8 @@
 import { db } from "@workspace/db";
-import { pushTokensTable, usersTable, agendamentosTable, barbeariasTable, notificacoesTable } from "@workspace/db/schema";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { pushTokensTable, usersTable, agendamentosTable, barbeariasTable, notificacoesTable, clientePushTokensTable, clienteUsersTable, clientesTable } from "@workspace/db/schema";
+import { eq, and, gte, lte, inArray } from "drizzle-orm";
 import webpush from "web-push";
+import { getParametros } from "./parametros.js";
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
@@ -151,6 +152,44 @@ async function sendExpoPush(tokens: string[], message: PushMessage): Promise<voi
   }
 }
 
+export async function sendPushToClienteUser(clienteUserId: number, message: PushMessage): Promise<void> {
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return;
+  try {
+    const tokens = await db.select().from(clientePushTokensTable).where(
+      and(
+        eq(clientePushTokensTable.clienteUserId, clienteUserId),
+        eq(clientePushTokensTable.ativo, true)
+      )
+    );
+    if (tokens.length === 0) return;
+
+    const payload = JSON.stringify({
+      title: message.title,
+      body: message.body,
+      data: message.data || {},
+      tag: `cliente-${message.data?.type || "notification"}-${message.data?.agendamentoId || ""}`,
+    });
+
+    for (const tokenRecord of tokens) {
+      try {
+        const subscription = JSON.parse(tokenRecord.token);
+        await webpush.sendNotification(subscription, payload);
+        console.log(`[Push] Client push sent to clienteUser ${clienteUserId}, token ${tokenRecord.id}`);
+      } catch (err: any) {
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          console.log(`[Push] Client push token ${tokenRecord.id} expired — deactivating`);
+          await db.update(clientePushTokensTable).set({ ativo: false, updatedAt: new Date() })
+            .where(eq(clientePushTokensTable.id, tokenRecord.id));
+        } else {
+          console.error(`[Push] Client web push error for token ${tokenRecord.id}:`, err.statusCode || err.message);
+        }
+      }
+    }
+  } catch (err) {
+    console.error(`[Push] Error sending push to clienteUser ${clienteUserId}:`, err);
+  }
+}
+
 const sentReminders = new Set<string>();
 
 function cleanupOldReminders(): void {
@@ -237,6 +276,121 @@ export async function sendAgendamentoReminders(): Promise<void> {
   }
 }
 
+const sentClientReminders = new Set<string>();
+
+export async function sendClienteAgendamentoReminders(): Promise<void> {
+  try {
+    if (sentClientReminders.size > 5000) sentClientReminders.clear();
+    const now = new Date();
+    const nowStr = now.toISOString();
+
+    const intervals = [
+      { label: "1dia", minutes: 24 * 60, paramKey: "notif_cliente_lembrete_1dia" },
+      { label: "2h", minutes: 2 * 60, paramKey: "notif_cliente_lembrete_2h" },
+      { label: "30min", minutes: 30, paramKey: "notif_cliente_lembrete_30min" },
+    ];
+
+    const nowDate = now.toISOString().split("T")[0];
+
+    for (const interval of intervals) {
+      const targetTime = new Date(now.getTime() + interval.minutes * 60 * 1000);
+      const targetDate = targetTime.toISOString().split("T")[0];
+      const targetHH = targetTime.getHours().toString().padStart(2, "0");
+      const targetMM = targetTime.getMinutes().toString().padStart(2, "0");
+      const targetTimeStr = `${targetHH}:${targetMM}`;
+      const nowHH = now.getHours().toString().padStart(2, "0");
+      const nowMM = now.getMinutes().toString().padStart(2, "0");
+      const nowTimeStr = `${nowHH}:${nowMM}`;
+
+      let agendamentos: (typeof agendamentosTable.$inferSelect)[] = [];
+      if (nowDate === targetDate) {
+        agendamentos = await db.select().from(agendamentosTable).where(
+          and(
+            eq(agendamentosTable.data, nowDate),
+            eq(agendamentosTable.status, "confirmado"),
+            gte(agendamentosTable.horaInicio, nowTimeStr),
+            lte(agendamentosTable.horaInicio, targetTimeStr)
+          )
+        );
+      } else {
+        const todayAgends = await db.select().from(agendamentosTable).where(
+          and(
+            eq(agendamentosTable.data, nowDate),
+            eq(agendamentosTable.status, "confirmado"),
+            gte(agendamentosTable.horaInicio, nowTimeStr)
+          )
+        );
+        const tomorrowAgends = await db.select().from(agendamentosTable).where(
+          and(
+            eq(agendamentosTable.data, targetDate),
+            eq(agendamentosTable.status, "confirmado"),
+            lte(agendamentosTable.horaInicio, targetTimeStr)
+          )
+        );
+        agendamentos = [...todayAgends, ...tomorrowAgends];
+      }
+
+      const barbeariaIds = [...new Set(agendamentos.map(a => a.barbeariaId))];
+      const barbeariaParams: Record<number, Record<string, string>> = {};
+      for (const bid of barbeariaIds) {
+        try {
+          barbeariaParams[bid] = await getParametros(bid);
+        } catch {}
+      }
+
+      for (const agend of agendamentos) {
+        const reminderKey = `client-reminder:${agend.id}:${interval.label}`;
+        if (sentClientReminders.has(reminderKey)) continue;
+
+        const params = barbeariaParams[agend.barbeariaId] || {};
+        if (params[interval.paramKey] !== "Sim") continue;
+
+        if (!agend.clienteId) continue;
+
+        const [cliente] = await db.select({ email: clientesTable.email }).from(clientesTable)
+          .where(eq(clientesTable.id, agend.clienteId)).limit(1);
+        if (!cliente?.email) continue;
+
+        const [clienteUser] = await db.select().from(clienteUsersTable).where(
+          eq(clienteUsersTable.email, cliente.email)
+        ).limit(1);
+
+        if (!clienteUser) continue;
+
+        sentClientReminders.add(reminderKey);
+
+        const labelTexts: Record<string, string> = {
+          "1dia": "amanhã",
+          "2h": "em 2 horas",
+          "30min": "em 30 minutos",
+        };
+        const labelText = labelTexts[interval.label] || "";
+
+        const [barbearia] = await db.select({ slug: barbeariasTable.slug }).from(barbeariasTable)
+          .where(eq(barbeariasTable.id, agend.barbeariaId)).limit(1);
+        const slug = barbearia?.slug || "";
+
+        await sendPushToClienteUser(clienteUser.id, {
+          title: "Lembrete de Agendamento",
+          body: `${agend.servicoNome} com ${agend.profissionalNome} ${labelText} às ${agend.horaInicio}`,
+          data: {
+            agendamentoId: agend.id,
+            type: "agendamento_lembrete",
+            slug,
+            url: slug ? `/${slug}?agendamentoId=${agend.id}` : `/agendamentos/${agend.id}`,
+            servicoNome: agend.servicoNome,
+            profissionalNome: agend.profissionalNome,
+            horaInicio: agend.horaInicio,
+            data: agend.data,
+          },
+        });
+      }
+    }
+  } catch (err) {
+    console.error("[Push] Error sending client reminders:", err);
+  }
+}
+
 let reminderInterval: ReturnType<typeof setInterval> | null = null;
 
 export function startReminderService(): void {
@@ -246,9 +400,15 @@ export function startReminderService(): void {
     sendAgendamentoReminders().catch(err =>
       console.error("[Push] Reminder service error:", err)
     );
+    sendClienteAgendamentoReminders().catch(err =>
+      console.error("[Push] Client reminder service error:", err)
+    );
   }, 5 * 60 * 1000);
 
   sendAgendamentoReminders().catch(err =>
     console.error("[Push] Initial reminder check error:", err)
+  );
+  sendClienteAgendamentoReminders().catch(err =>
+    console.error("[Push] Initial client reminder check error:", err)
   );
 }
