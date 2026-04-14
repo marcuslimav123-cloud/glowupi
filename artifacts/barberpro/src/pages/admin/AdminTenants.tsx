@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { apiUrl } from "@/lib/utils";
 import { StatusBadge } from "./AdminDashboard";
-import { Search, Building2, Users, Calendar, Clock, ChevronDown, ChevronUp, Plus, Minus, History } from "lucide-react";
+import { Search, Building2, Users, Calendar, Clock, ChevronDown, ChevronUp, Plus, Minus, History, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -71,6 +71,25 @@ export default function AdminTenants() {
   };
 
   useEffect(() => { fetchTenants(); }, []);
+
+  const exportarClientes = async () => {
+    try {
+      const res = await fetch(apiUrl("/admin/export-clientes"), { credentials: "include" });
+      if (!res.ok) throw new Error("Erro");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `clientes_${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast({ title: "Exportação concluída!" });
+    } catch {
+      toast({ title: "Erro ao exportar", variant: "destructive" });
+    }
+  };
 
   const changeStatus = async (id: number, status: string) => {
     setActionLoading(id);
@@ -156,6 +175,9 @@ export default function AdminTenants() {
             <h1 className="text-3xl font-display text-white mb-1">Assinantes</h1>
             <p className="text-slate-400">Gerenciar estúdios cadastrados ({tenants.length} total)</p>
           </div>
+          <Button onClick={exportarClientes} variant="outline" className="border-white/10 text-white hover:bg-white/5 rounded-xl shrink-0">
+            <Download className="h-4 w-4 mr-2" />Exportar Excel
+          </Button>
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
             <Input

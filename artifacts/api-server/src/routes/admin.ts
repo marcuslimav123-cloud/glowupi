@@ -525,4 +525,119 @@ router.get("/trial-links", requireAdmin, async (req, res) => {
   }
 });
 
+router.get("/export-clientes", requireAdmin, async (req: any, res) => {
+  try {
+    const allBarbearias = await db.select().from(barbeariasTable).orderBy(desc(barbeariasTable.createdAt));
+    const allUsers = await db.select().from(usersTable);
+
+    const userMap = new Map(allUsers.map(u => [u.id, u]));
+
+    const proCounts = await db.select({
+      barbeariaId: profissionaisTable.barbeariaId,
+      total: sql<string>`COUNT(*)`,
+    }).from(profissionaisTable).where(eq(profissionaisTable.ativo, true)).groupBy(profissionaisTable.barbeariaId);
+    const proCountMap = new Map(proCounts.map(p => [p.barbeariaId, parseInt(p.total)]));
+
+    const now = new Date();
+
+    const headers = [
+      "ID Barbearia",
+      "Nome Estabelecimento",
+      "Slug",
+      "CNPJ",
+      "Telefone Estabelecimento",
+      "Email Estabelecimento",
+      "CEP",
+      "Logradouro",
+      "Numero",
+      "Bairro",
+      "Cidade",
+      "UF",
+      "Nome do Dono",
+      "Email do Dono",
+      "Telefone do Dono (WhatsApp)",
+      "Login via Google",
+      "Plano",
+      "Periodo",
+      "Status Assinatura",
+      "Ativo",
+      "Vencimento Plano",
+      "Dias Restantes",
+      "Qtd Profissionais",
+      "Stripe Customer ID",
+      "Stripe Subscription ID",
+      "Data Cadastro",
+      "Meses de Acesso",
+      "Cor Primaria",
+      "Descricao Publica",
+    ];
+
+    const escCsv = (val: any): string => {
+      if (val === null || val === undefined) return "";
+      const s = String(val);
+      if (s.includes(",") || s.includes('"') || s.includes("\n") || s.includes(";")) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    };
+
+    const rows = allBarbearias.map(b => {
+      const dono = userMap.get(b.donoId);
+      const proCount = proCountMap.get(b.id) || 0;
+
+      let diasRestantes: number | string = "";
+      if (b.planoVencimento) {
+        diasRestantes = Math.max(0, Math.ceil((b.planoVencimento.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+      }
+
+      const createdDate = b.createdAt || now;
+      const mesesAcesso = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
+
+      return [
+        b.id,
+        b.nome,
+        b.slug,
+        b.cnpj || "",
+        b.telefone || "",
+        b.email || "",
+        b.cep || "",
+        b.logradouro || "",
+        b.numero || "",
+        b.bairro || "",
+        b.cidade || "",
+        b.uf || "",
+        dono?.nome || "",
+        dono?.email || "",
+        dono?.telefone || "",
+        dono?.googleId ? "Sim" : "Não",
+        b.subscriptionPlan || b.planoNome || "Trial",
+        b.subscriptionPeriod || "",
+        b.subscriptionStatus || "trial",
+        b.ativo ? "Sim" : "Não",
+        b.planoVencimento ? b.planoVencimento.toISOString().split("T")[0] : "",
+        diasRestantes,
+        proCount,
+        b.stripeCustomerId || "",
+        b.stripeSubscriptionId || "",
+        b.createdAt ? b.createdAt.toISOString().split("T")[0] : "",
+        mesesAcesso,
+        b.corPrimaria || "",
+        b.descricaoPublica || "",
+      ].map(escCsv).join(",");
+    });
+
+    const bom = "\uFEFF";
+    const csv = bom + headers.join(",") + "\n" + rows.join("\n");
+
+    await logAdminAction(req.admin.id, "export_clientes", undefined, { total: allBarbearias.length });
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename=clientes_${now.toISOString().split("T")[0]}.csv`);
+    return res.send(csv);
+  } catch (e) {
+    console.error("export-clientes error:", e);
+    return res.status(500).json({ error: "Erro ao exportar clientes" });
+  }
+});
+
 export default router;
