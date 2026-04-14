@@ -100,13 +100,19 @@ async function sendWebPush(tokens: { id: number; token: string }[], message: Pus
     title: message.title,
     body: message.body,
     data: message.data || {},
-    tag: `glow-upi-${message.data?.type || "notification"}`,
+    icon: "/favicon.svg",
+    tag: `glow-upi-${message.data?.type || "notification"}-${Date.now()}`,
   });
+
+  const pushOptions = {
+    TTL: 60 * 60,
+    urgency: "high" as const,
+  };
 
   for (const tokenRecord of tokens) {
     try {
       const subscription = JSON.parse(tokenRecord.token);
-      await webpush.sendNotification(subscription, payload);
+      await webpush.sendNotification(subscription, payload, pushOptions);
       console.log(`[Push] Web push sent to token ${tokenRecord.id}`);
     } catch (err: any) {
       if (err.statusCode === 410 || err.statusCode === 404) {
@@ -167,13 +173,19 @@ export async function sendPushToClienteUser(clienteUserId: number, message: Push
       title: message.title,
       body: message.body,
       data: message.data || {},
-      tag: `cliente-${message.data?.type || "notification"}-${message.data?.agendamentoId || ""}`,
+      icon: "/favicon.svg",
+      tag: `cliente-${message.data?.type || "notification"}-${Date.now()}`,
     });
+
+    const pushOptions = {
+      TTL: 60 * 60,
+      urgency: "high" as const,
+    };
 
     for (const tokenRecord of tokens) {
       try {
         const subscription = JSON.parse(tokenRecord.token);
-        await webpush.sendNotification(subscription, payload);
+        await webpush.sendNotification(subscription, payload, pushOptions);
         console.log(`[Push] Client push sent to clienteUser ${clienteUserId}, token ${tokenRecord.id}`);
       } catch (err: any) {
         if (err.statusCode === 410 || err.statusCode === 404) {

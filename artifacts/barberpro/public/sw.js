@@ -1,4 +1,4 @@
-const CACHE_NAME = "glowupi-pwa-v1";
+const CACHE_NAME = "glowupi-pwa-v2";
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -21,7 +21,8 @@ self.addEventListener("push", (event) => {
   let data = { title: "Glow Upi", body: "Nova notificação" };
   try {
     if (event.data) {
-      data = event.data.json();
+      const parsed = event.data.json();
+      if (parsed) data = parsed;
     }
   } catch (e) {
     if (event.data) {
@@ -29,34 +30,32 @@ self.addEventListener("push", (event) => {
     }
   }
 
-  const isAgendamentoNotif = data.data && (
-    data.data.type === "agendamento_lembrete" || data.data.type === "agendamento_mensagem"
-  );
+  const notifType = data.data?.type || "";
+  const isAgendamento = notifType.includes("agendamento") || notifType === "reminder" || notifType === "novo_agendamento";
 
-  const actions = isAgendamentoNotif
+  const actions = isAgendamento && data.data?.agendamentoId
     ? [
-        {
-          action: "enviar_mensagem",
-          title: "Enviar mensagem",
-        },
-        {
-          action: "ver_agendamento",
-          title: "Ver agendamento",
-        },
+        { action: "ver_agendamento", title: "Ver agendamento" },
       ]
     : [];
 
   const options = {
     body: data.body,
-    icon: data.icon || "/favicon.ico",
-    badge: data.badge || "/favicon.ico",
-    tag: data.tag || "glow-upi-push",
+    icon: data.icon || "/favicon.svg",
+    badge: data.badge || "/favicon.svg",
+    tag: data.tag || "glow-upi-" + (notifType || "push") + "-" + Date.now(),
     data: data.data || {},
-    vibrate: [200, 100, 200],
-    requireInteraction: isAgendamentoNotif,
+    vibrate: [300, 100, 300, 100, 300],
+    requireInteraction: true,
+    renotify: true,
     actions,
+    timestamp: Date.now(),
+    silent: false,
   };
-  event.waitUntil(self.registration.showNotification(data.title, options));
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Glow Upi", options)
+  );
 });
 
 self.addEventListener("notificationclick", (event) => {
@@ -65,24 +64,15 @@ self.addEventListener("notificationclick", (event) => {
   const notifData = event.notification.data || {};
   const action = event.action;
   const agendamentoId = notifData.agendamentoId;
-  const slug = notifData.slug;
 
-  let urlToOpen;
-  if (action === "enviar_mensagem" && agendamentoId && slug) {
-    urlToOpen = `/${slug}?mensagem=1&agendamentoId=${agendamentoId}`;
-  } else if (action === "ver_agendamento" && agendamentoId && slug) {
-    urlToOpen = `/${slug}?agendamentoId=${agendamentoId}`;
-  } else {
-    urlToOpen = notifData.url || (slug ? `/${slug}` : "/");
+  let urlToOpen = notifData.url || "/agenda";
+
+  if (action === "ver_agendamento" && agendamentoId) {
+    urlToOpen = "/agenda";
   }
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if (new URL(client.url).pathname === urlToOpen && "focus" in client) {
-          return client.focus();
-        }
-      }
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && "focus" in client) {
           client.navigate(urlToOpen);

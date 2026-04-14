@@ -30,12 +30,14 @@ async function sendPushToCliente(clienteUserId: number, barbeariaId: number, tit
       title,
       body,
       data: data || {},
-      tag: `agendamento-msg-${data?.agendamentoId || "notification"}`,
+      icon: "/favicon.svg",
+      tag: `agendamento-msg-${Date.now()}`,
     });
+    const pushOptions = { TTL: 60 * 60, urgency: "high" as const };
     for (const tokenRecord of tokens) {
       try {
         const subscription = JSON.parse(tokenRecord.token);
-        await webpush.sendNotification(subscription, payload);
+        await webpush.sendNotification(subscription, payload, pushOptions);
       } catch (err: any) {
         if (err.statusCode === 410 || err.statusCode === 404) {
           await db.update(clientePushTokensTable).set({ ativo: false, updatedAt: new Date() })

@@ -23,19 +23,41 @@ export function playNotificationSound() {
   try {
     const ctx = getAudioContext();
     if (ctx.state === "suspended") ctx.resume();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = "sine";
+
     const now = ctx.currentTime;
-    osc.frequency.setValueAtTime(880, now);
-    osc.frequency.setValueAtTime(1100, now + 0.1);
-    osc.frequency.setValueAtTime(880, now + 0.2);
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
-    osc.start(now);
-    osc.stop(now + 0.35);
+
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.type = "sine";
+    osc1.frequency.setValueAtTime(880, now);
+    gain1.gain.setValueAtTime(0.4, now);
+    gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+    osc1.start(now);
+    osc1.stop(now + 0.15);
+
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.type = "sine";
+    osc2.frequency.setValueAtTime(1100, now + 0.18);
+    gain2.gain.setValueAtTime(0.4, now + 0.18);
+    gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.33);
+    osc2.start(now + 0.18);
+    osc2.stop(now + 0.33);
+
+    const osc3 = ctx.createOscillator();
+    const gain3 = ctx.createGain();
+    osc3.connect(gain3);
+    gain3.connect(ctx.destination);
+    osc3.type = "sine";
+    osc3.frequency.setValueAtTime(1320, now + 0.36);
+    gain3.gain.setValueAtTime(0.5, now + 0.36);
+    gain3.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+    osc3.start(now + 0.36);
+    osc3.stop(now + 0.6);
   } catch {}
 }
 
@@ -43,17 +65,6 @@ export function requestNotificationPermission(): Promise<NotificationPermission>
   if (!("Notification" in window)) return Promise.resolve("denied" as NotificationPermission);
   if (Notification.permission === "granted") return Promise.resolve("granted");
   return Notification.requestPermission();
-}
-
-export function showBrowserNotification(title: string, body: string) {
-  if (!("Notification" in window) || Notification.permission !== "granted") return;
-  try {
-    new Notification(title, {
-      body,
-      icon: "/favicon.ico",
-      tag: "glow-upi-notification",
-    });
-  } catch {}
 }
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -151,7 +162,6 @@ export function useNotifications() {
         const newCount = data.count || 0;
         if (newCount > prevUnreadRef.current && prevUnreadRef.current >= 0) {
           playNotificationSound();
-          showBrowserNotification("Nova Notificação", "Você tem novas notificações");
         }
         prevUnreadRef.current = newCount;
         setUnreadCount(newCount);
@@ -203,7 +213,7 @@ export function useNotifications() {
     if (!barbeariaId || !isAuthenticated) return;
     prevUnreadRef.current = -1;
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 20000);
+    const interval = setInterval(fetchUnreadCount, 10000);
     return () => clearInterval(interval);
   }, [barbeariaId, isAuthenticated, fetchUnreadCount]);
 

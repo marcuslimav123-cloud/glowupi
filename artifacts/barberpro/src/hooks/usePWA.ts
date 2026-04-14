@@ -17,7 +17,11 @@ export function usePWA({ slug, nome, logoUrl, corPrimaria, startUrl }: PWAOption
 
     if ("serviceWorker" in navigator && !swRegistered.current) {
       const basePath = import.meta.env.BASE_URL || "/";
-      navigator.serviceWorker.register(`${basePath}sw.js`).catch(() => {});
+      navigator.serviceWorker.register(`${basePath}sw.js`, { updateViaCache: "none" })
+        .then((reg) => {
+          reg.update().catch(() => {});
+        })
+        .catch(() => {});
       swRegistered.current = true;
     }
   }, [slug, nome]);
