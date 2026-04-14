@@ -3,6 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { barbeariasTable } from "./barbearias";
 import { perfisAcessoTable } from "./perfisAcesso";
+import { profissionaisTable } from "./profissionais";
 
 export const convitesTable = pgTable("convites", {
   id: serial("id").primaryKey(),
@@ -10,6 +11,7 @@ export const convitesTable = pgTable("convites", {
   email: text("email").notNull(),
   role: text("role").notNull().default("colaborador"),
   perfilAcessoId: integer("perfil_acesso_id").references(() => perfisAcessoTable.id),
+  profissionalId: integer("profissional_id").references(() => profissionaisTable.id),
   token: text("token").notNull().unique(),
   status: text("status").notNull().default("pendente"),
   nomeConvidado: text("nome_convidado"),

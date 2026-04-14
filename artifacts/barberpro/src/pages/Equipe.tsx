@@ -5,8 +5,23 @@ import { apiUrl, getRoleLabel, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { UsersRound, Plus, Trash2, Copy, Check, Mail, Send, X, Shield, RefreshCw, ArrowUpCircle, AlertTriangle } from "lucide-react";
+import {
+  UsersRound, Plus, Trash2, Copy, Check, Mail, Send, X, Shield, RefreshCw,
+  ArrowUpCircle, AlertTriangle, UserPlus, UserCheck, User, ChevronRight, Link2,
+} from "lucide-react";
 import { useLocation } from "wouter";
+
+interface ProfStatus {
+  id: number;
+  nomeExibicao: string;
+  fotoUrl?: string | null;
+  especialidade?: string | null;
+  celular?: string | null;
+  ativo: boolean;
+  usuarioId?: number | null;
+  perfilAcesso: { id: number; descricao: string; tipo: string } | null;
+  hasPendingInvite: boolean;
+}
 
 interface TeamMember {
   id: number;
@@ -25,6 +40,7 @@ interface Invite {
   status: string;
   nomeConvidado?: string;
   perfilAcessoId?: number | null;
+  profissionalId?: number | null;
   token: string;
   createdAt: string;
   expiresAt: string;
@@ -40,15 +56,6 @@ interface PerfilAcesso {
 
 const PLANS_WITH_TEAM = ["2_5_pro", "6_15_pro", "15_plus_pro"];
 
-const PLAN_PERFIL_LIMITS: Record<string, number> = {
-  "1_pro": 0,
-  "2_5_pro": 5,
-  "6_15_pro": 15,
-  "15_plus_pro": 999,
-  "single": 999,
-  "trial": 999,
-};
-
 const PLAN_LABELS: Record<string, string> = {
   "1_pro": "1 Profissional",
   "2_5_pro": "2 a 5 Profissionais",
@@ -60,11 +67,13 @@ export default function Equipe() {
   const { user, barbeariaId } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const [profStatus, setProfStatus] = useState<ProfStatus[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
   const [perfis, setPerfis] = useState<PerfilAcesso[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showInviteForm, setShowInviteForm] = useState(false);
+
+  const [invitingProfId, setInvitingProfId] = useState<number | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteNome, setInviteNome] = useState("");
   const [inviteRole, setInviteRole] = useState<"gerente" | "colaborador">("colaborador");
@@ -73,12 +82,12 @@ export default function Equipe() {
   const [submitting, setSubmitting] = useState(false);
   const [copiedToken, setCopiedToken] = useState<number | null>(null);
   const [resendingId, setResendingId] = useState<number | null>(null);
+  const [showGenericInvite, setShowGenericInvite] = useState(false);
 
   const rawPlan = ((user as any)?.barbearia?.subscriptionPlan || (user as any)?.barbearia?.planoNome || "").toLowerCase().replace(/\s+/g, "_");
   const isTrial = (user as any)?.barbearia?.subscriptionStatus === "trial";
   const isOnePro = rawPlan === "1_pro" && !isTrial;
   const hasTeamPlan = isTrial || PLANS_WITH_TEAM.includes(rawPlan);
-  const perfilLimit = isTrial ? 999 : (PLAN_PERFIL_LIMITS[rawPlan] ?? (rawPlan ? 0 : 999));
   const webPerfis = perfis.filter(p => p.tipo === "web");
 
   useEffect(() => {
@@ -87,12 +96,13 @@ export default function Equipe() {
 
   async function loadData() {
     try {
-      const [membersRes, invitesRes, perfisRes] = await Promise.all([
+      const [membersRes, invitesRes, perfisRes, profRes] = await Promise.all([
         fetch(apiUrl("/convites/equipe"), { credentials: "include" }),
         fetch(apiUrl("/convites"), { credentials: "include" }),
         barbeariaId
           ? fetch(apiUrl(`/barbearias/${barbeariaId}/perfis-acesso`), { credentials: "include" })
           : Promise.resolve(null),
+        fetch(apiUrl("/convites/equipe/profissionais-status"), { credentials: "include" }),
       ]);
       if (membersRes.ok) setMembers(await membersRes.json());
       if (invitesRes.ok) setInvites(await invitesRes.json());
@@ -100,11 +110,40 @@ export default function Equipe() {
         const all = await perfisRes.json();
         setPerfis(all.filter((p: PerfilAcesso) => p.ativo));
       }
+      if (profRes.ok) setProfStatus(await profRes.json());
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
+  }
+
+  function openInviteForProf(prof: ProfStatus) {
+    setInvitingProfId(prof.id);
+    setInviteNome(prof.nomeExibicao);
+    setInviteRole("colaborador");
+    setInvitePerfilId(prof.perfilAcesso ? String(prof.perfilAcesso.id) : "");
+    setInviteEmail("");
+    setEnviarEmail(true);
+    setShowGenericInvite(false);
+  }
+
+  function openGenericInvite() {
+    setInvitingProfId(null);
+    setInviteNome("");
+    setInviteRole("gerente");
+    setInvitePerfilId("");
+    setInviteEmail("");
+    setEnviarEmail(true);
+    setShowGenericInvite(true);
+  }
+
+  function closeInviteForm() {
+    setInvitingProfId(null);
+    setShowGenericInvite(false);
+    setInviteEmail("");
+    setInviteNome("");
+    setInvitePerfilId("");
   }
 
   async function handleInvite(e: React.FormEvent) {
@@ -124,6 +163,7 @@ export default function Equipe() {
           role: inviteRole,
           nomeConvidado: inviteNome || undefined,
           perfilAcessoId: invitePerfilId || undefined,
+          profissionalId: invitingProfId || undefined,
           enviarEmail,
         }),
       });
@@ -133,8 +173,8 @@ export default function Equipe() {
         return;
       }
       setInvites(prev => [...prev, data]);
-      setShowInviteForm(false);
-      resetForm();
+      closeInviteForm();
+      await loadData();
 
       if (enviarEmail) {
         if (data.emailSent === false) {
@@ -152,18 +192,11 @@ export default function Equipe() {
     }
   }
 
-  function resetForm() {
-    setInviteEmail("");
-    setInviteNome("");
-    setInviteRole("colaborador");
-    setInvitePerfilId("");
-    setEnviarEmail(true);
-  }
-
   async function handleDeleteInvite(id: number) {
     try {
       await fetch(apiUrl(`/convites/${id}`), { method: "DELETE", credentials: "include" });
       setInvites(prev => prev.filter(i => i.id !== id));
+      await loadData();
       toast({ title: "Convite removido" });
     } catch {
       toast({ title: "Erro", variant: "destructive" });
@@ -203,10 +236,7 @@ export default function Equipe() {
   async function handleResendInvite(id: number) {
     setResendingId(id);
     try {
-      const res = await fetch(apiUrl(`/convites/${id}/resend`), {
-        method: "POST",
-        credentials: "include",
-      });
+      const res = await fetch(apiUrl(`/convites/${id}/resend`), { method: "POST", credentials: "include" });
       const data = await res.json();
       if (!res.ok) {
         toast({ title: "Erro ao reenviar", description: data.error, variant: "destructive" });
@@ -230,31 +260,27 @@ export default function Equipe() {
   }
 
   const pendingInvites = invites.filter(i => i.status === "pendente");
+  const profsWithoutUser = profStatus.filter(p => !p.usuarioId && p.ativo);
+  const profsReadyToInvite = profsWithoutUser.filter(p => p.perfilAcesso && !p.hasPendingInvite);
+  const profsWithPendingInvite = profsWithoutUser.filter(p => p.hasPendingInvite);
+  const profsMissingPerfil = profsWithoutUser.filter(p => !p.perfilAcesso && !p.hasPendingInvite);
+  const isInviteFormOpen = invitingProfId !== null || showGenericInvite;
 
   return (
     <AppLayout>
-      <div className="max-w-3xl mx-auto space-y-8">
+      <div className="max-w-3xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-[22px] font-bold text-foreground tracking-tight">Equipe</h1>
-            <p className="text-foreground/45 text-[14px] mt-1">Gerencie os membros do seu estúdio</p>
+            <p className="text-foreground/45 text-[14px] mt-1">Gerencie os profissionais e membros do seu estúdio</p>
           </div>
           {hasTeamPlan && !isOnePro && (
             <Button
-              onClick={() => {
-                if (inviteRole === "colaborador" && webPerfis.length === 0) {
-                  toast({
-                    title: "Crie um perfil de acesso primeiro",
-                    description: "Vá em Configurações → Perfis de Acesso para criar antes de convidar.",
-                    variant: "destructive",
-                  });
-                  return;
-                }
-                setShowInviteForm(true);
-              }}
+              onClick={openGenericInvite}
               className="rounded-xl h-10 text-[13px] gap-2"
+              variant="outline"
             >
-              <Plus className="h-4 w-4" /> Convidar
+              <Plus className="h-4 w-4" /> Convidar Gerente
             </Button>
           )}
         </div>
@@ -267,62 +293,138 @@ export default function Equipe() {
             <div className="flex-1 min-w-0">
               <p className="text-[14px] font-semibold text-amber-900">Seu plano não permite equipe</p>
               <p className="text-[13px] text-amber-700 mt-0.5">
-                O plano <strong>{PLAN_LABELS[rawPlan] || rawPlan}</strong> é para uso individual e não permite adicionar membros nem criar perfis de acesso.
+                O plano <strong>{PLAN_LABELS[rawPlan] || rawPlan}</strong> é para uso individual.
                 Faça upgrade para o plano <strong>2 a 5 Profissionais</strong> ou superior.
               </p>
-              <Button
-                size="sm"
-                className="mt-3 rounded-xl h-9 text-[13px] bg-amber-600 hover:bg-amber-700 text-white border-0"
-                onClick={() => navigate("/empresa")}
-              >
+              <Button size="sm" className="mt-3 rounded-xl h-9 text-[13px] bg-amber-600 hover:bg-amber-700 text-white border-0" onClick={() => navigate("/empresa")}>
                 Ver planos e fazer upgrade
               </Button>
             </div>
           </div>
         )}
 
-        {!isOnePro && hasTeamPlan && webPerfis.length === 0 && !loading && (
-          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 flex gap-4">
-            <div className="shrink-0 h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center">
-              <AlertTriangle className="h-5 w-5 text-blue-600" />
+        {!isOnePro && !loading && profStatus.length === 0 && (
+          <div className="bg-card border border-border rounded-2xl p-8 text-center">
+            <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <UsersRound className="h-7 w-7 text-primary" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[14px] font-semibold text-blue-900">Crie um perfil de acesso primeiro</p>
-              <p className="text-[13px] text-blue-700 mt-0.5">
-                Para convidar colaboradores, você precisa criar ao menos um perfil de acesso web definindo quais funcionalidades eles poderão usar.
-              </p>
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-3 rounded-xl h-9 text-[13px] border-blue-300 text-blue-700 hover:bg-blue-50"
-                onClick={() => navigate("/configuracoes/acessos")}
-              >
-                <Shield className="h-3.5 w-3.5 mr-1.5" /> Criar Perfil de Acesso
+            <h3 className="text-[16px] font-semibold text-foreground mb-1">Cadastre seu primeiro profissional</h3>
+            <p className="text-[13px] text-foreground/50 max-w-md mx-auto mb-4">
+              Para montar sua equipe, comece cadastrando os profissionais com nome, comissão e serviços.
+              Depois, vincule um perfil de acesso e convide-os.
+            </p>
+            <div className="flex flex-col items-center gap-2">
+              <Button onClick={() => navigate("/gestao/profissionais")} className="rounded-xl h-10 text-[13px] gap-2">
+                <UserPlus className="h-4 w-4" /> Cadastrar Profissional
               </Button>
+            </div>
+            <div className="mt-6 bg-muted/30 rounded-xl p-4 text-left max-w-sm mx-auto">
+              <p className="text-[12px] font-semibold text-foreground/60 mb-2">Passo a passo:</p>
+              <div className="space-y-2">
+                <Step n={1} text="Cadastre o profissional (nome, comissão, serviços)" />
+                <Step n={2} text="Crie e vincule um perfil de acesso" />
+                <Step n={3} text="Convide para a equipe (e-mail ou link)" />
+              </div>
             </div>
           </div>
         )}
 
-        {showInviteForm && (
-          <div className="bg-card rounded-2xl border border-border p-6 space-y-5">
+        {profsReadyToInvite.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-[14px] font-semibold text-foreground/60 flex items-center gap-2">
+              <UserPlus className="h-4 w-4" /> Prontos para Convidar
+            </h2>
+            <div className="bg-card rounded-2xl border border-border divide-y divide-black/[0.04]">
+              {profsReadyToInvite.map(prof => (
+                <div key={prof.id} className="flex items-center gap-4 p-4">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-400/20 to-green-600/10 flex items-center justify-center text-green-600 font-semibold text-[13px] shrink-0">
+                    {prof.fotoUrl
+                      ? <img src={prof.fotoUrl} className="h-10 w-10 rounded-full object-cover" />
+                      : prof.nomeExibicao.charAt(0).toUpperCase()
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-medium text-foreground truncate">{prof.nomeExibicao}</p>
+                    <p className="text-[12px] text-foreground/40 flex items-center gap-1">
+                      <Shield className="h-3 w-3" /> {prof.perfilAcesso?.descricao}
+                      {prof.especialidade && <> · {prof.especialidade}</>}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="rounded-xl h-9 text-[13px] gap-1.5"
+                    onClick={() => openInviteForProf(prof)}
+                    disabled={isInviteFormOpen}
+                  >
+                    <Send className="h-3.5 w-3.5" /> Convidar
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {profsMissingPerfil.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-[14px] font-semibold text-foreground/60 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500" /> Falta Vincular Perfil de Acesso
+            </h2>
+            <div className="bg-card rounded-2xl border border-amber-200 divide-y divide-black/[0.04]">
+              {profsMissingPerfil.map(prof => (
+                <div key={prof.id} className="flex items-center gap-4 p-4">
+                  <div className="h-10 w-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 font-semibold text-[13px] shrink-0">
+                    {prof.fotoUrl
+                      ? <img src={prof.fotoUrl} className="h-10 w-10 rounded-full object-cover" />
+                      : prof.nomeExibicao.charAt(0).toUpperCase()
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-medium text-foreground truncate">{prof.nomeExibicao}</p>
+                    <p className="text-[12px] text-amber-600">
+                      Sem perfil de acesso — vincule um perfil para poder convidar
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-xl h-9 text-[13px] gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-50"
+                    onClick={() => navigate("/configuracoes/acessos")}
+                  >
+                    <Shield className="h-3.5 w-3.5" /> Vincular
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {isInviteFormOpen && (
+          <div className="bg-card rounded-2xl border border-primary/20 p-6 space-y-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-[16px] font-semibold">Novo Convite</h2>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setShowInviteForm(false); resetForm(); }}>
+              <h2 className="text-[16px] font-semibold">
+                {invitingProfId
+                  ? `Convidar ${inviteNome}`
+                  : "Novo Convite"
+                }
+              </h2>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={closeInviteForm}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
             <form onSubmit={handleInvite} className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[13px] font-medium text-foreground/60 mb-1.5 block">Nome (opcional)</label>
-                  <Input
-                    value={inviteNome}
-                    onChange={e => setInviteNome(e.target.value)}
-                    placeholder="Nome da pessoa"
-                    className="rounded-xl h-10 text-[14px]"
-                  />
-                </div>
-                <div>
+                {!invitingProfId && (
+                  <div>
+                    <label className="text-[13px] font-medium text-foreground/60 mb-1.5 block">Nome (opcional)</label>
+                    <Input
+                      value={inviteNome}
+                      onChange={e => setInviteNome(e.target.value)}
+                      placeholder="Nome da pessoa"
+                      className="rounded-xl h-10 text-[14px]"
+                    />
+                  </div>
+                )}
+                <div className={invitingProfId ? "col-span-full" : ""}>
                   <label className="text-[13px] font-medium text-foreground/60 mb-1.5 block">Email *</label>
                   <Input
                     type="email"
@@ -332,42 +434,47 @@ export default function Equipe() {
                     placeholder="email@exemplo.com"
                     className="rounded-xl h-10 text-[14px]"
                   />
+                  <p className="text-[11px] text-foreground/30 mt-1">
+                    O profissional usará este e-mail para fazer login no sistema
+                  </p>
                 </div>
               </div>
 
-              <div>
-                <label className="text-[13px] font-medium text-foreground/60 mb-1.5 block">Cargo</label>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => { setInviteRole("colaborador"); setInvitePerfilId(""); }}
-                    className={cn(
-                      "flex-1 px-4 py-2.5 rounded-xl border text-[13px] font-medium transition-all",
-                      inviteRole === "colaborador"
-                        ? "border-primary bg-primary/5 text-primary"
-                        : "border-border text-foreground/50 hover:border-black/[0.12]"
-                    )}
-                  >
-                    Colaborador(a)
-                    <span className="block text-[11px] font-normal mt-0.5 opacity-60">Acesso definido pelo perfil</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setInviteRole("gerente"); setInvitePerfilId(""); }}
-                    className={cn(
-                      "flex-1 px-4 py-2.5 rounded-xl border text-[13px] font-medium transition-all",
-                      inviteRole === "gerente"
-                        ? "border-primary bg-primary/5 text-primary"
-                        : "border-border text-foreground/50 hover:border-black/[0.12]"
-                    )}
-                  >
-                    Gerente
-                    <span className="block text-[11px] font-normal mt-0.5 opacity-60">Acesso completo ao sistema</span>
-                  </button>
+              {!invitingProfId && (
+                <div>
+                  <label className="text-[13px] font-medium text-foreground/60 mb-1.5 block">Cargo</label>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => { setInviteRole("colaborador"); setInvitePerfilId(""); }}
+                      className={cn(
+                        "flex-1 px-4 py-2.5 rounded-xl border text-[13px] font-medium transition-all",
+                        inviteRole === "colaborador"
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border text-foreground/50 hover:border-black/[0.12]"
+                      )}
+                    >
+                      Colaborador(a)
+                      <span className="block text-[11px] font-normal mt-0.5 opacity-60">Acesso definido pelo perfil</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setInviteRole("gerente"); setInvitePerfilId(""); }}
+                      className={cn(
+                        "flex-1 px-4 py-2.5 rounded-xl border text-[13px] font-medium transition-all",
+                        inviteRole === "gerente"
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border text-foreground/50 hover:border-black/[0.12]"
+                      )}
+                    >
+                      Gerente
+                      <span className="block text-[11px] font-normal mt-0.5 opacity-60">Acesso completo ao sistema</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {inviteRole === "colaborador" && (
+              {inviteRole === "colaborador" && !invitingProfId && (
                 <div>
                   <label className="text-[13px] font-medium text-foreground/60 mb-1.5 flex items-center gap-1.5">
                     <Shield className="h-3.5 w-3.5" />
@@ -379,37 +486,35 @@ export default function Equipe() {
                       <div>
                         <p className="text-[13px] text-amber-800 font-medium">Nenhum perfil criado ainda</p>
                         <p className="text-[12px] text-amber-700 mt-0.5">
-                          Você precisa criar um perfil de acesso antes de convidar colaboradores.{" "}
-                          <button
-                            type="button"
-                            className="underline font-medium"
-                            onClick={() => navigate("/configuracoes/acessos")}
-                          >
+                          Crie um perfil de acesso antes de convidar.{" "}
+                          <button type="button" className="underline font-medium" onClick={() => navigate("/configuracoes/acessos")}>
                             Criar agora
                           </button>
                         </p>
                       </div>
                     </div>
                   ) : (
-                    <>
-                      <select
-                        value={invitePerfilId}
-                        onChange={e => setInvitePerfilId(e.target.value)}
-                        required
-                        className="w-full h-10 px-3 rounded-xl border border-border text-[14px] text-foreground/70 bg-card"
-                      >
-                        <option value="">Selecione um perfil de acesso...</option>
-                        {webPerfis.map(p => (
-                          <option key={p.id} value={p.id}>
-                            {p.descricao} ({p.permissoes.length} permissões)
-                          </option>
-                        ))}
-                      </select>
-                      <p className="text-[11px] text-foreground/30 mt-1">
-                        O perfil define quais menus e funcionalidades o colaborador poderá acessar.
-                      </p>
-                    </>
+                    <select
+                      value={invitePerfilId}
+                      onChange={e => setInvitePerfilId(e.target.value)}
+                      required
+                      className="w-full h-10 px-3 rounded-xl border border-border text-[14px] text-foreground/70 bg-card"
+                    >
+                      <option value="">Selecione um perfil de acesso...</option>
+                      {webPerfis.map(p => (
+                        <option key={p.id} value={p.id}>{p.descricao} ({p.permissoes.length} permissões)</option>
+                      ))}
+                    </select>
                   )}
+                </div>
+              )}
+
+              {invitingProfId && invitePerfilId && (
+                <div className="bg-green-50 rounded-xl p-3 flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-green-600 shrink-0" />
+                  <p className="text-[13px] text-green-700">
+                    Perfil de acesso: <strong>{perfis.find(p => String(p.id) === invitePerfilId)?.descricao || "Vinculado"}</strong>
+                  </p>
                 </div>
               )}
 
@@ -426,8 +531,7 @@ export default function Equipe() {
                         : "border-border text-foreground/50 hover:border-black/[0.12]"
                     )}
                   >
-                    <Mail className="h-4 w-4" />
-                    Enviar por E-mail
+                    <Mail className="h-4 w-4" /> Enviar por E-mail
                   </button>
                   <button
                     type="button"
@@ -439,8 +543,7 @@ export default function Equipe() {
                         : "border-border text-foreground/50 hover:border-black/[0.12]"
                     )}
                   >
-                    <Copy className="h-4 w-4" />
-                    Copiar Link
+                    <Copy className="h-4 w-4" /> Copiar Link
                   </button>
                 </div>
                 <p className="text-[11px] text-foreground/30 mt-1">
@@ -451,12 +554,12 @@ export default function Equipe() {
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={() => { setShowInviteForm(false); resetForm(); }} className="rounded-xl h-10 text-[13px]">
+                <Button type="button" variant="outline" onClick={closeInviteForm} className="rounded-xl h-10 text-[13px]">
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
-                  disabled={submitting || (inviteRole === "colaborador" && webPerfis.length === 0)}
+                  disabled={submitting || (inviteRole === "colaborador" && !invitePerfilId)}
                   className="rounded-xl h-10 text-[13px] gap-2"
                 >
                   <Send className="h-4 w-4" />
@@ -467,9 +570,72 @@ export default function Equipe() {
           </div>
         )}
 
+        {pendingInvites.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-[14px] font-semibold text-foreground/60 flex items-center gap-2">
+              <Mail className="h-4 w-4" /> Convites Pendentes
+            </h2>
+            <div className="bg-card rounded-2xl border border-border divide-y divide-black/[0.04]">
+              {pendingInvites.map(invite => {
+                const perfil = invite.perfilAcessoId ? perfis.find(p => p.id === invite.perfilAcessoId) : null;
+                const linkedProf = invite.profissionalId ? profStatus.find(p => p.id === invite.profissionalId) : null;
+                return (
+                  <div key={invite.id} className="flex items-center gap-4 p-4">
+                    <div className="h-10 w-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 shrink-0">
+                      <Mail className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] font-medium text-foreground truncate">
+                        {invite.nomeConvidado || invite.email}
+                      </p>
+                      <p className="text-[12px] text-foreground/40">
+                        {getRoleLabel(invite.role)}
+                        {perfil && <> · <Shield className="h-3 w-3 inline" /> {perfil.descricao}</>}
+                        {linkedProf && <> · <User className="h-3 w-3 inline" /> {linkedProf.nomeExibicao}</>}
+                        {" "}· Expira {new Date(invite.expiresAt).toLocaleDateString("pt-BR")}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-lg text-[12px] gap-1.5"
+                        onClick={() => handleResendInvite(invite.id)}
+                        disabled={resendingId === invite.id}
+                      >
+                        <RefreshCw className={cn("h-3.5 w-3.5", resendingId === invite.id && "animate-spin")} />
+                        {resendingId === invite.id ? "..." : "Reenviar"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-lg text-[12px] gap-1.5"
+                        onClick={() => copyInviteLink(invite)}
+                      >
+                        {copiedToken === invite.id ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                        {copiedToken === invite.id ? "Copiado" : "Link"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-foreground/30 hover:text-red-500 hover:bg-red-50"
+                        onClick={() => handleDeleteInvite(invite.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {members.length > 0 && (
           <div className="space-y-3">
-            <h2 className="text-[14px] font-semibold text-foreground/60">Membros Ativos</h2>
+            <h2 className="text-[14px] font-semibold text-foreground/60 flex items-center gap-2">
+              <UserCheck className="h-4 w-4 text-green-500" /> Membros Ativos
+            </h2>
             <div className="bg-card rounded-2xl border border-border divide-y divide-black/[0.04]">
               {members.map(member => (
                 <div key={member.id} className="flex items-center gap-4 p-4">
@@ -504,92 +670,48 @@ export default function Equipe() {
           </div>
         )}
 
-        {pendingInvites.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="text-[14px] font-semibold text-foreground/60">Convites Pendentes</h2>
-            <div className="bg-card rounded-2xl border border-border divide-y divide-black/[0.04]">
-              {pendingInvites.map(invite => {
-                const perfil = invite.perfilAcessoId ? perfis.find(p => p.id === invite.perfilAcessoId) : null;
-                return (
-                  <div key={invite.id} className="flex items-center gap-4 p-4">
-                    <div className="h-10 w-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 shrink-0">
-                      <Mail className="h-4 w-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-medium text-foreground truncate">
-                        {invite.nomeConvidado || invite.email}
-                      </p>
-                      <p className="text-[12px] text-foreground/40">
-                        {getRoleLabel(invite.role)}
-                        {perfil && <> · <Shield className="h-3 w-3 inline" /> {perfil.descricao}</>}
-                        {" "}· Expira {new Date(invite.expiresAt).toLocaleDateString("pt-BR")}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 rounded-lg text-[12px] gap-1.5"
-                        onClick={() => handleResendInvite(invite.id)}
-                        disabled={resendingId === invite.id}
-                      >
-                        <RefreshCw className={cn("h-3.5 w-3.5", resendingId === invite.id && "animate-spin")} />
-                        {resendingId === invite.id ? "Enviando..." : "Reenviar"}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 rounded-lg text-[12px] gap-1.5"
-                        onClick={() => copyInviteLink(invite)}
-                      >
-                        {copiedToken === invite.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                        {copiedToken === invite.id ? "Copiado" : "Link"}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-foreground/30 hover:text-red-500 hover:bg-red-50"
-                        onClick={() => handleDeleteInvite(invite.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+        {!isOnePro && !loading && profStatus.length > 0 && profsReadyToInvite.length === 0 && profsMissingPerfil.length === 0 && pendingInvites.length === 0 && members.length === 0 && (
+          <div className="bg-muted/20 border border-border rounded-2xl p-6 text-center">
+            <p className="text-[14px] text-foreground/50">
+              Todos os profissionais já estão com convite aceito ou aguardando configuração.
+            </p>
           </div>
         )}
 
-        {!loading && members.length === 0 && pendingInvites.length === 0 && !showInviteForm && !isOnePro && hasTeamPlan && (
-          <div className="text-center py-16">
-            <div className="h-16 w-16 rounded-2xl bg-primary/5 flex items-center justify-center mx-auto mb-4">
-              <UsersRound className="h-8 w-8 text-primary/40" />
-            </div>
-            <h3 className="text-[16px] font-semibold text-foreground mb-1">Nenhum membro na equipe</h3>
-            <p className="text-[13px] text-foreground/40 mb-6">Convide profissionais para trabalhar no seu estúdio</p>
-            {webPerfis.length > 0 ? (
-              <Button onClick={() => setShowInviteForm(true)} className="rounded-xl h-10 text-[13px] gap-2">
-                <Plus className="h-4 w-4" /> Convidar Primeiro Membro
-              </Button>
-            ) : (
+        {!isOnePro && hasTeamPlan && !loading && profStatus.length > 0 && (
+          <div className="pt-2 border-t border-border/50">
+            <div className="flex flex-wrap gap-3 justify-center">
               <Button
-                variant="outline"
-                onClick={() => navigate("/configuracoes/acessos")}
-                className="rounded-xl h-10 text-[13px] gap-2"
+                variant="ghost"
+                size="sm"
+                className="rounded-xl h-9 text-[12px] text-foreground/40 gap-1.5"
+                onClick={() => navigate("/gestao/profissionais")}
               >
-                <Shield className="h-4 w-4" /> Criar Perfil de Acesso Primeiro
+                <UserPlus className="h-3.5 w-3.5" /> Cadastrar Profissional
               </Button>
-            )}
-          </div>
-        )}
-
-        {loading && (
-          <div className="flex justify-center py-16">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-xl h-9 text-[12px] text-foreground/40 gap-1.5"
+                onClick={() => navigate("/configuracoes/acessos")}
+              >
+                <Shield className="h-3.5 w-3.5" /> Gerenciar Perfis de Acesso
+              </Button>
+            </div>
           </div>
         )}
       </div>
     </AppLayout>
+  );
+}
+
+function Step({ n, text }: { n: number; text: string }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="h-5 w-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+        {n}
+      </span>
+      <span className="text-[12px] text-foreground/50">{text}</span>
+    </div>
   );
 }

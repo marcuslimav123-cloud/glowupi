@@ -2,8 +2,8 @@ import { Router, type IRouter } from "express";
 import crypto from "crypto";
 import { db } from "@workspace/db";
 import { convitesTable, usersTable, barbeariasTable, profissionaisTable, perfisAcessoTable, profissionaisPerfisTable } from "@workspace/db/schema";
-import { eq, and } from "drizzle-orm";
-import { requireAuth, createSession } from "../lib/auth.js";
+import { eq, and, sql } from "drizzle-orm";
+import { requireAuth, createSession, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { sendEmail, renderTemplate } from "../lib/brevo.js";
 import { getTemplateForType } from "./emailTemplates.js";
 import { OAuth2Client } from "google-auth-library";
@@ -49,9 +49,18 @@ router.post("/", requireAuth, async (req, res) => {
       return res.status(403).json({ error: "Seu plano não permite adicionar membros à equipe. Faça upgrade para o plano '2 a 5 Profissionais' ou superior.", code: "plan_upgrade_required" });
     }
 
-    const { email, role, nomeConvidado, perfilAcessoId, enviarEmail } = req.body;
+    const { email, role, nomeConvidado, perfilAcessoId, profissionalId, enviarEmail } = req.body;
     if (!email || !role) return res.status(400).json({ error: "Email e cargo são obrigatórios" });
     if (!["gerente", "colaborador"].includes(role)) return res.status(400).json({ error: "Cargo deve ser 'gerente' ou 'colaborador'" });
+
+    if (profissionalId) {
+      const pid = parseInt(profissionalId);
+      const [prof] = await db.select().from(profissionaisTable).where(
+        and(eq(profissionaisTable.id, pid), eq(profissionaisTable.barbeariaId, barbearia.id))
+      ).limit(1);
+      if (!prof) return res.status(400).json({ error: "Profissional não encontrado" });
+      if (prof.usuarioId) return res.status(400).json({ error: "Este profissional já possui um usuário vinculado" });
+    }
 
     if (role === "colaborador" && !perfilAcessoId) {
       return res.status(400).json({ error: "É obrigatório selecionar um perfil de acesso para colaboradores. Crie um perfil em Configurações → Perfis de Acesso antes de convidar.", code: "perfil_required" });
@@ -82,6 +91,7 @@ router.post("/", requireAuth, async (req, res) => {
       email,
       role,
       perfilAcessoId: perfilAcessoId ? parseInt(perfilAcessoId) : null,
+      profissionalId: profissionalId ? parseInt(profissionalId) : null,
       token,
       status: "pendente",
       nomeConvidado: nomeConvidado || null,
@@ -265,18 +275,40 @@ router.post("/accept/:token", async (req, res) => {
     }).returning();
 
     if (convite.role === "colaborador") {
-      const [prof] = await db.insert(profissionaisTable).values({
-        barbeariaId: convite.barbeariaId,
-        usuarioId: newUser.id,
-        nomeExibicao: nome,
-        ativo: true,
-      }).returning();
+      let profId: number;
 
-      await db.update(usersTable).set({ profissionalId: prof.id }).where(eq(usersTable.id, newUser.id));
+      if (convite.profissionalId) {
+        const [existingProf] = await db.select().from(profissionaisTable).where(
+          and(
+            eq(profissionaisTable.id, convite.profissionalId),
+            eq(profissionaisTable.barbeariaId, convite.barbeariaId),
+            sql`${profissionaisTable.usuarioId} IS NULL`
+          )
+        ).limit(1);
+        if (!existingProf) {
+          return res.status(400).json({ error: "Profissional vinculado ao convite não está mais disponível. Peça um novo convite ao proprietário." });
+        }
+        profId = existingProf.id;
+        await db.update(profissionaisTable).set({
+          usuarioId: newUser.id,
+          updatedAt: new Date(),
+        }).where(and(eq(profissionaisTable.id, profId), sql`${profissionaisTable.usuarioId} IS NULL`));
+      } else {
+        const [prof] = await db.insert(profissionaisTable).values({
+          barbeariaId: convite.barbeariaId,
+          usuarioId: newUser.id,
+          nomeExibicao: nome,
+          ativo: true,
+        }).returning();
+        profId = prof.id;
+      }
+
+      await db.update(usersTable).set({ profissionalId: profId }).where(eq(usersTable.id, newUser.id));
 
       if (convite.perfilAcessoId) {
+        await db.delete(profissionaisPerfisTable).where(eq(profissionaisPerfisTable.profissionalId, profId));
         await db.insert(profissionaisPerfisTable).values({
-          profissionalId: prof.id,
+          profissionalId: profId,
           perfilId: convite.perfilAcessoId,
         });
       }
@@ -293,6 +325,49 @@ router.post("/accept/:token", async (req, res) => {
     return res.json({ token: sessionToken, user: userWithoutPass });
   } catch (e) {
     console.error("accept convite error:", e);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+router.get("/equipe/profissionais-status", requireAuth, async (req, res) => {
+  try {
+    const user = (req as any).user;
+    if (user.role !== "dono") return res.status(403).json({ error: "Apenas proprietários" });
+    const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
+    if (!barbearia) return res.status(404).json({ error: "Estabelecimento não encontrado" });
+
+    const profs = await db.select().from(profissionaisTable).where(eq(profissionaisTable.barbeariaId, barbearia.id));
+
+    const profIds = profs.map(p => p.id);
+    const perfiLinks = profIds.length > 0
+      ? await db.select().from(profissionaisPerfisTable).where(sql`${profissionaisPerfisTable.profissionalId} IN (${sql.join(profIds.map(id => sql`${id}`), sql`, `)})`)
+      : [];
+    const perfis = await db.select().from(perfisAcessoTable).where(eq(perfisAcessoTable.barbeariaId, barbearia.id));
+
+    const pendingInvites = await db.select().from(convitesTable).where(
+      and(eq(convitesTable.barbeariaId, barbearia.id), eq(convitesTable.status, "pendente"))
+    );
+    const invitedProfIds = new Set(pendingInvites.filter(i => i.profissionalId).map(i => i.profissionalId));
+
+    const result = profs.map(p => {
+      const perfilLink = perfiLinks.find(l => l.profissionalId === p.id);
+      const perfil = perfilLink ? perfis.find(pf => pf.id === perfilLink.perfilId) : null;
+      return {
+        id: p.id,
+        nomeExibicao: p.nomeExibicao,
+        fotoUrl: p.fotoUrl,
+        especialidade: p.especialidade,
+        celular: p.celular,
+        ativo: p.ativo,
+        usuarioId: p.usuarioId,
+        perfilAcesso: perfil ? { id: perfil.id, descricao: perfil.descricao, tipo: perfil.tipo } : null,
+        hasPendingInvite: invitedProfIds.has(p.id),
+      };
+    });
+
+    return res.json(result);
+  } catch (e) {
+    console.error("equipe profissionais-status error:", e);
     return res.status(500).json({ error: "Erro interno" });
   }
 });
