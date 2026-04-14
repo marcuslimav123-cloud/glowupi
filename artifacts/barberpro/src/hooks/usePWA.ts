@@ -9,22 +9,7 @@ interface PWAOptions {
 }
 
 export function usePWA({ slug, nome, logoUrl, corPrimaria, startUrl }: PWAOptions) {
-  const swRegistered = useRef(false);
   const blobUrlRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!slug && !nome) return;
-
-    if ("serviceWorker" in navigator && !swRegistered.current) {
-      const basePath = import.meta.env.BASE_URL || "/";
-      navigator.serviceWorker.register(`${basePath}sw.js`, { updateViaCache: "none" })
-        .then((reg) => {
-          reg.update().catch(() => {});
-        })
-        .catch(() => {});
-      swRegistered.current = true;
-    }
-  }, [slug, nome]);
 
   useEffect(() => {
     if (!slug || startUrl) return;

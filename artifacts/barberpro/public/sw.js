@@ -1,10 +1,13 @@
-const CACHE_NAME = "glowupi-pwa-v2";
+const CACHE_NAME = "glowupi-pwa-v3";
+const SW_VERSION = "3.0.0";
 
 self.addEventListener("install", () => {
+  console.log("[SW] Installing v" + SW_VERSION);
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
+  console.log("[SW] Activating v" + SW_VERSION);
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
@@ -12,49 +15,74 @@ self.addEventListener("activate", (event) => {
           .filter((key) => key !== CACHE_NAME)
           .map((key) => caches.delete(key))
       )
-    )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener("push", (event) => {
-  let data = { title: "Glow Upi", body: "Nova notificação" };
-  try {
-    if (event.data) {
-      const parsed = event.data.json();
-      if (parsed) data = parsed;
+  console.log("[SW] Push event received");
+
+  const showNotif = (async () => {
+    let data = { title: "Glow Upi", body: "Nova notificação" };
+    try {
+      if (event.data) {
+        const parsed = event.data.json();
+        if (parsed) data = parsed;
+      }
+    } catch (e) {
+      try {
+        if (event.data) {
+          data.body = event.data.text();
+        }
+      } catch (_) {}
     }
-  } catch (e) {
-    if (event.data) {
-      data.body = event.data.text();
-    }
-  }
 
-  const notifType = data.data?.type || "";
-  const isAgendamento = notifType.includes("agendamento") || notifType === "reminder" || notifType === "novo_agendamento";
+    const notifType = data.data?.type || "";
+    const isAgendamento =
+      notifType.includes("agendamento") ||
+      notifType === "reminder" ||
+      notifType === "novo_agendamento";
 
-  const actions = isAgendamento && data.data?.agendamentoId
-    ? [
-        { action: "ver_agendamento", title: "Ver agendamento" },
-      ]
-    : [];
+    const actions =
+      isAgendamento && data.data?.agendamentoId
+        ? [{ action: "ver_agendamento", title: "Ver agendamento" }]
+        : [];
 
-  const options = {
-    body: data.body,
-    icon: data.icon || "/favicon.svg",
-    badge: data.badge || "/favicon.svg",
-    tag: data.tag || "glow-upi-" + (notifType || "push") + "-" + Date.now(),
-    data: data.data || {},
-    vibrate: [300, 100, 300, 100, 300],
-    requireInteraction: true,
-    renotify: true,
-    actions,
-    timestamp: Date.now(),
-    silent: false,
-  };
+    const tagBase = data.tag || "glow-upi-" + (notifType || "push");
+    const tagId = data.data?.agendamentoId || data.data?.notificationId || "";
+    const tag = tagId ? tagBase + "-" + tagId : tagBase + "-" + Date.now();
+
+    const options = {
+      body: data.body || "Nova notificação",
+      icon: data.icon || "/favicon.svg",
+      badge: data.badge || "/favicon.svg",
+      tag: tag,
+      data: data.data || {},
+      vibrate: [300, 100, 300, 100, 300],
+      requireInteraction: true,
+      renotify: true,
+      actions,
+      timestamp: Date.now(),
+      silent: false,
+    };
+
+    console.log("[SW] Showing notification:", data.title, options.tag);
+    await self.registration.showNotification(data.title || "Glow Upi", options);
+  })();
 
   event.waitUntil(
-    self.registration.showNotification(data.title || "Glow Upi", options)
+    showNotif.catch((err) => {
+      console.error("[SW] Push handler error, showing fallback:", err);
+      return self.registration.showNotification("Glow Upi", {
+        body: "Você tem uma nova notificação",
+        icon: "/favicon.svg",
+        badge: "/favicon.svg",
+        tag: "glow-upi-fallback-" + Date.now(),
+        vibrate: [300, 100, 300],
+        requireInteraction: true,
+        silent: false,
+      });
+    })
   );
 });
 
@@ -72,14 +100,71 @@ self.addEventListener("notificationclick", (event) => {
   }
 
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && "focus" in client) {
-          client.navigate(urlToOpen);
-          return client.focus();
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes(self.location.origin) && "focus" in client) {
+            client.navigate(urlToOpen);
+            return client.focus();
+          }
         }
+        return self.clients.openWindow(urlToOpen);
+      })
+  );
+});
+
+self.addEventListener("pushsubscriptionchange", (event) => {
+  console.log("[SW] Push subscription changed, re-subscribing...");
+
+  const resubscribe = async () => {
+    let subscribeOptions = event.oldSubscription?.options;
+
+    if (!subscribeOptions || !subscribeOptions.applicationServerKey) {
+      try {
+        const basePath = self.registration.scope || "/";
+        const apiBase = basePath + "api";
+        const resp = await fetch(apiBase.replace(/\/+/g, "/") + "/push/vapid-public-key");
+        if (resp.ok) {
+          const { publicKey } = await resp.json();
+          if (publicKey) {
+            const padding = "=".repeat((4 - (publicKey.length % 4)) % 4);
+            const base64 = (publicKey + padding).replace(/-/g, "+").replace(/_/g, "/");
+            const rawData = atob(base64);
+            const keyArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; i++) {
+              keyArray[i] = rawData.charCodeAt(i);
+            }
+            subscribeOptions = {
+              userVisibleOnly: true,
+              applicationServerKey: keyArray,
+            };
+          }
+        }
+      } catch (e) {
+        console.error("[SW] Failed to fetch VAPID key for re-subscribe:", e);
       }
-      return self.clients.openWindow(urlToOpen);
+    }
+
+    if (!subscribeOptions) {
+      subscribeOptions = { userVisibleOnly: true };
+    }
+
+    const newSub = await self.registration.pushManager.subscribe(subscribeOptions);
+    console.log("[SW] Re-subscribed after pushsubscriptionchange");
+
+    const clients = await self.clients.matchAll({ type: "window" });
+    clients.forEach((client) => {
+      client.postMessage({
+        type: "PUSH_SUBSCRIPTION_CHANGED",
+        subscription: newSub.toJSON(),
+      });
+    });
+  };
+
+  event.waitUntil(
+    resubscribe().catch((err) => {
+      console.error("[SW] Failed to re-subscribe after change:", err);
     })
   );
 });

@@ -33,9 +33,17 @@ async function subscribeClientToPush(): Promise<boolean> {
     if (Notification.permission !== "granted") return false;
 
     const registration = await navigator.serviceWorker.ready;
+
     const existingSub = await registration.pushManager.getSubscription();
     if (existingSub) {
-      return await registerClientPushToken(JSON.stringify(existingSub.toJSON()));
+      const subJson = existingSub.toJSON();
+      const expirationTime = subJson.expirationTime;
+      if (expirationTime && expirationTime < Date.now()) {
+        console.log("[ClientPush] Subscription expired, renewing...");
+        await existingSub.unsubscribe();
+      } else {
+        return await registerClientPushToken(JSON.stringify(subJson));
+      }
     }
 
     const vapidResp = await fetch(`${BASE_URL}/push/vapid-public-key`, {
@@ -58,25 +66,36 @@ async function subscribeClientToPush(): Promise<boolean> {
 }
 
 export function useClientNotifications(isAuthenticated: boolean) {
-  const subscribedRef = useRef(false);
+  const subscribingRef = useRef(false);
 
   useEffect(() => {
-    if (!isAuthenticated || subscribedRef.current) return;
+    if (!isAuthenticated) return;
+    if (subscribingRef.current) return;
+    subscribingRef.current = true;
 
-    if (!("Notification" in window)) return;
+    if (!("Notification" in window)) {
+      subscribingRef.current = false;
+      return;
+    }
+
+    const doSubscribe = () => {
+      subscribeClientToPush().then((success) => {
+        if (!success) subscribingRef.current = false;
+      });
+    };
 
     if (Notification.permission === "granted") {
-      subscribeClientToPush().then((success) => {
-        if (success) subscribedRef.current = true;
-      });
+      doSubscribe();
     } else if (Notification.permission !== "denied") {
       Notification.requestPermission().then((perm) => {
         if (perm === "granted") {
-          subscribeClientToPush().then((success) => {
-            if (success) subscribedRef.current = true;
-          });
+          doSubscribe();
+        } else {
+          subscribingRef.current = false;
         }
       });
+    } else {
+      subscribingRef.current = false;
     }
   }, [isAuthenticated]);
 }

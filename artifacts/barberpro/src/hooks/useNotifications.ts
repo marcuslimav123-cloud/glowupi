@@ -80,21 +80,45 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 
 async function subscribeToPush(barbeariaId: number): Promise<boolean> {
   try {
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return false;
-    if (Notification.permission !== "granted") return false;
-
-    const registration = await navigator.serviceWorker.ready;
-    const existingSub = await registration.pushManager.getSubscription();
-    if (existingSub) {
-      return await registerTokenOnServer(barbeariaId, JSON.stringify(existingSub.toJSON()), "web");
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      console.warn("[Push] serviceWorker or PushManager not available");
+      return false;
+    }
+    if (Notification.permission !== "granted") {
+      console.warn("[Push] Notification permission not granted:", Notification.permission);
+      return false;
     }
 
+    const registration = await navigator.serviceWorker.ready;
+    console.log("[Push] SW ready, checking existing subscription...");
+
+    const existingSub = await registration.pushManager.getSubscription();
+
+    if (existingSub) {
+      const subJson = existingSub.toJSON();
+      const expirationTime = subJson.expirationTime;
+      if (expirationTime && expirationTime < Date.now()) {
+        console.log("[Push] Existing subscription expired, unsubscribing...");
+        await existingSub.unsubscribe();
+      } else {
+        console.log("[Push] Re-registering existing subscription on server");
+        return await registerTokenOnServer(barbeariaId, JSON.stringify(subJson), "web");
+      }
+    }
+
+    console.log("[Push] Creating new push subscription...");
     const vapidResp = await fetch(apiUrl(`/push/vapid-public-key`), {
       credentials: "include",
     });
-    if (!vapidResp.ok) return false;
+    if (!vapidResp.ok) {
+      console.error("[Push] Failed to get VAPID key:", vapidResp.status);
+      return false;
+    }
     const { publicKey } = await vapidResp.json();
-    if (!publicKey) return false;
+    if (!publicKey) {
+      console.error("[Push] No VAPID public key returned");
+      return false;
+    }
 
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
@@ -103,7 +127,7 @@ async function subscribeToPush(barbeariaId: number): Promise<boolean> {
 
     const registered = await registerTokenOnServer(barbeariaId, JSON.stringify(subscription.toJSON()), "web");
     if (registered) {
-      console.log("[Push] Web push subscription registered");
+      console.log("[Push] New web push subscription registered successfully");
     }
     return registered;
   } catch (err) {
@@ -124,6 +148,7 @@ async function registerTokenOnServer(barbeariaId: number, token: string, platfor
       console.error("[Push] Token registration failed:", resp.status);
       return false;
     }
+    console.log("[Push] Token registered on server");
     return true;
   } catch (err) {
     console.error("[Push] Token registration error:", err);
@@ -137,19 +162,44 @@ export function useNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const prevUnreadRef = useRef<number>(-1);
-  const pushSubscribedRef = useRef(false);
+  const pushSubscribingRef = useRef(false);
 
   useEffect(() => {
-    if (!barbeariaId || !isAuthenticated || pushSubscribedRef.current) return;
+    if (!barbeariaId || !isAuthenticated) return;
+    if (pushSubscribingRef.current) return;
+    pushSubscribingRef.current = true;
 
     requestNotificationPermission().then((perm) => {
       if (perm === "granted") {
         subscribeToPush(barbeariaId).then((success) => {
-          if (success) pushSubscribedRef.current = true;
+          if (!success) {
+            pushSubscribingRef.current = false;
+          }
         });
+      } else {
+        pushSubscribingRef.current = false;
       }
     });
   }, [barbeariaId, isAuthenticated]);
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === "PUSH_SUBSCRIPTION_CHANGED" && barbeariaId) {
+        console.log("[Push] Received subscription change from SW, re-registering...");
+        const subJson = event.data.subscription;
+        if (subJson) {
+          registerTokenOnServer(barbeariaId, JSON.stringify(subJson), "web");
+        }
+      }
+    };
+
+    navigator.serviceWorker.addEventListener("message", handleMessage);
+    return () => {
+      navigator.serviceWorker.removeEventListener("message", handleMessage);
+    };
+  }, [barbeariaId]);
 
   const fetchUnreadCount = useCallback(async () => {
     if (!barbeariaId || !isAuthenticated) return;
