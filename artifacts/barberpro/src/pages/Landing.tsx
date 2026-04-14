@@ -10,8 +10,8 @@ import { apiUrl } from "@/lib/utils";
 
 const FB_PIXEL_ID = "PIXEL_ID_AQUI";
 
-const PROMO_MONTHLY_PRICE_ID = "price_1TMFLRK2OAJ7SMcrVZNTqs5a";
-const PROMO_ANNUAL_PRICE_ID = "price_1TMFLRK2OAJ7SMcrAZQkxMag";
+const PROMO_MONTHLY_PRICE_ID = "price_1TMFmZ75EBjZCK7yUYlgxTIc";
+const PROMO_ANNUAL_PRICE_ID = "price_1TMFmZ75EBjZCK7ytXUNXdJA";
 
 function fbq(...args: any[]) {
   if (typeof window !== "undefined" && (window as any).fbq) {
