@@ -72,15 +72,15 @@ export default function AdminTenants() {
 
   useEffect(() => { fetchTenants(); }, []);
 
-  const exportarClientes = async () => {
+  const downloadExcel = async (endpoint: string, filename: string) => {
     try {
-      const res = await fetch(apiUrl("/admin/export-clientes"), { credentials: "include" });
+      const res = await fetch(apiUrl(endpoint), { credentials: "include" });
       if (!res.ok) throw new Error("Erro");
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `clientes_${new Date().toISOString().split("T")[0]}.xlsx`;
+      a.download = `${filename}_${new Date().toISOString().split("T")[0]}.xlsx`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -175,9 +175,14 @@ export default function AdminTenants() {
             <h1 className="text-3xl font-display text-white mb-1">Assinantes</h1>
             <p className="text-slate-400">Gerenciar estúdios cadastrados ({tenants.length} total)</p>
           </div>
-          <Button onClick={exportarClientes} variant="outline" className="border-white/10 text-white hover:bg-white/5 rounded-xl shrink-0">
-            <Download className="h-4 w-4 mr-2" />Exportar Excel
-          </Button>
+          <div className="flex gap-2 shrink-0">
+            <Button onClick={() => downloadExcel("/admin/export-clientes", "estabelecimentos")} variant="outline" className="border-white/10 text-white hover:bg-white/5 rounded-xl">
+              <Download className="h-4 w-4 mr-2" />Estabelecimentos
+            </Button>
+            <Button onClick={() => downloadExcel("/admin/export-clientes-estabelecimentos", "clientes")} variant="outline" className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 rounded-xl">
+              <Download className="h-4 w-4 mr-2" />Clientes
+            </Button>
+          </div>
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
             <Input

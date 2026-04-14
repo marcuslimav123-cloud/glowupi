@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import crypto from "crypto";
 import XLSX from "xlsx";
 import { db } from "@workspace/db";
-import { superAdminsTable, barbeariasTable, usersTable, platformConfigTable, comandasTable, brevoEmailLogTable, profissionaisTable, adminLogsTable, lgpdConsentsTable, trialLinksTable } from "@workspace/db/schema";
+import { superAdminsTable, barbeariasTable, usersTable, platformConfigTable, comandasTable, brevoEmailLogTable, profissionaisTable, adminLogsTable, lgpdConsentsTable, trialLinksTable, clientesTable } from "@workspace/db/schema";
 import { eq, sql, desc, count, and, gte, lt, isNull } from "drizzle-orm";
 import { verifyAdminPassword, createAdminSession, deleteAdminSession, requireAdmin } from "../lib/adminAuth.js";
 import { getEmailStats } from "../lib/brevo.js";
@@ -606,6 +606,60 @@ router.get("/export-clientes", requireAdmin, async (req: any, res) => {
   } catch (e) {
     console.error("export-clientes error:", e);
     return res.status(500).json({ error: "Erro ao exportar clientes" });
+  }
+});
+
+router.get("/export-clientes-estabelecimentos", requireAdmin, async (req: any, res) => {
+  try {
+    const allClientes = await db.select().from(clientesTable).orderBy(desc(clientesTable.createdAt));
+    const allBarbearias = await db.select({ id: barbeariasTable.id, nome: barbeariasTable.nome, telefone: barbeariasTable.telefone, cidade: barbeariasTable.cidade, uf: barbeariasTable.uf }).from(barbeariasTable);
+    const barbMap = new Map(allBarbearias.map(b => [b.id, b]));
+
+    const now = new Date();
+
+    const data = allClientes.map(c => {
+      const barb = barbMap.get(c.barbeariaId);
+      return {
+        "ID Cliente": c.id,
+        "Nome": c.nome,
+        "Telefone (WhatsApp)": c.telefone || "",
+        "Email": c.email || "",
+        "Aniversário": c.aniversario || "",
+        "VIP": c.vip ? "Sim" : "Não",
+        "Pontos Fidelidade": c.pontosFidelidade,
+        "Total Gasto (R$)": c.totalGasto ? parseFloat(c.totalGasto) : 0,
+        "Última Visita": c.ultimaVisita || "",
+        "Status": c.status || "",
+        "Observações": c.observacoes || "",
+        "Estabelecimento": barb?.nome || "",
+        "Cidade Estabelecimento": barb?.cidade || "",
+        "UF Estabelecimento": barb?.uf || "",
+        "Data Cadastro": c.createdAt ? c.createdAt.toISOString().split("T")[0] : "",
+      };
+    });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+
+    if (data.length > 0) {
+      const colWidths = Object.keys(data[0]).map(key => {
+        const maxLen = Math.max(key.length, ...data.map(r => String((r as any)[key] || "").length));
+        return { wch: Math.min(maxLen + 2, 50) };
+      });
+      ws["!cols"] = colWidths;
+    }
+
+    XLSX.utils.book_append_sheet(wb, ws, "Clientes Estabelecimentos");
+    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+
+    await logAdminAction(req.admin.id, "export_clientes_estabelecimentos", undefined, { total: allClientes.length, formato: "xlsx" });
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename=clientes_estabelecimentos_${now.toISOString().split("T")[0]}.xlsx`);
+    return res.send(Buffer.from(buf));
+  } catch (e) {
+    console.error("export-clientes-estabelecimentos error:", e);
+    return res.status(500).json({ error: "Erro ao exportar clientes dos estabelecimentos" });
   }
 });
 
