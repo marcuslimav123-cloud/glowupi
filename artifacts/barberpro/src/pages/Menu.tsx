@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "wouter";
@@ -6,6 +6,7 @@ import { getRoleLabel, apiUrl } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { applyTheme, THEMES } from "@/components/layout/HeaderBar";
+import { requestNotificationPermission } from "@/hooks/useNotifications";
 import type { LucideProps } from "lucide-react";
 import {
   Users,
@@ -110,6 +111,65 @@ export default function MenuPage() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [themeOpen, setThemeOpen] = useState(false);
+  const [notifStatus, setNotifStatus] = useState<"loading" | "granted" | "denied" | "default">("loading");
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  useEffect(() => {
+    if ("Notification" in window) {
+      setNotifStatus(Notification.permission as any);
+    } else {
+      setNotifStatus("denied");
+    }
+  }, []);
+
+  const handleToggleNotifications = async () => {
+    if (notifStatus === "granted") {
+      toast({ title: "Notificações já ativas", description: "Para desativar, use as configurações do seu navegador." });
+      return;
+    }
+    setNotifLoading(true);
+    try {
+      const perm = await requestNotificationPermission();
+      setNotifStatus(perm as any);
+      if (perm === "granted") {
+        toast({ title: "Notificações ativadas!" });
+        if ("serviceWorker" in navigator && barbeariaId) {
+          const registration = await navigator.serviceWorker.ready;
+          const vapidResp = await fetch(apiUrl("/push/vapid-public-key"), { credentials: "include" });
+          if (vapidResp.ok) {
+            const { publicKey } = await vapidResp.json();
+            if (publicKey) {
+              const existingSub = await registration.pushManager.getSubscription();
+              const sub = existingSub || await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: (() => {
+                  const padding = "=".repeat((4 - (publicKey.length % 4)) % 4);
+                  const base64 = (publicKey + padding).replace(/-/g, "+").replace(/_/g, "/");
+                  const rawData = window.atob(base64);
+                  const arr = new Uint8Array(rawData.length);
+                  for (let i = 0; i < rawData.length; i++) arr[i] = rawData.charCodeAt(i);
+                  return arr;
+                })(),
+              });
+              await fetch(apiUrl(`/barbearias/${barbeariaId}/push-tokens/register`), {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ token: JSON.stringify(sub.toJSON()), platform: "web" }),
+              });
+            }
+          }
+        }
+      } else if (perm === "denied") {
+        toast({ title: "Notificações bloqueadas", description: "Permita nas configurações do navegador.", variant: "destructive" });
+      }
+    } catch (err) {
+      console.error("Notification error:", err);
+      toast({ title: "Erro ao ativar notificações", variant: "destructive" });
+    } finally {
+      setNotifLoading(false);
+    }
+  };
 
   const { data: layoutParams } = useQuery({
     queryKey: ["parametros-layout", barbeariaId],
