@@ -519,6 +519,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   });
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [showTutorial, setShowTutorial] = React.useState(false);
+  const [sidebarSearch, setSidebarSearch] = React.useState("");
   const mainContentRef = React.useRef<HTMLDivElement>(null);
   const updateBarbearia = useUpdateBarbearia();
   const queryClient = useQueryClient();
@@ -698,6 +699,27 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const filteredNav = filterNavByRole(NAV_ITEMS, role, perfilPermissoes);
 
+  const searchResults = React.useMemo(() => {
+    const q = sidebarSearch.trim().toLowerCase();
+    if (!q) return null;
+    const results: { name: string; href: string; icon: any; parent?: string }[] = [];
+    const collect = (items: NavItem[], parentName?: string) => {
+      for (const item of items) {
+        if (item.href && item.name.toLowerCase().includes(q)) {
+          results.push({ name: item.name, href: item.href, icon: item.icon, parent: parentName });
+        }
+        if (item.children) collect(item.children, item.name);
+        if (item.subgroups) {
+          for (const sg of item.subgroups) {
+            collect(sg.items, item.name);
+          }
+        }
+      }
+    };
+    collect(filteredNav);
+    return results;
+  }, [sidebarSearch, filteredNav]);
+
   return (
     <div className="h-screen overflow-hidden flex flex-col md:flex-row bg-background">
       <div className="md:hidden flex items-center justify-between px-3 py-2 border-b border-border bg-card/95 backdrop-blur-lg safe-area-top">
@@ -747,30 +769,74 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5 sidebar-scroll">
-          {filteredNav.map((item) => (
-            <div key={item.name}>
-              {(item.children || item.subgroups) ? (
-                <CollapsibleGroup
-                  item={item}
-                  location={location}
-                  onNavigate={handleNavClick}
-                  mainRef={mainContentRef}
-                  badgeCounts={{ "/comunicacao/inbox": inboxCount?.count || 0 }}
-                />
-              ) : (
-                <Link href={item.href!} className={cn(
-                  "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150",
-                  location === item.href || location.startsWith(item.href + '/')
-                    ? "bg-foreground text-background" 
-                    : "text-foreground/50 hover:text-foreground hover:bg-muted/50"
-                )} onClick={handleNavClick} {...(HREF_TO_TUTORIAL[item.href!] ? { "data-tutorial": HREF_TO_TUTORIAL[item.href!] } : {})}>
-                  <item.icon className="h-[16px] w-[16px]" />
-                  {item.name}
+        <div className="px-3 pt-2 pb-1 shrink-0">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-foreground/30" />
+            <input
+              type="text"
+              placeholder="Buscar no menu..."
+              value={sidebarSearch}
+              onChange={e => setSidebarSearch(e.target.value)}
+              className="w-full pl-8 pr-7 py-1.5 rounded-lg border border-border bg-muted/50 text-[12px] text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/30 transition-all"
+            />
+            {sidebarSearch && (
+              <button onClick={() => setSidebarSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-foreground/30 hover:text-foreground/60">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto py-2 px-3 space-y-0.5 sidebar-scroll">
+          {searchResults ? (
+            searchResults.length > 0 ? (
+              searchResults.map(r => (
+                <Link
+                  key={r.href}
+                  href={r.href}
+                  className={cn(
+                    "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150",
+                    location.split("?")[0] === r.href.split("?")[0]
+                      ? "bg-foreground text-background"
+                      : "text-foreground/50 hover:text-foreground hover:bg-muted/50"
+                  )}
+                  onClick={() => { setSidebarSearch(""); handleNavClick(); }}
+                >
+                  <r.icon className="h-[14px] w-[14px]" />
+                  <div className="flex-1 min-w-0">
+                    <span>{r.name}</span>
+                    {r.parent && <span className="text-[10px] text-foreground/30 ml-1.5">{r.parent}</span>}
+                  </div>
                 </Link>
-              )}
-            </div>
-          ))}
+              ))
+            ) : (
+              <p className="text-center text-foreground/30 text-[12px] py-6">Nenhum resultado</p>
+            )
+          ) : (
+            filteredNav.map((item) => (
+              <div key={item.name}>
+                {(item.children || item.subgroups) ? (
+                  <CollapsibleGroup
+                    item={item}
+                    location={location}
+                    onNavigate={handleNavClick}
+                    mainRef={mainContentRef}
+                    badgeCounts={{ "/comunicacao/inbox": inboxCount?.count || 0 }}
+                  />
+                ) : (
+                  <Link href={item.href!} className={cn(
+                    "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150",
+                    location === item.href || location.startsWith(item.href + '/')
+                      ? "bg-foreground text-background" 
+                      : "text-foreground/50 hover:text-foreground hover:bg-muted/50"
+                  )} onClick={handleNavClick} {...(HREF_TO_TUTORIAL[item.href!] ? { "data-tutorial": HREF_TO_TUTORIAL[item.href!] } : {})}>
+                    <item.icon className="h-[16px] w-[16px]" />
+                    {item.name}
+                  </Link>
+                )}
+              </div>
+            ))
+          )}
         </div>
 
         <div className="p-4 border-t border-border shrink-0">
