@@ -40,6 +40,7 @@ The design adopts a "luxury clinic aesthetic" with a color palette of warm gold,
 - **Google-Only Registration:** New user registration is exclusively via Google Sign-In.
 - **Página de Venda Direta (PDVD):** Direct sales page with a streamlined checkout and onboarding process, bypassing the free trial.
 - **Object Storage & Image Upload:** GCS-backed object storage via Replit App Storage for logos and photos, using presigned URLs for secure uploads.
+- **Marketing Video (artifacts/glow-upi-video):** Professional 30-second cinematic marketing video built with React + Framer Motion. 5 scenes: O Caos (stress/chaos), Dor Amplificada (pain points), O Ponto de Virada (transformation), O Controle (features), CTA Final (branding). Uses two Gemini-generated images. Vertical 9:16 format for social media. Scene files in `src/components/video/video_scenes/Scene1-5.tsx`.
 - **Mobile App – Glow Upi Pro:** An Expo mobile app for owners and professionals with dedicated dashboards, authentication, and push notifications.
 - **Push Notifications & Agenda:** Push notification system using Expo Push API for appointment reminders and updates, with a `push_tokens` table for managing device tokens.
 - **Web Push Notifications & In-App Notification Bell:** Internal notification system with `notificacoes` table, per-user read tracking, and browser desktop notifications.
