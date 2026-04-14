@@ -1,0 +1,45 @@
+CENA 1 — O CAOS (0s-3s) | O IMPACTO GÉLIDO
+(Prompt mantido 100% fiel ao seu original. É a âncora do vídeo.)
+
+Cinematic realism, shot on Arri Alexa 35mm lens. A Brazilian beautician (late 20s, olive skin with visible pores and slight dark circles) in a slightly wrinkled light pink coat sits at a cluttered salon desk. Key Light: Harsh, cool white fluorescent ceiling fixture creates unflattering shadows under her eyes and a flat, pale cast on her skin. Fill Light: Faint, cold blue glow from an iPhone screen reflecting in her tense, frustrated eyes. Background: Mirror smudged with fingerprints, peeling post-it notes, messy spiral notebook, a cheap pen with a chewed cap. Camera Movement: EXTREME SLOW PUSH-IN. Starts at mid-shot, creeps forward over 3 seconds to a tight close-up on her exhausted, stressed eyes. The focus subtly shifts to emphasize the tired texture under her eyes. Color Grade: Desaturated, slight cyan shift in shadows, greenish tint in highlights (clinical anxiety feel). On-Screen Text (Integrated in edit): "Você ainda gerencia seus clientes assim?" in thin red font, low opacity, placed at bottom third. Aspect Ratio: 9:16. Duration: 3 seconds.
+
+CENA 2 — DOR AMPLIFICADA (3s-7.5s) | A TEXTURA DA FRUSTRAÇÃO
+(Prompts mantidos 100% fiéis.)
+
+2A (Cadeira Vazia - 1.5s):
+
+Static wide shot. An expensive, pristine white pedicure throne with a perfectly rolled fluffy towel. The Contrast Element: A cheap, yellowed plastic wall clock in the background showing exactly 3:15 PM. Lighting: A single warm practical lamp illuminates the empty chair, leaving the rest of the room in soft shadow. Feeling: Abandoned luxury, wasted potential. Audio Cue (for edit): DEAD SILENCE for 1 second, then a faint, distant doorbell chime. 9:16, 1.5 seconds.
+
+2B (WhatsApp Tarde - 1.5s):
+
+Macro close-up. Woman's thumb with slightly chipped, everyday nude nail polish hovers over an iPhone screen. The screen is realistically smudged with fingerprints. WhatsApp interface in Portuguese shows a message bubble: "oi, tem horário hj?" at 21:47. Lighting: The sole light source is the phone screen, blasting her thumb and leaving the background in total darkness. Camera: Static, ultra sharp focus on the timestamp. On-Screen Text (Edit): "WhatsApp às 23h" in bold red overlay at the top. 9:16, 1.5 seconds.
+
+2C (Caderno Confuso - 1.5s):
+
+Over-the-shoulder shot, shallow depth of field. Woman's hands (one nail slightly chipped) flip anxiously through a cheap spiral notebook. Focus: The messy, scratched-out handwriting. We see a name crossed out with a question mark next to it. Her pinky finger has a small, realistic fabric band-aid. Camera Movement: A very subtle, shaky handheld tremor (0.5s) to simulate frustration. Lighting: Weak, warm desk lamp creates harsh shadows on the paper. 9:16, 1.5 seconds.
+
+CENA 3 — O PONTO DE VIRADA (7.5s-10s) | A TRANSIÇÃO MÁGICA
+(Duração ajustada para 2.5s para suavizar a transição, mas mantendo o texto exato que você aprovou.)
+
+Same woman, exact same framing and angle as the end of Scene 1. Transition Mechanism: A smooth, organic refocus and lighting shift. The harsh fluorescent shadow under her eyes softens and dissolves as a warm, honey-gold light (like magic hour) washes over her face. Her posture subtly lifts; her tense jaw relaxes into a serene, confident, closed-lip smile (the "Mona Lisa" effect). Crucial Detail: Her eyes must now hold a sharp, golden catchlight reflection of a phone screen (the Glow Upi UI). The background clutter visually melts into a creamy, warm bokeh of soft fairy lights. Color Grade: Warm amber shadows, creamy skin tones (Kodak Gold 200 film emulation). On-Screen Text (Edit): "Até que você descobre o Glow Upi" in elegant white serif font with a soft gold glow behind it. 9:16, 2.5 seconds.
+
+CENA 4 — O CONTROLE (10s-17s) | O DESEJO ASPIRACIONAL
+(Durações estendidas para 3.5s cada. Isso dá tempo da profissional sonhar acordada com o "antes e depois", mas sem arrastar.)
+
+4A (Agenda Cheia - 3.5s):
+
+Over-the-shoulder shot. Woman's hand, now with a perfect, glossy almond-shaped nail, holds an iPhone Pro. The screen displays a luxury UI: dark mode with gold accents. The weekly calendar is completely full with color-coded blocks, and a small, elegant badge reads "+3 na lista de espera". She taps the screen lightly. Lighting: Soft morning sun flares across the top corner of the screen. 9:16, 3.5 seconds.
+
+4D (Financeiro - O Gatilho Final - 3.5s):
+
+Dolly zoom out shot. Starts in tight macro on an iPhone screen showing a beautiful, ascending gold revenue graph. The camera smoothly zooms out to reveal the beautician's satisfied, relaxed face as she leans back in a modern velvet salon chair, holding a small, elegant espresso cup. Text Overlay (Edit): "Controle financeiro real." Feeling: CEO Energy. Lighting: Warm, golden hour window light. 9:16, 3.5 seconds.
+
+CENA 5 — CTA FINAL (17s-22s) | O OLHAR DA CONFIANÇA
+*(Reduzido para 5 segundos. É o suficiente para o aceno de cabeça e a virada para a tela final. No Meta Ads, CTA longo = baixo CTR.)*
+
+The same beautician looks directly into the camera lens with a serene, knowing power. Expression: She gives a single, slow, confident nod, as if to say, "You can have this too." Her skin glows with a natural, lit-from-within radiance (not heavy makeup). Background: A modern, organized salon is visible. In soft focus, a happy client laughs while looking at her own phone (social proof). 9:16, 5 seconds.
+
+FRAME FINAL ESTÁTICO (22s-30s)
+(Isso você faz no CAPCUT, não no Google Flow. É uma imagem PNG.)
+
+Visual: Fundo off-white limpo. Logo "Glow Upi" em tipografia dourada elegante. Texto: "7 DIAS GRÁTIS • Sem cartão" e "glowupi.com.br". Duração: 6 a 8 segundos (para dar tempo do usuário ler e clicar).
