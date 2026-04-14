@@ -109,8 +109,14 @@ router.post("/google", async (req, res) => {
       }).returning();
     }
 
-    const [existingBarbearia] = await db.select({ id: barbeariasTable.id, onboardingStep: barbeariasTable.onboardingStep })
+    let existingBarbearia: { id: number; onboardingStep: number | null } | undefined;
+    [existingBarbearia] = await db.select({ id: barbeariasTable.id, onboardingStep: barbeariasTable.onboardingStep })
       .from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
+
+    if (!existingBarbearia && user.barbeariaId) {
+      [existingBarbearia] = await db.select({ id: barbeariasTable.id, onboardingStep: barbeariasTable.onboardingStep })
+        .from(barbeariasTable).where(eq(barbeariasTable.id, user.barbeariaId)).limit(1);
+    }
 
     const token = createSession(user.id);
     res.cookie("session", token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: "lax" });
@@ -120,7 +126,7 @@ router.post("/google", async (req, res) => {
       user: { ...userWithoutPass, createdAt: user.createdAt.toISOString() },
       isNew,
       hasBarbearia: !!existingBarbearia,
-      onboardingComplete: existingBarbearia ? (existingBarbearia.onboardingStep ?? 0) >= 5 : false,
+      onboardingComplete: existingBarbearia ? true : false,
     });
   } catch (e: any) {
     console.error("Google auth error:", e);
