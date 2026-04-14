@@ -19,6 +19,16 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + c;
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
+}
+
 self.addEventListener("push", (event) => {
   console.log("[SW] Push event received");
 
@@ -50,7 +60,8 @@ self.addEventListener("push", (event) => {
 
     const tagBase = data.tag || "glow-upi-" + (notifType || "push");
     const tagId = data.data?.agendamentoId || data.data?.notificationId || "";
-    const tag = tagId ? tagBase + "-" + tagId : tagBase + "-" + Date.now();
+    const stableHash = tagId || simpleHash(data.title + data.body);
+    const tag = tagBase + "-" + stableHash;
 
     const options = {
       body: data.body || "Nova notificação",
@@ -122,9 +133,9 @@ self.addEventListener("pushsubscriptionchange", (event) => {
 
     if (!subscribeOptions || !subscribeOptions.applicationServerKey) {
       try {
-        const basePath = self.registration.scope || "/";
-        const apiBase = basePath + "api";
-        const resp = await fetch(apiBase.replace(/\/+/g, "/") + "/push/vapid-public-key");
+        const scope = self.registration.scope;
+        const vapidUrl = new URL("api/push/vapid-public-key", scope).href;
+        const resp = await fetch(vapidUrl);
         if (resp.ok) {
           const { publicKey } = await resp.json();
           if (publicKey) {

@@ -4,6 +4,16 @@ import { eq, and, gte, lte, inArray } from "drizzle-orm";
 import webpush from "web-push";
 import { getParametros } from "./parametros.js";
 
+function simpleHash(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + c;
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
+}
+
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:marcuslimav123@gmail.com";
@@ -96,12 +106,17 @@ async function sendWebPush(tokens: { id: number; token: string }[], message: Pus
     return;
   }
 
+  const notifType = message.data?.type || "notification";
+  const entityId = message.data?.agendamentoId || message.data?.notificationId || "";
+  const stableId = entityId || simpleHash(message.title + message.body);
+  const tag = `glow-upi-${notifType}-${stableId}`;
+
   const payload = JSON.stringify({
     title: message.title,
     body: message.body,
     data: message.data || {},
     icon: "/favicon.svg",
-    tag: `glow-upi-${message.data?.type || "notification"}-${Date.now()}`,
+    tag,
   });
 
   const pushOptions = {
@@ -169,12 +184,16 @@ export async function sendPushToClienteUser(clienteUserId: number, message: Push
     );
     if (tokens.length === 0) return;
 
+    const clientNotifType = message.data?.type || "notification";
+    const clientEntityId = message.data?.agendamentoId || message.data?.notificationId || "";
+    const clientStableId = clientEntityId || simpleHash(message.title + message.body);
+
     const payload = JSON.stringify({
       title: message.title,
       body: message.body,
       data: message.data || {},
       icon: "/favicon.svg",
-      tag: `cliente-${message.data?.type || "notification"}-${Date.now()}`,
+      tag: `cliente-${clientNotifType}-${clientStableId}`,
     });
 
     const pushOptions = {
