@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { caixaDiarioTable, movimentacoesCaixaTable, contasProfissionalTable, profissionaisTable } from "@workspace/db/schema";
+import { caixaDiarioTable, movimentacoesCaixaTable, contasProfissionalTable, profissionaisTable, tiposTable } from "@workspace/db/schema";
 import { eq, and, desc, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
@@ -162,21 +162,57 @@ router.post("/:caixaId/movimentacoes", requireAuth, async (req: any, res) => {
   const [caixa] = await db.select().from(caixaDiarioTable)
     .where(and(eq(caixaDiarioTable.id, caixaId), eq(caixaDiarioTable.barbeariaId, barbeariaId))).limit(1);
   if (!caixa || caixa.status !== "aberto") return res.status(400).json({ error: "Caixa não está aberto" });
-  const { tipo, categoria, descricao, valor, formaPagamento, referencia } = req.body;
-  const [mov] = await db.insert(movimentacoesCaixaTable).values({
-    barbeariaId, caixaId, tipo, categoria, descricao, valor: String(valor), formaPagamento, referencia,
-  }).returning();
+  const { tipo, categoria, descricao, valor, formaPagamento, referencia, bandeiraId } = req.body;
   const valorNum = parseFloat(String(valor));
-  if (tipo === "entrada") {
-    await db.update(caixaDiarioTable).set({
-      totalEntradas: String(parseFloat(caixa.totalEntradas || "0") + valorNum),
-    }).where(eq(caixaDiarioTable.id, caixaId));
-  } else {
-    await db.update(caixaDiarioTable).set({
-      totalSaidas: String(parseFloat(caixa.totalSaidas || "0") + valorNum),
-    }).where(eq(caixaDiarioTable.id, caixaId));
+
+  let taxaPercentual = 0;
+  let taxaValor = 0;
+  let bandeiraNome = "";
+
+  if (tipo === "entrada" && (formaPagamento === "credito" || formaPagamento === "debito") && bandeiraId) {
+    const [bandeira] = await db.select().from(tiposTable)
+      .where(and(
+        eq(tiposTable.id, parseInt(bandeiraId)),
+        eq(tiposTable.barbeariaId, barbeariaId),
+        eq(tiposTable.categoria, "bandeira"),
+      )).limit(1);
+    if (bandeira && bandeira.taxaOperadora) {
+      taxaPercentual = parseFloat(bandeira.taxaOperadora);
+      taxaValor = Math.round((valorNum * taxaPercentual / 100) * 100) / 100;
+      bandeiraNome = bandeira.nome;
+    }
   }
-  res.status(201).json(fmtMov(mov));
+
+  await db.transaction(async (tx) => {
+    await tx.insert(movimentacoesCaixaTable).values({
+      barbeariaId, caixaId, tipo, categoria, descricao, valor: String(valor), formaPagamento, referencia,
+    });
+
+    if (tipo === "entrada") {
+      let novasEntradas = parseFloat(caixa.totalEntradas || "0") + valorNum;
+      let novasSaidas = parseFloat(caixa.totalSaidas || "0");
+
+      if (taxaValor > 0) {
+        await tx.insert(movimentacoesCaixaTable).values({
+          barbeariaId, caixaId, tipo: "saida", categoria: "taxa_maquininha",
+          descricao: `Taxa ${bandeiraNome} (${taxaPercentual}%) — ${descricao}`,
+          valor: String(taxaValor), formaPagamento,
+        });
+        novasSaidas += taxaValor;
+      }
+
+      await tx.update(caixaDiarioTable).set({
+        totalEntradas: String(novasEntradas),
+        totalSaidas: String(novasSaidas),
+      }).where(eq(caixaDiarioTable.id, caixaId));
+    } else {
+      await tx.update(caixaDiarioTable).set({
+        totalSaidas: String(parseFloat(caixa.totalSaidas || "0") + valorNum),
+      }).where(eq(caixaDiarioTable.id, caixaId));
+    }
+  });
+
+  res.status(201).json({ ok: true, taxaAplicada: taxaValor > 0 ? { bandeira: bandeiraNome, percentual: taxaPercentual, valor: taxaValor } : null });
 });
 
 router.post("/:caixaId/sangria", requireAuth, async (req: any, res) => {

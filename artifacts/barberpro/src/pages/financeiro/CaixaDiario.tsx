@@ -16,6 +16,7 @@ export default function CaixaDiario() {
   const { toast } = useToast();
   const [caixa, setCaixa] = useState<any>(null);
   const [profissionais, setProfissionais] = useState<any[]>([]);
+  const [bandeiras, setBandeiras] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAbrir, setShowAbrir] = useState(false);
   const [showMov, setShowMov] = useState(false);
@@ -29,6 +30,7 @@ export default function CaixaDiario() {
   const [movValor, setMovValor] = useState("");
   const [movCategoria, setMovCategoria] = useState("");
   const [movFormaPag, setMovFormaPag] = useState("dinheiro");
+  const [movBandeiraId, setMovBandeiraId] = useState("");
   const [valorFechamento, setValorFechamento] = useState("");
   const [sangriaValor, setSangriaValor] = useState("");
   const [sangriaMotivo, setSangriaMotivo] = useState("");
@@ -38,7 +40,7 @@ export default function CaixaDiario() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (barbeariaId) { fetchCaixa(); fetchProfissionais(); }
+    if (barbeariaId) { fetchCaixa(); fetchProfissionais(); fetchBandeiras(); }
   }, [barbeariaId]);
 
   const fetchCaixa = async () => {
@@ -53,6 +55,16 @@ export default function CaixaDiario() {
     try {
       const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/profissionais`), { credentials: "include" });
       if (res.ok) setProfissionais(await res.json());
+    } catch {}
+  };
+
+  const fetchBandeiras = async () => {
+    try {
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/tipos`), { credentials: "include" });
+      if (res.ok) {
+        const all = await res.json();
+        setBandeiras(all.filter((t: any) => t.categoria === "bandeira" && t.ativo));
+      }
     } catch {}
   };
 
@@ -86,15 +98,32 @@ export default function CaixaDiario() {
     finally { setSubmitting(false); }
   };
 
+  const mostrarBandeira = movTipo === "entrada" && (movFormaPag === "credito" || movFormaPag === "debito");
+  const bandeiraSelecionada = bandeiras.find((b: any) => String(b.id) === movBandeiraId);
+  const taxaPreview = bandeiraSelecionada && movValor
+    ? Math.round((parseFloat(movValor) * parseFloat(bandeiraSelecionada.taxaOperadora || "0") / 100) * 100) / 100
+    : 0;
+
   const addMovimentacao = async () => {
     if (!caixa || !movDescricao || !movValor) return;
     setSubmitting(true);
     try {
       const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/caixa-diario/${caixa.id}/movimentacoes`), {
         method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
-        body: JSON.stringify({ tipo: movTipo, descricao: movDescricao, valor: parseFloat(movValor), categoria: movCategoria, formaPagamento: movFormaPag }),
+        body: JSON.stringify({
+          tipo: movTipo, descricao: movDescricao, valor: parseFloat(movValor),
+          categoria: movCategoria, formaPagamento: movFormaPag,
+          bandeiraId: mostrarBandeira ? movBandeiraId || undefined : undefined,
+        }),
       });
-      if (res.ok) { toast({ title: "Movimentação registrada!" }); setShowMov(false); setMovDescricao(""); setMovValor(""); setMovCategoria(""); fetchCaixa(); }
+      if (res.ok) {
+        const data = await res.json();
+        const msg = data.taxaAplicada
+          ? `Movimentação registrada! Taxa ${data.taxaAplicada.bandeira} (${data.taxaAplicada.percentual}%): -${formatCurrency(data.taxaAplicada.valor)}`
+          : "Movimentação registrada!";
+        toast({ title: msg });
+        setShowMov(false); setMovDescricao(""); setMovValor(""); setMovCategoria(""); setMovBandeiraId(""); fetchCaixa();
+      }
     } catch { toast({ title: "Erro ao registrar", variant: "destructive" }); }
     finally { setSubmitting(false); }
   };
@@ -208,27 +237,54 @@ export default function CaixaDiario() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showMov} onOpenChange={setShowMov}>
+      <Dialog open={showMov} onOpenChange={(open) => { setShowMov(open); if (!open) { setMovBandeiraId(""); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Nova Movimentação</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div><Label>Tipo</Label>
-                <Select value={movTipo} onValueChange={setMovTipo}><SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <Select value={movTipo} onValueChange={(v) => { setMovTipo(v); setMovBandeiraId(""); }}><SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="entrada">Entrada</SelectItem><SelectItem value="saida">Saída</SelectItem></SelectContent>
                 </Select>
               </div>
               <div><Label>Forma de Pagamento</Label>
-                <Select value={movFormaPag} onValueChange={setMovFormaPag}><SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <Select value={movFormaPag} onValueChange={(v) => { setMovFormaPag(v); setMovBandeiraId(""); }}><SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="dinheiro">Dinheiro</SelectItem><SelectItem value="pix">PIX</SelectItem><SelectItem value="debito">Débito</SelectItem><SelectItem value="credito">Crédito</SelectItem></SelectContent>
                 </Select>
               </div>
             </div>
+            {mostrarBandeira && bandeiras.length > 0 && (
+              <div>
+                <Label>Bandeira da Maquininha</Label>
+                <Select value={movBandeiraId} onValueChange={setMovBandeiraId}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione a bandeira..." /></SelectTrigger>
+                  <SelectContent>
+                    {bandeiras.filter((b: any) => !b.tipoBandeira || b.tipoBandeira === movFormaPag).map((b: any) => (
+                      <SelectItem key={b.id} value={String(b.id)}>
+                        {b.nome} {b.taxaOperadora ? `(${b.taxaOperadora}%)` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div><Label>Descrição</Label><Input value={movDescricao} onChange={e => setMovDescricao(e.target.value)} className="mt-1" /></div>
             <div className="grid grid-cols-2 gap-4">
               <div><Label>Valor (R$)</Label><Input type="number" value={movValor} onChange={e => setMovValor(e.target.value)} className="mt-1" /></div>
               <div><Label>Categoria</Label><Input value={movCategoria} onChange={e => setMovCategoria(e.target.value)} className="mt-1" placeholder="Ex: Venda, Despesa..." /></div>
             </div>
+            {mostrarBandeira && taxaPreview > 0 && movValor && (
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                <div className="flex justify-between text-[13px]">
+                  <span className="text-amber-700">Taxa {bandeiraSelecionada?.nome} ({bandeiraSelecionada?.taxaOperadora}%)</span>
+                  <span className="font-semibold text-red-600">-{formatCurrency(taxaPreview)}</span>
+                </div>
+                <div className="flex justify-between text-[13px] mt-1">
+                  <span className="text-amber-700">Valor líquido</span>
+                  <span className="font-semibold text-green-600">{formatCurrency(parseFloat(movValor) - taxaPreview)}</span>
+                </div>
+              </div>
+            )}
             <Button onClick={addMovimentacao} className="w-full rounded-xl" disabled={submitting}>Registrar</Button>
           </div>
         </DialogContent>
@@ -313,7 +369,7 @@ export default function CaixaDiario() {
                         <div>
                           <p className="text-[14px] font-medium">{m.descricao}</p>
                           <div className="flex items-center gap-1.5 text-[12px] text-foreground/40">
-                            {m.categoria && <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${m.categoria === "sangria" ? "bg-orange-100 text-orange-600" : m.categoria === "vale" ? "bg-purple-100 text-purple-600" : "bg-gray-100 text-gray-500"}`}>{m.categoria}</span>}
+                            {m.categoria && <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${m.categoria === "sangria" ? "bg-orange-100 text-orange-600" : m.categoria === "vale" ? "bg-purple-100 text-purple-600" : m.categoria === "taxa_maquininha" ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500"}`}>{m.categoria === "taxa_maquininha" ? "taxa maquininha" : m.categoria}</span>}
                             <span>{m.formaPagamento}</span>
                             <span>·</span>
                             <span>{new Date(m.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
