@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import crypto from "crypto";
+import XLSX from "xlsx";
 import { db } from "@workspace/db";
 import { superAdminsTable, barbeariasTable, usersTable, platformConfigTable, comandasTable, brevoEmailLogTable, profissionaisTable, adminLogsTable, lgpdConsentsTable, trialLinksTable } from "@workspace/db/schema";
 import { eq, sql, desc, count, and, gte, lt, isNull } from "drizzle-orm";
@@ -540,52 +541,11 @@ router.get("/export-clientes", requireAdmin, async (req: any, res) => {
 
     const now = new Date();
 
-    const headers = [
-      "ID Barbearia",
-      "Nome Estabelecimento",
-      "Slug",
-      "CNPJ",
-      "Telefone Estabelecimento",
-      "Email Estabelecimento",
-      "CEP",
-      "Logradouro",
-      "Numero",
-      "Bairro",
-      "Cidade",
-      "UF",
-      "Nome do Dono",
-      "Email do Dono",
-      "Telefone do Dono (WhatsApp)",
-      "Login via Google",
-      "Plano",
-      "Periodo",
-      "Status Assinatura",
-      "Ativo",
-      "Vencimento Plano",
-      "Dias Restantes",
-      "Qtd Profissionais",
-      "Stripe Customer ID",
-      "Stripe Subscription ID",
-      "Data Cadastro",
-      "Meses de Acesso",
-      "Cor Primaria",
-      "Descricao Publica",
-    ];
-
-    const escCsv = (val: any): string => {
-      if (val === null || val === undefined) return "";
-      const s = String(val);
-      if (s.includes(",") || s.includes('"') || s.includes("\n") || s.includes(";")) {
-        return '"' + s.replace(/"/g, '""') + '"';
-      }
-      return s;
-    };
-
-    const rows = allBarbearias.map(b => {
+    const data = allBarbearias.map(b => {
       const dono = userMap.get(b.donoId);
       const proCount = proCountMap.get(b.id) || 0;
 
-      let diasRestantes: number | string = "";
+      let diasRestantes: number | null = null;
       if (b.planoVencimento) {
         diasRestantes = Math.max(0, Math.ceil((b.planoVencimento.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
       }
@@ -593,47 +553,56 @@ router.get("/export-clientes", requireAdmin, async (req: any, res) => {
       const createdDate = b.createdAt || now;
       const mesesAcesso = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
 
-      return [
-        b.id,
-        b.nome,
-        b.slug,
-        b.cnpj || "",
-        b.telefone || "",
-        b.email || "",
-        b.cep || "",
-        b.logradouro || "",
-        b.numero || "",
-        b.bairro || "",
-        b.cidade || "",
-        b.uf || "",
-        dono?.nome || "",
-        dono?.email || "",
-        dono?.telefone || "",
-        dono?.googleId ? "Sim" : "Não",
-        b.subscriptionPlan || b.planoNome || "Trial",
-        b.subscriptionPeriod || "",
-        b.subscriptionStatus || "trial",
-        b.ativo ? "Sim" : "Não",
-        b.planoVencimento ? b.planoVencimento.toISOString().split("T")[0] : "",
-        diasRestantes,
-        proCount,
-        b.stripeCustomerId || "",
-        b.stripeSubscriptionId || "",
-        b.createdAt ? b.createdAt.toISOString().split("T")[0] : "",
-        mesesAcesso,
-        b.corPrimaria || "",
-        b.descricaoPublica || "",
-      ].map(escCsv).join(",");
+      return {
+        "ID Barbearia": b.id,
+        "Nome Estabelecimento": b.nome,
+        "Slug": b.slug,
+        "CNPJ": b.cnpj || "",
+        "Telefone Estabelecimento": b.telefone || "",
+        "Email Estabelecimento": b.email || "",
+        "CEP": b.cep || "",
+        "Logradouro": b.logradouro || "",
+        "Numero": b.numero || "",
+        "Bairro": b.bairro || "",
+        "Cidade": b.cidade || "",
+        "UF": b.uf || "",
+        "Nome do Dono": dono?.nome || "",
+        "Email do Dono": dono?.email || "",
+        "Telefone do Dono (WhatsApp)": dono?.telefone || "",
+        "Login via Google": dono?.googleId ? "Sim" : "Não",
+        "Plano": b.subscriptionPlan || b.planoNome || "Trial",
+        "Periodo": b.subscriptionPeriod || "",
+        "Status Assinatura": b.subscriptionStatus || "trial",
+        "Ativo": b.ativo ? "Sim" : "Não",
+        "Vencimento Plano": b.planoVencimento ? b.planoVencimento.toISOString().split("T")[0] : "",
+        "Dias Restantes": diasRestantes ?? "",
+        "Qtd Profissionais": proCount,
+        "Stripe Customer ID": b.stripeCustomerId || "",
+        "Stripe Subscription ID": b.stripeSubscriptionId || "",
+        "Data Cadastro": b.createdAt ? b.createdAt.toISOString().split("T")[0] : "",
+        "Meses de Acesso": mesesAcesso,
+        "Cor Primaria": b.corPrimaria || "",
+        "Descricao Publica": b.descricaoPublica || "",
+      };
     });
 
-    const bom = "\uFEFF";
-    const csv = bom + headers.join(",") + "\n" + rows.join("\n");
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
 
-    await logAdminAction(req.admin.id, "export_clientes", undefined, { total: allBarbearias.length });
+    const colWidths = Object.keys(data[0] || {}).map(key => {
+      const maxLen = Math.max(key.length, ...data.map(r => String((r as any)[key] || "").length));
+      return { wch: Math.min(maxLen + 2, 50) };
+    });
+    ws["!cols"] = colWidths;
 
-    res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader("Content-Disposition", `attachment; filename=clientes_${now.toISOString().split("T")[0]}.csv`);
-    return res.send(csv);
+    XLSX.utils.book_append_sheet(wb, ws, "Clientes");
+    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+
+    await logAdminAction(req.admin.id, "export_clientes", undefined, { total: allBarbearias.length, formato: "xlsx" });
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename=clientes_${now.toISOString().split("T")[0]}.xlsx`);
+    return res.send(Buffer.from(buf));
   } catch (e) {
     console.error("export-clientes error:", e);
     return res.status(500).json({ error: "Erro ao exportar clientes" });
