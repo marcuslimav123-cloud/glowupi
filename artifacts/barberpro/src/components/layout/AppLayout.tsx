@@ -374,7 +374,7 @@ function isSubgroupActive(sg: { label: string; items: NavItem[] }, location: str
   return sg.items.some(s => s.href && (loc === s.href.split("?")[0] || loc.startsWith(s.href.split("?")[0] + '/')));
 }
 
-function CollapsibleSubgroup({ sg, location, onLinkClick, badgeCounts }: { sg: { label: string; items: NavItem[] }; location: string; onLinkClick: () => void; badgeCounts?: Record<string, number> }) {
+const CollapsibleSubgroup = React.memo(function CollapsibleSubgroup({ sg, location, onLinkClick, badgeCounts }: { sg: { label: string; items: NavItem[] }; location: string; onLinkClick: () => void; badgeCounts?: Record<string, number> }) {
   const active = isSubgroupActive(sg, location);
   const [open, setOpen] = React.useState(active);
   const loc = location.split("?")[0];
@@ -388,28 +388,25 @@ function CollapsibleSubgroup({ sg, location, onLinkClick, badgeCounts }: { sg: {
       <button
         onClick={() => setOpen(!open)}
         className={cn(
-          "w-full flex items-center gap-1.5 px-3 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider transition-all duration-150 cursor-pointer",
+          "w-full flex items-center gap-1.5 px-3 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider cursor-pointer",
           active
             ? "text-primary/60 hover:text-primary/80"
             : "text-foreground/25 hover:text-foreground/40 hover:bg-muted/50"
         )}
       >
         <ChevronDown className={cn(
-          "h-2.5 w-2.5 transition-transform duration-200 shrink-0",
+          "h-2.5 w-2.5 shrink-0",
           open ? "rotate-0" : "-rotate-90"
         )} />
         <span className="flex-1 text-left">{sg.label}</span>
       </button>
-      <div className={cn(
-        "overflow-hidden transition-all duration-200",
-        open ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
-      )}>
+      {open && (
         <div className="space-y-0.5 mt-0.5">
           {sg.items.map(sub => {
             const badgeCount = sub.href && badgeCounts ? badgeCounts[sub.href] : 0;
             return (
             <Link key={sub.name + (sub.href || '')} href={sub.href!} className={cn(
-              "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150",
+              "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium",
               loc === sub.href?.split("?")[0]
                 ? "bg-foreground text-background"
                 : "text-foreground/45 hover:text-foreground hover:bg-muted/50"
@@ -425,12 +422,12 @@ function CollapsibleSubgroup({ sg, location, onLinkClick, badgeCounts }: { sg: {
             );
           })}
         </div>
-      </div>
+      )}
     </div>
   );
-}
+});
 
-function CollapsibleGroup({ item, location, onNavigate, mainRef, badgeCounts }: { item: NavItem; location: string; onNavigate: () => void; mainRef: React.RefObject<HTMLDivElement | null>; badgeCounts?: Record<string, number> }) {
+const CollapsibleGroup = React.memo(function CollapsibleGroup({ item, location, onNavigate, mainRef, badgeCounts }: { item: NavItem; location: string; onNavigate: () => void; mainRef: React.RefObject<HTMLDivElement | null>; badgeCounts?: Record<string, number> }) {
   const active = isGroupActive(item, location);
   const [open, setOpen] = React.useState(active);
   const clickedRef = React.useRef(false);
@@ -442,13 +439,13 @@ function CollapsibleGroup({ item, location, onNavigate, mainRef, badgeCounts }: 
     }
   }, [location, active]);
 
-  const handleLinkClick = () => {
+  const handleLinkClick = React.useCallback(() => {
     clickedRef.current = true;
     onNavigate();
     if (mainRef.current) {
-      mainRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      mainRef.current.scrollTo({ top: 0 });
     }
-  };
+  }, [onNavigate, mainRef]);
 
   const loc = location.split("?")[0];
 
@@ -458,7 +455,7 @@ function CollapsibleGroup({ item, location, onNavigate, mainRef, badgeCounts }: 
         onClick={() => setOpen(!open)}
         {...(NAV_GROUP_TUTORIAL_IDS[item.name] ? { "data-tutorial": NAV_GROUP_TUTORIAL_IDS[item.name] } : {})}
         className={cn(
-          "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150",
+          "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium",
           active
             ? "text-primary bg-primary/[0.06]"
             : "text-foreground/50 hover:text-foreground hover:bg-muted/50"
@@ -467,19 +464,16 @@ function CollapsibleGroup({ item, location, onNavigate, mainRef, badgeCounts }: 
         <item.icon className="h-[16px] w-[16px]" />
         <span className="flex-1 text-left">{item.name}</span>
         <ChevronDown className={cn(
-          "h-3.5 w-3.5 transition-transform duration-200",
+          "h-3.5 w-3.5",
           open ? "rotate-0" : "-rotate-90"
         )} />
       </button>
 
-      <div className={cn(
-        "overflow-hidden transition-all duration-200",
-        open ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
-      )}>
+      {open && (
         <div className="ml-2 pl-3 border-l border-border mt-0.5 space-y-0.5">
           {(item.children || []).map(child => (
             <Link key={child.name + (child.href || '')} href={child.href!} className={cn(
-              "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150",
+              "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium",
               loc === child.href?.split("?")[0]
                 ? "bg-foreground text-background"
                 : "text-foreground/45 hover:text-foreground hover:bg-muted/50"
@@ -499,10 +493,10 @@ function CollapsibleGroup({ item, location, onNavigate, mainRef, badgeCounts }: 
             />
           ))}
         </div>
-      </div>
+      )}
     </div>
   );
-}
+});
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -524,18 +518,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const updateBarbearia = useUpdateBarbearia();
   const queryClient = useQueryClient();
 
-  const handleLogoChange = async (url: string | null) => {
+  const handleLogoChange = React.useCallback(async (url: string | null) => {
     try {
       await updateBarbearia.mutateAsync({ data: { logoUrl: url } });
       queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() });
     } catch (err) {
       console.error("Erro ao atualizar logo:", err);
     }
-  };
+  }, [updateBarbearia, queryClient]);
 
   React.useEffect(() => {
     if (mainContentRef.current) {
-      mainContentRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      mainContentRef.current.scrollTo({ top: 0 });
     }
   }, [location]);
 
@@ -690,14 +684,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const handleNavClick = () => {
+  const handleNavClick = React.useCallback(() => {
     setMobileMenuOpen(false);
     if (mainContentRef.current) {
-      mainContentRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      mainContentRef.current.scrollTo({ top: 0 });
     }
-  };
+  }, []);
 
-  const filteredNav = filterNavByRole(NAV_ITEMS, role, perfilPermissoes);
+  const filteredNav = React.useMemo(
+    () => filterNavByRole(NAV_ITEMS, role, perfilPermissoes),
+    [role, perfilPermissoes]
+  );
 
   const searchResults = React.useMemo(() => {
     const q = sidebarSearch.trim().toLowerCase();
@@ -722,7 +719,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="h-screen overflow-hidden flex flex-col md:flex-row bg-background">
-      <div className="md:hidden flex items-center justify-between px-3 py-2 border-b border-border bg-card/95 backdrop-blur-lg safe-area-top">
+      <div className="md:hidden flex items-center justify-between px-3 py-2 border-b border-border bg-card safe-area-top">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="h-9 w-9 shrink-0">
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -742,7 +739,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-[240px] bg-card border-r border-border transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 flex flex-col",
+        "fixed inset-y-0 left-0 z-50 w-[240px] bg-card border-r border-border transform transition-transform duration-200 ease-out md:relative md:translate-x-0 flex flex-col will-change-transform",
         mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="hidden md:flex flex-col shrink-0">
@@ -899,7 +896,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       
       <MobileBottomBar />
       {mobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden" onClick={() => setMobileMenuOpen(false)} />
+        <div className="fixed inset-0 bg-black/30 z-40 md:hidden" onClick={() => setMobileMenuOpen(false)} />
       )}
 
       {showTutorial && (

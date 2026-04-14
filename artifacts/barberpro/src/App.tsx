@@ -85,10 +85,16 @@ const Filiais = React.lazy(() => import("@/pages/gestao/Filiais"));
 const Parametros = React.lazy(() => import("@/pages/configuracoes/Parametros"));
 const InboxMensagens = React.lazy(() => import("@/pages/comunicacao/InboxMensagens"));
 const PerfisAcesso = React.lazy(() => import("@/pages/configuracoes/PerfisAcesso"));
-import { RodizioPage, OrdemChegadaPage, ListaEsperaConfigPage, AlertasPage } from "@/pages/configuracoes/PlaceholderConfig";
+const RodizioPage = React.lazy(() => import("@/pages/configuracoes/PlaceholderConfig").then(m => ({ default: m.RodizioPage })));
+const OrdemChegadaPage = React.lazy(() => import("@/pages/configuracoes/PlaceholderConfig").then(m => ({ default: m.OrdemChegadaPage })));
+const ListaEsperaConfigPage = React.lazy(() => import("@/pages/configuracoes/PlaceholderConfig").then(m => ({ default: m.ListaEsperaConfigPage })));
+const AlertasPage = React.lazy(() => import("@/pages/configuracoes/PlaceholderConfig").then(m => ({ default: m.AlertasPage })));
 const EmailTemplates = React.lazy(() => import("@/pages/configuracoes/EmailTemplates"));
-import { AnamneseFormularios, AnamneseClientes } from "@/pages/configuracoes/Anamnese";
-import { DocumentosPage, DocumentosClientePage, DocumentosProfissionalPage } from "@/pages/configuracoes/Documentos";
+const AnamneseFormularios = React.lazy(() => import("@/pages/configuracoes/Anamnese").then(m => ({ default: m.AnamneseFormularios })));
+const AnamneseClientes = React.lazy(() => import("@/pages/configuracoes/Anamnese").then(m => ({ default: m.AnamneseClientes })));
+const DocumentosPage = React.lazy(() => import("@/pages/configuracoes/Documentos").then(m => ({ default: m.DocumentosPage })));
+const DocumentosClientePage = React.lazy(() => import("@/pages/configuracoes/Documentos").then(m => ({ default: m.DocumentosClientePage })));
+const DocumentosProfissionalPage = React.lazy(() => import("@/pages/configuracoes/Documentos").then(m => ({ default: m.DocumentosProfissionalPage })));
 const RestricaoCliente = React.lazy(() => import("@/pages/configuracoes/RestricaoCliente"));
 const Funcionamento = React.lazy(() => import("@/pages/configuracoes/Funcionamento"));
 
@@ -102,7 +108,16 @@ const AdminLgpdConsents = React.lazy(() => import("@/pages/admin/AdminLgpdConsen
 const AdminTrialLinks = React.lazy(() => import("@/pages/admin/AdminTrialLinks"));
 const TrialRegister = React.lazy(() => import("@/pages/TrialRegister"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 function LazyFallback() {
   return (
