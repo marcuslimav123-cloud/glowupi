@@ -30,3 +30,9 @@ id = "J0Pbc2yRF75-c55jSIMZ1"
 uri = "file://Apresentacao_GlowUpi_Salao.docx"
 type = "word_document"
 title = "Apresentação Glow Upi - Salão de Beleza"
+
+[[outputs]]
+id = "C7m1mDlvU31UybpiPF48P"
+uri = "file://Apresentacao_GlowUpi_Clinica_Estetica.docx"
+type = "word_document"
+title = "Apresentação Glow Upi - Clínica de Estética"
