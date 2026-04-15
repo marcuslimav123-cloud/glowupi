@@ -18,3 +18,9 @@ id = "QTEpRFIXUk4IDoXeaOZBq"
 uri = "file://Plano_Funil_Perpetuo_GlowUpi.docx"
 type = "word_document"
 title = "Plano de Ação — Funil Perpétuo Glow Upi"
+
+[[outputs]]
+id = "8eHjAn0uw4S36KWl8fZTk"
+uri = "file://Apresentacao_GlowUpiMan.docx"
+type = "word_document"
+title = "Apresentação Glow Upi Man - Script de Vendas"
