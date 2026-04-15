@@ -16,6 +16,8 @@ export const clientesTable = pgTable("clientes", {
   totalGasto: numeric("total_gasto", { precision: 12, scale: 2 }).notNull().default("0"),
   ultimaVisita: text("ultima_visita"),
   status: text("status").notNull().default("aprovado"),
+  alergias: text("alergias"),
+  contraindicacoes: text("contraindicacoes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
