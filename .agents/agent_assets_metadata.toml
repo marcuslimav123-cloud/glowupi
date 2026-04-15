@@ -24,3 +24,9 @@ id = "8eHjAn0uw4S36KWl8fZTk"
 uri = "file://Apresentacao_GlowUpiMan.docx"
 type = "word_document"
 title = "Apresentação Glow Upi Man - Script de Vendas"
+
+[[outputs]]
+id = "J0Pbc2yRF75-c55jSIMZ1"
+uri = "file://Apresentacao_GlowUpi_Salao.docx"
+type = "word_document"
+title = "Apresentação Glow Upi - Salão de Beleza"
