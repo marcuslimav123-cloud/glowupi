@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { apiUrl, APP_NAME } from "@/lib/utils";
+import { getAttributionForCheckout } from "@/lib/tracking";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sparkles, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
@@ -63,7 +64,7 @@ export default function TrialRegister() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ nome: nome.trim(), email: email.trim().toLowerCase(), senha }),
+        body: JSON.stringify({ nome: nome.trim(), email: email.trim().toLowerCase(), senha, utm: getAttributionForCheckout() }),
       });
       const data = await res.json();
       if (!res.ok) {

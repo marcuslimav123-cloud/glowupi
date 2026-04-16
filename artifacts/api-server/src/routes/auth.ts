@@ -11,7 +11,7 @@ const router: IRouter = Router();
 
 router.post("/register", async (req, res) => {
   try {
-    const { nome, email, senha } = req.body;
+    const { nome, email, senha, utm } = req.body;
     if (!nome || !email || !senha) {
       return res.status(400).json({ error: "Nome, email e senha são obrigatórios" });
     }
@@ -27,6 +27,15 @@ router.post("/register", async (req, res) => {
       email,
       senhaHash: hashPassword(senha),
       role: "dono",
+      utmSource: utm?.utmSource || null,
+      utmMedium: utm?.utmMedium || null,
+      utmCampaign: utm?.utmCampaign || null,
+      utmContent: utm?.utmContent || null,
+      utmTerm: utm?.utmTerm || null,
+      fbclid: utm?.fbclid || null,
+      gclid: utm?.gclid || null,
+      landingPage: utm?.landingPage || null,
+      referrer: utm?.referrer || null,
     }).returning();
     const token = createSession(user.id);
     res.cookie("session", token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: "lax" });
@@ -74,7 +83,7 @@ router.post("/logout", (req, res) => {
 
 router.post("/google", async (req, res) => {
   try {
-    const { credential } = req.body;
+    const { credential, utm } = req.body;
     if (!credential) return res.status(400).json({ error: "Token do Google obrigatório" });
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -106,6 +115,15 @@ router.post("/google", async (req, res) => {
         googleId,
         fotoUrl,
         role: "dono",
+        utmSource: utm?.utmSource || null,
+        utmMedium: utm?.utmMedium || null,
+        utmCampaign: utm?.utmCampaign || null,
+        utmContent: utm?.utmContent || null,
+        utmTerm: utm?.utmTerm || null,
+        fbclid: utm?.fbclid || null,
+        gclid: utm?.gclid || null,
+        landingPage: utm?.landingPage || null,
+        referrer: utm?.referrer || null,
       }).returning();
     }
 

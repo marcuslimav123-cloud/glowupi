@@ -23,7 +23,7 @@ router.get("/:token", async (req, res) => {
 router.post("/:token/register", async (req, res) => {
   try {
     const { token } = req.params;
-    const { nome, email: rawEmail, senha } = req.body;
+    const { nome, email: rawEmail, senha, utm } = req.body;
     if (!nome || !rawEmail || !senha) return res.status(400).json({ error: "Nome, email e senha são obrigatórios" });
     if (senha.length < 6) return res.status(400).json({ error: "A senha deve ter pelo menos 6 caracteres" });
 
@@ -67,6 +67,15 @@ router.post("/:token/register", async (req, res) => {
       email,
       senhaHash: hashPassword(senha),
       role: "dono",
+      utmSource: utm?.utmSource || null,
+      utmMedium: utm?.utmMedium || null,
+      utmCampaign: utm?.utmCampaign || null,
+      utmContent: utm?.utmContent || null,
+      utmTerm: utm?.utmTerm || null,
+      fbclid: utm?.fbclid || null,
+      gclid: utm?.gclid || null,
+      landingPage: utm?.landingPage || null,
+      referrer: utm?.referrer || null,
     }).returning();
 
     await db.update(trialLinksTable).set({

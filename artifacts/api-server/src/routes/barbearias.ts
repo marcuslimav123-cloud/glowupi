@@ -54,6 +54,15 @@ router.post("/", requireAuth, requireRole("dono"), async (req, res) => {
       onboardingStep: 2,
       planoVencimento,
       subscriptionStatus: "trial",
+      utmSource: user.utmSource || null,
+      utmMedium: user.utmMedium || null,
+      utmCampaign: user.utmCampaign || null,
+      utmContent: user.utmContent || null,
+      utmTerm: user.utmTerm || null,
+      fbclid: user.fbclid || null,
+      gclid: user.gclid || null,
+      landingPage: user.landingPage || null,
+      referrer: user.referrer || null,
     }).returning();
 
     try {

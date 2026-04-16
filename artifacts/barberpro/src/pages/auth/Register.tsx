@@ -4,6 +4,7 @@ import { Sparkles, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiUrl } from "@/lib/utils";
+import { getAttributionForCheckout } from "@/lib/tracking";
 
 export default function Register() {
   const { toast } = useToast();
@@ -83,7 +84,7 @@ export default function Register() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ credential: response.credential }),
+        body: JSON.stringify({ credential: response.credential, utm: getAttributionForCheckout() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Falha no cadastro com Google");
