@@ -407,6 +407,9 @@ router.post("/verify-direct-session", requireAuth, async (req: any, res) => {
       planTier: productMeta.tier || null,
       planPeriod: priceMeta.period || session.metadata?.billingPeriod || 'mensal',
       productName: product?.name || null,
+      amountTotal: session.amount_total ?? priceItem?.price?.unit_amount ?? null,
+      currency: (session.currency || priceItem?.price?.currency || 'brl').toUpperCase(),
+      priceId: priceItem?.price?.id || null,
     });
   } catch (error: any) {
     console.error("Verify direct session error:", error);
@@ -429,6 +432,7 @@ router.post("/complete-direct-onboarding", requireAuth, async (req: any, res) =>
       uf,
       tipoEstabelecimento,
       comoSoube,
+      utm,
     } = req.body;
 
     if (!sessionId || !nome || !telefone) {
@@ -497,6 +501,15 @@ router.post("/complete-direct-onboarding", requireAuth, async (req: any, res) =>
       subscriptionPlan: productMeta.tier || null,
       subscriptionPeriod: priceMeta.period || session.metadata?.billingPeriod || 'mensal',
       segmentacao: tipoEstabelecimento || comoSoube ? { tipoEstabelecimento, comoSoube } : null,
+      utmSource: utm?.utmSource || null,
+      utmMedium: utm?.utmMedium || null,
+      utmCampaign: utm?.utmCampaign || null,
+      utmContent: utm?.utmContent || null,
+      utmTerm: utm?.utmTerm || null,
+      fbclid: utm?.fbclid || null,
+      gclid: utm?.gclid || null,
+      landingPage: utm?.landingPage || null,
+      referrer: utm?.referrer || null,
     }).returning();
 
     try {

@@ -52,3 +52,4 @@ export * from "./filiais";
 export * from "./notificacoes";
 export * from "./lgpdConsents";
 export * from "./trialLinks";
+export * from "./campaignEvents";

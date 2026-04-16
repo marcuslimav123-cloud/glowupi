@@ -1,0 +1,113 @@
+Boa pergunta. A primeira versão é um esqueleto sólido, mas para uma campanha real ter performance de verdade, precisamos refinar 7 pontos críticos. Vou direto ao que importa:
+
+1. Definir o "Big Domino" (a quebra de crença central)
+Esse é o conceito mais importante do Russell que ficou de fora. Toda campanha que vende milhões tem UMA crença que precisa ser quebrada. Sem isso, você só está mostrando recursos.
+
+Para o Glow Upi, o Big Domino seria algo como:
+
+"Você não precisa contratar mais gente, baixar preço, nem trabalhar mais horas para faturar 2x. O que separa um salão que fatura R$10k de um que fatura R$30k não é talento — é gestão. E gestão de verdade leva 15 minutos por dia, não 8 horas."
+
+Quando a profissional acredita NISSO, todo o resto (o webinário, a oferta, o software) faz sentido. Sem isso, é só mais um software.
+
+2. Refinar o Avatar (não é "profissional de beleza")
+"Profissional de beleza" é amplo demais. Para a campanha, precisamos de UMA pessoa específica. Eu sugiro começar por:
+
+Avatar Primário — "Carla, a Solo que Cresceu Demais"
+
+28-40 anos, tem 2-5 anos de profissão
+Já saiu do salão dos outros, atende sozinha ou tem 1-2 funcionárias
+Fatura entre R$8k-R$25k/mês
+Anota agendamento no caderninho ou WhatsApp
+Está perdendo cliente por falta de organização
+Sente culpa por não conseguir crescer mais
+Tem medo de "virar empresária" e perder o lado artista
+Por que esse avatar? Tem dor real, tem dinheiro pra pagar, é a maioria do mercado, e a transformação é dramática (de caderninho pra sistema profissional).
+
+Depois você cria avatares secundários (clínica, dona de salão grande, esmalteria) cada um com sua própria campanha.
+
+3. Estruturar o Webinário no formato "Perfect Webinar"
+O Russell tem um roteiro testado pra venda de SaaS. Não é "dar aula bonitinha" — é um roteiro psicológico de 60-75 minutos:
+
+Bloco	Tempo	Objetivo
+Hook + Promessa	5min	"Você vai sair daqui sabendo X. Fica até o final que tem brinde."
+Sua história	10min	Conexão emocional. Por que você criou o Glow Upi.
+Ensino do conceito	25-30min	Os 3 segredos do salão lucrativo. (Aqui você QUEBRA crenças, não ensina táticas)
+Transição soft	3min	"E se eu te mostrasse uma forma de fazer isso sem esforço?"
+Demo do Glow Upi	10min	Só os recursos que provam os 3 segredos
+Stack da oferta	10min	Anual + bônus + bônus + bônus = R$X. Seu preço: R$979.
+Q&A + urgência	10min	"Vagas limitadas, oferta válida por 24h"
+Os "3 Segredos" são o coração. Cada um tem que quebrar uma crença errada e instalar a certa. Exemplos:
+
+Segredo 1: "Por que descontar não é a solução (e o que fazer no lugar)"
+Segredo 2: "Como cobrar mais SEM perder cliente"
+Segredo 3: "O sistema dos salões que dobram em 90 dias"
+4. O "Stack" da Oferta (a parte que mais converte)
+Essa é a hora de "empilhar valor". Em vez de dizer "Plano Anual R$979", você apresenta assim:
+
+✓ Glow Upi Pro Anual (vale R$1.764)
+✓ Onboarding 1:1 com nossa equipe (vale R$497)
+✓ Pack de 100 templates de Stories (vale R$197)
+✓ Curso "Lotando a Agenda em 30 dias" (vale R$497)  
+✓ Comunidade VIP no WhatsApp (vale R$297)
+✓ Garantia de 30 dias dinheiro de volta
+─────────────────────────────────
+Valor total: R$3.252
+Hoje: R$979 (ou 12x R$97,90)
+
+A pessoa não compra um SaaS — compra um pacote de transformação onde o SaaS é só o motor.
+
+5. Sequência de Email (aqui a maioria erra)
+Não basta ter a página, precisa nutrir antes e depois:
+
+Pré-webinário (5 emails):
+
+Dia 0: "Sua vaga está confirmada + entrega do PGMIT"
+Dia 1: "O erro #1 que faz 80% dos salões estagnarem"
+Dia 2: "Caso real: Como Juliana saiu de R$8k pra R$22k em 4 meses"
+Dia 3: "AMANHÃ — bloqueia 1h na sua agenda"
+Dia 4 (manhã): "Em 6h começa. Link aqui."
+Pós-webinário (carrinho aberto, 4 dias):
+
+Dia 0 (após webinário): "Replay + oferta válida por 24h"
+Dia 1: "Dúvidas? Veja as 5 perguntas mais feitas"
+Dia 2: "Última chamada — depoimento + CTA"
+Dia 3 (manhã): "Encerramos hoje às 23h59"
+Quem não comprou (vai pro trial passivo):
+
+Sequência de 14 emails educacionais durante o trial
+6. Tráfego: Comece Pequeno e Validado
+Erro comum: gastar R$10k em ads sem validar. Faz assim:
+
+Fase 1 — Validação (R$30-50/dia, 7 dias):
+
+3 criativos diferentes no Meta Ads
+Públicos quentes primeiro (lookalike de quem já é cliente seu)
+Métrica-alvo: custo por lead < R$8
+Fase 2 — Otimização (R$100-200/dia, 14 dias):
+
+Pega o criativo vencedor
+Testa títulos da landing
+Métrica-alvo: trial ativado < R$40, venda anual < R$300
+Fase 3 — Escala (R$500+/dia):
+
+Só depois que o ROAS estiver previsível
+7. KPIs que Você PRECISA Medir
+Métrica	Meta saudável
+CPL (custo por lead na captação)	R$5-12
+Taxa de show-up no webinário	30-40%
+Taxa de conversão no webinário (anual)	5-15%
+Taxa de ativação do trial passivo	25-40%
+Conversão trial → pago	12-25%
+LTV médio	> 3x CAC
+Sem medir isso, você está cego. O Glow Upi precisa ter um painel admin pra acompanhar essas métricas.
+
+Próximos Passos Recomendados
+Tem 3 caminhos que podemos seguir agora — me diz qual faz mais sentido pra você:
+
+A) Eu gero um documento Word expandido v2 com TODOS esses pontos detalhados (incluindo o roteiro completo do webinário palavra por palavra, os emails escritos, o avatar refinado).
+
+B) Começamos a construir a landing page do PGMIT dentro do sistema (página de captação + entrega do pacote + integração com Brevo pra capturar contatos).
+
+C) Faço primeiro a definição do avatar e o Big Domino numa sessão de pesquisa profunda, com pesquisa de mercado real do nicho de beleza brasileiro, antes de partir pra execução.
+
+Qual te interessa mais?

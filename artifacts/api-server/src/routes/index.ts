@@ -57,6 +57,7 @@ import { getVapidPublicKey } from "../lib/pushNotifications.js";
 import filiaisRouter from "./filiais.js";
 import notificacoesInternasRouter from "./notificacoesInternas.js";
 import trialLinksRouter from "./trialLinks.js";
+import campaignRouter from "./campaign.js";
 
 const router: IRouter = Router();
 
@@ -114,6 +115,7 @@ router.use("/checkout", checkoutRouter);
 router.use("/public", publicRouter);
 router.use("/convites", convitesRouter);
 router.use("/trial-link", trialLinksRouter);
+router.use("/campaign", campaignRouter);
 router.use("/barbearias/:barbeariaId/bloqueios", bloqueiosRouter);
 router.use("/barbearias/:barbeariaId/tipos", tiposRouter);
 router.use("/barbearias/:barbeariaId/cupons", cuponsRouter);

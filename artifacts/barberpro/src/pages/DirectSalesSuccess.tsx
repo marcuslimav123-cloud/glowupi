@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CheckCircle2, Loader2, MapPin, Target, ArrowRight, ChevronLeft, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiUrl, formatPhone, stripPhone, APP_NAME } from "@/lib/utils";
+import { initTracking, trackPurchase, getAttributionForCheckout } from "@/lib/tracking";
 
 const ESTADOS_BR = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
@@ -44,6 +45,7 @@ export default function DirectSalesSuccess() {
   });
 
   useEffect(() => {
+    initTracking();
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get("session_id");
     if (!sessionId) {
@@ -69,6 +71,19 @@ export default function DirectSalesSuccess() {
         return;
       }
       setSessionData({ ...data, sessionId });
+      try {
+        const valueCents = typeof data.amountTotal === "number"
+          ? data.amountTotal
+          : (data.unitAmount || 0);
+        trackPurchase({
+          valueCents,
+          currency: (data.currency || "BRL").toUpperCase(),
+          fbParams: {
+            content_name: data.productName || "subscription",
+            content_ids: [data.priceId || data.subscriptionId].filter(Boolean),
+          },
+        });
+      } catch {}
       setStep("quiz");
     } catch (err) {
       setStep("error");
@@ -120,6 +135,7 @@ export default function DirectSalesSuccess() {
           ...locationData,
           telefone: stripPhone(locationData.telefone),
           ...quizData,
+          utm: getAttributionForCheckout(),
         }),
       });
       const data = await res.json();

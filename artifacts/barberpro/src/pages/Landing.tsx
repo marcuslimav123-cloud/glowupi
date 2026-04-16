@@ -7,17 +7,10 @@ import {
   ChevronRight, Percent, Timer, BadgeCheck, Flame,
 } from "lucide-react";
 import { apiUrl } from "@/lib/utils";
-
-const FB_PIXEL_ID = "PIXEL_ID_AQUI";
+import { initTracking, trackLead, trackInitiateCheckout } from "@/lib/tracking";
 
 const PROMO_MONTHLY_PRICE_ID = "price_1TMFmZ75EBjZCK7yUYlgxTIc";
 const PROMO_ANNUAL_PRICE_ID = "price_1TMFmZ75EBjZCK7ytXUNXdJA";
-
-function fbq(...args: any[]) {
-  if (typeof window !== "undefined" && (window as any).fbq) {
-    (window as any).fbq(...args);
-  }
-}
 
 function useScrolled(threshold = 20) {
   const [scrolled, setScrolled] = useState(false);
@@ -227,26 +220,7 @@ export default function Landing() {
   const scrolled = useScrolled();
 
   useEffect(() => {
-    if (FB_PIXEL_ID !== "PIXEL_ID_AQUI") {
-      const script = document.createElement("script");
-      script.innerHTML = `
-        !function(f,b,e,v,n,t,s)
-        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-        n.queue=[];t=b.createElement(e);t.async=!0;
-        t.src=v;s=b.getElementsByTagName(e)[0];
-        s.parentNode.insertBefore(t,s)}(window, document,'script',
-        'https://connect.facebook.net/en_US/fbevents.js');
-        fbq('init', '${FB_PIXEL_ID}');
-        fbq('track', 'PageView');
-      `;
-      document.head.appendChild(script);
-
-      const noscript = document.createElement("noscript");
-      noscript.innerHTML = `<img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=${FB_PIXEL_ID}&ev=PageView&noscript=1"/>`;
-      document.body.appendChild(noscript);
-    }
+    initTracking();
   }, []);
 
   useEffect(() => {
@@ -308,7 +282,11 @@ export default function Landing() {
       }
       const data = await res.json();
       if (data.url) {
-        fbq("track", "InitiateCheckout", { value: billingPeriod === "anual" ? 979 : 97.9, currency: "BRL" });
+        trackInitiateCheckout({
+          valueCents: billingPeriod === "anual" ? 97900 : 9790,
+          currency: "BRL",
+          fbParams: { content_name: `promo_fundadoras_${billingPeriod}` },
+        });
         window.location.href = data.url;
       } else {
         alert("Erro ao iniciar pagamento: " + (data.error || "Tente novamente"));
@@ -321,7 +299,7 @@ export default function Landing() {
   };
 
   const handleSubscribe = (billingPeriod: BillingPeriod) => {
-    fbq("track", "Lead", { content_name: `promo_fundadoras_${billingPeriod}` });
+    trackLead({ fbParams: { content_name: `promo_fundadoras_${billingPeriod}` } });
     if (!authToken) {
       redirectToGoogleAuth(billingPeriod);
       return;

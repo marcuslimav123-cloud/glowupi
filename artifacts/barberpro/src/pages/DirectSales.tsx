@@ -22,6 +22,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { APP_NAME, apiUrl } from "@/lib/utils";
+import { initTracking, trackLead, trackInitiateCheckout } from "@/lib/tracking";
 import HeroVideo from "@/components/hero-video/HeroVideo";
 
 const PRICING_MODE_ENDPOINT = `${import.meta.env.BASE_URL}api/checkout/pricing-config`.replace(/\/\//g, '/');
@@ -293,6 +294,12 @@ export default function DirectSales() {
       console.log("[PDVD] Response data:", data);
       if (data.url) {
         console.log("[PDVD] Redirecting to Stripe:", data.url.substring(0, 60) + "...");
+        const valueCents = price.unit_amount || 0;
+        trackInitiateCheckout({
+          valueCents,
+          currency: (price.currency || "brl").toUpperCase(),
+          fbParams: { content_name: `${tier}_${billingPeriod}` },
+        });
         window.location.href = data.url;
         return true;
       } else {
@@ -310,12 +317,17 @@ export default function DirectSales() {
   };
 
   const handleSubscribe = async (tier: string, billingPeriod: BillingPeriod) => {
+    trackLead({ fbParams: { content_name: `${tier}_${billingPeriod}` } });
     if (!authToken) {
       redirectToGoogleAuth(tier, billingPeriod);
       return;
     }
     await proceedToCheckout(tier, billingPeriod);
   };
+
+  useEffect(() => {
+    initTracking();
+  }, []);
 
   const smoothScroll = useCallback((e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();

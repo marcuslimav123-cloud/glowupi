@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { apiUrl, APP_NAME } from "@/lib/utils";
-import { Settings, Save, ToggleLeft, ToggleRight, Info, Shield, FileText, Gift } from "lucide-react";
+import { Settings, Save, ToggleLeft, ToggleRight, Info, Shield, FileText, Gift, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -170,6 +170,10 @@ export default function AdminSettings() {
   const [savingTrial, setSavingTrial] = useState(false);
   const [trialDays, setTrialDays] = useState("7");
   const [savingTrialDays, setSavingTrialDays] = useState(false);
+  const [fbPixelId, setFbPixelId] = useState("");
+  const [savingFbPixel, setSavingFbPixel] = useState(false);
+  const [gaMeasurementId, setGaMeasurementId] = useState("");
+  const [savingGa, setSavingGa] = useState(false);
   const [privacyPolicy, setPrivacyPolicy] = useState("");
   const [termsOfUse, setTermsOfUse] = useState("");
   const [savingPrivacy, setSavingPrivacy] = useState(false);
@@ -184,6 +188,8 @@ export default function AdminSettings() {
         setPricingMode(data.pricing_mode || "all_plans");
         setFreeTrialEnabled(data.free_trial_enabled !== "false");
         setTrialDays(data.trial_days || "7");
+        setFbPixelId(data.fb_pixel_id || "");
+        setGaMeasurementId(data.ga_measurement_id || "");
         setPrivacyPolicy(data.lgpd_privacy_policy || DEFAULT_PRIVACY_POLICY);
         setTermsOfUse(data.lgpd_terms_of_use || DEFAULT_TERMS_OF_USE);
       })
@@ -384,6 +390,64 @@ export default function AdminSettings() {
                   </div>
                 </div>
               )}
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-5">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="h-10 w-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                  <Megaphone className="h-5 w-5 text-blue-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-display text-white">Pixels e Tracking</h2>
+                  <p className="text-sm text-slate-400">Configure os IDs de tracking para a landing page (instalados automaticamente em /pdvd e /)</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Facebook Pixel ID</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={fbPixelId}
+                    onChange={(e) => setFbPixelId(e.target.value.trim())}
+                    placeholder="ex: 1234567890123456"
+                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <Button
+                    onClick={() => saveConfig("fb_pixel_id", fbPixelId, setSavingFbPixel, "Facebook Pixel")}
+                    disabled={savingFbPixel}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Save className="h-4 w-4" />
+                    {savingFbPixel ? "Salvando..." : "Salvar"}
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">Encontrado no Gerenciador de Eventos do Facebook. Eventos rastreados: PageView, Lead, InitiateCheckout, Purchase.</p>
+              </div>
+
+              <div className="border-t border-white/10 pt-5">
+                <label className="block text-sm font-medium text-white mb-2">Google Analytics Measurement ID</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={gaMeasurementId}
+                    onChange={(e) => setGaMeasurementId(e.target.value.trim())}
+                    placeholder="ex: G-XXXXXXXXXX"
+                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <Button
+                    onClick={() => saveConfig("ga_measurement_id", gaMeasurementId, setSavingGa, "Google Analytics")}
+                    disabled={savingGa}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Save className="h-4 w-4" />
+                    {savingGa ? "Salvando..." : "Salvar"}
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">Opcional. Configure se quiser análise complementar via Google Analytics 4.</p>
+              </div>
             </div>
 
             <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-6">

@@ -15,6 +15,7 @@ import {
   ExternalLink,
   History,
   Link2,
+  Megaphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -23,6 +24,7 @@ const ADMIN_NAV = [
   { name: "Assinantes", href: "/admin/assinantes", icon: Users },
   { name: "Configurações", href: "/admin/configuracoes", icon: Settings },
   { name: "Receita", href: "/admin/receita", icon: TrendingUp },
+  { name: "Campanha", href: "/admin/campanha", icon: Megaphone },
   { name: "Logs", href: "/admin/logs", icon: History },
   { name: "LGPD", href: "/admin/lgpd", icon: Shield },
   { name: "Links de Trial", href: "/admin/trial-links", icon: Link2 },

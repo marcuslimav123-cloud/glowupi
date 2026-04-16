@@ -104,6 +104,7 @@ const AdminTenants = React.lazy(() => import("@/pages/admin/AdminTenants"));
 const AdminSettings = React.lazy(() => import("@/pages/admin/AdminSettings"));
 const AdminRevenue = React.lazy(() => import("@/pages/admin/AdminRevenue"));
 const AdminLogs = React.lazy(() => import("@/pages/admin/AdminLogs"));
+const AdminCampanha = React.lazy(() => import("@/pages/admin/AdminCampanha"));
 const AdminLgpdConsents = React.lazy(() => import("@/pages/admin/AdminLgpdConsents"));
 const AdminTrialLinks = React.lazy(() => import("@/pages/admin/AdminTrialLinks"));
 const TrialRegister = React.lazy(() => import("@/pages/TrialRegister"));
@@ -234,6 +235,7 @@ function Router() {
       <Route path="/admin/assinantes" component={AdminTenants} />
       <Route path="/admin/configuracoes" component={AdminSettings} />
       <Route path="/admin/receita" component={AdminRevenue} />
+      <Route path="/admin/campanha" component={AdminCampanha} />
       <Route path="/admin/logs" component={AdminLogs} />
       <Route path="/admin/lgpd" component={AdminLgpdConsents} />
       <Route path="/admin/trial-links" component={AdminTrialLinks} />
