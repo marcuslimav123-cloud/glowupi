@@ -1,54 +1,154 @@
 import nodemailer from "nodemailer";
 
+const BREVO_API_KEY = process.env.BREVO_API_KEY || "";
 const GMAIL_USER = process.env.GMAIL_USER || "marcuslimav123@gmail.com";
 const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || "";
+const BREVO_API_URL = "https://api.brevo.com/v3";
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: GMAIL_USER,
-    pass: GMAIL_APP_PASSWORD,
-  },
-});
+const gmailTransporter = GMAIL_APP_PASSWORD
+  ? nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
+    })
+  : null;
 
 interface SendEmailParams {
   to: { email: string; name?: string }[];
   subject: string;
   htmlContent: string;
   sender?: { name: string; email: string };
+  tags?: string[];
+}
+
+async function sendViaBrevo(params: SendEmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const body: any = {
+    sender: params.sender || { name: "Glow Upi", email: "marcuslimav123@gmail.com" },
+    to: params.to,
+    subject: params.subject,
+    htmlContent: params.htmlContent,
+  };
+  if (params.tags?.length) body.tags = params.tags;
+
+  const res = await fetch(`${BREVO_API_URL}/smtp/email`, {
+    method: "POST",
+    headers: {
+      "api-key": BREVO_API_KEY,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.text();
+    console.error(`[Brevo] API error ${res.status}:`, errBody);
+    return { success: false, error: `Brevo API ${res.status}: ${errBody}` };
+  }
+
+  const data = await res.json();
+  console.log(`[Brevo] Email sent to ${params.to.map(r => r.email).join(", ")}, messageId=${data.messageId}`);
+  return { success: true, messageId: data.messageId };
+}
+
+async function sendViaGmail(params: SendEmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  if (!gmailTransporter) {
+    return { success: false, error: "Gmail SMTP não configurado" };
+  }
+  const senderName = params.sender?.name || "Glow Upi";
+  const recipients = params.to.map(r => r.name ? `"${r.name}" <${r.email}>` : r.email).join(", ");
+  const info = await gmailTransporter.sendMail({
+    from: `"${senderName}" <${GMAIL_USER}>`,
+    to: recipients,
+    subject: params.subject,
+    html: params.htmlContent,
+  });
+  console.log(`[Gmail] Email sent to ${recipients}, messageId=${info.messageId}`);
+  return { success: true, messageId: info.messageId };
 }
 
 export async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  if (!GMAIL_APP_PASSWORD) {
-    console.error("[Email] GMAIL_APP_PASSWORD not configured");
-    return { success: false, error: "Senha de app do Gmail não configurada" };
-  }
-
-  const senderName = params.sender?.name || "Glow Upi";
-  const recipients = params.to.map(r => r.name ? `"${r.name}" <${r.email}>` : r.email).join(", ");
-
   try {
-    const info = await transporter.sendMail({
-      from: `"${senderName}" <${GMAIL_USER}>`,
-      to: recipients,
-      subject: params.subject,
-      html: params.htmlContent,
-    });
+    if (BREVO_API_KEY) {
+      const result = await sendViaBrevo(params);
+      if (result.success) return result;
+      console.warn("[Email] Brevo failed, trying Gmail fallback:", result.error);
+    }
 
-    console.log(`[Email] Sent to ${recipients}, messageId=${info.messageId}`);
-    return { success: true, messageId: info.messageId };
+    return await sendViaGmail(params);
   } catch (err: any) {
-    console.error(`[Email] Failed to send to ${recipients}:`, err.message);
+    console.error(`[Email] All providers failed:`, err.message);
     return { success: false, error: err.message };
   }
 }
 
+export async function addBrevoContact(email: string, attributes?: Record<string, any>, listIds?: number[]): Promise<{ success: boolean; error?: string }> {
+  if (!BREVO_API_KEY) return { success: false, error: "Brevo API key not configured" };
+
+  const body: any = { email };
+  if (attributes) body.attributes = attributes;
+  if (listIds?.length) body.listIds = listIds;
+  body.updateEnabled = true;
+
+  const res = await fetch(`${BREVO_API_URL}/contacts`, {
+    method: "POST",
+    headers: {
+      "api-key": BREVO_API_KEY,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok && res.status !== 204) {
+    const errBody = await res.text();
+    console.error(`[Brevo] Contact error ${res.status}:`, errBody);
+    return { success: false, error: errBody };
+  }
+
+  console.log(`[Brevo] Contact added/updated: ${email}`);
+  return { success: true };
+}
+
+export async function getBrevoLists(): Promise<any[]> {
+  if (!BREVO_API_KEY) return [];
+  const res = await fetch(`${BREVO_API_URL}/contacts/lists?limit=50&offset=0`, {
+    headers: { "api-key": BREVO_API_KEY, Accept: "application/json" },
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.lists || [];
+}
+
 export async function getEmailStats() {
+  if (BREVO_API_KEY) {
+    try {
+      const res = await fetch(`${BREVO_API_URL}/account`, {
+        headers: { "api-key": BREVO_API_KEY, Accept: "application/json" },
+      });
+      if (res.ok) {
+        const account = await res.json();
+        const plan = account.plan?.[0] || {};
+        return {
+          dia: new Date().toISOString().split("T")[0],
+          total: plan.credits ?? 0,
+          limite: plan.creditsType === "sendLimit" ? plan.credits : 300,
+          contas: [
+            { provider: "Brevo API", status: "active", email: account.email },
+            ...(GMAIL_APP_PASSWORD ? [{ provider: "Gmail SMTP (fallback)", status: "configured" }] : []),
+          ],
+        };
+      }
+    } catch {}
+  }
+
   return {
     dia: new Date().toISOString().split("T")[0],
     total: 0,
     limite: 500,
-    contas: [{ provider: "Gmail SMTP", status: GMAIL_APP_PASSWORD ? "configured" : "missing password" }],
+    contas: [
+      { provider: "Brevo API", status: BREVO_API_KEY ? "configured" : "missing key" },
+      { provider: "Gmail SMTP", status: GMAIL_APP_PASSWORD ? "configured" : "missing password" },
+    ],
   };
 }
 

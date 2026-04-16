@@ -58,7 +58,7 @@ The design adopts a "luxury clinic aesthetic" with a color palette of warm gold,
 - **Stripe:** Payment processing, subscription management, and billing.
 - **PostgreSQL:** Primary database.
 - **Google Sign-In API:** User authentication.
-- **Brevo (Sendinblue):** Transactional email sending with round-robin API key rotation and email template management.
+- **Brevo (Sendinblue):** Primary email provider via REST API (`BREVO_API_KEY`). Handles transactional emails, contact management, and campaign lists. Gmail SMTP serves as automatic fallback if Brevo fails. Functions: `sendEmail()` (auto-routes to Brevo first), `addBrevoContact()` (add/update contacts with attributes and list assignment), `getBrevoLists()` (list all contact lists). File: `artifacts/api-server/src/lib/brevo.ts`.
 - **web-push:** Web Push Protocol library for sending push notifications to browsers via VAPID.
 - **ViaCEP:** Address auto-fill.
 - **Recharts:** Data visualization.
