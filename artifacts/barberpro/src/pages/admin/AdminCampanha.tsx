@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { apiUrl } from "@/lib/utils";
-import { Megaphone, TrendingDown, TrendingUp, Users, Eye, MousePointerClick, ShoppingCart, DollarSign, RefreshCw, Loader2 } from "lucide-react";
+import { Megaphone, TrendingDown, TrendingUp, Users, Eye, MousePointerClick, ShoppingCart, DollarSign, RefreshCw, Loader2, LineChart as LineChartIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
 
 interface SourceRow {
   source?: string;
@@ -180,6 +181,64 @@ export default function AdminCampanha() {
               <FunnelCard icon={MousePointerClick} label="Leads" value={metrics.totals.lead} unique={metrics.uniqueTotals.lead} color="bg-purple-500/20 text-purple-400" />
               <FunnelCard icon={ShoppingCart} label="Checkouts" value={metrics.totals.checkout} unique={metrics.uniqueTotals.checkout} color="bg-amber-500/20 text-amber-400" />
               <FunnelCard icon={DollarSign} label="Compras" value={metrics.totals.purchase} unique={metrics.uniqueTotals.purchase} color="bg-green-500/20 text-green-400" />
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-lg font-display text-white flex items-center gap-2">
+                  <LineChartIcon className="h-5 w-5 text-primary" /> Funil ao longo do tempo
+                </h2>
+                <p className="text-xs text-slate-500">Eventos por dia ({metrics.days}d)</p>
+              </div>
+              {metrics.daily.length === 0 ? (
+                <div className="h-[260px] flex items-center justify-center text-sm text-slate-500">
+                  Nenhum evento no período
+                </div>
+              ) : (
+                <div className="h-[260px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={metrics.daily.map(d => ({
+                        ...d,
+                        label: new Date(d.day + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+                      }))}
+                      margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
+                    >
+                      <defs>
+                        <linearGradient id="gradPageview" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.5} />
+                          <stop offset="100%" stopColor="#60a5fa" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="gradLead" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.5} />
+                          <stop offset="100%" stopColor="#a78bfa" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="gradCheckout" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.5} />
+                          <stop offset="100%" stopColor="#fbbf24" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="gradPurchase" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#34d399" stopOpacity={0.5} />
+                          <stop offset="100%" stopColor="#34d399" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                      <XAxis dataKey="label" stroke="rgba(255,255,255,0.35)" fontSize={11} tickLine={false} axisLine={false} />
+                      <YAxis stroke="rgba(255,255,255,0.35)" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
+                      <RechartsTooltip
+                        contentStyle={{ backgroundColor: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", fontSize: "13px", color: "#fff" }}
+                        labelStyle={{ color: "#cbd5e1", marginBottom: 4 }}
+                        formatter={(value: any, name: any) => [formatNumber(Number(value)), name]}
+                      />
+                      <Legend wrapperStyle={{ fontSize: "12px", color: "#cbd5e1" }} iconType="circle" />
+                      <Area type="monotone" dataKey="pageview" name="Visitas" stroke="#60a5fa" strokeWidth={2} fill="url(#gradPageview)" />
+                      <Area type="monotone" dataKey="lead" name="Leads" stroke="#a78bfa" strokeWidth={2} fill="url(#gradLead)" />
+                      <Area type="monotone" dataKey="checkout" name="Checkouts" stroke="#fbbf24" strokeWidth={2} fill="url(#gradCheckout)" />
+                      <Area type="monotone" dataKey="purchase" name="Compras" stroke="#34d399" strokeWidth={2} fill="url(#gradPurchase)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
