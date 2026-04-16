@@ -42,3 +42,9 @@ id = "M6k06Wf0Jdc2Ju1pe2GQL"
 uri = "file://attached_assets/Estrategia_PGMIT_Funil_Linchpin_GlowUpi.docx"
 type = "word_document"
 title = "Estratégia PGMIT + Funil Linchpin — Glow Upi"
+
+[[outputs]]
+id = "5KIlN1gPKQ9ZBWzSmzPeZ"
+uri = "file://generated_docs/PGMIT_v2_Refinamento_Estrategico.docx"
+type = "word_document"
+title = "PGMIT v2 — Refinamento Estratégico (Word)"
