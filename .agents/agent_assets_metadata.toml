@@ -36,3 +36,9 @@ id = "C7m1mDlvU31UybpiPF48P"
 uri = "file://Apresentacao_GlowUpi_Clinica_Estetica.docx"
 type = "word_document"
 title = "Apresentação Glow Upi - Clínica de Estética"
+
+[[outputs]]
+id = "M6k06Wf0Jdc2Ju1pe2GQL"
+uri = "file://attached_assets/Estrategia_PGMIT_Funil_Linchpin_GlowUpi.docx"
+type = "word_document"
+title = "Estratégia PGMIT + Funil Linchpin — Glow Upi"
