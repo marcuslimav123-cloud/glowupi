@@ -1,0 +1,46 @@
+#	Onde	Problema
+1	Cadastro de Serviços	Aceita duração 0 ou negativa (sem trava no servidor)
+2	Cadastro de Serviços	Aceita comissão acima de 100% via input manual
+3	Profissional	Pode ter horário de trabalho fora do horário do estabelecimento (salva sem validar — só "esconde" depois)
+4	Funcionamento	Pode salvar intervalo (almoço) com início depois do fim, ou fora da janela aberto/fechado
+5	Agendamento (API direta)	Permite marcar em dia/horário que o estabelecimento está fechado (só valida parâmetros antigos, ignora a configuração nova de horário por dia da semana)
+6	Agendamento (API direta)	Não valida se está dentro da jornada do profissional
+7	Comanda / Checkout	Aceita valor negativo e permite pagar duas vezes o mesmo agendamento (gera duas comandas)
+8	Cliente	Permite cadastrar dois clientes com mesmo telefone (a trava só liga se um parâmetro escondido estiver "Sim")
+9	Parâmetros vs Funcionamento	Existem agenda_horario_inicio/fim em "Parâmetros" que conflitam com a tela de Funcionamento — se mexer em um, dessincroniza do outro
+🔁 Duplicações na interface
+#	Onde	Problema
+10	Horário de Funcionamento	Aparece em Meu Estúdio E em Configurações → Funcionamento (com regras diferentes — confunde o dono)
+11	Logo	Pode trocar no menu lateral E em Meu Estúdio (sem indicar qual é a "fonte da verdade")
+12	Estoque	Aparece em "Financeiro → Estoque" E em "Cadastros → Produtos/Estoque" (mesma tela, dois caminhos)
+13	Comissão	Existe no serviço E no profissional, sem explicar que o do profissional sobrescreve o do serviço
+📝 Português e termos residuais
+#	Onde	Problema
+14	Várias telas	Termo "barbearia" ainda aparece em mensagens, toasts, placeholders, mensagens de erro (apesar do produto ser unissex/feminino)
+15	Equipe	Estado vazio diz "cadastre os profissionais e serviços da sua barbearia"
+16	Onboarding	Step interno usa useCreateBarbearia aparecendo em logs
+17	Serviços	Ícone padrão é uma tesoura (Scissors) — não combina com unha/sobrancelha/estética
+18	Cupons	"Usos Totais" deveria ser "Total de Usos"
+19	Botão "Buscar CEP"	Quando dá erro, não avisa nada na tela
+🚧 Fluxos quebrados / UX
+#	Onde	Problema
+20	Convite de funcionário	Se a pessoa não tem "Perfil de Acesso" criado antes, o dono trava em loop (precisa sair, ir em outra tela, criar perfil, voltar)
+21	Página pública (/s/slug)	Se o slug ainda não foi salvo, leva a 404 silencioso
+22	Sincronização de horário	Não há trava: se o dono restringir o funcionamento, profissionais existentes podem ficar com horário inválido
+📧 Sistema de e-mails (do jeito que você quer)
+Hoje existe apenas uma ferramenta de teste (manda só pro próprio dono pra ver como o template fica) e os e-mails automáticos (lembrete 1 dia antes, confirmação, boas-vindas).
+
+O que precisa ser construído pra atender seu pedido:
+
+📬 Nova área "E-mail Marketing" dentro do painel do dono
+🔒 Desativada nativamente — toggle "Ativar envio de e-mails para meus clientes" (com aviso sobre LGPD/anti-spam)
+✅ Seleção de clientes (lista com filtros e checkboxes — selecionar todos / só ativos / só aniversariantes / etc)
+✏️ Composer com assunto + corpo (com variáveis tipo {{nome_cliente}}, e botão "enviar de teste pra mim antes")
+⏱️ Limites diários por estabelecimento:
+100 e-mails/dia em modo "envio em massa"
+200 e-mails/dia em modo "manual um por um"
+Sem limite para e-mails transacionais (confirmação de agendamento, lembretes programados)
+📊 Painel de histórico: quantos enviados, abertos, falhas, créditos restantes do dia
+🛡️ Backend: contador diário por barbearia, reset à meia-noite, bloqueio com mensagem clara quando estourar, fila pra dosar envios e não derrubar o IP da Brevo
+📬 Inclusão automática de link "descadastrar" (LGPD — obrigatório)
+📋 Tabela email_campaigns (campanha) + email_campaign_recipients (1 linha por destinatário com status entregue/aberto/falha) + email_daily_quota (contador)
