@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit2, Trash2, Users, Award, ToggleLeft, ToggleRight, Clock, Calendar, Scissors, Check, User, Phone } from "lucide-react";
+import { Plus, Edit2, Trash2, Users, Award, ToggleLeft, ToggleRight, Clock, Calendar, Sparkles, Check, User, Phone } from "lucide-react";
 import { formatCurrency, formatPhone } from "@/lib/utils";
 import { ImageUpload } from "@/components/ImageUpload";
 
@@ -240,12 +240,15 @@ function ProfForm({
             required placeholder={tipo === "percentual" ? "40" : "30.00"}
             className="bg-background"
           />
+          <p className="text-[11px] text-muted-foreground leading-snug">
+            Comissão padrão deste profissional. Pode ser sobrescrita por serviço na lista abaixo.
+          </p>
         </div>
       </div>
 
       <div className="border-t border-border pt-4">
         <Label className="flex items-center gap-2 text-sm font-medium mb-3">
-          <Scissors className="h-4 w-4 text-primary" />
+          <Sparkles className="h-4 w-4 text-primary" />
           Serviços que atende
         </Label>
         {activeServicos.length === 0 ? (
@@ -513,7 +516,7 @@ export default function Profissionais() {
                 <div className="flex flex-wrap gap-1.5 mt-1">
                   {p.servicoIds && p.servicoIds.length > 0 && (
                     <Badge variant="outline" className="text-[10px] h-5 bg-primary/5 border-primary/20 text-primary">
-                      <Scissors className="h-2.5 w-2.5 mr-1" />
+                      <Sparkles className="h-2.5 w-2.5 mr-1" />
                       {p.servicoIds.length} serviço(s)
                     </Badge>
                   )}

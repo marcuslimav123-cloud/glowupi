@@ -104,7 +104,7 @@ export default function Cupons() {
         <Card><CardContent className="p-5">
           <div className="flex items-center gap-3 mb-2">
             <div className="h-9 w-9 rounded-lg bg-orange-500/10 flex items-center justify-center"><Ticket className="h-5 w-5 text-orange-500" /></div>
-            <span className="text-sm text-muted-foreground">Usos Totais</span>
+            <span className="text-sm text-muted-foreground">Total de usos</span>
           </div>
           <p className="text-3xl font-bold text-orange-500">{list.reduce((s, c) => s + (c.usoAtual || 0), 0)}</p>
         </CardContent></Card>

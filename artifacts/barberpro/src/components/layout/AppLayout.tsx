@@ -3,8 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscriptionGuard } from "@/hooks/useSubscriptionGuard";
 import { cn } from "@/lib/utils";
-import { LogoUpload } from "@/components/LogoUpload";
-import { useUpdateBarbearia, getGetCurrentUserQueryKey } from "@workspace/api-client-react";
+import { getGetCurrentUserQueryKey } from "@workspace/api-client-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiUrl } from "@/lib/utils";
 import { 
@@ -158,7 +157,6 @@ const NAV_ITEMS: NavItem[] = [
       { name: "Entrada/Saída", href: "/financeiro/movimentacoes", icon: ArrowUpDown },
       { name: "Comissões", href: "/financeiro/comissoes", icon: Percent },
       { name: "Conta do Cliente", href: "/financeiro/conta-cliente", icon: Users },
-      { name: "Estoque", href: "/gestao/produtos", icon: Package },
       { name: "Fluxo de Caixa", href: "/financeiro/fluxo", icon: TrendingUp },
       { name: "Conta Profissional", href: "/financeiro/conta-profissional", icon: UsersRound },
       { name: "Caixinha", href: "/financeiro/caixinha", icon: Wallet },
@@ -500,7 +498,7 @@ const CollapsibleGroup = React.memo(function CollapsibleGroup({ item, location, 
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { user, logout, isLoading, barbeariaId, role, perfilPermissoes, logoUrl, barbeariaNome, isDono, barbeariaSlug } = useAuth();
+  const { user, logout, isLoading, barbeariaId, role, perfilPermissoes, logoUrl, barbeariaNome, barbeariaSlug } = useAuth();
   const { canAccess, status, shouldShowUpgrade, trialDaysLeft } = useSubscriptionGuard();
 
   const basePath = import.meta.env.BASE_URL || "/";
@@ -515,17 +513,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [showTutorial, setShowTutorial] = React.useState(false);
   const [sidebarSearch, setSidebarSearch] = React.useState("");
   const mainContentRef = React.useRef<HTMLDivElement>(null);
-  const updateBarbearia = useUpdateBarbearia();
   const queryClient = useQueryClient();
-
-  const handleLogoChange = React.useCallback(async (url: string | null) => {
-    try {
-      await updateBarbearia.mutateAsync({ data: { logoUrl: url } });
-      queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() });
-    } catch (err) {
-      console.error("Erro ao atualizar logo:", err);
-    }
-  }, [updateBarbearia, queryClient]);
 
   React.useEffect(() => {
     if (mainContentRef.current) {
@@ -747,22 +735,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {barbeariaNome || APP_NAME}
           </div>
           <div className="px-4 pb-4">
-            {isDono ? (
-              <LogoUpload value={logoUrl} onChange={handleLogoChange} />
-            ) : (
-              <div
-                className="w-full rounded-lg overflow-hidden bg-muted border border-border"
-                style={{ aspectRatio: "16/9" }}
-              >
-                {logoUrl ? (
-                  <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <img src="/logo-icon.png" alt={APP_NAME} className="h-14 w-14 object-contain opacity-60" />
-                  </div>
-                )}
-              </div>
-            )}
+            <div
+              className="w-full rounded-lg overflow-hidden bg-muted border border-border"
+              style={{ aspectRatio: "16/9" }}
+            >
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <img src="/logo-icon.png" alt={APP_NAME} className="h-14 w-14 object-contain opacity-60" />
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
   UsersRound, Plus, Trash2, Copy, Check, Mail, Send, X, Shield, RefreshCw,
-  ArrowUpCircle, AlertTriangle, UserPlus, UserCheck, User, ChevronRight, Link2,
+  ArrowUpCircle, AlertTriangle, UserPlus, UserCheck, User, ChevronRight, Link2, Loader2,
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -83,6 +83,7 @@ export default function Equipe() {
   const [copiedToken, setCopiedToken] = useState<number | null>(null);
   const [resendingId, setResendingId] = useState<number | null>(null);
   const [showGenericInvite, setShowGenericInvite] = useState(false);
+  const [creatingDefaultPerfil, setCreatingDefaultPerfil] = useState(false);
 
   const rawPlan = ((user as any)?.barbearia?.subscriptionPlan || (user as any)?.barbearia?.planoNome || "").toLowerCase().replace(/\s+/g, "_");
   const isTrial = (user as any)?.barbearia?.subscriptionStatus === "trial";
@@ -136,6 +137,46 @@ export default function Equipe() {
     setInviteEmail("");
     setEnviarEmail(true);
     setShowGenericInvite(true);
+  }
+
+  async function createDefaultColaboradorPerfil() {
+    if (!barbeariaId) return;
+    setCreatingDefaultPerfil(true);
+    try {
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/perfis-acesso`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          descricao: "Colaborador básico",
+          tipo: "web",
+          permissoes: [
+            "dashboard", "agenda", "comandas",
+            "clientes", "servicos",
+            "dados_usuario", "senha_acesso",
+          ],
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || err.message || "Falha ao criar perfil");
+      }
+      const novo = await res.json();
+      const perfilNormalizado: PerfilAcesso = {
+        id: novo.id,
+        descricao: novo.descricao,
+        tipo: novo.tipo,
+        permissoes: novo.permissoes || [],
+        ativo: novo.ativo ?? true,
+      };
+      setPerfis(prev => [...prev, perfilNormalizado]);
+      setInvitePerfilId(String(perfilNormalizado.id));
+      toast({ title: "Perfil criado!", description: "Perfil 'Colaborador básico' pronto para uso." });
+    } catch (err: any) {
+      toast({ title: "Erro ao criar perfil", description: err.message, variant: "destructive" });
+    } finally {
+      setCreatingDefaultPerfil(false);
+    }
   }
 
   function closeInviteForm() {
@@ -481,16 +522,36 @@ export default function Equipe() {
                     Perfil de Acesso <span className="text-red-500">*</span>
                   </label>
                   {webPerfis.length === 0 ? (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 flex items-start gap-2">
-                      <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-[13px] text-amber-800 font-medium">Nenhum perfil criado ainda</p>
-                        <p className="text-[12px] text-amber-700 mt-0.5">
-                          Crie um perfil de acesso antes de convidar.{" "}
-                          <button type="button" className="underline font-medium" onClick={() => navigate("/configuracoes/acessos")}>
-                            Criar agora
-                          </button>
-                        </p>
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-[13px] text-amber-800 font-medium">Nenhum perfil criado ainda</p>
+                          <p className="text-[12px] text-amber-700 mt-0.5">
+                            Crie um perfil de acesso antes de convidar. Você pode criar um perfil padrão "Colaborador básico" agora ou montar um personalizado.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 pl-6">
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="rounded-lg h-8 text-[12px] gap-1.5"
+                          onClick={createDefaultColaboradorPerfil}
+                          disabled={creatingDefaultPerfil}
+                        >
+                          {creatingDefaultPerfil ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Shield className="h-3.5 w-3.5" />}
+                          {creatingDefaultPerfil ? "Criando..." : "Criar perfil 'Colaborador básico' agora"}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="rounded-lg h-8 text-[12px]"
+                          onClick={() => navigate("/configuracoes/acessos")}
+                        >
+                          Personalizar
+                        </Button>
                       </div>
                     </div>
                   ) : (

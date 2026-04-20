@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Store, Scissors, Clock, Users, ChevronRight, ChevronLeft, Check,
+  Store, Clock, Users, ChevronRight, ChevronLeft, Check,
   Plus, Trash2, Loader2, Sparkles, Star, Share2, Download, ArrowRight, PartyPopper
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -14,7 +14,7 @@ import { apiUrl, formatPhone, stripPhone } from "@/lib/utils";
 
 const STEPS = [
   { id: 1, label: "Seu Negócio", icon: Store, subtitle: "Informações básicas" },
-  { id: 2, label: "Serviços", icon: Scissors, subtitle: "O que você oferece" },
+  { id: 2, label: "Serviços", icon: Sparkles, subtitle: "O que você oferece" },
   { id: 3, label: "Horários", icon: Clock, subtitle: "Quando funciona" },
   { id: 4, label: "Equipe", icon: Users, subtitle: "Quem trabalha" },
 ];

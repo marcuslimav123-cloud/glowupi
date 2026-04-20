@@ -115,6 +115,9 @@ function ServicoForm({
           <div className="space-y-2">
             <Label>Comissão (%)</Label>
             <Input type="number" step="0.5" min="0" max="100" value={comissao} onChange={e => setComissao(e.target.value)} placeholder="30" className="bg-background" />
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              Comissão padrão deste serviço. Cada profissional pode ter uma comissão personalizada que sobrescreve este valor.
+            </p>
           </div>
         </div>
         <div className="space-y-2">

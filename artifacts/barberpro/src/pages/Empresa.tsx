@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { ImageUpload } from "@/components/ImageUpload";
 import { formatPhone, stripPhone, apiUrl } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, MapPin, Clock, Palette, Save, Link2, Copy, Check, ExternalLink, ImageIcon, XCircle, AlertTriangle, Loader2, CreditCard, ArrowUpRight } from "lucide-react";
+import { Building2, MapPin, Clock, Palette, Save, Link2, Copy, Check, ExternalLink, ImageIcon, XCircle, AlertTriangle, Loader2, CreditCard, ArrowUpRight, Settings } from "lucide-react";
+import { Link as WouterLink } from "wouter";
 
 const DIAS = ["segunda","terca","quarta","quinta","sexta","sabado","domingo"];
 const DIA_LABEL: Record<string,string> = { segunda:"Segunda",terca:"Terça",quarta:"Quarta",quinta:"Quinta",sexta:"Sexta",sabado:"Sábado",domingo:"Domingo" };
@@ -84,26 +85,27 @@ export default function Empresa() {
 
   const buscarCep = async () => {
     const c = cep.replace(/\D/g, "");
-    if (c.length !== 8) return;
+    if (c.length !== 8) {
+      toast({ title: "CEP inválido", description: "Digite um CEP com 8 dígitos.", variant: "destructive" });
+      return;
+    }
     setLoadingCep(true);
     try {
       const r = await fetch(`https://viacep.com.br/ws/${c}/json/`);
       const data = await r.json();
-      if (!data.erro) {
+      if (data.erro) {
+        toast({ title: "CEP não encontrado", description: "Verifique o número e tente novamente.", variant: "destructive" });
+      } else {
         setLogradouro(data.logradouro || "");
         setBairro(data.bairro || "");
         setCidade(data.localidade || "");
         setUf(data.uf || "");
       }
-    } catch {} finally { setLoadingCep(false); }
-  };
-
-  const toggleDia = (dia: string) => {
-    setHorarios((h: any) => ({ ...h, [dia]: { ...h[dia], aberto: !h[dia]?.aberto } }));
-  };
-
-  const setHorario = (dia: string, field: "inicio" | "fim", val: string) => {
-    setHorarios((h: any) => ({ ...h, [dia]: { ...h[dia], [field]: val } }));
+    } catch {
+      toast({ title: "Erro ao buscar CEP", description: "Tente novamente em instantes.", variant: "destructive" });
+    } finally {
+      setLoadingCep(false);
+    }
   };
 
   const isTrial = !barbearia?.stripeCustomerId || (barbearia as any)?.subscriptionStatus === "trial";
@@ -157,7 +159,7 @@ export default function Empresa() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateMutation.mutateAsync({ data: { nome, telefone: stripPhone(telefone), email: email || null, cnpj: cnpj || null, cep: cep || null, logradouro: logradouro || null, numero: numero || null, bairro: bairro || null, cidade: cidade || null, uf: uf || null, corPrimaria, horarioFuncionamento: horarios, logoUrl } as any });
+      await updateMutation.mutateAsync({ data: { nome, telefone: stripPhone(telefone), email: email || null, cnpj: cnpj || null, cep: cep || null, logradouro: logradouro || null, numero: numero || null, bairro: bairro || null, cidade: cidade || null, uf: uf || null, corPrimaria, logoUrl } as any });
       qc.invalidateQueries();
       toast({ title: "Dados atualizados com sucesso!" });
     } catch { toast({ title: "Erro ao salvar", variant: "destructive" }); }
@@ -333,22 +335,24 @@ export default function Empresa() {
           <Card>
             <CardHeader><CardTitle className="flex items-center gap-2"><Clock className="h-5 w-5 text-primary" /> Horário de Funcionamento</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              {DIAS.map(dia => (
-                <div key={dia} className="flex items-center gap-3">
-                  <button type="button" onClick={() => toggleDia(dia)} className={`w-24 text-sm px-3 py-1.5 rounded-lg border font-medium transition-colors ${horarios[dia]?.aberto ? "bg-primary/10 border-primary/30 text-primary" : "bg-muted border-border text-muted-foreground"}`}>
-                    {DIA_LABEL[dia]}
-                  </button>
-                  {horarios[dia]?.aberto ? (
-                    <div className="flex items-center gap-2">
-                      <Input type="time" value={horarios[dia]?.inicio || "09:00"} onChange={e => setHorario(dia, "inicio", e.target.value)} className="w-32" />
-                      <span className="text-muted-foreground text-sm">até</span>
-                      <Input type="time" value={horarios[dia]?.fim || "19:00"} onChange={e => setHorario(dia, "fim", e.target.value)} className="w-32" />
+              <p className="text-sm text-muted-foreground">
+                O horário de funcionamento é configurado em uma página dedicada. Clique abaixo para editar.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {DIAS.map(dia => (
+                  <div key={dia} className={`text-xs px-3 py-2 rounded-lg border ${horarios[dia]?.aberto ? "bg-primary/5 border-primary/20" : "bg-muted/40 border-border"}`}>
+                    <div className="font-semibold text-foreground/80">{DIA_LABEL[dia]}</div>
+                    <div className={`mt-0.5 ${horarios[dia]?.aberto ? "text-foreground/60" : "text-muted-foreground italic"}`}>
+                      {horarios[dia]?.aberto ? `${horarios[dia]?.inicio || "09:00"} – ${horarios[dia]?.fim || "19:00"}` : "Fechado"}
                     </div>
-                  ) : (
-                    <span className="text-sm text-muted-foreground italic">Fechado</span>
-                  )}
-                </div>
-              ))}
+                  </div>
+                ))}
+              </div>
+              <WouterLink href="/configuracoes/funcionamento">
+                <Button type="button" variant="outline" size="sm" className="gap-2">
+                  <Settings className="h-4 w-4" /> Editar horário de funcionamento
+                </Button>
+              </WouterLink>
             </CardContent>
           </Card>
 
