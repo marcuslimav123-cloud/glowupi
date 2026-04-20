@@ -156,14 +156,33 @@ interface TrackOptions {
   currency?: string;
   fbEvent?: string;
   fbParams?: Record<string, any>;
+  eventId?: string;
+  email?: string;
+  phone?: string;
+  skipCapi?: boolean;
 }
 
-async function sendServerEvent(tipo: string, opts: TrackOptions = {}) {
+function genEventId(): string {
+  return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
+}
+
+function readCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  try {
+    const m = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "=([^;]*)"));
+    return m ? decodeURIComponent(m[1]) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function sendServerEvent(tipo: string, opts: TrackOptions = {}, eventId: string) {
   const attr = getStoredAttribution() || captureAttribution();
   try {
     await fetch(apiUrl("/campaign/track"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({
         tipo,
         sessionId: getSessionId(),
@@ -179,36 +198,47 @@ async function sendServerEvent(tipo: string, opts: TrackOptions = {}) {
         pagePath: opts.pagePath || (typeof window !== "undefined" ? window.location.pathname : null),
         valueCents: opts.valueCents,
         currency: opts.currency,
+        eventId,
+        email: opts.email || null,
+        phone: opts.phone || null,
+        fbp: readCookie("_fbp"),
+        fbc: readCookie("_fbc"),
+        fbContentName: opts.fbParams?.content_name || null,
+        fbContentIds: Array.isArray(opts.fbParams?.content_ids) ? opts.fbParams!.content_ids : null,
+        eventSourceUrl: typeof window !== "undefined" ? window.location.href : null,
+        skipCapi: opts.skipCapi || false,
       }),
       keepalive: true,
     });
   } catch {}
 }
 
+function fireBoth(tipo: string, fbEventName: string, opts: TrackOptions, paramsForFbq: Record<string, any>) {
+  const eventId = opts.eventId || genEventId();
+  fbq("track", fbEventName, paramsForFbq, { eventID: eventId });
+  sendServerEvent(tipo, opts, eventId);
+}
+
 export function trackPageView(opts: TrackOptions = {}) {
-  fbq("track", opts.fbEvent || "PageView", opts.fbParams);
-  sendServerEvent("pageview", opts);
+  fireBoth("pageview", opts.fbEvent || "PageView", opts, opts.fbParams || {});
 }
 
 export function trackLead(opts: TrackOptions = {}) {
-  fbq("track", opts.fbEvent || "Lead", opts.fbParams);
-  sendServerEvent("lead", opts);
+  fireBoth("lead", opts.fbEvent || "Lead", opts, opts.fbParams || {});
 }
 
 export function trackInitiateCheckout(opts: TrackOptions = {}) {
   const params = { ...(opts.fbParams || {}) };
   if (opts.valueCents) params.value = opts.valueCents / 100;
   if (opts.currency) params.currency = opts.currency;
-  fbq("track", opts.fbEvent || "InitiateCheckout", params);
-  sendServerEvent("checkout", opts);
+  fireBoth("checkout", opts.fbEvent || "InitiateCheckout", opts, params);
 }
 
 export function trackPurchase(opts: TrackOptions = {}) {
   const params = { ...(opts.fbParams || {}) };
   if (opts.valueCents) params.value = opts.valueCents / 100;
   if (opts.currency) params.currency = opts.currency;
-  fbq("track", opts.fbEvent || "Purchase", params);
-  sendServerEvent("purchase", opts);
+  fireBoth("purchase", opts.fbEvent || "Purchase", opts, params);
 }
 
 export async function initTracking() {

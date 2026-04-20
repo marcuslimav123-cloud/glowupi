@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { campaignEventsTable, barbeariasTable, platformConfigTable } from "@workspace/db/schema";
 import { sql, desc, and, gte, eq } from "drizzle-orm";
 import { requireAdmin } from "../lib/adminAuth.js";
+import { sendCapiEvent, tipoToFbEventName } from "../lib/fbCapi.js";
 
 const router: IRouter = Router();
 
@@ -43,6 +44,15 @@ router.post("/track", async (req, res) => {
       pagePath,
       valueCents,
       currency,
+      eventId,
+      email,
+      phone,
+      fbp,
+      fbc,
+      fbContentName,
+      fbContentIds,
+      eventSourceUrl,
+      skipCapi,
     } = req.body || {};
 
     if (!tipo || !VALID_TYPES.has(String(tipo))) {
@@ -72,6 +82,40 @@ router.post("/track", async (req, res) => {
       ipAddress: truncate(ipAddress, 100),
       userAgent: truncate(userAgent, 500),
     });
+
+    const fbEventName = tipoToFbEventName(String(tipo));
+    if (fbEventName && !skipCapi) {
+      const cookieFbp = (req as any).cookies?._fbp || null;
+      const cookieFbc = (req as any).cookies?._fbc || null;
+      const customData: Record<string, any> = {};
+      if (typeof valueCents === "number" && valueCents > 0) {
+        customData.value = Math.round(valueCents) / 100;
+        customData.currency = (currency || "BRL").toString().toUpperCase();
+      }
+      if (fbContentName) customData.content_name = String(fbContentName).slice(0, 200);
+      if (Array.isArray(fbContentIds) && fbContentIds.length) {
+        customData.content_ids = fbContentIds.map((x) => String(x)).slice(0, 20);
+        customData.content_type = "product";
+      }
+      sendCapiEvent({
+        eventName: fbEventName,
+        eventId: eventId ? String(eventId).slice(0, 200) : null,
+        eventSourceUrl: typeof eventSourceUrl === "string" ? eventSourceUrl.slice(0, 500) : null,
+        actionSource: "website",
+        userData: {
+          email: email || null,
+          phone: phone || null,
+          fbp: fbp || cookieFbp || null,
+          fbc: fbc || cookieFbc || null,
+          fbclid: fbclid || null,
+          ipAddress: ipAddress || null,
+          userAgent: userAgent || null,
+          externalId: sessionId || null,
+        },
+        customData: Object.keys(customData).length ? customData : undefined,
+      }).catch((e) => console.error("[campaign/track] capi error:", e));
+    }
+
     res.json({ ok: true });
   } catch (e) {
     console.error("[campaign/track] error:", e);

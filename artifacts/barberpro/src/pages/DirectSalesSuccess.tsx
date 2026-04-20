@@ -58,11 +58,24 @@ export default function DirectSalesSuccess() {
 
   const verifySession = async (sessionId: string) => {
     try {
+      const readCookie = (name: string) => {
+        try {
+          const m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+          return m ? decodeURIComponent(m[1]) : null;
+        } catch { return null; }
+      };
+      const stableEventId = `purchase_${sessionId}`;
       const res = await fetch(apiUrl("/checkout/verify-direct-session"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ sessionId }),
+        body: JSON.stringify({
+          sessionId,
+          eventId: stableEventId,
+          fbp: readCookie("_fbp"),
+          fbc: readCookie("_fbc"),
+          fbclid: getAttributionForCheckout()?.fbclid || null,
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.verified) {
@@ -78,6 +91,8 @@ export default function DirectSalesSuccess() {
         trackPurchase({
           valueCents,
           currency: (data.currency || "BRL").toUpperCase(),
+          eventId: data.eventId || stableEventId,
+          skipCapi: true,
           fbParams: {
             content_name: data.productName || "subscription",
             content_ids: [data.priceId || data.subscriptionId].filter(Boolean),

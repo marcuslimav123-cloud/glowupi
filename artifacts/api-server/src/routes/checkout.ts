@@ -6,6 +6,7 @@ import { stripeService } from "../stripeService.js";
 import { stripeStorage } from "../stripeStorage.js";
 import { getUncachableStripeClient, getStripePublishableKey } from "../stripeClient.js";
 import { requireAuth, requireBarbearia } from "../lib/auth.js";
+import { sendCapiEvent } from "../lib/fbCapi.js";
 
 const router = Router();
 
@@ -371,7 +372,7 @@ router.post("/create-direct-session", requireAuth, async (req: any, res) => {
 
 router.post("/verify-direct-session", requireAuth, async (req: any, res) => {
   try {
-    const { sessionId } = req.body;
+    const { sessionId, eventId, fbp, fbc, fbclid } = req.body;
     const user = req.user;
     if (!sessionId) {
       return res.status(400).json({ error: "sessionId is required" });
@@ -400,6 +401,41 @@ router.post("/verify-direct-session", requireAuth, async (req: any, res) => {
     const priceMeta = priceItem?.price?.metadata || {};
     const productMeta = product?.metadata || {};
 
+    const amountTotal = session.amount_total ?? priceItem?.price?.unit_amount ?? null;
+    const currencyCode = (session.currency || priceItem?.price?.currency || 'brl').toUpperCase();
+    const stableEventId = eventId || `purchase_${session.id}`;
+
+    try {
+      const ipAddress = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null;
+      const userAgent = (req.headers["user-agent"] as string) || null;
+      const cookieFbp = req.cookies?._fbp || null;
+      const cookieFbc = req.cookies?._fbc || null;
+      sendCapiEvent({
+        eventName: "Purchase",
+        eventId: stableEventId,
+        actionSource: "website",
+        userData: {
+          email: user.email || null,
+          phone: (user as any).telefone || null,
+          fbp: fbp || cookieFbp || null,
+          fbc: fbc || cookieFbc || null,
+          fbclid: fbclid || null,
+          ipAddress,
+          userAgent,
+          externalId: String(user.id),
+        },
+        customData: {
+          value: typeof amountTotal === "number" ? amountTotal / 100 : undefined,
+          currency: currencyCode,
+          content_name: product?.name || undefined,
+          content_ids: priceItem?.price?.id ? [priceItem.price.id] : undefined,
+          content_type: "product",
+        },
+      }).catch((e) => console.error("[verify-direct-session] capi error:", e));
+    } catch (capiErr) {
+      console.error("[verify-direct-session] capi dispatch error:", capiErr);
+    }
+
     res.json({
       verified: true,
       customerId: session.customer as string,
@@ -407,9 +443,10 @@ router.post("/verify-direct-session", requireAuth, async (req: any, res) => {
       planTier: productMeta.tier || null,
       planPeriod: priceMeta.period || session.metadata?.billingPeriod || 'mensal',
       productName: product?.name || null,
-      amountTotal: session.amount_total ?? priceItem?.price?.unit_amount ?? null,
-      currency: (session.currency || priceItem?.price?.currency || 'brl').toUpperCase(),
+      amountTotal,
+      currency: currencyCode,
       priceId: priceItem?.price?.id || null,
+      eventId: stableEventId,
     });
   } catch (error: any) {
     console.error("Verify direct session error:", error);
