@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { apiUrl } from "@/lib/utils";
-import { Megaphone, TrendingDown, TrendingUp, Users, Eye, MousePointerClick, ShoppingCart, DollarSign, RefreshCw, Loader2, LineChart as LineChartIcon } from "lucide-react";
+import { Megaphone, TrendingDown, TrendingUp, Users, Eye, MousePointerClick, ShoppingCart, DollarSign, RefreshCw, Loader2, LineChart as LineChartIcon, Activity, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
 
@@ -107,19 +107,36 @@ function ConvBar({ label, value }: { label: string; value: number }) {
   );
 }
 
+interface CapiHealth {
+  days: number;
+  totals: {
+    total: number; sent: number; ok: number; erro: number; pending: number; skipped: number;
+    withEmail: number; withPhone: number; withFbp: number; withFbc: number; withAnyMatch: number;
+  };
+  rates: {
+    successRate: number; errorRate: number; pendingRate: number;
+    emailCoverage: number; phoneCoverage: number; fbpCoverage: number; fbcCoverage: number; anyMatchCoverage: number;
+  };
+  byTipo: { tipo: string; total: number; ok: number; erro: number; pending: number; skipped: number; successRate: number }[];
+  topErrors: { error: string; count: number }[];
+  daily: { day: string; ok: number; erro: number; pending: number; skipped: number }[];
+}
+
 export default function AdminCampanha() {
   const [days, setDays] = useState<number>(30);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
+  const [capiHealth, setCapiHealth] = useState<CapiHealth | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = async (selectedDays = days) => {
     try {
-      const res = await fetch(apiUrl(`/campaign/metrics?days=${selectedDays}`), { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        setMetrics(data);
-      }
+      const [resMetrics, resCapi] = await Promise.all([
+        fetch(apiUrl(`/campaign/metrics?days=${selectedDays}`), { credentials: "include" }),
+        fetch(apiUrl(`/campaign/capi-health?days=${selectedDays}`), { credentials: "include" }),
+      ]);
+      if (resMetrics.ok) setMetrics(await resMetrics.json());
+      if (resCapi.ok) setCapiHealth(await resCapi.json());
     } catch (e) {
       console.error(e);
     } finally {
@@ -182,6 +199,112 @@ export default function AdminCampanha() {
               <FunnelCard icon={ShoppingCart} label="Checkouts" value={metrics.totals.checkout} unique={metrics.uniqueTotals.checkout} color="bg-amber-500/20 text-amber-400" />
               <FunnelCard icon={DollarSign} label="Compras" value={metrics.totals.purchase} unique={metrics.uniqueTotals.purchase} color="bg-green-500/20 text-green-400" />
             </div>
+
+            {capiHealth && (
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="text-lg font-display text-white flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-primary" /> Qualidade dos eventos no Facebook (CAPI)
+                  </h2>
+                  <p className="text-xs text-slate-500">{capiHealth.totals.sent} enviados / {capiHealth.totals.total} eventos</p>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-400" />
+                      <p className="text-xs text-slate-400">Sucesso CAPI</p>
+                    </div>
+                    <p className="text-2xl font-bold text-white">{capiHealth.rates.successRate.toFixed(1)}%</p>
+                    <p className="text-xs text-slate-500 mt-1">{formatNumber(capiHealth.totals.ok)} ok</p>
+                  </div>
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertTriangle className="h-4 w-4 text-red-400" />
+                      <p className="text-xs text-slate-400">Falhas</p>
+                    </div>
+                    <p className="text-2xl font-bold text-white">{capiHealth.rates.errorRate.toFixed(1)}%</p>
+                    <p className="text-xs text-slate-500 mt-1">{formatNumber(capiHealth.totals.erro)} erros</p>
+                  </div>
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="h-4 w-4 text-purple-400" />
+                      <p className="text-xs text-slate-400">Email hash</p>
+                    </div>
+                    <p className="text-2xl font-bold text-white">{capiHealth.rates.emailCoverage.toFixed(1)}%</p>
+                    <p className="text-xs text-slate-500 mt-1">{formatNumber(capiHealth.totals.withEmail)} eventos</p>
+                  </div>
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="h-4 w-4 text-blue-400" />
+                      <p className="text-xs text-slate-400">Telefone hash</p>
+                    </div>
+                    <p className="text-2xl font-bold text-white">{capiHealth.rates.phoneCoverage.toFixed(1)}%</p>
+                    <p className="text-xs text-slate-500 mt-1">{formatNumber(capiHealth.totals.withPhone)} eventos</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                  <div>
+                    <p className="text-xs text-slate-500 mb-3">Cobertura de parâmetros de match</p>
+                    <div className="space-y-3">
+                      <ConvBar label="Email" value={capiHealth.rates.emailCoverage} />
+                      <ConvBar label="Telefone" value={capiHealth.rates.phoneCoverage} />
+                      <ConvBar label="_fbp (cookie pixel)" value={capiHealth.rates.fbpCoverage} />
+                      <ConvBar label="_fbc (clique do anúncio)" value={capiHealth.rates.fbcCoverage} />
+                      <div className="pt-2 border-t border-white/5">
+                        <ConvBar label="Pelo menos 1 parâmetro" value={capiHealth.rates.anyMatchCoverage} />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-3">Status por tipo de evento</p>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-xs text-slate-500 border-b border-white/5">
+                          <th className="pb-2 font-medium">Tipo</th>
+                          <th className="pb-2 font-medium text-right">Total</th>
+                          <th className="pb-2 font-medium text-right">OK</th>
+                          <th className="pb-2 font-medium text-right">Erro</th>
+                          <th className="pb-2 font-medium text-right">Sucesso</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {capiHealth.byTipo.length === 0 && (
+                          <tr><td colSpan={5} className="py-4 text-center text-slate-500">Sem dados</td></tr>
+                        )}
+                        {capiHealth.byTipo.map(row => (
+                          <tr key={row.tipo} className="border-b border-white/5 last:border-0">
+                            <td className="py-2 text-white">{row.tipo}</td>
+                            <td className="py-2 text-right text-slate-300">{formatNumber(row.total)}</td>
+                            <td className="py-2 text-right text-green-400">{formatNumber(row.ok)}</td>
+                            <td className="py-2 text-right text-red-400">{formatNumber(row.erro)}</td>
+                            <td className="py-2 text-right text-white font-semibold">{row.successRate.toFixed(1)}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {capiHealth.topErrors.length > 0 && (
+                  <div className="mt-5 pt-5 border-t border-white/5">
+                    <p className="text-xs text-slate-500 mb-3">Erros mais comuns</p>
+                    <div className="space-y-2">
+                      {capiHealth.topErrors.map((e, i) => (
+                        <div key={i} className="flex items-start gap-3 bg-red-500/5 border border-red-500/10 rounded-lg p-3">
+                          <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-red-300 break-words">{e.error}</p>
+                          </div>
+                          <span className="text-xs text-slate-400 flex-shrink-0">{e.count}×</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-5">

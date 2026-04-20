@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { campaignEventsTable, barbeariasTable, platformConfigTable } from "@workspace/db/schema";
-import { sql, desc, and, gte, eq } from "drizzle-orm";
+import { sql, desc, and, gte, eq, isNotNull } from "drizzle-orm";
 import { requireAdmin } from "../lib/adminAuth.js";
 import { sendCapiEvent, tipoToFbEventName } from "../lib/fbCapi.js";
 
@@ -64,7 +64,15 @@ router.post("/track", async (req, res) => {
 
     const truncate = (v: any, n = 500) => (typeof v === "string" ? v.slice(0, n) : null);
 
-    await db.insert(campaignEventsTable).values({
+    const cookieFbp = (req as any).cookies?._fbp || null;
+    const cookieFbc = (req as any).cookies?._fbc || null;
+    const effectiveFbp = fbp || cookieFbp || null;
+    const effectiveFbc = fbc || cookieFbc || (fbclid ? `fb.1.${Date.now()}.${fbclid}` : null);
+
+    const fbEventName = tipoToFbEventName(String(tipo));
+    const willSendCapi = !!fbEventName && !skipCapi;
+
+    const inserted = await db.insert(campaignEventsTable).values({
       tipo,
       sessionId: truncate(sessionId, 100),
       utmSource: truncate(utmSource, 100),
@@ -81,12 +89,16 @@ router.post("/track", async (req, res) => {
       currency: truncate(currency, 10),
       ipAddress: truncate(ipAddress, 100),
       userAgent: truncate(userAgent, 500),
-    });
+      capiStatus: willSendCapi ? "pending" : "skipped",
+      hasEmail: !!email,
+      hasPhone: !!phone,
+      hasFbp: !!effectiveFbp,
+      hasFbc: !!effectiveFbc,
+    }).returning({ id: campaignEventsTable.id });
 
-    const fbEventName = tipoToFbEventName(String(tipo));
-    if (fbEventName && !skipCapi) {
-      const cookieFbp = (req as any).cookies?._fbp || null;
-      const cookieFbc = (req as any).cookies?._fbc || null;
+    const eventRowId = inserted[0]?.id;
+
+    if (willSendCapi && fbEventName) {
       const customData: Record<string, any> = {};
       if (typeof valueCents === "number" && valueCents > 0) {
         customData.value = Math.round(valueCents) / 100;
@@ -105,15 +117,39 @@ router.post("/track", async (req, res) => {
         userData: {
           email: email || null,
           phone: phone || null,
-          fbp: fbp || cookieFbp || null,
-          fbc: fbc || cookieFbc || null,
+          fbp: effectiveFbp,
+          fbc: effectiveFbc,
           fbclid: fbclid || null,
           ipAddress: ipAddress || null,
           userAgent: userAgent || null,
           externalId: sessionId || null,
         },
         customData: Object.keys(customData).length ? customData : undefined,
-      }).catch((e) => console.error("[campaign/track] capi error:", e));
+      })
+        .then(async (result) => {
+          if (!eventRowId) return;
+          try {
+            await db
+              .update(campaignEventsTable)
+              .set({
+                capiStatus: result.ok ? "ok" : "erro",
+                capiError: result.ok ? null : (result.error || `status_${result.status || "unknown"}`).slice(0, 500),
+              })
+              .where(eq(campaignEventsTable.id, eventRowId));
+          } catch (e) {
+            console.error("[campaign/track] capi status update error:", e);
+          }
+        })
+        .catch(async (e) => {
+          console.error("[campaign/track] capi error:", e);
+          if (!eventRowId) return;
+          try {
+            await db
+              .update(campaignEventsTable)
+              .set({ capiStatus: "erro", capiError: String(e?.message || e).slice(0, 500) })
+              .where(eq(campaignEventsTable.id, eventRowId));
+          } catch {}
+        });
     }
 
     res.json({ ok: true });
@@ -252,6 +288,118 @@ router.get("/metrics", requireAdmin, async (req, res) => {
   } catch (e) {
     console.error("[campaign/metrics] error:", e);
     res.status(500).json({ error: "erro ao carregar métricas" });
+  }
+});
+
+router.get("/capi-health", requireAdmin, async (req, res) => {
+  try {
+    const days = Math.max(1, Math.min(parseInt(req.query.days as string) || 7, 90));
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const rows = await db
+      .select({
+        tipo: campaignEventsTable.tipo,
+        capiStatus: campaignEventsTable.capiStatus,
+        capiError: campaignEventsTable.capiError,
+        hasEmail: campaignEventsTable.hasEmail,
+        hasPhone: campaignEventsTable.hasPhone,
+        hasFbp: campaignEventsTable.hasFbp,
+        hasFbc: campaignEventsTable.hasFbc,
+        createdAt: campaignEventsTable.createdAt,
+      })
+      .from(campaignEventsTable)
+      .where(gte(campaignEventsTable.createdAt, since))
+      .orderBy(desc(campaignEventsTable.createdAt));
+
+    const totals = {
+      total: 0,
+      sent: 0,
+      ok: 0,
+      erro: 0,
+      pending: 0,
+      skipped: 0,
+      withEmail: 0,
+      withPhone: 0,
+      withFbp: 0,
+      withFbc: 0,
+      withAnyMatch: 0,
+    };
+
+    type ByTipo = { total: number; ok: number; erro: number; pending: number; skipped: number };
+    const byTipo: Record<string, ByTipo> = {};
+    const errorCounts: Record<string, number> = {};
+    const dailyMap: Record<string, { ok: number; erro: number; pending: number; skipped: number }> = {};
+
+    for (const r of rows) {
+      totals.total++;
+      const status = r.capiStatus || "skipped";
+      if (status === "ok") totals.ok++;
+      else if (status === "erro") totals.erro++;
+      else if (status === "pending") totals.pending++;
+      else totals.skipped++;
+      if (status !== "skipped") totals.sent++;
+
+      if (r.hasEmail) totals.withEmail++;
+      if (r.hasPhone) totals.withPhone++;
+      if (r.hasFbp) totals.withFbp++;
+      if (r.hasFbc) totals.withFbc++;
+      if (r.hasEmail || r.hasPhone || r.hasFbp || r.hasFbc) totals.withAnyMatch++;
+
+      const t = r.tipo || "unknown";
+      if (!byTipo[t]) byTipo[t] = { total: 0, ok: 0, erro: 0, pending: 0, skipped: 0 };
+      byTipo[t].total++;
+      if (status === "ok") byTipo[t].ok++;
+      else if (status === "erro") byTipo[t].erro++;
+      else if (status === "pending") byTipo[t].pending++;
+      else byTipo[t].skipped++;
+
+      if (status === "erro" && r.capiError) {
+        const key = r.capiError.slice(0, 120);
+        errorCounts[key] = (errorCounts[key] || 0) + 1;
+      }
+
+      const day = r.createdAt!.toISOString().slice(0, 10);
+      if (!dailyMap[day]) dailyMap[day] = { ok: 0, erro: 0, pending: 0, skipped: 0 };
+      if (status === "ok") dailyMap[day].ok++;
+      else if (status === "erro") dailyMap[day].erro++;
+      else if (status === "pending") dailyMap[day].pending++;
+      else dailyMap[day].skipped++;
+    }
+
+    const pct = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 10000) / 100 : 0);
+
+    const rates = {
+      successRate: pct(totals.ok, totals.sent),
+      errorRate: pct(totals.erro, totals.sent),
+      pendingRate: pct(totals.pending, totals.sent),
+      emailCoverage: pct(totals.withEmail, totals.total),
+      phoneCoverage: pct(totals.withPhone, totals.total),
+      fbpCoverage: pct(totals.withFbp, totals.total),
+      fbcCoverage: pct(totals.withFbc, totals.total),
+      anyMatchCoverage: pct(totals.withAnyMatch, totals.total),
+    };
+
+    const topErrors = Object.entries(errorCounts)
+      .map(([error, count]) => ({ error, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    const daily = Object.entries(dailyMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([day, v]) => ({ day, ...v }));
+
+    res.json({
+      days,
+      since: since.toISOString(),
+      totals,
+      rates,
+      byTipo: Object.entries(byTipo).map(([tipo, v]) => ({ tipo, ...v, successRate: pct(v.ok, v.ok + v.erro + v.pending) })),
+      topErrors,
+      daily,
+    });
+  } catch (e) {
+    console.error("[campaign/capi-health] error:", e);
+    res.status(500).json({ error: "erro ao carregar saúde do CAPI" });
   }
 });
 

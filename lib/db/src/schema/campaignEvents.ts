@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer, bigint, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, bigint, boolean, index } from "drizzle-orm/pg-core";
 
 export const campaignEventsTable = pgTable("campaign_events", {
   id: serial("id").primaryKey(),
@@ -19,12 +19,19 @@ export const campaignEventsTable = pgTable("campaign_events", {
   barbeariaId: integer("barbearia_id"),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
+  capiStatus: text("capi_status"),
+  capiError: text("capi_error"),
+  hasEmail: boolean("has_email"),
+  hasPhone: boolean("has_phone"),
+  hasFbp: boolean("has_fbp"),
+  hasFbc: boolean("has_fbc"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => ({
   tipoIdx: index("campaign_events_tipo_idx").on(t.tipo),
   sessionIdx: index("campaign_events_session_idx").on(t.sessionId),
   createdAtIdx: index("campaign_events_created_at_idx").on(t.createdAt),
   utmSourceIdx: index("campaign_events_utm_source_idx").on(t.utmSource),
+  capiStatusIdx: index("campaign_events_capi_status_idx").on(t.capiStatus),
 }));
 
 export type CampaignEvent = typeof campaignEventsTable.$inferSelect;
