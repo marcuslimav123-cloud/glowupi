@@ -13,11 +13,12 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Clock, DollarSign, Settings2, Edit2, Trash2,
-  ToggleLeft, ToggleRight, Star, RotateCcw, Globe, Award, Percent
+  ToggleLeft, ToggleRight, Star, RotateCcw, Globe, Award, Percent, HelpCircle
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { ImageUpload } from "@/components/ImageUpload";
@@ -113,11 +114,22 @@ function ServicoForm({
             <Input type="number" min="5" step="5" value={duracao} onChange={e => setDuracao(e.target.value)} required placeholder="30" className="bg-background" />
           </div>
           <div className="space-y-2">
-            <Label>Comissão (%)</Label>
+            <div className="flex items-center gap-1.5">
+              <Label>Comissão (%)</Label>
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" className="text-muted-foreground hover:text-foreground" data-testid="tooltip-comissao-servico">
+                      <HelpCircle className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs text-xs">
+                    Comissão padrão deste serviço. Se o profissional tiver comissão própria configurada, ela substitui esta.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Input type="number" step="0.5" min="0" max="100" value={comissao} onChange={e => setComissao(e.target.value)} placeholder="30" className="bg-background" />
-            <p className="text-[11px] text-muted-foreground leading-snug">
-              Comissão padrão deste serviço. Cada profissional pode ter uma comissão personalizada que sobrescreve este valor.
-            </p>
           </div>
         </div>
         <div className="space-y-2">

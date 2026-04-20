@@ -15,7 +15,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit2, Trash2, Users, Award, ToggleLeft, ToggleRight, Clock, Calendar, Sparkles, Check, User, Phone } from "lucide-react";
+import { Plus, Edit2, Trash2, Users, Award, ToggleLeft, ToggleRight, Clock, Calendar, Sparkles, Check, User, Phone, HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCurrency, formatPhone } from "@/lib/utils";
 import { ImageUpload } from "@/components/ImageUpload";
 
@@ -233,16 +234,27 @@ function ProfForm({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>{tipo === "percentual" ? "Porcentagem (%)" : "Valor (R$)"}</Label>
+          <div className="flex items-center gap-1.5">
+            <Label>{tipo === "percentual" ? "Porcentagem (%)" : "Valor (R$)"}</Label>
+            <TooltipProvider delayDuration={150}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button type="button" className="text-muted-foreground hover:text-foreground" data-testid="tooltip-comissao-profissional">
+                    <HelpCircle className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs text-xs">
+                  Comissão padrão deste profissional. Pode ser sobrescrita por serviço na lista abaixo.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           <Input
             type="number" step="0.01" min="0"
             value={valor} onChange={e => setValor(e.target.value)}
             required placeholder={tipo === "percentual" ? "40" : "30.00"}
             className="bg-background"
           />
-          <p className="text-[11px] text-muted-foreground leading-snug">
-            Comissão padrão deste profissional. Pode ser sobrescrita por serviço na lista abaixo.
-          </p>
         </div>
       </div>
 
