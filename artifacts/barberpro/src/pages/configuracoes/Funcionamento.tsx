@@ -90,13 +90,11 @@ export default function Funcionamento() {
       return;
     }
     try {
-      const allIds = profissionais.map((p: any) => p.id);
-      const isAll = selectedProfIds.length === allIds.length;
       const res = await fetch(`${BASE}api/barbearias/${barbeariaId}/profissionais/bulk-horarios`, {
         method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({
           resetToDefault: true,
-          profissionalIds: isAll ? undefined : selectedProfIds,
+          profissionalIds: selectedProfIds,
         }),
       });
       if (res.ok) {
