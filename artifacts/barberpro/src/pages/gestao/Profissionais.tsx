@@ -401,8 +401,14 @@ export default function Profissionais() {
           description: errorBody.message || "Faça upgrade do seu plano para adicionar mais profissionais.",
           variant: "destructive",
         });
+      } else if (typeof errorBody?.error === "string" && errorBody.error.length > 0) {
+        toast({
+          title: "Não foi possível salvar",
+          description: errorBody.error,
+          variant: "destructive",
+        });
       } else {
-        toast({ title: "Erro ao salvar", variant: "destructive" });
+        toast({ title: "Erro ao salvar", description: err?.message || undefined, variant: "destructive" });
       }
     } finally {
       invalidate();
