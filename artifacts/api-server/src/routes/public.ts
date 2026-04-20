@@ -4,6 +4,7 @@ import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, 
 import { eq, and, desc, gte, inArray } from "drizzle-orm";
 import { sendPushToBarbearia } from "../lib/pushNotifications.js";
 import { requireClient } from "../lib/auth.js";
+import { validateAgendamentoEmHorario, validateAgendamentoEmJornadaProf } from "../lib/horarioValidation.js";
 
 const router: IRouter = Router();
 
@@ -470,6 +471,13 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       return res.status(400).json({ error: `Horário após o fim permitido (${paramHoraFim})` });
     }
 
+    const horarioErr = validateAgendamentoEmHorario(data, horaInicio, horaFim, (barbearia.horarioFuncionamento as any));
+    if (horarioErr) return res.status(400).json({ error: horarioErr });
+    if (profissional?.horarios) {
+      const jornadaErr = validateAgendamentoEmJornadaProf(data, horaInicio, horaFim, profissional.horarios as any);
+      if (jornadaErr) return res.status(400).json({ error: jornadaErr });
+    }
+
     const existingAppts = await db.select().from(agendamentosTable).where(
       and(
         eq(agendamentosTable.barbeariaId, barbearia.id),
@@ -670,6 +678,13 @@ router.post("/:slug/agendar-simples", async (req, res) => {
     }
     if (paramHoraFim && timeToMinutes(horaFim) > timeToMinutes(paramHoraFim)) {
       return res.status(400).json({ error: `Horário após o fim permitido (${paramHoraFim})` });
+    }
+
+    const horarioErrSimples = validateAgendamentoEmHorario(data, horaInicio, horaFim, (barbearia.horarioFuncionamento as any));
+    if (horarioErrSimples) return res.status(400).json({ error: horarioErrSimples });
+    if (profissional?.horarios) {
+      const jornadaErrSimples = validateAgendamentoEmJornadaProf(data, horaInicio, horaFim, profissional.horarios as any);
+      if (jornadaErrSimples) return res.status(400).json({ error: jornadaErrSimples });
     }
 
     const existingApptsSimples = await db.select().from(agendamentosTable).where(

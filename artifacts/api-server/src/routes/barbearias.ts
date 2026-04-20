@@ -1,10 +1,11 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { barbeariasTable, parametrosConfigTable, platformConfigTable, trialLinksTable } from "@workspace/db/schema";
+import { barbeariasTable, parametrosConfigTable, platformConfigTable, trialLinksTable, profissionaisTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, requireRole } from "../lib/auth.js";
 import { slugify } from "../lib/slugify.js";
 import { PARAMETROS_DEFAULTS } from "./parametros.js";
+import { validateHorarioFuncionamento, profsForaDaJanela } from "../lib/horarioValidation.js";
 
 const router: IRouter = Router();
 
@@ -114,6 +115,12 @@ router.put("/me", requireAuth, requireRole("dono"), async (req, res) => {
     const [existing] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
     if (!existing) return res.status(404).json({ error: "Barbearia não encontrada" });
     const { nome, telefone, email, cnpj, cep, logradouro, numero, bairro, cidade, uf, corPrimaria, horarioFuncionamento, segmentacao, onboardingStep, logoUrl } = req.body;
+
+    if (horarioFuncionamento !== undefined && Array.isArray(horarioFuncionamento)) {
+      const horarioErr = validateHorarioFuncionamento(horarioFuncionamento as any);
+      if (horarioErr) return res.status(400).json({ error: horarioErr });
+    }
+
     const [updated] = await db.update(barbeariasTable)
       .set({
         nome: nome ?? existing.nome,
@@ -157,7 +164,17 @@ router.put("/me", requireAuth, requireRole("dono"), async (req, res) => {
       }
     }
 
-    return res.json(formatBarbearia(updated));
+    let profsFora: Array<{ id: number; nome: string; motivo: string }> = [];
+    if (horarioFuncionamento && Array.isArray(horarioFuncionamento)) {
+      try {
+        const profs = await db.select({ id: profissionaisTable.id, nomeExibicao: profissionaisTable.nomeExibicao, horarios: profissionaisTable.horarios }).from(profissionaisTable).where(and(eq(profissionaisTable.barbeariaId, updated.id), eq(profissionaisTable.ativo, true)));
+        profsFora = profsForaDaJanela(profs as any, horarioFuncionamento as any);
+      } catch (foraErr) {
+        console.error("profsForaDaJanela error:", foraErr);
+      }
+    }
+
+    return res.json({ ...formatBarbearia(updated), profsForaJanela: profsFora });
   } catch (e) {
     return res.status(500).json({ error: "Erro interno" });
   }

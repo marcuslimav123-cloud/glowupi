@@ -101,12 +101,17 @@ router.post("/", requireAuth, async (req, res) => {
   const { nome, telefone, email, aniversario, observacoes, vip } = req.body;
   if (!nome || !telefone) return res.status(400).json({ error: "Nome e telefone são obrigatórios" });
 
-  if (params["cliente_controle_celular"] === "Sim") {
+  const permitirDuplicado = params["cliente_permitir_duplicado_telefone"] === "Sim";
+  const controleLegado = params["cliente_controle_celular"] === "Sim";
+  if (!permitirDuplicado || controleLegado) {
     const existente = await db.select().from(clientesTable).where(
       and(eq(clientesTable.barbeariaId, barbeariaId), eq(clientesTable.telefone, telefone))
     );
     if (existente.length > 0) {
-      return res.status(409).json({ error: "Já existe um cliente cadastrado com este número de celular" });
+      return res.status(409).json({
+        error: "Já existe um cliente cadastrado com este número de celular nesta empresa",
+        code: "telefone_duplicado",
+      });
     }
   }
 

@@ -3,6 +3,16 @@ import { db } from "@workspace/db";
 import { profissionaisTable, profissionalServicosTable, servicosTable, barbeariasTable, superAdminsTable } from "@workspace/db/schema";
 import { eq, and, inArray, sql } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole, PLAN_PROFESSIONAL_LIMITS } from "../lib/auth.js";
+import { validateProfHorariosFitBarbearia } from "../lib/horarioValidation.js";
+
+function validateComissaoPayload(comissaoTipo: string | undefined, comissaoValor: any): string | null {
+  if (comissaoValor === undefined || comissaoValor === null || comissaoValor === "") return null;
+  const c = Number(comissaoValor);
+  if (!Number.isFinite(c) || c < 0) return "Comissão não pode ser negativa";
+  const tipo = comissaoTipo || "percentual";
+  if (tipo === "percentual" && c > 100) return "Comissão percentual não pode exceder 100%";
+  return null;
+}
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -100,6 +110,15 @@ router.post("/", requireAuth, requireRole("dono", "gerente"), async (req, res) =
   } = req.body;
   if (!nomeExibicao || comissaoValor === undefined) return res.status(400).json({ error: "Dados inválidos" });
 
+  const comErr = validateComissaoPayload(comissaoTipo, comissaoValor);
+  if (comErr) return res.status(400).json({ error: comErr });
+
+  if (horarios) {
+    const [b] = await db.select({ horarioFuncionamento: barbeariasTable.horarioFuncionamento }).from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
+    const horarioErr = validateProfHorariosFitBarbearia(horarios, b?.horarioFuncionamento as any);
+    if (horarioErr) return res.status(400).json({ error: horarioErr });
+  }
+
   const user = (req as any).user;
   let isSuperAdmin = false;
   if (user) {
@@ -194,6 +213,18 @@ router.put("/:profissionalId", requireAuth, requireRole("dono", "gerente"), asyn
   } = req.body;
   const [existing] = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, id), eq(profissionaisTable.barbeariaId, barbeariaId))).limit(1);
   if (!existing) return res.status(404).json({ error: "Profissional não encontrado" });
+
+  if (comissaoValor !== undefined) {
+    const comErr = validateComissaoPayload(comissaoTipo ?? existing.comissaoTipo, comissaoValor);
+    if (comErr) return res.status(400).json({ error: comErr });
+  }
+
+  if (horarios !== undefined && horarios !== null) {
+    const [b] = await db.select({ horarioFuncionamento: barbeariasTable.horarioFuncionamento }).from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
+    const horarioErr = validateProfHorariosFitBarbearia(horarios, b?.horarioFuncionamento as any);
+    if (horarioErr) return res.status(400).json({ error: horarioErr });
+  }
+
   const [updated] = await db.update(profissionaisTable).set({
     nomeExibicao: nomeExibicao ?? existing.nomeExibicao,
     apelido: apelido !== undefined ? (apelido || null) : existing.apelido,

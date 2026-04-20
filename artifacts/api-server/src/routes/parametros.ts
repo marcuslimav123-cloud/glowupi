@@ -43,7 +43,8 @@ export const PARAMETROS_DEFAULTS: ParamDef[] = [
   { chave: "comanda_edicao_comissoes", label: "Campo de edição de comissões na comanda", categoria: "Comandas & Caixa", tipo: "select", opcoes: ["Bloquear", "Liberar"], valorPadrao: "Liberar" },
   { chave: "agenda_nao_agendar_profissional", label: "Não deixar agendar horários pelo App profissionais não-gestor", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "financeiro_baixa_automatica", label: "Ativar baixa automática do contas a receber quando chegar o vencimento", categoria: "Financeiro", tipo: "select", opcoes: ["Habilitado", "Desabilitado"], valorPadrao: "Desabilitado" },
-  { chave: "cliente_controle_celular", label: "Ativar controle de clientes por número de celular", categoria: "Clientes & Cadastro", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
+  { chave: "cliente_controle_celular", label: "Ativar controle de clientes por número de celular (legado)", categoria: "Clientes & Cadastro", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
+  { chave: "cliente_permitir_duplicado_telefone", label: "Permitir cadastrar clientes com o mesmo telefone (admin)", categoria: "Clientes & Cadastro", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "notif_tempo_lembrete", label: "Tempo (em horas) para envio de lembrete automático para agendamentos feitos pelo aplicativo", categoria: "Notificações & Mensagens", tipo: "input", valorPadrao: "24" },
   { chave: "fonte_webadmin", label: "Fonte WebAdmin", categoria: "Aparência", tipo: "select", opcoes: ["Inter", "Quicksand", "Mulish", "Dosis", "Didact Gothic"], valorPadrao: "Inter" },
   { chave: "fidelidade_pontos_app_site", label: "Contabilizar pontos no programa de fidelidade apenas para agendamentos feitos pelo App/Site pelo cliente", categoria: "Fidelidade & Pontos", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
@@ -166,6 +167,13 @@ router.put("/:chave", requireAuth, requireRole("dono", "gerente"), async (req, r
   const { chave } = req.params;
   const { valor } = req.body;
   if (valor === undefined || valor === null) return res.status(400).json({ error: "Valor é obrigatório" });
+
+  if (chave === "agenda_horario_inicio" || chave === "agenda_horario_fim") {
+    return res.status(400).json({
+      error: "Este horário é controlado pela tela de Funcionamento. Edite lá para manter tudo sincronizado.",
+      code: "use_funcionamento",
+    });
+  }
 
   if (CLIENT_NOTIF_CHAVES.includes(chave) && valor === "Sim") {
     const googleClientId = process.env.GOOGLE_CLIENT_ID;

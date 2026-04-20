@@ -167,7 +167,10 @@ export default function PublicStorefront() {
   async function fetchBarbearia() {
     try {
       const res = await fetch(`${API_BASE}/public/${slug}`, { credentials: "include" });
-      if (!res.ok) throw new Error("Estabelecimento não encontrado");
+      if (res.status === 404) {
+        throw new Error("Loja ainda não publicada — termine o cadastro do estabelecimento para ativar este link.");
+      }
+      if (!res.ok) throw new Error("Não foi possível carregar a loja agora. Tente novamente em instantes.");
       setBarbearia(await res.json());
     } catch (e: any) {
       setError(e.message);
@@ -368,10 +371,12 @@ export default function PublicStorefront() {
 
   if (error && !barbearia) {
     return (
-      <div className="min-h-screen bg-[#111] flex items-center justify-center text-white/60 text-center p-8">
-        <div>
-          <h1 className="text-xl font-bold mb-2 text-white">Ops!</h1>
-          <p>{error}</p>
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white/60 text-center p-8">
+        <div className="max-w-md">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/5 flex items-center justify-center text-2xl">✨</div>
+          <h1 className="text-xl font-bold mb-3 text-white">Loja indisponível</h1>
+          <p className="text-[14px] leading-relaxed">{error}</p>
+          <p className="text-[12px] text-white/30 mt-6">Glow Upi · agendamento online para profissionais da beleza</p>
         </div>
       </div>
     );

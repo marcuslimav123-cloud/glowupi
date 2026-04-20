@@ -19,11 +19,13 @@ router.get("/", requireAuth, async (req, res) => {
     const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
     if (!barbearia) return res.status(404).json({ error: "Estabelecimento não encontrado" });
     const convites = await db.select().from(convitesTable).where(eq(convitesTable.barbeariaId, barbearia.id));
+    const now = new Date();
     return res.json(convites.map(c => ({
       ...c,
       createdAt: c.createdAt.toISOString(),
       expiresAt: c.expiresAt.toISOString(),
       acceptedAt: c.acceptedAt?.toISOString() || null,
+      expirado: c.status === "pendente" && c.expiresAt < now,
     })));
   } catch (e) {
     console.error("list convites error:", e);

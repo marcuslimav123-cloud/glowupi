@@ -66,10 +66,24 @@ export default function Funcionamento() {
         body: JSON.stringify({ horarioFuncionamento: horarios }),
       });
       if (res.ok) {
+        const data = await res.json().catch(() => ({} as any));
         toast({ title: "Horários salvos com sucesso!" });
+        const fora = Array.isArray(data?.profsForaJanela) ? data.profsForaJanela : [];
+        if (fora.length > 0) {
+          const nomes = fora.slice(0, 3).map((p: any) => p.nome).join(", ");
+          const extra = fora.length > 3 ? ` e mais ${fora.length - 3}` : "";
+          toast({
+            title: "Atenção: profissionais fora do horário",
+            description: `${nomes}${extra} estão configurados fora do novo horário do estabelecimento. Sincronize os horários para corrigir.`,
+            variant: "destructive",
+          });
+        }
         await fetchProfissionais();
         setShowProfDialog(true);
-      } else toast({ title: "Erro ao salvar", variant: "destructive" });
+      } else {
+        const err = await res.json().catch(() => ({} as any));
+        toast({ title: err?.error || "Erro ao salvar", variant: "destructive" });
+      }
     } catch { toast({ title: "Erro ao salvar", variant: "destructive" }); }
   };
 

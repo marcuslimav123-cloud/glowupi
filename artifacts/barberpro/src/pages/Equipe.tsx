@@ -585,14 +585,17 @@ export default function Equipe() {
                       <Mail className="h-4 w-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-medium text-foreground truncate">
+                      <p className="text-[14px] font-medium text-foreground truncate flex items-center gap-2">
                         {invite.nomeConvidado || invite.email}
+                        {new Date(invite.expiresAt) < new Date() && (
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400 uppercase tracking-wide">Expirado</span>
+                        )}
                       </p>
                       <p className="text-[12px] text-foreground/40">
                         {getRoleLabel(invite.role)}
                         {perfil && <> · <Shield className="h-3 w-3 inline" /> {perfil.descricao}</>}
                         {linkedProf && <> · <User className="h-3 w-3 inline" /> {linkedProf.nomeExibicao}</>}
-                        {" "}· Expira {new Date(invite.expiresAt).toLocaleDateString("pt-BR")}
+                        {" "}· {new Date(invite.expiresAt) < new Date() ? "Expirou em" : "Expira em"} {new Date(invite.expiresAt).toLocaleDateString("pt-BR")}
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5">

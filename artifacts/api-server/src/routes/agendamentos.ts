@@ -13,6 +13,7 @@ import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from ".
 import { getParametros } from "../lib/parametros.js";
 import { sendEmail } from "../lib/brevo.js";
 import { sendPushToBarbearia } from "../lib/pushNotifications.js";
+import { validateAgendamentoEmHorario, validateAgendamentoEmJornadaProf } from "../lib/horarioValidation.js";
 
 async function notificarAgendamento(barbeariaId: number, params: Record<string, string>, agendData: { clienteNome: string; clienteTelefone?: string; profissionalNome: string; servicoNome: string; data: string; horaInicio: string; clienteId?: number | null; agendamentoId?: number }, tipo: "criado" | "cancelado") {
   try {
@@ -246,6 +247,14 @@ router.post("/", requireAuth, async (req, res) => {
   const horaFim = addMinutesToTime(horaInicio, duracaoFinal);
   const valorEfetivo = profServicoOverride?.precoOverride != null ? profServicoOverride.precoOverride : servico.preco;
   if (!encaixe) {
+    const [barb] = await db.select({ horarioFuncionamento: barbeariasTable.horarioFuncionamento }).from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
+    const horarioErr = validateAgendamentoEmHorario(data, horaInicio, horaFim, (barb?.horarioFuncionamento as any));
+    if (horarioErr) return res.status(400).json({ error: horarioErr });
+    if (profissional?.horarios) {
+      const jornadaErr = validateAgendamentoEmJornadaProf(data, horaInicio, horaFim, profissional.horarios as any);
+      if (jornadaErr) return res.status(400).json({ error: jornadaErr });
+    }
+
     const bloqueios = await db.select().from(bloqueiosHorarioTable).where(
       and(
         eq(bloqueiosHorarioTable.barbeariaId, barbeariaId),
@@ -483,8 +492,37 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
 
   const [agend] = await db.select().from(agendamentosTable).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId))).limit(1);
   if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
+
+  const [comandaExistente] = await db.select({ id: comandasTable.id, status: comandasTable.status }).from(comandasTable).where(
+    and(eq(comandasTable.barbeariaId, barbeariaId), eq(comandasTable.agendamentoId, id))
+  ).limit(1);
+  if (comandaExistente) {
+    return res.status(409).json({ error: "Este agendamento já possui comanda registrada", comandaId: comandaExistente.id });
+  }
+
   const [profissional] = await db.select().from(profissionaisTable).where(eq(profissionaisTable.id, agend.profissionalId)).limit(1);
   const { produtosAdicionais = [], servicosAdicionais = [], pagamentos, observacao, desconto: rawDesconto = 0, descontoTipo = "valor", parcelas: rawParcelas = 1, gorjeta, tipoComanda: rawTipoComanda, valorTotalOverride } = req.body;
+
+  if (Array.isArray(produtosAdicionais)) {
+    for (const p of produtosAdicionais) {
+      if (Number(p.valor) < 0 || Number(p.quantidade) < 0) {
+        return res.status(400).json({ error: "Produtos não podem ter valor ou quantidade negativos" });
+      }
+    }
+  }
+  if (Array.isArray(pagamentos)) {
+    for (const p of pagamentos) {
+      if (Number(p.valor) < 0) {
+        return res.status(400).json({ error: "Pagamentos não podem ter valor negativo" });
+      }
+    }
+  }
+  if (valorTotalOverride !== undefined && valorTotalOverride !== null && Number(valorTotalOverride) < 0) {
+    return res.status(400).json({ error: "Valor total não pode ser negativo" });
+  }
+  if (Number(rawDesconto) < 0) {
+    return res.status(400).json({ error: "Desconto não pode ser negativo" });
+  }
   const tipoComanda = rawTipoComanda === "profissional" ? "profissional" : "cliente";
 
   if (params["comanda_obrigatoriedade_bandeira"] === "Sim") {
