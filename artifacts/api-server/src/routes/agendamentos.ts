@@ -493,11 +493,12 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
   const [agend] = await db.select().from(agendamentosTable).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId))).limit(1);
   if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
 
-  const [comandaExistente] = await db.select({ id: comandasTable.id, status: comandasTable.status }).from(comandasTable).where(
+  const comandasExistentes = await db.select({ id: comandasTable.id, status: comandasTable.status }).from(comandasTable).where(
     and(eq(comandasTable.barbeariaId, barbeariaId), eq(comandasTable.agendamentoId, id))
-  ).limit(1);
-  if (comandaExistente) {
-    return res.status(409).json({ error: "Este agendamento já possui comanda registrada", comandaId: comandaExistente.id });
+  );
+  const comandaAtiva = comandasExistentes.find(c => c.status === "aberta" || c.status === "ativa" || c.status === "paga" || c.status === "fechada");
+  if (comandaAtiva) {
+    return res.status(409).json({ error: "Este agendamento já possui comanda ativa ou paga", comandaId: comandaAtiva.id, status: comandaAtiva.status });
   }
 
   const [profissional] = await db.select().from(profissionaisTable).where(eq(profissionaisTable.id, agend.profissionalId)).limit(1);

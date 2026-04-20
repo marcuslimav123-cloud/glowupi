@@ -28,6 +28,7 @@ export default function Funcionamento() {
   const [loading, setLoading] = useState(true);
   const [showProfDialog, setShowProfDialog] = useState(false);
   const [profissionais, setProfissionais] = useState<any[]>([]);
+  const [profsForaJanela, setProfsForaJanela] = useState<Array<{ id: number; nome: string; motivo: string }>>([]);
   const [selectedProfIds, setSelectedProfIds] = useState<number[]>([]);
   const [selectAll, setSelectAll] = useState(true);
   const BASE = import.meta.env.BASE_URL;
@@ -69,17 +70,13 @@ export default function Funcionamento() {
         const data = await res.json().catch(() => ({} as any));
         toast({ title: "Horários salvos com sucesso!" });
         const fora = Array.isArray(data?.profsForaJanela) ? data.profsForaJanela : [];
-        if (fora.length > 0) {
-          const nomes = fora.slice(0, 3).map((p: any) => p.nome).join(", ");
-          const extra = fora.length > 3 ? ` e mais ${fora.length - 3}` : "";
-          toast({
-            title: "Atenção: profissionais fora do horário",
-            description: `${nomes}${extra} estão configurados fora do novo horário do estabelecimento. Sincronize os horários para corrigir.`,
-            variant: "destructive",
-          });
-        }
+        setProfsForaJanela(fora);
         await fetchProfissionais();
-        setShowProfDialog(true);
+        if (fora.length > 0) {
+          setSelectedProfIds(fora.map((p: any) => p.id));
+          setSelectAll(true);
+          setShowProfDialog(true);
+        }
       } else {
         const err = await res.json().catch(() => ({} as any));
         toast({ title: err?.error || "Erro ao salvar", variant: "destructive" });
@@ -182,35 +179,36 @@ export default function Funcionamento() {
       <Dialog open={showProfDialog} onOpenChange={setShowProfDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Users className="h-5 w-5" />Atualizar horários dos profissionais?</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Users className="h-5 w-5" />
+              {profsForaJanela.length} profissional(is) ficaram fora do novo horário
+            </DialogTitle>
             <DialogDescription>
-              Os horários de funcionamento foram atualizados. Deseja sincronizar os profissionais que usam o horário padrão do estabelecimento?
+              Os horários abaixo estão configurados fora do novo funcionamento do estabelecimento. Deseja sincronizar agora para aplicar o horário padrão?
             </DialogDescription>
           </DialogHeader>
-          {profissionais.length > 0 ? (
+          {profsForaJanela.length > 0 ? (
             <div className="space-y-3 max-h-64 overflow-y-auto">
               <div className="flex items-center gap-2 pb-2 border-b">
                 <Checkbox checked={selectAll} onCheckedChange={toggleAll} id="select-all" />
                 <label htmlFor="select-all" className="text-sm font-medium cursor-pointer">Selecionar todos</label>
               </div>
-              {profissionais.map((p: any) => {
-                const hasCustom = !!p.horarios;
-                return (
-                  <div key={p.id} className="flex items-center gap-2">
-                    <Checkbox checked={selectedProfIds.includes(p.id)} onCheckedChange={() => toggleProfId(p.id)} id={`prof-${p.id}`} />
-                    <label htmlFor={`prof-${p.id}`} className="text-sm cursor-pointer flex-1">{p.nomeExibicao}</label>
-                    {hasCustom && <span className="text-[11px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Horário personalizado</span>}
-                  </div>
-                );
-              })}
+              {profsForaJanela.map((p) => (
+                <div key={p.id} className="flex items-start gap-2">
+                  <Checkbox checked={selectedProfIds.includes(p.id)} onCheckedChange={() => toggleProfId(p.id)} id={`prof-${p.id}`} className="mt-0.5" />
+                  <label htmlFor={`prof-${p.id}`} className="text-sm cursor-pointer flex-1">
+                    <div className="font-medium">{p.nome}</div>
+                    <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">{p.motivo}</div>
+                  </label>
+                </div>
+              ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Nenhum profissional cadastrado.</p>
+            <p className="text-sm text-muted-foreground">Todos os profissionais estão dentro do horário.</p>
           )}
           <div className="flex gap-2 justify-end mt-2">
-            <Button variant="outline" onClick={() => setShowProfDialog(false)} className="rounded-xl">Não atualizar</Button>
+            <Button variant="outline" onClick={() => setShowProfDialog(false)} className="rounded-xl">Agora não</Button>
             <Button onClick={handleSyncProfs} disabled={selectedProfIds.length === 0} className="rounded-xl">
-              Atualizar {selectedProfIds.length > 0 ? `(${selectedProfIds.length})` : ""}
+              Sincronizar agora {selectedProfIds.length > 0 ? `(${selectedProfIds.length})` : ""}
             </Button>
           </div>
         </DialogContent>

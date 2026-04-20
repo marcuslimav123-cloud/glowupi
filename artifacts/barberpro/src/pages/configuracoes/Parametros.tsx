@@ -105,9 +105,12 @@ export default function Parametros() {
     },
   });
 
+  const HIDDEN_CHAVES = new Set(["agenda_horario_inicio", "agenda_horario_fim"]);
   const filtered = parametros.filter(p =>
-    p.label.toLowerCase().includes(filtro.toLowerCase()) ||
-    p.categoria.toLowerCase().includes(filtro.toLowerCase())
+    !HIDDEN_CHAVES.has(p.chave) && (
+      p.label.toLowerCase().includes(filtro.toLowerCase()) ||
+      p.categoria.toLowerCase().includes(filtro.toLowerCase())
+    )
   );
 
   const groupedFiltered = filtered.reduce<Record<string, Parametro[]>>((acc, p) => {

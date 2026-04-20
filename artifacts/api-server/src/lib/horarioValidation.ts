@@ -150,20 +150,20 @@ export function validateAgendamentoEmHorario(
   if (!dia) return null;
   const label = DIAS_LABELS[idx] || "Dia";
   if (!dia.ativo) {
-    return `Estabelecimento fechado em ${label.toLowerCase()}. Escolha outro dia.`;
+    return "Estabelecimento fechado neste horário";
   }
   const hi = timeToMinutes(horaInicio);
   const hf = timeToMinutes(horaFim);
   const ab = timeToMinutes(dia.abertura);
   const fe = timeToMinutes(dia.fechamento);
   if (hi < ab || hf > fe) {
-    return `Horário fora do funcionamento (${dia.abertura}–${dia.fechamento}).`;
+    return "Estabelecimento fechado neste horário";
   }
   if (isTimeStr(dia.intervaloInicio) && isTimeStr(dia.intervaloFim) && dia.intervaloInicio !== "00:00") {
     const ii = timeToMinutes(dia.intervaloInicio);
     const fi = timeToMinutes(dia.intervaloFim);
     if (ii < fi && hi < fi && hf > ii) {
-      return `Horário coincide com intervalo do estabelecimento (${dia.intervaloInicio}–${dia.intervaloFim}).`;
+      return "Estabelecimento fechado neste horário";
     }
   }
   return null;
