@@ -6,7 +6,8 @@ import { stripeService } from "../stripeService.js";
 import { stripeStorage } from "../stripeStorage.js";
 import { getUncachableStripeClient, getStripePublishableKey } from "../stripeClient.js";
 import { requireAuth, requireBarbearia } from "../lib/auth.js";
-import { sendCapiEvent } from "../lib/fbCapi.js";
+import { sendCapiEvent, purchaseEventId } from "../lib/fbCapi.js";
+import { buildVerifyDirectSessionPurchaseEvent } from "../lib/purchaseEvent.js";
 
 const router = Router();
 
@@ -403,35 +404,26 @@ router.post("/verify-direct-session", requireAuth, async (req: any, res) => {
 
     const amountTotal = session.amount_total ?? priceItem?.price?.unit_amount ?? null;
     const currencyCode = (session.currency || priceItem?.price?.currency || 'brl').toUpperCase();
-    const stableEventId = eventId || `purchase_${session.id}`;
 
+    let stableEventId: string = eventId || purchaseEventId(session.id);
     try {
       const ipAddress = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null;
       const userAgent = (req.headers["user-agent"] as string) || null;
       const cookieFbp = req.cookies?._fbp || null;
       const cookieFbc = req.cookies?._fbc || null;
-      sendCapiEvent({
-        eventName: "Purchase",
-        eventId: stableEventId,
-        actionSource: "website",
-        userData: {
-          email: user.email || null,
-          phone: (user as any).telefone || null,
-          fbp: fbp || cookieFbp || null,
-          fbc: fbc || cookieFbc || null,
-          fbclid: fbclid || null,
-          ipAddress,
-          userAgent,
-          externalId: String(user.id),
-        },
-        customData: {
-          value: typeof amountTotal === "number" ? amountTotal / 100 : undefined,
-          currency: currencyCode,
-          content_name: product?.name || undefined,
-          content_ids: priceItem?.price?.id ? [priceItem.price.id] : undefined,
-          content_type: "product",
-        },
-      }).catch((e) => console.error("[verify-direct-session] capi error:", e));
+      const capiEvent = buildVerifyDirectSessionPurchaseEvent(session, {
+        user: { id: user.id, email: user.email, telefone: (user as any).telefone },
+        clientEventId: eventId,
+        fbp,
+        fbc,
+        fbclid,
+        cookieFbp,
+        cookieFbc,
+        ipAddress,
+        userAgent,
+      });
+      stableEventId = capiEvent.eventId ?? stableEventId;
+      sendCapiEvent(capiEvent).catch((e) => console.error("[verify-direct-session] capi error:", e));
     } catch (capiErr) {
       console.error("[verify-direct-session] capi dispatch error:", capiErr);
     }

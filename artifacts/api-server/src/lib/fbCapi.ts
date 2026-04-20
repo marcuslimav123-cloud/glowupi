@@ -151,6 +151,10 @@ export async function sendCapiEvent(event: CapiEventInput): Promise<{ ok: boolea
   }
 }
 
+export function purchaseEventId(sessionId: string): string {
+  return `purchase_${sessionId}`;
+}
+
 export function tipoToFbEventName(tipo: string): string | null {
   switch (tipo) {
     case "pageview":

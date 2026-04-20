@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '@workspace/db';
 import { barbeariasTable } from '@workspace/db/schema';
 import { sendCapiEvent } from './lib/fbCapi.js';
+import { buildWebhookPurchaseEvent } from './lib/purchaseEvent.js';
 
 async function handleCheckoutSessionCompleted(sessionObj: any) {
   try {
@@ -24,42 +25,12 @@ async function handleCheckoutSessionCompleted(sessionObj: any) {
       return;
     }
 
-    const subscription = session.subscription as any;
-    const priceItem = subscription?.items?.data?.[0];
-    const product = priceItem?.price?.product as any;
-    const customer = session.customer as any;
+    const event = buildWebhookPurchaseEvent(session);
+    if (!event) return;
 
-    const amountTotal = session.amount_total ?? priceItem?.price?.unit_amount ?? null;
-    const currencyCode = (session.currency || priceItem?.price?.currency || 'brl').toUpperCase();
-    const stableEventId = `purchase_${session.id}`;
+    const result = await sendCapiEvent(event);
 
-    const email = (typeof customer === 'object' && customer?.email)
-      || session.customer_details?.email
-      || null;
-    const phone = (typeof customer === 'object' && customer?.phone)
-      || session.customer_details?.phone
-      || null;
-    const externalId = session.metadata?.userId || (typeof customer === 'object' ? customer?.id : null) || null;
-
-    const result = await sendCapiEvent({
-      eventName: 'Purchase',
-      eventId: stableEventId,
-      actionSource: 'website',
-      userData: {
-        email,
-        phone,
-        externalId: externalId ? String(externalId) : null,
-      },
-      customData: {
-        value: typeof amountTotal === 'number' ? amountTotal / 100 : undefined,
-        currency: currencyCode,
-        content_name: product?.name || undefined,
-        content_ids: priceItem?.price?.id ? [priceItem.price.id] : undefined,
-        content_type: 'product',
-      },
-    });
-
-    console.log(`[webhook:purchase] session=${sessionId} eventId=${stableEventId} ok=${result.ok} status=${result.status ?? ''} err=${result.error ?? ''}`);
+    console.log(`[webhook:purchase] session=${sessionId} eventId=${event.eventId} ok=${result.ok} status=${result.status ?? ''} err=${result.error ?? ''}`);
   } catch (err: any) {
     console.error('[webhook:purchase] error:', err?.message || err);
   }

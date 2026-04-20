@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "NODE_ENV=development tsx ./src/index.ts",
     "build": "tsx ./build.ts",
-    "typecheck": "echo 'Skipping typecheck — api-server uses tsx runtime'"
+    "typecheck": "echo 'Skipping typecheck — api-server uses tsx runtime'",
+    "test": "tsx --test src/lib/__tests__/*.test.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.19.0",
