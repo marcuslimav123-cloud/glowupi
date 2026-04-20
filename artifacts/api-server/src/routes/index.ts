@@ -58,6 +58,7 @@ import filiaisRouter from "./filiais.js";
 import notificacoesInternasRouter from "./notificacoesInternas.js";
 import trialLinksRouter from "./trialLinks.js";
 import campaignRouter from "./campaign.js";
+import emailMarketingRouter, { emailMarketingPublicRouter } from "./emailMarketing.js";
 
 const router: IRouter = Router();
 
@@ -143,6 +144,8 @@ router.use("/barbearias/:barbeariaId/notificacoes-internas", notificacoesInterna
 router.use("/barbearias/:barbeariaId/agendamento-mensagens", agendamentoMensagensStaffRouter);
 router.use("/agendamento-mensagens", agendamentoMensagensClientRouter);
 router.use("/client-push-tokens", clientPushTokensRouter);
+router.use("/email-marketing", emailMarketingPublicRouter);
+router.use("/barbearias/:barbeariaId/email-marketing", emailMarketingRouter);
 
 router.get("/lgpd/terms", async (_req, res) => {
   try {

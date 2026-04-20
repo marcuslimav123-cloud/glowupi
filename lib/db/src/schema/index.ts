@@ -53,3 +53,4 @@ export * from "./notificacoes";
 export * from "./lgpdConsents";
 export * from "./trialLinks";
 export * from "./campaignEvents";
+export * from "./emailMarketing";

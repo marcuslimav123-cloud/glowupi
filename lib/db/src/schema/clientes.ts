@@ -18,6 +18,9 @@ export const clientesTable = pgTable("clientes", {
   status: text("status").notNull().default("aprovado"),
   alergias: text("alergias"),
   contraindicacoes: text("contraindicacoes"),
+  emailMarketingOptout: boolean("email_marketing_optout").notNull().default(false),
+  emailMarketingOptoutAt: timestamp("email_marketing_optout_at"),
+  emailMarketingOptoutToken: text("email_marketing_optout_token"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

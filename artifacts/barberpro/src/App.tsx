@@ -84,6 +84,8 @@ const Filiais = React.lazy(() => import("@/pages/gestao/Filiais"));
 
 const Parametros = React.lazy(() => import("@/pages/configuracoes/Parametros"));
 const InboxMensagens = React.lazy(() => import("@/pages/comunicacao/InboxMensagens"));
+const EmailMarketing = React.lazy(() => import("@/pages/comunicacao/EmailMarketing"));
+const NovaCampanha = React.lazy(() => import("@/pages/comunicacao/NovaCampanha"));
 const PerfisAcesso = React.lazy(() => import("@/pages/configuracoes/PerfisAcesso"));
 const RodizioPage = React.lazy(() => import("@/pages/configuracoes/PlaceholderConfig").then(m => ({ default: m.RodizioPage })));
 const OrdemChegadaPage = React.lazy(() => import("@/pages/configuracoes/PlaceholderConfig").then(m => ({ default: m.OrdemChegadaPage })));
@@ -202,6 +204,8 @@ function Router() {
       <Route path="/avaliacoes" component={Avaliacoes} />
       <Route path="/mensagens" component={Mensagens} />
       <Route path="/comunicacao/inbox" component={InboxMensagens} />
+      <Route path="/comunicacao/email-marketing/nova" component={NovaCampanha} />
+      <Route path="/comunicacao/email-marketing" component={EmailMarketing} />
       <Route path="/equipe" component={Equipe} />
       <Route path="/convite/:token" component={AcceptInvite} />
 

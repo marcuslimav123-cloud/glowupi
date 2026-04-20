@@ -14,8 +14,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Search, UserRound, Star, Crown, Phone, Mail,
-  Cake, TrendingUp, Edit2, Award, MessageCircle, Eye, FileSpreadsheet
+  Cake, TrendingUp, Edit2, Award, MessageCircle, Eye, FileSpreadsheet, Send
 } from "lucide-react";
+import { apiUrl } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 import { ImportExcelDialog } from "@/components/ImportExcelDialog";
@@ -104,6 +105,33 @@ export default function Clientes() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Cliente | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [emailTo, setEmailTo] = useState<Cliente | null>(null);
+  const [emailAssunto, setEmailAssunto] = useState("");
+  const [emailCorpo, setEmailCorpo] = useState("");
+  const [emailSending, setEmailSending] = useState(false);
+
+  async function sendIndividualEmail() {
+    if (!emailTo || !emailAssunto || !emailCorpo) return;
+    setEmailSending(true);
+    try {
+      const r = await fetch(apiUrl(`/barbearias/${barbeariaId}/email-marketing/individual`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ clienteId: emailTo.id, assunto: emailAssunto, corpo: emailCorpo }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || "Erro ao enviar");
+      toast({ title: "E-mail enviado", description: `Enviado para ${emailTo.email}` });
+      setEmailTo(null);
+      setEmailAssunto("");
+      setEmailCorpo("");
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    } finally {
+      setEmailSending(false);
+    }
+  }
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["/api/barbearias", barbeariaId, "clientes"] });
 
@@ -241,6 +269,11 @@ export default function Clientes() {
                   <Button variant="ghost" size="icon" className={`h-7 w-7 sm:h-8 sm:w-8 ${c.vip ? "text-amber-500" : "text-muted-foreground hover:text-amber-500"}`} title={c.vip ? "Remover VIP" : "Marcar VIP"} onClick={() => handleToggleVip(c)}>
                     <Crown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </Button>
+                  {c.email && (
+                    <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground hover:text-primary hidden sm:inline-flex" title="Enviar e-mail" onClick={() => { setEmailTo(c); setEmailAssunto(""); setEmailCorpo(""); }}>
+                      <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    </Button>
+                  )}
                   <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground hover:text-primary" onClick={() => { setEditing(c); setModalOpen(true); }}>
                     <Edit2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </Button>
@@ -262,6 +295,34 @@ export default function Clientes() {
             onCancel={() => { setModalOpen(false); setEditing(null); }}
             isPending={createMutation.isPending || updateMutation.isPending}
           />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!emailTo} onOpenChange={v => { if (!v) { setEmailTo(null); } }}>
+        <DialogContent className="bg-card border-border sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-display flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" /> Enviar e-mail para {emailTo?.nome}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            <div className="text-xs text-muted-foreground">Para: <strong>{emailTo?.email}</strong></div>
+            <div className="space-y-1.5">
+              <Label>Assunto</Label>
+              <Input value={emailAssunto} onChange={e => setEmailAssunto(e.target.value)} placeholder="Assunto do e-mail" maxLength={150} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Mensagem</Label>
+              <Textarea value={emailCorpo} onChange={e => setEmailCorpo(e.target.value)} rows={8} placeholder={`Olá, ${emailTo?.nome || ""}!\n\n...`} />
+              <div className="text-[11px] text-muted-foreground">Variáveis: {`{{nome_cliente}}`}, {`{{nome_estabelecimento}}`}. Um link de descadastro será adicionado automaticamente.</div>
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <Button variant="outline" onClick={() => setEmailTo(null)} disabled={emailSending}>Cancelar</Button>
+              <Button onClick={sendIndividualEmail} disabled={!emailAssunto || !emailCorpo || emailSending} className="gap-2">
+                <Send className="h-4 w-4" /> {emailSending ? "Enviando..." : "Enviar"}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

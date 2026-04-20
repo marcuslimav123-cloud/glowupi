@@ -36,6 +36,7 @@ export const barbeariasTable = pgTable("barbearias", {
   onboardingStep: integer("onboarding_step").notNull().default(1),
   tutorialCompleto: boolean("tutorial_completo").notNull().default(false),
   ativo: boolean("ativo").notNull().default(true),
+  emailMarketingAtivado: boolean("email_marketing_ativado").notNull().default(false),
   utmSource: text("utm_source"),
   utmMedium: text("utm_medium"),
   utmCampaign: text("utm_campaign"),

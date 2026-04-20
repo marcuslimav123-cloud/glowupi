@@ -114,6 +114,7 @@ const NAV_ITEMS: NavItem[] = [
         items: [
           { name: "Mensagens", href: "/mensagens", icon: MessageSquare },
           { name: "Inbox Agendamentos", href: "/comunicacao/inbox", icon: Inbox },
+          { name: "E-mail Marketing", href: "/comunicacao/email-marketing", icon: Mail, roles: ["dono", "gerente"] },
           { name: "Notícias", href: "/cadastros/noticias", icon: Newspaper },
           { name: "Grupos de Clientes", href: "/cadastros/grupos", icon: UsersRound },
           { name: "Pesquisa Satisfação", href: "/cadastros/pesquisa", icon: ClipboardList },
@@ -326,6 +327,8 @@ const HREF_TO_PERMISSION: Record<string, string> = {
   "/equipe": "equipe",
   "/relatorios/dias-sem-vir": "relatorios",
   "/relatorios/lucro-produtos": "relatorios",
+  "/comunicacao/email-marketing": "mensagens",
+  "/comunicacao/email-marketing/nova": "mensagens",
 };
 
 function hasPermission(href: string | undefined, perms: string[] | null): boolean {
