@@ -396,6 +396,13 @@ publicRouter.post("/optout/:token", async (req, res) => {
 
 publicRouter.post("/brevo-webhook", async (req, res) => {
   try {
+    const secret = process.env.BREVO_WEBHOOK_SECRET;
+    if (secret) {
+      const provided = req.header("x-brevo-webhook-secret") || req.query.secret;
+      if (provided !== secret) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+    }
     const events = Array.isArray(req.body) ? req.body : [req.body];
     for (const ev of events) {
       const messageId = ev["message-id"] || ev.messageId;
