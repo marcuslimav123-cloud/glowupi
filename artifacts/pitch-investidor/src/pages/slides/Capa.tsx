@@ -12,23 +12,16 @@ export default function Capa() {
       <div className="absolute inset-0 bg-gradient-to-r from-ink/85 via-ink/55 to-ink/20" />
       <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent" />
 
-      <img
-        src={`${base}glow-upi-logo-card.png`}
-        crossOrigin="anonymous"
-        alt="Selo Glow Upi"
-        className="absolute top-[6vh] right-[6vw] w-[16vw] h-[16vw] object-contain z-20"
-        style={{ filter: "drop-shadow(0 14px 48px rgba(0,0,0,0.55))" }}
-      />
-
       <div className="relative z-10 w-full h-full flex flex-col justify-between px-[8vw] py-[7vh]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-[1.2vw]">
-            <div className="w-[2.4vw] h-[2.4vw] rounded-full bg-primary" />
-            <span className="text-cream font-body text-[1.4vw] tracking-[0.3em] uppercase">
-              Glow Upi
-            </span>
-          </div>
-          <span className="text-cream/70 font-body text-[1.1vw] tracking-[0.2em] uppercase invisible">
+        <div className="flex items-start justify-between">
+          <img
+            src={`${base}glow-upi-logo-card.png`}
+            crossOrigin="anonymous"
+            alt="Glow Upi"
+            className="w-[8vw] h-[8vw] object-contain"
+            style={{ filter: "drop-shadow(0 10px 30px rgba(0,0,0,0.5))" }}
+          />
+          <span className="text-cream/70 font-body text-[1.1vw] tracking-[0.3em] uppercase mt-[2vh]">
             Documento de Sociedade · 2026
           </span>
         </div>
