@@ -52,22 +52,25 @@ export async function checkQuota(barbeariaId: number, modo: QuotaModo, qtd: numb
   return { ok: usado + qtd <= limite, restante, limite };
 }
 
-export async function incrementQuota(barbeariaId: number, modo: QuotaModo, qtd: number = 1): Promise<void> {
+export async function incrementQuota(barbeariaId: number, modo: QuotaModo, qtd: number = 1): Promise<number> {
   const data = getBrasiliaDate();
-  const existing = await db
-    .select()
-    .from(emailDailyQuotaTable)
-    .where(and(
-      eq(emailDailyQuotaTable.barbeariaId, barbeariaId),
-      eq(emailDailyQuotaTable.data, data),
-      eq(emailDailyQuotaTable.modo, modo),
-    ))
-    .limit(1);
-  if (existing.length > 0) {
-    await db.update(emailDailyQuotaTable)
-      .set({ usado: sql`${emailDailyQuotaTable.usado} + ${qtd}` })
-      .where(eq(emailDailyQuotaTable.id, existing[0].id));
-  } else {
-    await db.insert(emailDailyQuotaTable).values({ barbeariaId, data, modo, usado: qtd });
+  const result = await db
+    .insert(emailDailyQuotaTable)
+    .values({ barbeariaId, data, modo, usado: qtd })
+    .onConflictDoUpdate({
+      target: [emailDailyQuotaTable.barbeariaId, emailDailyQuotaTable.data, emailDailyQuotaTable.modo],
+      set: { usado: sql`${emailDailyQuotaTable.usado} + ${qtd}` },
+    })
+    .returning({ usado: emailDailyQuotaTable.usado });
+  return result[0]?.usado || 0;
+}
+
+export async function reserveQuota(barbeariaId: number, modo: QuotaModo, qtd: number): Promise<{ ok: boolean; usado: number; limite: number }> {
+  const limite = QUOTA_LIMITS[modo];
+  const usado = await incrementQuota(barbeariaId, modo, qtd);
+  if (usado > limite) {
+    await incrementQuota(barbeariaId, modo, -qtd);
+    return { ok: false, usado: usado - qtd, limite };
   }
+  return { ok: true, usado, limite };
 }

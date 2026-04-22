@@ -10,7 +10,7 @@ import {
   sendMarketingEmail, generateUnsubscribeToken, buildUnsubscribeUrl,
   buildAgendamentoUrl, renderMarketingBody, isValidEmail,
 } from "../lib/marketingEmail.js";
-import { checkQuota, incrementQuota, getQuotaSummary } from "../lib/emailQuota.js";
+import { checkQuota, incrementQuota, getQuotaSummary, reserveQuota } from "../lib/emailQuota.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -148,7 +148,7 @@ router.post("/campanhas/:id/enviar-teste", requireAuth, requireRole("dono", "ger
     link_descadastrar: buildUnsubscribeUrl(fakeToken),
   };
   const body = renderMarketingBody(c.corpo, vars);
-  const subject = "[TESTE] " + (c.assunto.replace(/\{\{(\w+)\}\}/g, (_, k) => (vars as any)[k] || ""));
+  const subject = "[TESTE] " + (c.assunto.replace(/\{\{(\w+)\}\}/g, (_: string, k: string) => (vars as any)[k] || ""));
   const result = await sendMarketingEmail({
     to: { email: user.email, name: user.nome || undefined },
     assunto: subject,
@@ -187,11 +187,11 @@ router.post("/campanhas/:id/enviar", requireAuth, requireRole("dono", "gerente")
   const validos = clientes.filter(cl => cl.email && isValidEmail(cl.email));
   if (validos.length === 0) return res.status(400).json({ error: "Nenhum destinatário válido (sem e-mail ou descadastrados)" });
 
-  const quota = await checkQuota(barbeariaId, "massa", validos.length);
-  if (!quota.ok) {
+  const reservation = await reserveQuota(barbeariaId, "massa", validos.length);
+  if (!reservation.ok) {
     return res.status(429).json({
-      error: `Você atingiu o limite de ${quota.limite} e-mails de campanha hoje (restante: ${quota.restante}). Reseta à meia-noite (horário de Brasília).`,
-      restante: quota.restante,
+      error: `Você atingiu o limite de ${reservation.limite} e-mails de campanha hoje (usado: ${reservation.usado}). Reseta à meia-noite (horário de Brasília).`,
+      restante: Math.max(0, reservation.limite - reservation.usado),
     });
   }
 
@@ -226,11 +226,20 @@ async function processCampaign(campaignId: number, barbeariaId: number, nomeEsta
   let enviados = 0;
   let falhas = 0;
   for (const r of recipients) {
-    const optoutToken = r.unsubscribeToken || generateUnsubscribeToken();
+    let optoutToken = r.unsubscribeToken;
     if (r.clienteId) {
-      await db.update(clientesTable)
-        .set({ emailMarketingOptoutToken: optoutToken })
-        .where(eq(clientesTable.id, r.clienteId));
+      const [cl] = await db.select({ token: clientesTable.emailMarketingOptoutToken })
+        .from(clientesTable).where(eq(clientesTable.id, r.clienteId)).limit(1);
+      if (cl?.token) {
+        optoutToken = cl.token;
+      } else {
+        optoutToken = optoutToken || generateUnsubscribeToken();
+        await db.update(clientesTable)
+          .set({ emailMarketingOptoutToken: optoutToken })
+          .where(eq(clientesTable.id, r.clienteId));
+      }
+    } else {
+      optoutToken = optoutToken || generateUnsubscribeToken();
     }
     const vars = {
       nome_cliente: r.nome || "Cliente",
@@ -239,7 +248,7 @@ async function processCampaign(campaignId: number, barbeariaId: number, nomeEsta
       link_descadastrar: buildUnsubscribeUrl(optoutToken),
     };
     const body = renderMarketingBody(corpo, vars);
-    const subject = assunto.replace(/\{\{(\w+)\}\}/g, (_, k) => (vars as any)[k] || "");
+    const subject = assunto.replace(/\{\{(\w+)\}\}/g, (_: string, k: string) => (vars as any)[k] || "");
 
     try {
       const result = await sendMarketingEmail({
@@ -256,13 +265,13 @@ async function processCampaign(campaignId: number, barbeariaId: number, nomeEsta
           unsubscribeToken: optoutToken,
           enviadoEm: new Date(),
         }).where(eq(emailCampaignRecipientsTable.id, r.id));
-        await incrementQuota(barbeariaId, "massa", 1);
         enviados++;
       } else {
         await db.update(emailCampaignRecipientsTable).set({
           status: "falha",
           erro: result.error || "Erro desconhecido",
         }).where(eq(emailCampaignRecipientsTable.id, r.id));
+        await incrementQuota(barbeariaId, "massa", -1);
         falhas++;
       }
     } catch (err: any) {
@@ -270,6 +279,7 @@ async function processCampaign(campaignId: number, barbeariaId: number, nomeEsta
         status: "falha",
         erro: err?.message || String(err),
       }).where(eq(emailCampaignRecipientsTable.id, r.id));
+      await incrementQuota(barbeariaId, "massa", -1);
       falhas++;
     }
     await new Promise(resolve => setTimeout(resolve, SEND_DELAY_MS));
@@ -299,11 +309,11 @@ router.post("/individual", requireAuth, requireRole("dono", "gerente"), async (r
   if (cl.emailMarketingOptout) return res.status(403).json({ error: "Cliente descadastrou e não pode receber e-mails" });
   if (!cl.email || !isValidEmail(cl.email)) return res.status(400).json({ error: "Cliente sem e-mail válido" });
 
-  const quota = await checkQuota(barbeariaId, "manual", 1);
-  if (!quota.ok) {
+  const reservation = await reserveQuota(barbeariaId, "manual", 1);
+  if (!reservation.ok) {
     return res.status(429).json({
-      error: `Você atingiu o limite de ${quota.limite} e-mails individuais hoje. Reseta à meia-noite (horário de Brasília).`,
-      restante: quota.restante,
+      error: `Você atingiu o limite de ${reservation.limite} e-mails individuais hoje. Reseta à meia-noite (horário de Brasília).`,
+      restante: 0,
     });
   }
 
@@ -319,7 +329,7 @@ router.post("/individual", requireAuth, requireRole("dono", "gerente"), async (r
     link_descadastrar: buildUnsubscribeUrl(optoutToken),
   };
   const body = renderMarketingBody(corpo, vars);
-  const subject = assunto.replace(/\{\{(\w+)\}\}/g, (_, k) => (vars as any)[k] || "");
+  const subject = assunto.replace(/\{\{(\w+)\}\}/g, (_: string, k: string) => (vars as any)[k] || "");
 
   const result = await sendMarketingEmail({
     to: { email: cl.email, name: cl.nome || undefined },

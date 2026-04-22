@@ -1,0 +1,41 @@
+# Contexto do Projeto
+Estou desenvolvendo o "Glow Upi", um SaaS (Software as a Service) focado em automatizar e gerenciar a presença digital e o fluxo de vendas para pequenas empresas e profissionais liberais locais. O software está 100% programado por mim (MVP funcional concluído) e pronto para o lançamento operacional. Estou em negociação com um investidor estratégico para ceder 50% da operação em troca de capital de giro e equipamento.
+
+# Objetivo
+Preciso que você atue como um Especialista em Vendas e Estrategista de Negócios SaaS. Sua tarefa é criar a estrutura de tópicos, o conteúdo textual (copywriting de alto impacto) e sugestões visuais para um Slide Deck (Apresentação de Pitch) de 6 a 8 slides. O objetivo é vender 50% da sociedade.
+
+# Público-Alvo do Pitch
+Um investidor estratégico que não é técnico, mas entende de poder e influência regional. Ele quer ver retorno financeiro claro, segurança no investimento e como isso se torna um ativo valioso a longo prazo. *Não mencione dívidas anteriores ou disputas societárias.* Foque na oportunidade.
+
+# Dados Cruciais para Projeções Financeiras (Use estes números)
+Para os cálculos de ROI nos slides, utilize as seguintes premissas de mercado:
+1.  **TAM Inicial (Teresina, PI):** Estime o mercado endereçável em 5.000 CNPJs ativos (pequenos varejos, clínicas, serviços de beleza/bem-estar) que necessitam de digitalização.
+2.  **Ticket Médio SaaS (ARPA):** R$ 150,00 por mês por assinatura.
+3.  **Taxa de Conversão (Filosofia Rusvel - Lead Qualificado para Cliente):** Adote uma taxa de conversão disciplinada de 5% sobre os leads gerados pelo tráfego pago.
+4.  **CAC (Custo de Aquisição de Cliente):** Estime um CAC agressivo inicial de R$ 100,00 para os primeiros meses de tração.
+
+# Estrutura de Slides Exigida
+
+Eu quero que a apresentação siga exatamente esta ordem, respondendo às três perguntas chave:
+
+## PARTE 1: O QUE EU TENHO (A Ativo e a Tecnologia)
+* **Slide 1: Capa Impactante:** Nome (Glow Upi), Tagline matadora e imagem profissional.
+* **Slide 2: O Problema e Nossa Solução:** O "apagão digital" das empresas de Teresina vs. como o Glow Upi resolve isso em minutos (enfatize que a tecnologia está PRONTA e foi 100% desenvolvida por mim).
+
+## PARTE 2: O QUE EU QUERO (O Investimento)
+* **Slide 3: O Veículo de Tração:** Explique como o investimento de R$ 12.000,00 será usado:
+    * R$ 7.000,00 (Aporte Operacional para Setup e Nuvem).
+    * R$ 5.000,00 (100% Tráfego Pago Meta/Google - o motor de vendas).
+    * 1x iPhone 17 Pro Max (Equipamento essencial para o sócio operador - eu - gerar presença digital e conteúdo de alta autoridade para a marca).
+* **Slide 4: O Mercado (TAM de Teresina):** Mostre visualmente o tamanho do mercado em Teresina baseado nas 5.000 empresas e o potencial de faturamento se dominarmos apenas 10% dele.
+
+## PARTE 3: O QUE O SÓCIO GANHA (O ROI e o Futuro)
+* **Slide 5: Projeção de Médio Prazo (Até Dezembro):** Use os dados de tráfego pago (R$ 5k) e a conversão de 5% para projetar quantos clientes teremos e qual será o MRR (Receita Mensal Recorrente) em Dezembro. Mostre o Ponto de Equilíbrio (Break-even).
+* **Slide 6: Projeção de Longo Prazo (5 Anos):** Uma visão arrojada. Mostre o plano de expansão para além de Teresina (Nordeste). Projete o valuation da empresa em 5 anos, assumindo uma taxa de crescimento anual composta (CAGR) típica de SaaS de sucesso. Mostre quanto os 50% dele valerão.
+* **Slide 7: A Proposta Final e Próximos Passos:** Resumo do acordo (50% Equity por R$ 12k + iPhone) e Call to Action (CTA) para fechar o contrato.
+
+# Formato da Resposta
+Entregue o resultado em formato Markdown limpo. Para cada slide, forneça:
+1.  **Título do Slide**
+2.  **Conteúdo Textual (Copywriting):** Tópicos curtos e diretos, focados em benefício e lucro.
+3.  **Sugestão Visual:** Uma descrição breve de que tipo de imagem, gráfico ou ícone deve ser usado para ilustrar aquele slide.
