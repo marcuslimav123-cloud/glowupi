@@ -1,5 +1,22 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "q7NDyqrepb3QLqfa7dxIC"
+uri = "file://artifacts/pitch-investidor/public/hero-salon.png"
+type = "image"
+title = "luxury salon hero"
+
+[[generated]]
+id = "14uACdtQeAfJDbr4DIycl"
+uri = "file://artifacts/pitch-investidor/public/teresina-aerial.png"
+type = "image"
+title = "teresina aerial"
+
+[[generated]]
+id = "htnY5oBeAU047xY4RfN0g"
+uri = "file://artifacts/pitch-investidor/public/growth-abstract.png"
+type = "image"
+title = "growth abstract gold"
 
 [[outputs]]
 id = "1cLEOM0wmAzydbwDUrYSv"

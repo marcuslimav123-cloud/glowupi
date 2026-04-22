@@ -1,0 +1,58 @@
+[
+  {
+    "id": "a1f3c8e2-1111-4b1a-9c1d-001000000001",
+    "position": 1,
+    "filepath": "src/pages/slides/Capa.tsx",
+    "title": "Capa — Oportunidade de Sociedade",
+    "description": "Slide de abertura com hero image e proposta R$18.300 por 50% equity.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1f3c8e2-1111-4b1a-9c1d-001000000002",
+    "position": 2,
+    "filepath": "src/pages/slides/ProblemaSolucao.tsx",
+    "title": "Problema & Solução",
+    "description": "Mercado manual vs SaaS multi-tenant pronto.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1f3c8e2-1111-4b1a-9c1d-001000000003",
+    "position": 3,
+    "filepath": "src/pages/slides/VeiculoTracao.tsx",
+    "title": "Veículo de Tração",
+    "description": "Onde vai o R$18.300: cartão, Meta Ads, iPhone para conteúdo.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1f3c8e2-1111-4b1a-9c1d-001000000004",
+    "position": 4,
+    "filepath": "src/pages/slides/MercadoMargem.tsx",
+    "title": "Mercado e Margem",
+    "description": "TAM Teresina 5.000 CNPJs, ARPA R$164,50, custo fixo R$208/mês.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1f3c8e2-1111-4b1a-9c1d-001000000005",
+    "position": 5,
+    "filepath": "src/pages/slides/FunilCenarios.tsx",
+    "title": "Funil & Cenários até dez/26",
+    "description": "Funil Russell Brunson com isca CRM grátis e 3 cenários de tração.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1f3c8e2-1111-4b1a-9c1d-001000000006",
+    "position": 6,
+    "filepath": "src/pages/slides/Projecao5Anos.tsx",
+    "title": "Projeção 5 Anos & Valuation",
+    "description": "Três cenários até 2031 com ROI sobre R$18.300 nas três trajetórias.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1f3c8e2-1111-4b1a-9c1d-001000000007",
+    "position": 7,
+    "filepath": "src/pages/slides/Proposta.tsx",
+    "title": "Proposta & Próximo Passo",
+    "description": "Resumo da composição R$10k + iPhone, o que o sócio recebe e CTA.",
+    "speakerNotes": ""
+  }
+]
