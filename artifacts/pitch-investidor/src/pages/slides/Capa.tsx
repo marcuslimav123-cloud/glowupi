@@ -21,35 +21,35 @@ export default function Capa() {
             </span>
           </div>
           <span className="text-cream/70 font-body text-[1.1vw] tracking-[0.2em] uppercase">
-            Pitch Investidor · 2026
+            Documento de Sociedade · 2026
           </span>
         </div>
 
         <div className="max-w-[68vw]">
           <p className="text-primary font-body text-[1.3vw] tracking-[0.35em] uppercase mb-[3vh]">
-            Oportunidade de Sociedade
+            Apresentação Confidencial ao Investidor
           </p>
           <h1
-            className="font-display text-[6.4vw] leading-[0.95] text-cream font-light"
+            className="font-display text-[6vw] leading-[0.95] text-cream font-light"
             style={{ textWrap: "balance" }}
           >
-            A operação de beleza<br className="hidden" />
-            <span className="italic font-normal text-primary"> vira software.</span>
+            A operação de beleza
+            <span className="italic font-normal text-primary"> torna-se software.</span>
           </h1>
-          <p className="text-cream/85 font-body text-[1.7vw] mt-[3.5vh] max-w-[55vw] font-light leading-snug">
-            50% da Glow Upi — o sistema que organiza, agenda e fideliza
-            o mercado de estética em Teresina.
+          <p className="text-cream/85 font-body text-[1.6vw] mt-[3.5vh] max-w-[58vw] font-light leading-snug">
+            Convite formal para aquisição de 50% de participação societária na
+            Glow Upi — plataforma SaaS dedicada ao mercado de estética em Teresina.
           </p>
         </div>
 
         <div className="flex items-end justify-between border-t border-cream/20 pt-[3vh]">
           <div>
             <p className="text-cream/60 font-body text-[1vw] tracking-[0.25em] uppercase mb-[0.8vh]">
-              Proposta
+              Aporte solicitado
             </p>
             <p className="text-cream font-display text-[2.2vw] font-light">
-              R$ 18.300 <span className="text-cream/60 text-[1.3vw]">·</span>{" "}
-              <span className="text-primary italic">50% equity</span>
+              R$ 19.700 <span className="text-cream/60 text-[1.3vw]">·</span>{" "}
+              <span className="text-primary italic">50% de equity</span>
             </p>
           </div>
           <div className="text-right">
@@ -57,7 +57,7 @@ export default function Capa() {
               Apresentado por
             </p>
             <p className="text-cream font-display text-[1.6vw] font-light italic">
-              Fundador & CTO
+              Fundador & Diretor de Tecnologia
             </p>
           </div>
         </div>

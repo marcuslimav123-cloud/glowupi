@@ -3,56 +3,56 @@
     "id": "a1f3c8e2-1111-4b1a-9c1d-001000000001",
     "position": 1,
     "filepath": "src/pages/slides/Capa.tsx",
-    "title": "Capa — Oportunidade de Sociedade",
-    "description": "Slide de abertura com hero image e proposta R$18.300 por 50% equity.",
+    "title": "Capa — Documento de Sociedade",
+    "description": "Abertura formal com proposta R$19.700 por 50% de equity da Glow Upi.",
     "speakerNotes": ""
   },
   {
     "id": "a1f3c8e2-1111-4b1a-9c1d-001000000002",
     "position": 2,
-    "filepath": "src/pages/slides/ProblemaSolucao.tsx",
-    "title": "Problema & Solução",
-    "description": "Mercado manual vs SaaS multi-tenant pronto.",
+    "filepath": "src/pages/slides/DoresLatentes.tsx",
+    "title": "Dores Latentes do Mercado",
+    "description": "Quatro dores reais: receita evapora, tempo vira custo, atraso tecnológico, decisão sem dado.",
     "speakerNotes": ""
   },
   {
     "id": "a1f3c8e2-1111-4b1a-9c1d-001000000003",
     "position": 3,
-    "filepath": "src/pages/slides/VeiculoTracao.tsx",
-    "title": "Veículo de Tração",
-    "description": "Onde vai o R$18.300: cartão, Meta Ads, iPhone para conteúdo.",
+    "filepath": "src/pages/slides/SolucaoGlowUpi.tsx",
+    "title": "A Plataforma Glow Upi",
+    "description": "SaaS multi-inquilino com seis módulos cobrindo agenda, ficha, app, pagamentos, e-mail e financeiro.",
     "speakerNotes": ""
   },
   {
     "id": "a1f3c8e2-1111-4b1a-9c1d-001000000004",
     "position": 4,
-    "filepath": "src/pages/slides/MercadoMargem.tsx",
-    "title": "Mercado e Margem",
-    "description": "TAM Teresina 5.000 CNPJs, ARPA R$164,50, custo fixo R$208/mês.",
+    "filepath": "src/pages/slides/MercadoGlossario.tsx",
+    "title": "Mercado, Margem e Glossário",
+    "description": "TAM Teresina 5.000 CNPJs, ARPA R$164,50, custo R$208/mês e definição das siglas usadas.",
     "speakerNotes": ""
   },
   {
     "id": "a1f3c8e2-1111-4b1a-9c1d-001000000005",
     "position": 5,
-    "filepath": "src/pages/slides/FunilCenarios.tsx",
-    "title": "Funil & Cenários até dez/26",
-    "description": "Funil Russell Brunson com isca CRM grátis e 3 cenários de tração.",
+    "filepath": "src/pages/slides/VeiculoTracao.tsx",
+    "title": "Destinação do Aporte",
+    "description": "R$5k cartão + R$6,4k Meta Ads + iPhone 17 Pro Max. Funil de aquisição em uma linha.",
     "speakerNotes": ""
   },
   {
     "id": "a1f3c8e2-1111-4b1a-9c1d-001000000006",
     "position": 6,
-    "filepath": "src/pages/slides/Projecao5Anos.tsx",
-    "title": "Projeção 5 Anos & Valuation",
-    "description": "Três cenários até 2031 com ROI sobre R$18.300 nas três trajetórias.",
+    "filepath": "src/pages/slides/ProjecaoRealista.tsx",
+    "title": "Projeção Realista — Teresina",
+    "description": "MRR/ARR para 200 e 500 clientes, tempo até cada marco e teto de 5 anos sem expansão.",
     "speakerNotes": ""
   },
   {
     "id": "a1f3c8e2-1111-4b1a-9c1d-001000000007",
     "position": 7,
     "filepath": "src/pages/slides/Proposta.tsx",
-    "title": "Proposta & Próximo Passo",
-    "description": "Resumo da composição R$10k + iPhone, o que o sócio recebe e CTA.",
+    "title": "Proposta Formal",
+    "description": "Âncora R$27k vs aporte R$19.700, quatro entregáveis ao sócio e composição do valor.",
     "speakerNotes": ""
   }
 ]

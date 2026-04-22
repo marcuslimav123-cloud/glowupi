@@ -65,3 +65,9 @@ id = "5KIlN1gPKQ9ZBWzSmzPeZ"
 uri = "file://generated_docs/PGMIT_v2_Refinamento_Estrategico.docx"
 type = "word_document"
 title = "PGMIT v2 — Refinamento Estratégico (Word)"
+
+[[outputs]]
+id = "Z_IAz7wA47b78aK8nn-nU"
+uri = "file://.local/outputs/BarberPro-Suite.pptx"
+type = "slides"
+title = "BarberPro Suite.pptx"
