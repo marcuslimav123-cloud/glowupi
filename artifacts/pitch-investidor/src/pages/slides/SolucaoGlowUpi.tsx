@@ -2,7 +2,14 @@ export default function SolucaoGlowUpi() {
   return (
     <div className="w-screen h-screen overflow-hidden relative bg-bg">
       <div className="absolute top-0 right-0 w-[45vw] h-full bg-cream" />
-      <div className="absolute top-[6vh] right-[6vw] flex items-center gap-[1vw] z-20">
+      <img
+        src={`${import.meta.env.BASE_URL}glow-upi-logo.png`}
+        crossOrigin="anonymous"
+        alt="Selo Glow Upi"
+        className="absolute top-[5vh] right-[6vw] w-[11vw] h-[11vw] object-contain z-20"
+        style={{ filter: "drop-shadow(0 10px 30px rgba(26,26,26,0.12))" }}
+      />
+      <div className="absolute bottom-[5vh] right-[6vw] flex items-center gap-[1vw] z-20">
         <div className="w-[1.5vw] h-[1.5vw] rounded-full bg-primary" />
         <span className="text-muted font-body text-[1vw] tracking-[0.3em] uppercase">03 / 07</span>
       </div>

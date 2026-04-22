@@ -11,6 +11,13 @@ export default function Proposta() {
       <div className="relative z-10 w-full h-full grid grid-cols-12 px-[6vw] py-[7vh]">
         <div className="col-span-5 flex flex-col justify-between pr-[3vw]">
           <div>
+            <img
+              src={`${import.meta.env.BASE_URL}glow-upi-logo.png`}
+              crossOrigin="anonymous"
+              alt="Glow Upi"
+              className="w-[7vw] h-[7vw] object-contain mb-[2vh]"
+              style={{ filter: "drop-shadow(0 6px 24px rgba(196,164,106,0.4))" }}
+            />
             <p className="text-primary font-body text-[1.1vw] tracking-[0.35em] uppercase mb-[3vh]">
               A proposta formal
             </p>
