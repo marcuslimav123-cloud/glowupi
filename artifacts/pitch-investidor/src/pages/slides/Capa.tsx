@@ -34,8 +34,8 @@ export default function Capa() {
             className="font-display text-[6vw] leading-[0.95] text-cream font-light"
             style={{ textWrap: "balance" }}
           >
-            A operação de beleza
-            <span className="italic font-normal text-primary"> torna-se software.</span>
+            A beleza não cabe mais
+            <span className="italic font-normal text-primary"> no caderno.</span>
           </h1>
           <p className="text-cream/85 font-body text-[1.6vw] mt-[3.5vh] max-w-[58vw] font-light leading-snug">
             Convite formal para aquisição de 50% de participação societária na
