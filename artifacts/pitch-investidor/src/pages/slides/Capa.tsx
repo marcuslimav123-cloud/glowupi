@@ -57,8 +57,11 @@ export default function Capa() {
             <p className="text-cream/60 font-body text-[1vw] tracking-[0.25em] uppercase mb-[0.8vh]">
               Apresentado por
             </p>
-            <p className="text-cream font-display text-[1.6vw] font-light italic">
+            <p className="text-cream font-display text-[1.6vw] font-light italic leading-tight">
               Fundador & Diretor de Tecnologia
+            </p>
+            <p className="text-primary font-body text-[1.1vw] tracking-[0.15em] uppercase mt-[0.6vh]">
+              Marcus Vinícius Lima Silva
             </p>
           </div>
         </div>
