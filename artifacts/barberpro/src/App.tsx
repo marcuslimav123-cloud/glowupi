@@ -54,6 +54,7 @@ const PublicPesquisa = React.lazy(() => import("@/pages/PublicPesquisa"));
 const DirectSalesSuccess = React.lazy(() => import("@/pages/DirectSalesSuccess"));
 const ForgotPassword = React.lazy(() => import("@/pages/auth/ForgotPassword"));
 const ResetPassword = React.lazy(() => import("@/pages/auth/ResetPassword"));
+const Unsubscribe = React.lazy(() => import("@/pages/comunicacao/Unsubscribe"));
 
 const ComandasAbertas = React.lazy(() => import("@/pages/comandas/ComandasAbertas"));
 const ComandasHistorico = React.lazy(() => import("@/pages/comandas/ComandasHistorico"));
@@ -141,6 +142,7 @@ function Router() {
       <Route path="/cadastro" component={Register} />
       <Route path="/esqueci-senha" component={ForgotPassword} />
       <Route path="/redefinir-senha" component={ResetPassword} />
+      <Route path="/descadastrar/:token" component={Unsubscribe} />
 
       <Route path="/completar-perfil" component={CompleteProfile} />
       <Route path="/onboarding/barbearia" component={BarbeariaStep} />

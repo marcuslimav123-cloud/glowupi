@@ -11,7 +11,7 @@ export function generateUnsubscribeToken(): string {
 
 export function buildUnsubscribeUrl(token: string): string {
   const base = PUBLIC_BASE || "";
-  return `${base}/api/email-marketing/unsubscribe/${token}`;
+  return `${base}/barberpro/descadastrar/${token}`;
 }
 
 export function buildAgendamentoUrl(barbeariaSlug: string | null | undefined): string {

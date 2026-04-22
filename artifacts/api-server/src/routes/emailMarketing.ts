@@ -338,14 +338,16 @@ router.post("/individual", requireAuth, requireRole("dono", "gerente"), async (r
     nomeEstabelecimento: barb.nome,
     unsubscribeUrl: vars.link_descadastrar,
   });
-  if (!result.success) return res.status(500).json({ error: result.error || "Falha ao enviar" });
-  await incrementQuota(barbeariaId, "manual", 1);
+  if (!result.success) {
+    await incrementQuota(barbeariaId, "manual", -1);
+    return res.status(500).json({ error: result.error || "Falha ao enviar" });
+  }
   return res.json({ success: true, sentTo: cl.email, restante: (await getQuotaSummary(barbeariaId)).manual.restante });
 });
 
 const publicRouter: IRouter = Router();
 
-publicRouter.get("/unsubscribe/:token", async (req, res) => {
+async function handleOptout(req: any, res: any) {
   try {
     const token = req.params.token;
     if (!token || token.length < 8) {
@@ -366,6 +368,29 @@ publicRouter.get("/unsubscribe/:token", async (req, res) => {
   } catch (err) {
     console.error("[EmailMarketing] unsubscribe error:", err);
     return res.status(500).send(unsubPage("Erro", "Ocorreu um erro ao processar seu pedido."));
+  }
+}
+
+publicRouter.get("/unsubscribe/:token", handleOptout);
+publicRouter.get("/optout/:token", handleOptout);
+
+publicRouter.post("/optout/:token", async (req, res) => {
+  try {
+    const token = req.params.token;
+    if (!token || token.length < 8) return res.status(400).json({ ok: false, error: "Token inválido" });
+    const [cl] = await db.select().from(clientesTable).where(eq(clientesTable.emailMarketingOptoutToken, token)).limit(1);
+    if (!cl) return res.status(404).json({ ok: false, error: "Link não encontrado" });
+    if (!cl.emailMarketingOptout) {
+      await db.update(clientesTable).set({
+        emailMarketingOptout: true,
+        emailMarketingOptoutAt: new Date(),
+      }).where(eq(clientesTable.id, cl.id));
+    }
+    const [barb] = await db.select({ nome: barbeariasTable.nome }).from(barbeariasTable).where(eq(barbeariasTable.id, cl.barbeariaId)).limit(1);
+    return res.json({ ok: true, nomeEstabelecimento: barb?.nome || "" });
+  } catch (err: any) {
+    console.error("[EmailMarketing] optout JSON error:", err);
+    return res.status(500).json({ ok: false, error: "Erro ao processar pedido" });
   }
 });
 
@@ -421,6 +446,34 @@ function unsubPage(titulo: string, mensagem: string): string {
     <p style="margin:24px 0 0;font-size:11px;color:rgba(0,0,0,0.3);">Glow Upi</p>
   </div>
 </body></html>`;
+}
+
+async function resumeStuckCampaigns() {
+  try {
+    const stuck = await db.select().from(emailCampaignsTable).where(eq(emailCampaignsTable.status, "enviando"));
+    for (const c of stuck) {
+      const [barb] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, c.barbeariaId)).limit(1);
+      if (!barb) continue;
+      const pending = await db.select({ id: emailCampaignRecipientsTable.id }).from(emailCampaignRecipientsTable)
+        .where(and(eq(emailCampaignRecipientsTable.campaignId, c.id), eq(emailCampaignRecipientsTable.status, "pendente")));
+      if (pending.length === 0) {
+        await db.update(emailCampaignsTable).set({ status: "concluida", finalizadaEm: new Date() }).where(eq(emailCampaignsTable.id, c.id));
+        continue;
+      }
+      console.log(`[EmailMarketing] Resuming campaign #${c.id} (${pending.length} pendentes)`);
+      processCampaign(c.id, c.barbeariaId, barb.nome, barb.slug, c.assunto, c.corpo).catch(err => {
+        console.error(`[EmailMarketing] Resume failed for campaign ${c.id}:`, err);
+      });
+    }
+  } catch (err) {
+    console.error("[EmailMarketing] resumeStuckCampaigns error:", err);
+  }
+}
+
+export function startEmailMarketingWorker() {
+  resumeStuckCampaigns();
+  setInterval(resumeStuckCampaigns, 5 * 60 * 1000);
+  console.log("[EmailMarketing] Worker started (sweep every 5 minutes)");
 }
 
 export { publicRouter as emailMarketingPublicRouter };
