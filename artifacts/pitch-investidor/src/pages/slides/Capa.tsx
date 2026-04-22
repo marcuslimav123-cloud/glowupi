@@ -13,11 +13,11 @@ export default function Capa() {
       <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent" />
 
       <img
-        src={`${base}glow-upi-logo.png`}
+        src={`${base}glow-upi-logo-card.png`}
         crossOrigin="anonymous"
         alt="Selo Glow Upi"
-        className="absolute top-[6vh] right-[6vw] w-[14vw] h-[14vw] object-contain z-20"
-        style={{ filter: "drop-shadow(0 12px 40px rgba(0,0,0,0.45))" }}
+        className="absolute top-[6vh] right-[6vw] w-[16vw] h-[16vw] object-contain z-20"
+        style={{ filter: "drop-shadow(0 14px 48px rgba(0,0,0,0.55))" }}
       />
 
       <div className="relative z-10 w-full h-full flex flex-col justify-between px-[8vw] py-[7vh]">
