@@ -12,6 +12,14 @@ export default function Capa() {
       <div className="absolute inset-0 bg-gradient-to-r from-ink/85 via-ink/55 to-ink/20" />
       <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent" />
 
+      <img
+        src={`${base}glow-upi-logo.png`}
+        crossOrigin="anonymous"
+        alt="Selo Glow Upi"
+        className="absolute top-[6vh] right-[6vw] w-[14vw] h-[14vw] object-contain z-20"
+        style={{ filter: "drop-shadow(0 12px 40px rgba(0,0,0,0.45))" }}
+      />
+
       <div className="relative z-10 w-full h-full flex flex-col justify-between px-[8vw] py-[7vh]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-[1.2vw]">
@@ -20,7 +28,7 @@ export default function Capa() {
               Glow Upi
             </span>
           </div>
-          <span className="text-cream/70 font-body text-[1.1vw] tracking-[0.2em] uppercase">
+          <span className="text-cream/70 font-body text-[1.1vw] tracking-[0.2em] uppercase invisible">
             Documento de Sociedade · 2026
           </span>
         </div>
