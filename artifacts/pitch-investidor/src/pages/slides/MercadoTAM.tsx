@@ -7,7 +7,7 @@ export default function MercadoTAM() {
             05 · Dimensionamento do mercado
           </p>
           <span className="text-muted font-body text-[1vw] tracking-[0.3em] uppercase">
-            05 / 08
+            05 / 09
           </span>
         </div>
 
@@ -73,6 +73,21 @@ export default function MercadoTAM() {
               concorrência (Trinks, Belezix, Programa Salão).
             </p>
           </div>
+        </div>
+
+        <div className="bg-ink text-cream px-[2vw] py-[1.6vh] mb-[2vh] flex items-baseline justify-between">
+          <div>
+            <p className="text-primary font-body text-[0.85vw] tracking-[0.35em] uppercase mb-[0.4vh]">
+              Perfil financeiro do estabelecimento alvo (SAM)
+            </p>
+            <p className="font-body text-[1vw] text-cream/85 leading-snug">
+              Salão de 3 a 5 profissionais, faturamento mensal entre R$ 25 mil
+              e R$ 50 mil. Fonte: GG Contabilidade · blog Trinks.
+            </p>
+          </div>
+          <p className="font-display text-[2vw] text-cream font-light leading-none whitespace-nowrap ml-[2vw]">
+            R$ 25k a R$ 50k<span className="text-[1vw] text-cream/60">/mês</span>
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-[2vw] mb-[2.5vh]">

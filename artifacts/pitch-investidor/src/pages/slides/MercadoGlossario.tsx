@@ -37,7 +37,7 @@ export default function MercadoGlossario() {
               <p className="text-accent font-body text-[1.1vw] tracking-[0.35em] uppercase">
                 04 · Mercado, margem e vocabulário
               </p>
-              <span className="text-muted font-body text-[1vw] tracking-[0.3em] uppercase">04 / 08</span>
+              <span className="text-muted font-body text-[1vw] tracking-[0.3em] uppercase">04 / 09</span>
             </div>
             <h2
               className="font-display text-[3.8vw] leading-[1] text-ink font-light"

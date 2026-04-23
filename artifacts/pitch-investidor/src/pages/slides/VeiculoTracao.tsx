@@ -3,7 +3,7 @@ export default function VeiculoTracao() {
     <div className="w-screen h-screen overflow-hidden relative bg-bg">
       <div className="absolute top-[6vh] right-[6vw] flex items-center gap-[1vw]">
         <div className="w-[1.5vw] h-[1.5vw] rounded-full bg-primary" />
-        <span className="text-muted font-body text-[1vw] tracking-[0.3em] uppercase">06 / 08</span>
+        <span className="text-muted font-body text-[1vw] tracking-[0.3em] uppercase">07 / 09</span>
       </div>
 
       <div className="relative z-10 w-full h-full flex flex-col justify-center px-[8vw]">
