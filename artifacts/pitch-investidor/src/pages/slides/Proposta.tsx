@@ -12,7 +12,7 @@ export default function Proposta() {
         <div className="col-span-5 flex flex-col justify-between pr-[3vw]">
           <div>
             <img
-              src={`${import.meta.env.BASE_URL}glow-upi-logo.png`}
+              src={`${import.meta.env.BASE_URL}glow-upi-logo-card.png`}
               crossOrigin="anonymous"
               alt="Glow Upi"
               className="w-[7vw] h-[7vw] object-contain mb-[2vh]"
