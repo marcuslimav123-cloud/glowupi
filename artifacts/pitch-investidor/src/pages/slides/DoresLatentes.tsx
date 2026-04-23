@@ -6,7 +6,6 @@ export default function DoresLatentes() {
         <div className="w-[1.5vw] h-[1.5vw] rounded-full bg-primary" />
         <span className="text-muted font-body text-[1vw] tracking-[0.3em] uppercase">02 / 09</span>
       </div>
-
       <div className="relative z-10 w-full h-full flex flex-col px-[6vw] py-[5vh]">
         <div className="mb-[4vh]">
           <p className="text-accent font-body text-[1.05vw] tracking-[0.35em] uppercase mb-[2vh]">
@@ -133,11 +132,7 @@ export default function DoresLatentes() {
               <p className="text-accent font-body text-[0.72vw] tracking-[0.35em] uppercase mb-[0.6vh]">
                 O que é no-show
               </p>
-              <p className="font-body text-[0.92vw] text-ink/75 leading-snug">
-                Termo do setor para o cliente que agenda e não comparece sem
-                avisar — horário reservado, outro cliente recusado, ninguém
-                pagou por ele.
-              </p>
+              <p className="font-body text-[0.92vw] text-ink/75 leading-snug">Termo do setor para o cliente que agenda e não comparece sem avisar — horário reservado, outro cliente recusado, ninguém pagou por esse horário.</p>
             </div>
           </div>
         </div>
