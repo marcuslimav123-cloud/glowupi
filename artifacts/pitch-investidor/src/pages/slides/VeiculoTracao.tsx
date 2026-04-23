@@ -37,7 +37,6 @@ export default function VeiculoTracao() {
           </div>
 
           <div className="bg-ink p-[3vh_2.2vw] flex flex-col justify-between min-h-[32vh] relative">
-            <div className="absolute top-[2vh] right-[1.5vw] w-[2vw] h-[2vw] border border-primary/60" />
             <div>
               <p className="text-primary font-body text-[1vw] tracking-[0.25em] uppercase mb-[1.5vh]">
                 Aquisição · Meta Ads

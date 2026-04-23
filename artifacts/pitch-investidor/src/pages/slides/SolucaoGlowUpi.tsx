@@ -7,7 +7,7 @@ export default function SolucaoGlowUpi() {
         <span className="text-muted font-body text-[1vw] tracking-[0.3em] uppercase">03 / 09</span>
       </div>
 
-      <div className="relative z-10 w-full h-full grid grid-cols-12 px-[6vw] py-[7vh] gap-[3vw]">
+      <div className="relative z-10 w-full h-full grid grid-cols-12 px-[6vw] py-[8vh] gap-[3vw]">
         <div className="col-span-5 flex flex-col justify-between pr-[2vw]">
           <div>
             <p className="text-accent font-body text-[1.1vw] tracking-[0.35em] uppercase mb-[2.5vh]">
@@ -41,7 +41,7 @@ export default function SolucaoGlowUpi() {
           </div>
         </div>
 
-        <div className="col-span-7 grid grid-cols-2 gap-[1.5vh_1.8vw] content-center">
+        <div className="col-span-7 grid grid-cols-2 gap-[3.5vh_2.2vw] content-center">
           <div className="border-l-2 border-primary pl-[1.4vw]">
             <p className="font-display text-[1.55vw] text-ink font-medium leading-tight">Agenda inteligente</p>
             <p className="text-ink/70 font-body text-[1.1vw] mt-[0.6vh] leading-snug">

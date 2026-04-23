@@ -55,10 +55,10 @@ export default function ProjecaoRealista() {
           </div>
 
           <div className="bg-primary/15 border border-primary/40 p-[2.8vh_1.8vw] flex flex-col relative">
-            <div className="absolute -top-[1.5vh] left-[1.5vw] bg-primary text-deep px-[1vw] py-[0.5vh] font-body text-[0.85vw] tracking-[0.3em] uppercase font-semibold">
+            <div className="absolute top-[1.2vh] right-[1.2vw] bg-primary text-deep px-[0.8vw] py-[0.4vh] font-body text-[0.72vw] tracking-[0.3em] uppercase font-semibold">
               Marco-chave
             </div>
-            <p className="text-primary font-body text-[1vw] tracking-[0.3em] uppercase mb-[1vh] mt-[1.5vh]">Marco 02</p>
+            <p className="text-primary font-body text-[1vw] tracking-[0.3em] uppercase mb-[1vh]">Marco 02</p>
             <p className="font-display text-[2.6vw] text-cream font-light leading-none mb-[1.8vh]">
               500 clientes ativos
             </p>

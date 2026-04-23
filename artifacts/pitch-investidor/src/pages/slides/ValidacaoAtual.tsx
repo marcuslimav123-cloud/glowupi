@@ -63,7 +63,7 @@ export default function ValidacaoAtual() {
         </p>
 
         <div className="grid grid-cols-2 gap-[2vw] flex-1">
-          <div className="bg-deep text-cream px-[2vw] py-[3vh] flex flex-col">
+          <div className="bg-deep text-cream px-[2.2vw] py-[3.5vh] flex flex-col">
             <div className="flex items-center gap-[0.8vw] mb-[3vh]">
               <div className="w-[1vw] h-[1vw] rounded-full bg-primary" />
               <p className="text-primary font-body text-[0.85vw] tracking-[0.35em] uppercase">
@@ -75,7 +75,7 @@ export default function ValidacaoAtual() {
               {validados.map((item, i) => (
                 <div
                   key={item.title}
-                  className={i > 0 ? "border-t border-cream/15 pt-[1.6vh] mt-[1.6vh]" : ""}
+                  className={i > 0 ? "border-t border-cream/15 pt-[2vh] mt-[2vh]" : ""}
                 >
                   <p className="font-display text-[1.3vw] font-medium leading-tight mb-[0.4vh]">
                     {item.title}
@@ -88,7 +88,7 @@ export default function ValidacaoAtual() {
             </div>
           </div>
 
-          <div className="bg-cream border-2 border-primary/30 px-[2vw] py-[3vh] flex flex-col">
+          <div className="bg-cream border-2 border-primary/30 px-[2.2vw] py-[3.5vh] flex flex-col">
             <div className="flex items-center gap-[0.8vw] mb-[3vh]">
               <div className="w-[1vw] h-[1vw] rounded-full bg-accent" />
               <p className="text-accent font-body text-[0.85vw] tracking-[0.35em] uppercase">
@@ -100,7 +100,7 @@ export default function ValidacaoAtual() {
               {descobrir.map((item, i) => (
                 <div
                   key={item.title}
-                  className={i > 0 ? "border-t border-ink/10 pt-[1.6vh] mt-[1.6vh]" : ""}
+                  className={i > 0 ? "border-t border-ink/10 pt-[2vh] mt-[2vh]" : ""}
                 >
                   <p className="font-display text-[1.3vw] text-ink font-medium leading-tight mb-[0.4vh]">
                     {item.title}

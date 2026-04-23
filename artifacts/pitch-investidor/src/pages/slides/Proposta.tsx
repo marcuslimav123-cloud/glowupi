@@ -60,8 +60,8 @@ export default function Proposta() {
             <p className="text-accent font-body text-[1.1vw] tracking-[0.35em] uppercase mb-[2.5vh]">
               O que o investidor recebe
             </p>
-            <div className="space-y-[1.6vh]">
-              <div className="flex items-start gap-[1.5vw] border-b border-ink/10 pb-[1.6vh]">
+            <div className="space-y-[2.2vh]">
+              <div className="flex items-start gap-[1.5vw] border-b border-ink/10 pb-[2.2vh]">
                 <span className="font-display text-[1.7vw] text-primary font-medium leading-none w-[2.8vw]">01</span>
                 <div>
                   <p className="font-display text-[1.55vw] text-ink font-medium leading-tight">Cinquenta por cento de equity formal</p>
@@ -75,7 +75,7 @@ export default function Proposta() {
                   <p className="text-ink/70 font-body text-[1.1vw] mt-[0.4vh]">Painel web, aplicativos iOS e Android publicados, agenda, ficha digital e e-mail marketing nativo.</p>
                 </div>
               </div>
-              <div className="flex items-start gap-[1.5vw] border-b border-ink/10 pb-[1.6vh]">
+              <div className="flex items-start gap-[1.5vw] border-b border-ink/10 pb-[2.2vh]">
                 <span className="font-display text-[1.7vw] text-primary font-medium leading-none w-[2.8vw]">03</span>
                 <div>
                   <p className="font-display text-[1.55vw] text-ink font-medium leading-tight">Operação técnica integralmente coberta</p>
@@ -92,7 +92,7 @@ export default function Proposta() {
             </div>
           </div>
 
-          <div className="bg-ink text-cream px-[2vw] py-[2.2vh] flex items-center justify-between gap-[2vw] mt-[2vh]">
+          <div className="bg-ink text-cream px-[2vw] py-[2.5vh] flex items-center justify-between gap-[2vw] mt-[3vh]">
             <div className="min-w-0">
               <p className="text-primary font-body text-[0.95vw] tracking-[0.3em] uppercase mb-[0.5vh]">Composição do aporte</p>
               <p className="font-display text-[1.25vw] font-light italic leading-snug whitespace-nowrap">R$ 11.400 em capital · iPhone 17 Pro Max</p>

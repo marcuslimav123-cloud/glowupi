@@ -6,8 +6,8 @@ export default function DoresLatentes() {
         <div className="w-[1.5vw] h-[1.5vw] rounded-full bg-primary" />
         <span className="text-muted font-body text-[1vw] tracking-[0.3em] uppercase">02 / 09</span>
       </div>
-      <div className="relative z-10 w-full h-full flex flex-col px-[6vw] py-[5vh]">
-        <div className="mb-[4vh]">
+      <div className="relative z-10 w-full h-full flex flex-col px-[6vw] py-[6vh]">
+        <div className="mb-[5vh]">
           <p className="text-accent font-body text-[1.05vw] tracking-[0.35em] uppercase mb-[2vh]">
             A dor traduzida em reais
           </p>
@@ -19,14 +19,14 @@ export default function DoresLatentes() {
           </h2>
         </div>
 
-        <div className="grid grid-cols-12 gap-[2vw] flex-1">
-          <div className="col-span-7 bg-cream px-[2.4vw] py-[3.5vh] flex flex-col">
+        <div className="grid grid-cols-12 gap-[2.5vw] flex-1">
+          <div className="col-span-7 bg-cream px-[2.6vw] py-[4vh] flex flex-col">
             <p className="text-accent font-body text-[0.78vw] tracking-[0.35em] uppercase mb-[3vh]">
               Como o cálculo é construído
             </p>
 
             <div className="flex-1 flex flex-col">
-              <div className="grid grid-cols-[2vw_1fr_auto] gap-x-[1.4vw] items-baseline pb-[1.8vh] border-b border-ink/10">
+              <div className="grid grid-cols-[2vw_1fr_auto] gap-x-[1.4vw] items-baseline pb-[2.2vh] border-b border-ink/10">
                 <p className="font-display text-[1.5vw] text-primary font-medium">a</p>
                 <div>
                   <p className="font-body text-[1.1vw] text-ink leading-tight">
@@ -41,7 +41,7 @@ export default function DoresLatentes() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-[2vw_1fr_auto] gap-x-[1.4vw] items-baseline py-[1.8vh] border-b border-ink/10">
+              <div className="grid grid-cols-[2vw_1fr_auto] gap-x-[1.4vw] items-baseline py-[2.2vh] border-b border-ink/10">
                 <p className="font-display text-[1.5vw] text-primary font-medium">b</p>
                 <div>
                   <p className="font-body text-[1.1vw] text-ink leading-tight">
@@ -56,11 +56,11 @@ export default function DoresLatentes() {
                 </p>
               </div>
 
-              <p className="text-deep font-body text-[0.78vw] tracking-[0.35em] uppercase mt-[2.5vh] mb-[1vh]">
+              <p className="text-deep font-body text-[0.78vw] tracking-[0.35em] uppercase mt-[3.5vh] mb-[1.5vh]">
                 Receita recuperada com a Glow Upi
               </p>
 
-              <div className="grid grid-cols-[2vw_1fr_auto] gap-x-[1.4vw] items-baseline py-[1.8vh] border-b border-ink/10">
+              <div className="grid grid-cols-[2vw_1fr_auto] gap-x-[1.4vw] items-baseline py-[2.2vh] border-b border-ink/10">
                 <p className="font-display text-[1.5vw] text-primary font-medium">c</p>
                 <div>
                   <p className="font-body text-[1.1vw] text-ink leading-tight">
@@ -75,7 +75,7 @@ export default function DoresLatentes() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-[2vw_1fr_auto] gap-x-[1.4vw] items-baseline pt-[1.8vh]">
+              <div className="grid grid-cols-[2vw_1fr_auto] gap-x-[1.4vw] items-baseline pt-[2.2vh]">
                 <p className="font-display text-[1.5vw] text-primary font-medium">d</p>
                 <div>
                   <p className="font-body text-[1.1vw] text-ink leading-tight">
@@ -91,7 +91,7 @@ export default function DoresLatentes() {
               </div>
             </div>
 
-            <div className="border-t-2 border-ink mt-[3vh] pt-[1.8vh] flex items-baseline justify-between">
+            <div className="border-t-2 border-ink mt-[4vh] pt-[2.2vh] flex items-baseline justify-between">
               <p className="font-body text-[0.95vw] text-ink uppercase tracking-[0.2em]">
                 Total recuperável por mês
               </p>

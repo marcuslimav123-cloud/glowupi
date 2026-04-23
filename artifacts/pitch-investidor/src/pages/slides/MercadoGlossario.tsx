@@ -84,11 +84,11 @@ export default function MercadoGlossario() {
             </div>
           </div>
 
-          <div className="bg-ink text-cream px-[2.2vw] py-[2.5vh]">
-            <p className="text-primary font-body text-[0.85vw] tracking-[0.35em] uppercase mb-[1.8vh]">
+          <div className="bg-ink text-cream px-[2.4vw] py-[3vh]">
+            <p className="text-primary font-body text-[0.85vw] tracking-[0.35em] uppercase mb-[2vh]">
               Glossário das siglas usadas neste documento
             </p>
-            <div className="grid grid-cols-2 gap-x-[2.5vw] gap-y-[1.2vh] font-body text-[1vw] leading-snug">
+            <div className="grid grid-cols-2 gap-x-[2.5vw] gap-y-[1.6vh] font-body text-[1vw] leading-snug">
               <p><span className="text-primary font-semibold mr-[0.4vw]">MRR</span> Monthly Recurring Revenue — receita recorrente mensal.</p>
               <p><span className="text-primary font-semibold mr-[0.4vw]">ARR</span> Annual Recurring Revenue — receita recorrente anual (MRR × 12).</p>
               <p><span className="text-primary font-semibold mr-[0.4vw]">CAC</span> Custo de Aquisição de Cliente.</p>

@@ -27,7 +27,7 @@ export default function MercadoTAM() {
         </p>
 
         <div className="grid grid-cols-3 gap-[1.8vw] mb-[3vh]">
-          <div className="bg-ink text-cream px-[1.8vw] py-[3vh] flex flex-col min-h-[26vh]">
+          <div className="bg-ink text-cream px-[1.8vw] py-[3vh] flex flex-col min-h-[22vh]">
             <p className="text-primary font-body text-[0.95vw] tracking-[0.35em] uppercase mb-[1.5vh]">
               TAM · ofertante
             </p>
@@ -43,7 +43,7 @@ export default function MercadoTAM() {
             </p>
           </div>
 
-          <div className="bg-cream px-[1.8vw] py-[3vh] flex flex-col min-h-[26vh]">
+          <div className="bg-cream px-[1.8vw] py-[3vh] flex flex-col min-h-[22vh]">
             <p className="text-accent font-body text-[0.95vw] tracking-[0.35em] uppercase mb-[1.5vh]">
               SAM · qualificado
             </p>
@@ -59,7 +59,7 @@ export default function MercadoTAM() {
             </p>
           </div>
 
-          <div className="bg-bg border-2 border-primary px-[1.8vw] py-[3vh] flex flex-col min-h-[26vh]">
+          <div className="bg-bg border-2 border-primary px-[1.8vw] py-[3vh] flex flex-col min-h-[22vh]">
             <p className="text-primary font-body text-[0.95vw] tracking-[0.35em] uppercase mb-[1.5vh]">
               SOM · alcançável 5 anos
             </p>
@@ -76,7 +76,7 @@ export default function MercadoTAM() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-y border-ink/15 py-[1.5vh] mb-[3vh]">
+        <div className="flex items-center justify-between border-y border-ink/15 py-[2vh] mb-[3.5vh]">
           <div className="flex items-baseline gap-[1.5vw]">
             <p className="text-accent font-body text-[0.78vw] tracking-[0.35em] uppercase">
               Perfil financeiro do estabelecimento alvo (SAM)
@@ -95,12 +95,12 @@ export default function MercadoTAM() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-[3vw] flex-1">
+        <div className="grid grid-cols-2 gap-[4vw] flex-1">
           <div>
-            <p className="text-muted font-body text-[0.85vw] tracking-[0.3em] uppercase mb-[1.5vh]">
+            <p className="text-muted font-body text-[0.85vw] tracking-[0.3em] uppercase mb-[2vh]">
               Demografia da praça · IBGE 2025
             </p>
-            <div className="space-y-[1vh]">
+            <div className="space-y-[1.5vh]">
               <div className="flex items-baseline justify-between">
                 <p className="text-ink/75 font-body text-[1.05vw]">Teresina (PI)</p>
                 <p className="text-ink font-display text-[1.25vw]">905.692 hab</p>
@@ -117,10 +117,10 @@ export default function MercadoTAM() {
           </div>
 
           <div>
-            <p className="text-muted font-body text-[0.85vw] tracking-[0.3em] uppercase mb-[1.5vh]">
+            <p className="text-muted font-body text-[0.85vw] tracking-[0.3em] uppercase mb-[2vh]">
               Premissas do recorte SAM · SOM
             </p>
-            <div className="space-y-[1vh]">
+            <div className="space-y-[1.5vh]">
               <p className="text-ink/75 font-body text-[0.95vw] leading-snug">
                 · 35–40% dos CNPJs têm o dono como único profissional (perfil
                 planilha, baixa conversão para SaaS).
