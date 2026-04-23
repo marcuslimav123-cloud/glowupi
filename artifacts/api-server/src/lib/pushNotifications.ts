@@ -1,6 +1,6 @@
 import { db } from "@workspace/db";
 import { pushTokensTable, usersTable, agendamentosTable, barbeariasTable, notificacoesTable, clientePushTokensTable, clienteUsersTable, clientesTable } from "@workspace/db/schema";
-import { eq, and, gte, lte, inArray } from "drizzle-orm";
+import { eq, and, gte, lte, inArray, lt, sql } from "drizzle-orm";
 import webpush from "web-push";
 import { getParametros } from "./parametros.js";
 
@@ -515,11 +515,42 @@ export async function sendClienteAgendamentoReminders(): Promise<void> {
   }
 }
 
+const STALE_TOKEN_CUTOFF = new Date("2026-04-23T00:00:00.000Z");
+let staleCleanupDone = false;
+
+export async function cleanupStalePushTokensOnce(): Promise<void> {
+  if (staleCleanupDone) return;
+  staleCleanupDone = true;
+  try {
+    const res = await db
+      .update(pushTokensTable)
+      .set({ ativo: false, updatedAt: new Date() })
+      .where(
+        and(
+          eq(pushTokensTable.ativo, true),
+          eq(pushTokensTable.platform, "web"),
+          lt(pushTokensTable.updatedAt, STALE_TOKEN_CUTOFF)
+        )
+      )
+      .returning({ id: pushTokensTable.id });
+    if (res.length > 0) {
+      console.log(`[Push] Startup cleanup: deactivated ${res.length} stale web push token(s) created before VAPID-validation fix.`);
+    } else {
+      console.log("[Push] Startup cleanup: no stale web push tokens found.");
+    }
+  } catch (err) {
+    console.error("[Push] Startup cleanup failed:", err);
+  }
+}
+
 let reminderInterval: ReturnType<typeof setInterval> | null = null;
 
 export function startReminderService(): void {
   if (reminderInterval) return;
   console.log("[Push] Starting reminder service (every 5 minutes)");
+  cleanupStalePushTokensOnce().catch(err =>
+    console.error("[Push] Startup cleanup error:", err)
+  );
   reminderInterval = setInterval(() => {
     sendAgendamentoReminders().catch(err =>
       console.error("[Push] Reminder service error:", err)

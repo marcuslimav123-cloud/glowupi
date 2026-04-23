@@ -97,10 +97,9 @@ async function fetchCurrentVapidKey(): Promise<string | null> {
 
 function subscriptionMatchesKey(sub: PushSubscription, currentPublicKey: string): boolean {
   try {
-    const opts = sub.options;
-    const buf = opts && (opts as any).applicationServerKey;
+    const buf = sub.options.applicationServerKey;
     if (!buf) return false;
-    const subKey = uint8ArrayToBase64Url(new Uint8Array(buf as ArrayBuffer));
+    const subKey = uint8ArrayToBase64Url(new Uint8Array(buf));
     const normalized = currentPublicKey.replace(/=+$/, "");
     return subKey === normalized;
   } catch {

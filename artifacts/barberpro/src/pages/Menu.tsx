@@ -159,9 +159,9 @@ export default function MenuPage() {
           if (vapidResp.ok) {
             const { publicKey } = await vapidResp.json();
             if (publicKey) {
-              let sub = await registration.pushManager.getSubscription();
+              let sub: PushSubscription | null = await registration.pushManager.getSubscription();
               if (sub) {
-                const buf = (sub.options as any).applicationServerKey;
+                const buf = sub.options.applicationServerKey;
                 const subKey = buf ? uint8ToBase64Url(new Uint8Array(buf)) : "";
                 if (subKey !== publicKey.replace(/=+$/, "")) {
                   try { await sub.unsubscribe(); } catch {}
