@@ -55,10 +55,8 @@ export default function MercadoGlossario() {
               <p className="text-muted font-body text-[0.85vw] tracking-[0.3em] uppercase mb-[1.5vh]">
                 TAM Teresina + Timon
               </p>
-              <p className="text-ink/65 font-body text-[1vw] leading-snug">
-                Estabelecimentos formais na praça. Detalhamento TAM/SAM/SOM
-                e fontes na página 05.
-              </p>
+              <p className="text-ink/65 font-body text-[1vw] leading-snug">Estabelecimentos formais na praça. Detalhamento TAM/SAM/SOM e fontes na página 05. 
+              TAM: Total Addressable Market (Mercado Total Endereçável).</p>
             </div>
             <div className="border-t-2 border-primary pt-[2vh]">
               <p className="font-display text-[2.8vw] text-ink font-medium leading-none mb-[1.5vh]">
