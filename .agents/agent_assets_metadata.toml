@@ -77,3 +77,9 @@ id = "4kHovOcgWuz-Y1se-aVmN"
 uri = "file://.local/research/Glow-Upi-Pesquisa-de-Mercado-Teresina-Timon.docx"
 type = "word_document"
 title = "Pesquisa de Mercado — Word atualizado com cálculo honesto"
+
+[[outputs]]
+id = "F-9emHqnSGCRtZ8yCFDCQ"
+uri = "file://attached_assets/glow-upi-logo-transparent.png"
+type = "image"
+title = "Glow Upi — logo sem fundo"
