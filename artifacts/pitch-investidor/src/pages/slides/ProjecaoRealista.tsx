@@ -101,7 +101,7 @@ export default function ProjecaoRealista() {
               </div>
             </div>
             <p className="text-primary font-body text-[1vw] mt-[1.5vh] italic leading-snug">
-              Teto realista sem sair de Teresina. Comparáveis: Trinks (BR), Belezix (BR).
+              Teto realista sem sair de Teresina. Comparáveis nacionais: Avec (BR), AppBeleza (BR).
             </p>
           </div>
         </div>

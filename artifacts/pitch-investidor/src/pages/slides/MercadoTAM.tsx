@@ -71,7 +71,7 @@ export default function MercadoTAM() {
             </p>
             <p className="text-ink/75 font-body text-[1vw] leading-snug mt-auto">
               Captáveis em 5 anos por Meta Ads e indicação, descontada a
-              concorrência (Trinks, Belezix, Programa Salão).
+              concorrência (Avec, AppBeleza, MinhaAgenda).
             </p>
           </div>
         </div>
@@ -126,8 +126,8 @@ export default function MercadoTAM() {
                 planilha, baixa conversão para SaaS).
               </p>
               <p className="text-ink/75 font-body text-[0.95vw] leading-snug">
-                · 15–20% já usam algum software (Trinks, Belezix, Programa Salão,
-                Simples Agenda) — concorrência direta.
+                · 15–20% já usam algum software — concorrência direta verificada:
+                Avec (SP), AppBeleza (SC), MinhaAgenda.
               </p>
               <p className="text-ink/75 font-body text-[0.95vw] leading-snug">
                 · ~10% têm faturamento abaixo do mínimo viável.

@@ -14,7 +14,7 @@ export default function ValidacaoAtual() {
     },
     {
       title: "Concorrência mapeada",
-      body: "Faixa de preço (R$ 39 a R$ 199/mês) calibrada com Trinks, Belezix, Programa Salão e Simples Agenda.",
+      body: "Concorrência mapeada e verificada na web: Avec (negocios.avec.app), AppBeleza (appbeleza.com.br) e MinhaAgenda (minhaagendaapp.com.br).",
     },
   ];
 
