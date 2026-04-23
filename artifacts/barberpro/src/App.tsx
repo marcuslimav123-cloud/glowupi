@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import NotFound from "@/pages/not-found";
 import LgpdPopup from "@/components/LgpdPopup";
+import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 
 import DirectSales from "@/pages/DirectSales";
 import Landing from "@/pages/Landing";
@@ -133,6 +134,7 @@ function LazyFallback() {
 
 function Router() {
   return (
+    <ChunkErrorBoundary>
     <Suspense fallback={<LazyFallback />}>
     <Switch>
       <Route path="/" component={DirectSales} />
@@ -251,6 +253,7 @@ function Router() {
       <Route component={NotFound} />
     </Switch>
     </Suspense>
+    </ChunkErrorBoundary>
   );
 }
 

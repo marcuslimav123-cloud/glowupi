@@ -1,5 +1,5 @@
-const CACHE_NAME = "glowupi-pwa-v4";
-const SW_VERSION = "4.0.0";
+const CACHE_NAME = "glowupi-pwa-v5";
+const SW_VERSION = "5.0.0";
 
 self.addEventListener("install", () => {
   console.log("[SW] Installing v" + SW_VERSION);
@@ -182,15 +182,39 @@ self.addEventListener("pushsubscriptionchange", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  const url = new URL(event.request.url);
   if (event.request.method !== "GET") return;
+  if (event.request.mode === "navigate") return;
+
+  const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.includes("/api/") || url.pathname.includes("/api")) return;
 
-  const isStaticAsset =
-    /\.(js|css|woff2?|ttf|eot|svg|png|jpg|jpeg|webp|ico)$/.test(url.pathname);
+  const isHashedAsset =
+    url.pathname.includes("/assets/") &&
+    /\.(js|css|woff2?|ttf|eot)$/.test(url.pathname);
 
-  if (isStaticAsset) {
+  if (isHashedAsset) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then((cache) =>
+        cache.match(event.request).then(
+          (cached) =>
+            cached ||
+            fetch(event.request).then((response) => {
+              if (response.ok) {
+                cache.put(event.request, response.clone());
+              }
+              return response;
+            }).catch(() => cache.match(event.request))
+        )
+      )
+    );
+    return;
+  }
+
+  const isStaticImage =
+    /\.(png|jpg|jpeg|webp|svg|ico)$/.test(url.pathname);
+
+  if (isStaticImage) {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) =>
         cache.match(event.request).then(
@@ -207,8 +231,4 @@ self.addEventListener("fetch", (event) => {
     );
     return;
   }
-
-  event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
-  );
 });
