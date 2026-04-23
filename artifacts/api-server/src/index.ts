@@ -62,6 +62,7 @@ await initStripe();
 await seedSuperAdmins().catch(err => console.error("Error seeding super admins:", err));
 
 import { startEmailMarketingWorker } from "./routes/emailMarketing.js";
+import { cleanupExpiredSessions } from "./lib/auth.js";
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
@@ -69,4 +70,9 @@ app.listen(port, () => {
   startTrialExpiryJob();
   startTrialCleanupScheduler();
   startEmailMarketingWorker();
+  cleanupExpiredSessions().then(() => console.log("[Sessions] Startup cleanup done."))
+    .catch(err => console.error("[Sessions] Startup cleanup error:", err));
+  setInterval(() => {
+    cleanupExpiredSessions().catch(err => console.error("[Sessions] Periodic cleanup error:", err));
+  }, 6 * 60 * 60 * 1000);
 });

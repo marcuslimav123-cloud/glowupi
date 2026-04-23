@@ -37,8 +37,8 @@ router.post("/register", async (req, res) => {
       landingPage: utm?.landingPage || null,
       referrer: utm?.referrer || null,
     }).returning();
-    const token = createSession(user.id);
-    res.cookie("session", token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: "lax" });
+    const token = await createSession(user.id);
+    res.cookie("session", token, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/" });
     const { senhaHash: _, ...userWithoutPass } = user;
     return res.json({ token, user: { ...userWithoutPass, createdAt: user.createdAt.toISOString() } });
   } catch (e) {
@@ -64,8 +64,8 @@ router.post("/login", async (req, res) => {
     if (user.senhaHash !== hashPassword(senha)) {
       return res.status(401).json({ error: "Email ou senha incorretos" });
     }
-    const token = createSession(user.id);
-    res.cookie("session", token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: "lax" });
+    const token = await createSession(user.id);
+    res.cookie("session", token, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/" });
     const { senhaHash: _, ...userWithoutPass } = user;
     return res.json({ token, user: { ...userWithoutPass, createdAt: user.createdAt.toISOString() } });
   } catch (e) {
@@ -74,10 +74,10 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.post("/logout", (req, res) => {
+router.post("/logout", async (req, res) => {
   const token = req.cookies?.["session"] || req.headers.authorization?.replace("Bearer ", "");
-  if (token) deleteSession(token);
-  res.clearCookie("session");
+  if (token) await deleteSession(token);
+  res.clearCookie("session", { path: "/" });
   return res.json({ success: true, message: "Logout realizado" });
 });
 
@@ -136,8 +136,8 @@ router.post("/google", async (req, res) => {
         .from(barbeariasTable).where(eq(barbeariasTable.id, user.barbeariaId)).limit(1);
     }
 
-    const token = createSession(user.id);
-    res.cookie("session", token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: "lax" });
+    const token = await createSession(user.id);
+    res.cookie("session", token, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/" });
     const { senhaHash: _, ...userWithoutPass } = user;
     return res.json({
       token,
@@ -338,8 +338,8 @@ router.get("/google/mobile/callback", async (req, res) => {
       }).returning();
     }
 
-    const token = createSession(user.id);
-    res.cookie("session", token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: "lax" });
+    const token = await createSession(user.id);
+    res.cookie("session", token, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/" });
 
     if (redirectScheme === "__webapp__") {
       let [existingBarbearia] = await db.select({ id: barbeariasTable.id })

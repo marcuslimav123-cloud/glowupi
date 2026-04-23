@@ -26,12 +26,12 @@ router.post("/register", async (req, res) => {
       telefone: telefone?.trim() || null,
     }).returning();
 
-    const token = createClientSession(clienteUser.id);
+    const token = await createClientSession(clienteUser.id);
     res.cookie("client_session", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
+      maxAge: 60 * 24 * 60 * 60 * 1000,
       path: "/",
     });
 
@@ -64,12 +64,12 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Email ou senha incorretos" });
     }
 
-    const token = createClientSession(clienteUser.id);
+    const token = await createClientSession(clienteUser.id);
     res.cookie("client_session", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
+      maxAge: 60 * 24 * 60 * 60 * 1000,
       path: "/",
     });
 
@@ -122,12 +122,12 @@ router.post("/google", async (req, res) => {
       }
     }
 
-    const token = createClientSession(clienteUser.id);
+    const token = await createClientSession(clienteUser.id);
     res.cookie("client_session", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
+      maxAge: 60 * 24 * 60 * 60 * 1000,
       path: "/",
     });
 
@@ -155,10 +155,10 @@ router.get("/me", requireClient, async (req, res) => {
   });
 });
 
-router.post("/logout", (req, res) => {
+router.post("/logout", async (req, res) => {
   const token = req.cookies?.["client_session"];
   if (token) {
-    deleteClientSession(token);
+    await deleteClientSession(token);
   }
   res.clearCookie("client_session", { path: "/" });
   return res.json({ success: true });

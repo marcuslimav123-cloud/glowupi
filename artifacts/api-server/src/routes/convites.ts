@@ -321,8 +321,8 @@ router.post("/accept/:token", async (req, res) => {
       acceptedAt: new Date(),
     }).where(eq(convitesTable.id, convite.id));
 
-    const sessionToken = createSession(newUser.id);
-    res.cookie("session", sessionToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: "lax" });
+    const sessionToken = await createSession(newUser.id);
+    res.cookie("session", sessionToken, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/" });
     const { senhaHash: _, ...userWithoutPass } = newUser;
     return res.json({ token: sessionToken, user: userWithoutPass });
   } catch (e) {
