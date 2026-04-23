@@ -110,8 +110,16 @@ router.post("/push/test", requireAuth, async (req: any, res) => {
         ...result,
       });
     }
+    const parts: string[] = [];
+    if (result.webTotal > 0) parts.push(`navegador: ${result.webSuccess}/${result.webTotal}`);
+    if (result.expoTotal > 0) parts.push(`app mobile: ${result.expoSuccess}/${result.expoTotal}`);
+    const breakdown = parts.join(" · ");
+    let warning = "";
+    if (result.webTotal > 0 && result.webSuccess === 0) {
+      warning = " Atenção: nenhuma inscrição do navegador (PWA) recebeu — feche e reabra o app do celular pra recriar a inscrição.";
+    }
     return res.json({
-      message: `Notificação de teste enviada para ${result.success} dispositivo(s). Verifique sua tela em alguns segundos.`,
+      message: `Enviado (${breakdown}). Verifique sua tela em alguns segundos.${warning}`,
       ...result,
     });
   } catch (err: any) {

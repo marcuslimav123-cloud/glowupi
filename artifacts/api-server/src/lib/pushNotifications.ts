@@ -147,7 +147,17 @@ async function sendWebPush(tokens: { id: number; token: string }[], message: Pus
   }
 }
 
-export async function sendTestPushToUser(userId: number): Promise<{ total: number; success: number; failed: number }> {
+export async function sendTestPushToUser(userId: number): Promise<{
+  total: number;
+  success: number;
+  failed: number;
+  webTotal: number;
+  webSuccess: number;
+  webFailed: number;
+  expoTotal: number;
+  expoSuccess: number;
+  expoFailed: number;
+}> {
   const tokens = await db.select().from(pushTokensTable).where(
     and(
       eq(pushTokensTable.userId, userId),
@@ -158,8 +168,10 @@ export async function sendTestPushToUser(userId: number): Promise<{ total: numbe
   const webTokens = tokens.filter(t => !t.token.startsWith("ExponentPushToken[") && !t.token.startsWith("ExpoPushToken["));
   const expoTokens = tokens.filter(t => t.token.startsWith("ExponentPushToken[") || t.token.startsWith("ExpoPushToken["));
 
-  let success = 0;
-  let failed = 0;
+  let webSuccess = 0;
+  let webFailed = 0;
+  let expoSuccess = 0;
+  let expoFailed = 0;
 
   const now = new Date();
   const hh = now.getHours().toString().padStart(2, "0");
@@ -174,7 +186,7 @@ export async function sendTestPushToUser(userId: number): Promise<{ total: numbe
   if (webTokens.length > 0) {
     if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
       console.error("[Push] Cannot send web push test — VAPID keys not configured");
-      failed += webTokens.length;
+      webFailed += webTokens.length;
     } else {
       const payload = JSON.stringify({
         title: message.title,
@@ -188,9 +200,9 @@ export async function sendTestPushToUser(userId: number): Promise<{ total: numbe
         try {
           const sub = JSON.parse(t.token);
           await webpush.sendNotification(sub, payload, { TTL: 60, urgency: "high" });
-          success++;
+          webSuccess++;
         } catch (err: any) {
-          failed++;
+          webFailed++;
           const sc = err.statusCode;
           if (sc === 410 || sc === 404 || sc === 403 || sc === 401 || sc === 400) {
             await db.update(pushTokensTable).set({ ativo: false, updatedAt: new Date() })
@@ -204,11 +216,23 @@ export async function sendTestPushToUser(userId: number): Promise<{ total: numbe
 
   if (expoTokens.length > 0) {
     const expoResult = await sendExpoPush(expoTokens.map(t => t.token), message);
-    success += expoResult.success;
-    failed += expoResult.failed;
+    expoSuccess += expoResult.success;
+    expoFailed += expoResult.failed;
   }
 
-  return { total: tokens.length, success, failed };
+  const success = webSuccess + expoSuccess;
+  const failed = webFailed + expoFailed;
+  return {
+    total: tokens.length,
+    success,
+    failed,
+    webTotal: webTokens.length,
+    webSuccess,
+    webFailed,
+    expoTotal: expoTokens.length,
+    expoSuccess,
+    expoFailed,
+  };
 }
 
 async function sendExpoPush(tokens: string[], message: PushMessage): Promise<{ success: number; failed: number }> {
