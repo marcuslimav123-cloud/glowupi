@@ -28,28 +28,36 @@
     "position": 4,
     "filepath": "src/pages/slides/MercadoGlossario.tsx",
     "title": "Mercado, Margem e Glossário",
-    "description": "TAM Teresina 5.000 CNPJs, ARPA R$164,50, custo R$208/mês e definição das siglas usadas.",
+    "description": "Praça Teresina+Timon, ARPA R$164,50, custo R$208/mês e definição das siglas usadas.",
     "speakerNotes": ""
   },
   {
     "id": "a1f3c8e2-1111-4b1a-9c1d-001000000005",
     "position": 5,
+    "filepath": "src/pages/slides/MercadoTAM.tsx",
+    "title": "TAM · SAM · SOM com fonte primária",
+    "description": "Dimensionamento Teresina+Timon com TAM 5.200 CNPJs, SAM 2.100, SOM 525-630 e fontes IBGE/Receita/Sebrae.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1f3c8e2-1111-4b1a-9c1d-001000000006",
+    "position": 6,
     "filepath": "src/pages/slides/VeiculoTracao.tsx",
     "title": "Destinação do Aporte",
     "description": "R$5k cartão + R$6,4k Meta Ads + iPhone 17 Pro Max. Funil de aquisição em uma linha.",
     "speakerNotes": ""
   },
   {
-    "id": "a1f3c8e2-1111-4b1a-9c1d-001000000006",
-    "position": 6,
+    "id": "a1f3c8e2-1111-4b1a-9c1d-001000000007",
+    "position": 7,
     "filepath": "src/pages/slides/ProjecaoRealista.tsx",
-    "title": "Projeção Realista — Teresina",
+    "title": "Projeção Realista — Teresina + Timon",
     "description": "MRR/ARR para 200 e 500 clientes, tempo até cada marco e teto de 5 anos sem expansão.",
     "speakerNotes": ""
   },
   {
-    "id": "a1f3c8e2-1111-4b1a-9c1d-001000000007",
-    "position": 7,
+    "id": "a1f3c8e2-1111-4b1a-9c1d-001000000008",
+    "position": 8,
     "filepath": "src/pages/slides/Proposta.tsx",
     "title": "Proposta Formal",
     "description": "Âncora R$27k vs aporte R$19.700, quatro entregáveis ao sócio e composição do valor.",

@@ -4,7 +4,7 @@ export default function DoresLatentes() {
       <div className="absolute top-0 left-0 w-full h-[1px] bg-primary/40" />
       <div className="absolute top-[6vh] right-[6vw] flex items-center gap-[1vw]">
         <div className="w-[1.5vw] h-[1.5vw] rounded-full bg-primary" />
-        <span className="text-muted font-body text-[1vw] tracking-[0.3em] uppercase">02 / 07</span>
+        <span className="text-muted font-body text-[1vw] tracking-[0.3em] uppercase">02 / 08</span>
       </div>
 
       <div className="relative z-10 w-full h-full flex flex-col px-[6vw] py-[7vh]">

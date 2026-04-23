@@ -39,7 +39,7 @@ export default function Capa() {
           </h1>
           <p className="text-cream/85 font-body text-[1.6vw] mt-[3.5vh] max-w-[58vw] font-light leading-snug">
             Convite formal para aquisição de 50% de participação societária na
-            Glow Upi — plataforma SaaS dedicada ao mercado de estética em Teresina.
+            Glow Upi — plataforma SaaS dedicada ao mercado de estética em Teresina e Timon.
           </p>
         </div>
 

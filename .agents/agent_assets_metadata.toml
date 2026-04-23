@@ -71,3 +71,9 @@ id = "Z_IAz7wA47b78aK8nn-nU"
 uri = "file://.local/outputs/BarberPro-Suite.pptx"
 type = "slides"
 title = "BarberPro Suite.pptx"
+
+[[outputs]]
+id = "4kHovOcgWuz-Y1se-aVmN"
+uri = "file://.local/research/Glow-Upi-Pesquisa-de-Mercado-Teresina-Timon.docx"
+type = "word_document"
+title = "Pesquisa de Mercado — Teresina + Timon (Word)"

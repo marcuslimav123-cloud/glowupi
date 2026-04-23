@@ -5,7 +5,7 @@ export default function Proposta() {
       <div className="absolute top-[35vh] left-[36vw] w-[8vw] h-[8vw] rounded-full bg-primary/20 blur-[4vw]" />
       <div className="absolute top-[6vh] right-[6vw] flex items-center gap-[1vw] z-20">
         <div className="w-[1.5vw] h-[1.5vw] rounded-full bg-primary" />
-        <span className="text-muted font-body text-[1vw] tracking-[0.3em] uppercase">07 / 07</span>
+        <span className="text-muted font-body text-[1vw] tracking-[0.3em] uppercase">08 / 08</span>
       </div>
 
       <div className="relative z-10 w-full h-full grid grid-cols-12 px-[6vw] py-[7vh]">
