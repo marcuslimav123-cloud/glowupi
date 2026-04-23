@@ -341,6 +341,19 @@ router.get("/google/mobile/callback", async (req, res) => {
     const token = createSession(user.id);
     res.cookie("session", token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: "lax" });
 
+    if (redirectScheme === "__webapp__") {
+      let [existingBarbearia] = await db.select({ id: barbeariasTable.id })
+        .from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
+      if (!existingBarbearia && user.barbeariaId) {
+        [existingBarbearia] = await db.select({ id: barbeariasTable.id })
+          .from(barbeariasTable).where(eq(barbeariasTable.id, user.barbeariaId)).limit(1);
+      }
+      let target = "/dashboard";
+      if (!user.telefone) target = "/completar-perfil";
+      else if (!existingBarbearia) target = "/onboarding/barbearia";
+      return res.redirect(target);
+    }
+
     if (redirectScheme === "__popup__") {
       const successPage = `<!DOCTYPE html><html><head><meta charset="utf-8">
         <title>Login realizado</title>
