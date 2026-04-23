@@ -1,0 +1,178 @@
+import dotenv from 'dotenv'
+import { sendPushNotification } from '../src/utils/pushNotifications.js'
+
+// Carrega variáveis de ambiente do arquivo .env
+dotenv.config()
+
+/**
+ * Script de envio de notificações push
+ * 
+ * Este script permite enviar notificações push de teste para usuários específicos.
+ * Útil para testar se as notificações estão funcionando corretamente antes de
+ * implementá-las em produção.
+ * 
+ * Uso: node scripts/test-push-notification.js <userId> [tipo]
+ * 
+ * Parâmetros:
+ * - userId: ID do usuário que receberá a notificação (obrigatório)
+ * - tipo: Tipo de notificação a ser enviada (opcional, padrão: 'simple')
+ * 
+ * Tipos disponíveis:
+ * - simple: Notificação simples de teste (padrão)
+ * - order_created: Simula notificação de pedido criado
+ * - order_approved: Simula notificação de pedido aprovado
+ * - med_created: Simula notificação de mediação criada
+ * - mission_assigned: Simula notificação de missão atribuída
+ * - pix_charge_created: Simula notificação de PIX gerado
+ * - pix_charge_paid: Simula notificação de PIX pago
+ */
+
+// Extrai os argumentos da linha de comando
+// process.argv[0] = caminho do Node
+// process.argv[1] = caminho do script
+// process.argv.slice(2) = argumentos passados pelo usuário
+const args = process.argv.slice(2)
+
+// Primeiro argumento: ID do usuário (obrigatório)
+const userId = args[0]
+
+// Segundo argumento: tipo de notificação (opcional, padrão: 'simple')
+const type = args[1] || 'simple'
+
+// Valida se o userId foi fornecido
+if (!userId) {
+  console.error('❌ Erro: userId é obrigatório')
+  console.log('Uso: node scripts/test-push-notification.js <userId> [tipo]')
+  console.log('\nTipos disponíveis:')
+  console.log('  - simple (padrão)')
+  console.log('  - order_created')
+  console.log('  - order_approved')
+  console.log('  - med_created')
+  console.log('  - mission_assigned')
+  console.log('  - pix_charge_created')
+  console.log('  - pix_charge_paid')
+  process.exit(1)
+}
+
+// Definição dos tipos de notificações disponíveis
+// Cada tipo contém: title (título), body (corpo da mensagem) e data (dados adicionais)
+const notifications = {
+  // Notificação simples de teste
+  simple: {
+    title: 'Teste de Notificação',
+    body: 'Esta é uma notificação de teste',
+    data: {
+      type: 'TEST',
+      url: '/dashboard',
+    },
+  },
+  // Simula notificação quando um pedido é criado (pendente)
+  order_created: {
+    title: 'Venda pendente!',
+    body: 'Nova venda de R$ 100,00',
+    data: {
+      type: 'ORDER_CREATED',
+      orderId: 'test-order-123',
+      url: '/dashboard/pedidos',
+    },
+  },
+  // Simula notificação quando um pedido é aprovado (pago)
+  order_approved: {
+    title: 'Venda aprovada! - (PIX)',
+    body: 'Venda: R$ 100,00',
+    data: {
+      type: 'ORDER_APPROVED',
+      orderId: 'test-order-123',
+      url: '/dashboard/pedidos',
+    },
+  },
+  // Simula notificação quando uma mediação (disputa) é aberta
+  med_created: {
+    title: 'Nova mediação aberta',
+    body: 'Uma disputa de R$ 50,00 foi aberta. Toque para responder.',
+    data: {
+      type: 'MED_CREATED',
+      medId: 'test-med-123',
+      url: '/dashboard/contestações',
+    },
+  },
+  // Simula notificação quando uma missão é atribuída ao usuário
+  mission_assigned: {
+    title: 'Nova missão disponível 🎯',
+    body: 'Você recebeu uma nova missão: Teste de Missão',
+    data: {
+      type: 'MISSION_ASSIGNED',
+      missionId: 'test-mission-123',
+      url: '/dashboard/missoes',
+    },
+  },
+  // Simula notificação quando uma cobrança PIX é gerada
+  pix_charge_created: {
+    title: 'PIX Gerado!',
+    body: 'Valor de R$ 150,00',
+    data: {
+      type: 'PIX_CHARGE_CREATED',
+      pixChargeId: 'test-pix-123',
+      externalId: 'external-123',
+      url: '/dashboard/recebimentos',
+    },
+  },
+  // Simula notificação quando uma cobrança PIX é paga
+  pix_charge_paid: {
+    title: 'PIX Recebido!',
+    body: 'Você recebeu R$ 150,00',
+    data: {
+      type: 'PIX_CHARGE_PAID',
+      pixChargeId: 'test-pix-123',
+      externalId: 'external-123',
+      url: '/dashboard/recebimentos',
+    },
+  },
+}
+
+// Converte o tipo para o formato esperado pela função sendPushNotification
+// Ex: 'order_created' -> 'ORDER_CREATED'
+const notificationType = type.toUpperCase().replace(/-/g, '_')
+
+// Busca a configuração da notificação baseada no tipo informado
+const notification = notifications[type]
+
+// Valida se o tipo de notificação existe
+if (!notification) {
+  console.error(`❌ Erro: tipo "${type}" não encontrado`)
+  console.log('Tipos disponíveis:', Object.keys(notifications).join(', '))
+  process.exit(1)
+}
+
+// Log informativo antes de enviar
+console.log(`📤 Enviando notificação do tipo "${type}" para o usuário ${userId}...`)
+
+// Envia a notificação push
+// Parâmetros:
+// - userId: ID do usuário que receberá a notificação
+// - notification: Objeto com title, body e data
+// - null: storeId (não usado neste teste)
+// - notificationType: Tipo da notificação (ou null para 'SIMPLE')
+const result = await sendPushNotification(
+  userId,
+  notification,
+  null,
+  notificationType === 'SIMPLE' ? null : notificationType
+)
+
+// Exibe o resultado detalhado
+console.log('\n📊 Resultado:')
+console.log(JSON.stringify(result, null, 2))
+
+// Verifica se a notificação foi enviada com sucesso
+if (result.success) {
+  console.log(`\n✅ Notificação enviada com sucesso! (${result.sent} dispositivo(s)`)
+} else {
+  console.log('\n❌ Falha ao enviar notificação')
+  if (result.error) {
+    console.log('Erro:', result.error)
+  }
+}
+
+// Encerra o script com código de sucesso (0) ou falha (1)
+process.exit(result.success ? 0 : 1)

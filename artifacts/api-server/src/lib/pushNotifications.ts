@@ -115,7 +115,8 @@ async function sendWebPush(tokens: { id: number; token: string }[], message: Pus
     title: message.title,
     body: message.body,
     data: message.data || {},
-    icon: "/favicon.svg",
+    icon: "/logo-icon.png",
+    badge: "/logo-icon.png",
     tag,
   });
 
@@ -192,7 +193,8 @@ export async function sendPushToClienteUser(clienteUserId: number, message: Push
       title: message.title,
       body: message.body,
       data: message.data || {},
-      icon: "/favicon.svg",
+      icon: "/logo-icon.png",
+      badge: "/logo-icon.png",
       tag: `cliente-${clientNotifType}-${clientStableId}`,
     });
 

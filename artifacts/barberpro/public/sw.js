@@ -1,5 +1,5 @@
-const CACHE_NAME = "glowupi-pwa-v3";
-const SW_VERSION = "3.0.0";
+const CACHE_NAME = "glowupi-pwa-v4";
+const SW_VERSION = "4.0.0";
 
 self.addEventListener("install", () => {
   console.log("[SW] Installing v" + SW_VERSION);
@@ -65,8 +65,9 @@ self.addEventListener("push", (event) => {
 
     const options = {
       body: data.body || "Nova notificação",
-      icon: data.icon || "/favicon.svg",
-      badge: data.badge || "/favicon.svg",
+      icon: data.icon || "/logo-icon.png",
+      badge: data.badge || "/logo-icon.png",
+      image: data.image,
       tag: tag,
       data: data.data || {},
       vibrate: [300, 100, 300, 100, 300],
@@ -86,8 +87,8 @@ self.addEventListener("push", (event) => {
       console.error("[SW] Push handler error, showing fallback:", err);
       return self.registration.showNotification("Glow Upi", {
         body: "Você tem uma nova notificação",
-        icon: "/favicon.svg",
-        badge: "/favicon.svg",
+        icon: "/logo-icon.png",
+        badge: "/logo-icon.png",
         tag: "glow-upi-fallback-" + Date.now(),
         vibrate: [300, 100, 300],
         requireInteraction: true,
