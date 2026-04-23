@@ -53,7 +53,7 @@ import equipamentosRouter from "./equipamentosRoutes.js";
 import pushTokensRouter from "./pushTokens.js";
 import clientPushTokensRouter from "./clientPushTokens.js";
 import { clientRouter as agendamentoMensagensClientRouter, staffRouter as agendamentoMensagensStaffRouter } from "./agendamentoMensagens.js";
-import { getVapidPublicKey } from "../lib/pushNotifications.js";
+import { getVapidPublicKey, sendTestPushToUser } from "../lib/pushNotifications.js";
 import filiaisRouter from "./filiais.js";
 import notificacoesInternasRouter from "./notificacoesInternas.js";
 import trialLinksRouter from "./trialLinks.js";
@@ -91,6 +91,33 @@ router.get("/push/vapid-public-key", (_req, res) => {
   const key = getVapidPublicKey();
   if (!key) return res.status(404).json({ error: "VAPID key not configured" });
   return res.json({ publicKey: key });
+});
+
+router.post("/push/test", requireAuth, async (req: any, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Não autenticado" });
+    const result = await sendTestPushToUser(userId);
+    if (result.total === 0) {
+      return res.status(404).json({
+        error: "Nenhuma inscrição ativa encontrada. Ative as notificações e tente novamente.",
+        ...result,
+      });
+    }
+    if (result.success === 0) {
+      return res.status(500).json({
+        error: "A notificação foi enviada mas o serviço de push rejeitou todas as inscrições. Recarregue o app e tente novamente — o sistema vai criar inscrições novas.",
+        ...result,
+      });
+    }
+    return res.json({
+      message: `Notificação de teste enviada para ${result.success} dispositivo(s). Verifique sua tela em alguns segundos.`,
+      ...result,
+    });
+  } catch (err: any) {
+    console.error("[Push] Test endpoint error:", err);
+    return res.status(500).json({ error: "Erro ao enviar notificação de teste" });
+  }
 });
 
 router.use("/barbearias/:barbeariaId", requireAuth, subscriptionGuardMiddleware);

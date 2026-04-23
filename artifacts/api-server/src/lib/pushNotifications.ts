@@ -131,18 +131,88 @@ async function sendWebPush(tokens: { id: number; token: string }[], message: Pus
       await webpush.sendNotification(subscription, payload, pushOptions);
       console.log(`[Push] Web push sent to token ${tokenRecord.id}`);
     } catch (err: any) {
-      if (err.statusCode === 410 || err.statusCode === 404) {
-        console.log(`[Push] Web push token ${tokenRecord.id} expired/invalid — deactivating`);
-        await db.update(pushTokensTable).set({ ativo: false, updatedAt: new Date() })
-          .where(eq(pushTokensTable.id, tokenRecord.id));
+      const sc = err.statusCode;
+      if (sc === 410 || sc === 404 || sc === 403 || sc === 401 || sc === 400) {
+        console.warn(`[Push] Web push token ${tokenRecord.id} rejected (HTTP ${sc}) — deactivating. Client will resubscribe on next open.`);
+        try {
+          await db.update(pushTokensTable).set({ ativo: false, updatedAt: new Date() })
+            .where(eq(pushTokensTable.id, tokenRecord.id));
+        } catch (dbErr) {
+          console.error(`[Push] Failed to deactivate token ${tokenRecord.id}:`, dbErr);
+        }
       } else {
-        console.error(`[Push] Web push error for token ${tokenRecord.id}:`, err.statusCode || err.message);
+        console.error(`[Push] Web push error for token ${tokenRecord.id}:`, sc || err.message);
       }
     }
   }
 }
 
-async function sendExpoPush(tokens: string[], message: PushMessage): Promise<void> {
+export async function sendTestPushToUser(userId: number): Promise<{ total: number; success: number; failed: number }> {
+  const tokens = await db.select().from(pushTokensTable).where(
+    and(
+      eq(pushTokensTable.userId, userId),
+      eq(pushTokensTable.ativo, true)
+    )
+  );
+
+  const webTokens = tokens.filter(t => !t.token.startsWith("ExponentPushToken[") && !t.token.startsWith("ExpoPushToken["));
+  const expoTokens = tokens.filter(t => t.token.startsWith("ExponentPushToken[") || t.token.startsWith("ExpoPushToken["));
+
+  let success = 0;
+  let failed = 0;
+
+  const now = new Date();
+  const hh = now.getHours().toString().padStart(2, "0");
+  const mm = now.getMinutes().toString().padStart(2, "0");
+  const ss = now.getSeconds().toString().padStart(2, "0");
+  const message: PushMessage = {
+    title: "Teste Glow Upi",
+    body: `Notificação de teste enviada às ${hh}:${mm}:${ss}. Se você está vendo isso, está tudo certo!`,
+    data: { type: "test", url: "/agenda", testId: `${Date.now()}` },
+  };
+
+  if (webTokens.length > 0) {
+    if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+      console.error("[Push] Cannot send web push test — VAPID keys not configured");
+      failed += webTokens.length;
+    } else {
+      const payload = JSON.stringify({
+        title: message.title,
+        body: message.body,
+        data: message.data,
+        icon: "/logo-icon.png",
+        badge: "/logo-icon.png",
+        tag: `glow-upi-test-${message.data!.testId}`,
+      });
+      for (const t of webTokens) {
+        try {
+          const sub = JSON.parse(t.token);
+          await webpush.sendNotification(sub, payload, { TTL: 60, urgency: "high" });
+          success++;
+        } catch (err: any) {
+          failed++;
+          const sc = err.statusCode;
+          if (sc === 410 || sc === 404 || sc === 403 || sc === 401 || sc === 400) {
+            await db.update(pushTokensTable).set({ ativo: false, updatedAt: new Date() })
+              .where(eq(pushTokensTable.id, t.id)).catch(() => {});
+          }
+          console.error(`[Push] Test push failed for token ${t.id}:`, sc || err.message);
+        }
+      }
+    }
+  }
+
+  if (expoTokens.length > 0) {
+    const expoResult = await sendExpoPush(expoTokens.map(t => t.token), message);
+    success += expoResult.success;
+    failed += expoResult.failed;
+  }
+
+  return { total: tokens.length, success, failed };
+}
+
+async function sendExpoPush(tokens: string[], message: PushMessage): Promise<{ success: number; failed: number }> {
+  if (tokens.length === 0) return { success: 0, failed: 0 };
   try {
     const messages = tokens.map(token => ({
       to: token,
@@ -165,12 +235,28 @@ async function sendExpoPush(tokens: string[], message: PushMessage): Promise<voi
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[Push] Expo push failed: ${response.status} ${errorText}`);
-    } else {
-      const result = await response.json();
-      console.log(`[Push] Expo push sent to ${tokens.length} token(s):`, JSON.stringify(result.data?.map?.((d: any) => d.status) || []));
+      return { success: 0, failed: tokens.length };
     }
+
+    const result = await response.json();
+    const tickets: any[] = Array.isArray(result.data) ? result.data : [];
+    let success = 0;
+    let failed = 0;
+    if (tickets.length === 0) {
+      success = tokens.length;
+    } else {
+      for (const t of tickets) {
+        if (t && t.status === "ok") success++;
+        else failed++;
+      }
+      const missing = tokens.length - tickets.length;
+      if (missing > 0) failed += missing;
+    }
+    console.log(`[Push] Expo push: ${success} ok, ${failed} failed (of ${tokens.length})`);
+    return { success, failed };
   } catch (err) {
     console.error("[Push] Error sending Expo push:", err);
+    return { success: 0, failed: tokens.length };
   }
 }
 
@@ -209,12 +295,17 @@ export async function sendPushToClienteUser(clienteUserId: number, message: Push
         await webpush.sendNotification(subscription, payload, pushOptions);
         console.log(`[Push] Client push sent to clienteUser ${clienteUserId}, token ${tokenRecord.id}`);
       } catch (err: any) {
-        if (err.statusCode === 410 || err.statusCode === 404) {
-          console.log(`[Push] Client push token ${tokenRecord.id} expired — deactivating`);
-          await db.update(clientePushTokensTable).set({ ativo: false, updatedAt: new Date() })
-            .where(eq(clientePushTokensTable.id, tokenRecord.id));
+        const sc = err.statusCode;
+        if (sc === 410 || sc === 404 || sc === 403 || sc === 401 || sc === 400) {
+          console.warn(`[Push] Client push token ${tokenRecord.id} rejected (HTTP ${sc}) — deactivating.`);
+          try {
+            await db.update(clientePushTokensTable).set({ ativo: false, updatedAt: new Date() })
+              .where(eq(clientePushTokensTable.id, tokenRecord.id));
+          } catch (dbErr) {
+            console.error(`[Push] Failed to deactivate client token ${tokenRecord.id}:`, dbErr);
+          }
         } else {
-          console.error(`[Push] Client web push error for token ${tokenRecord.id}:`, err.statusCode || err.message);
+          console.error(`[Push] Client web push error for token ${tokenRecord.id}:`, sc || err.message);
         }
       }
     }

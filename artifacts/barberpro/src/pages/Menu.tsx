@@ -32,6 +32,9 @@ import {
   Bell,
   BellOff,
   Loader2,
+  Send,
+  AlertCircle,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InstallAppButton } from "@/components/InstallAppButton";
@@ -113,6 +116,8 @@ export default function MenuPage() {
   const [themeOpen, setThemeOpen] = useState(false);
   const [notifStatus, setNotifStatus] = useState<"loading" | "granted" | "denied" | "default">("loading");
   const [notifLoading, setNotifLoading] = useState(false);
+  const [testingNotif, setTestingNotif] = useState(false);
+  const [batteryHelpOpen, setBatteryHelpOpen] = useState(false);
 
   useEffect(() => {
     if ("Notification" in window) {
@@ -121,6 +126,21 @@ export default function MenuPage() {
       setNotifStatus("denied");
     }
   }, []);
+
+  const urlBase64ToUint8Array = (publicKey: string): Uint8Array => {
+    const padding = "=".repeat((4 - (publicKey.length % 4)) % 4);
+    const base64 = (publicKey + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const rawData = window.atob(base64);
+    const arr = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; i++) arr[i] = rawData.charCodeAt(i);
+    return arr;
+  };
+
+  const uint8ToBase64Url = (bytes: Uint8Array): string => {
+    let s = "";
+    for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+    return window.btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  };
 
   const handleToggleNotifications = async () => {
     if (notifStatus === "granted") {
@@ -139,18 +159,21 @@ export default function MenuPage() {
           if (vapidResp.ok) {
             const { publicKey } = await vapidResp.json();
             if (publicKey) {
-              const existingSub = await registration.pushManager.getSubscription();
-              const sub = existingSub || await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: (() => {
-                  const padding = "=".repeat((4 - (publicKey.length % 4)) % 4);
-                  const base64 = (publicKey + padding).replace(/-/g, "+").replace(/_/g, "/");
-                  const rawData = window.atob(base64);
-                  const arr = new Uint8Array(rawData.length);
-                  for (let i = 0; i < rawData.length; i++) arr[i] = rawData.charCodeAt(i);
-                  return arr;
-                })(),
-              });
+              let sub = await registration.pushManager.getSubscription();
+              if (sub) {
+                const buf = (sub.options as any).applicationServerKey;
+                const subKey = buf ? uint8ToBase64Url(new Uint8Array(buf)) : "";
+                if (subKey !== publicKey.replace(/=+$/, "")) {
+                  try { await sub.unsubscribe(); } catch {}
+                  sub = null;
+                }
+              }
+              if (!sub) {
+                sub = await registration.pushManager.subscribe({
+                  userVisibleOnly: true,
+                  applicationServerKey: urlBase64ToUint8Array(publicKey),
+                });
+              }
               await fetch(apiUrl(`/barbearias/${barbeariaId}/push-tokens/register`), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -168,6 +191,38 @@ export default function MenuPage() {
       toast({ title: "Erro ao ativar notificações", variant: "destructive" });
     } finally {
       setNotifLoading(false);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    if (notifStatus !== "granted") {
+      toast({ title: "Ative as notificações primeiro", variant: "destructive" });
+      return;
+    }
+    setTestingNotif(true);
+    try {
+      const resp = await fetch(apiUrl("/push/test"), {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (resp.ok) {
+        toast({
+          title: "Notificação de teste enviada",
+          description: data.message || "Verifique sua tela em alguns segundos. Pode demorar até 10s no Android com economia de bateria ativa.",
+        });
+      } else {
+        toast({
+          title: "Falha no teste",
+          description: data.error || "Não foi possível enviar a notificação de teste.",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error("Test notification error:", err);
+      toast({ title: "Erro ao testar", variant: "destructive" });
+    } finally {
+      setTestingNotif(false);
     }
   };
 
@@ -343,6 +398,78 @@ export default function MenuPage() {
                 }`} />
               </div>
             </button>
+
+            {notifStatus === "granted" && (
+              <button
+                onClick={handleTestNotification}
+                disabled={testingNotif}
+                className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors border-t border-border disabled:opacity-60"
+              >
+                <div className="h-9 w-9 rounded-xl bg-primary/8 flex items-center justify-center shrink-0">
+                  {testingNotif
+                    ? <Loader2 className="h-4.5 w-4.5 text-primary animate-spin" />
+                    : <Send className="h-4.5 w-4.5 text-primary" />}
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-sm font-medium text-foreground">Testar notificação</p>
+                  <p className="text-xs text-muted-foreground">
+                    Envia uma notificação real agora pra confirmar que está funcionando
+                  </p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              </button>
+            )}
+
+            <button
+              onClick={() => setBatteryHelpOpen(!batteryHelpOpen)}
+              className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors border-t border-border"
+            >
+              <div className="h-9 w-9 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+                <AlertCircle className="h-4.5 w-4.5 text-amber-600" />
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm font-medium text-foreground">Notificações atrasando?</p>
+                <p className="text-xs text-muted-foreground">
+                  Ajuste a economia de bateria do celular
+                </p>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${batteryHelpOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            {batteryHelpOpen && (
+              <div className="px-4 pb-4 pt-1 border-t border-border space-y-3 text-xs leading-relaxed">
+                <p className="text-muted-foreground">
+                  No Android, a economia de bateria pode atrasar ou bloquear notificações em segundo plano. Libere o Chrome (que entrega as notificações do app):
+                </p>
+                <div className="bg-muted/40 rounded-lg p-3 space-y-2">
+                  <p className="font-semibold text-foreground">Samsung Galaxy</p>
+                  <p className="text-muted-foreground">
+                    Configurações → Aplicativos → <strong>Chrome</strong> → Bateria → marcar <strong>"Sem restrições"</strong>
+                  </p>
+                </div>
+                <div className="bg-muted/40 rounded-lg p-3 space-y-2">
+                  <p className="font-semibold text-foreground">Xiaomi / Redmi / POCO</p>
+                  <p className="text-muted-foreground">
+                    Configurações → Aplicativos → Gerenciar apps → <strong>Chrome</strong> → Economia de bateria → <strong>"Sem restrições"</strong>. Ative também "Início automático" e "Mostrar em tela inicial".
+                  </p>
+                </div>
+                <div className="bg-muted/40 rounded-lg p-3 space-y-2">
+                  <p className="font-semibold text-foreground">Outros Android</p>
+                  <p className="text-muted-foreground">
+                    Configurações → Aplicativos → <strong>Chrome</strong> → Bateria → <strong>"Não otimizar"</strong> ou <strong>"Permitir em segundo plano"</strong>.
+                  </p>
+                </div>
+                <div className="bg-muted/40 rounded-lg p-3 space-y-2">
+                  <p className="font-semibold text-foreground">Confira também</p>
+                  <p className="text-muted-foreground">
+                    Configurações → Notificações → <strong>Chrome</strong> → todas as categorias <strong>ativadas</strong> e som permitido.
+                  </p>
+                </div>
+                <p className="text-muted-foreground italic">
+                  Depois de ajustar, aperte "Testar notificação" pra confirmar.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

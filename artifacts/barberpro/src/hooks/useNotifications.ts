@@ -78,6 +78,51 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray;
 }
 
+function uint8ArrayToBase64Url(bytes: Uint8Array): string {
+  let s = "";
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return window.btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function fetchCurrentVapidKey(): Promise<string | null> {
+  try {
+    const resp = await fetch(apiUrl(`/push/vapid-public-key`), { credentials: "include" });
+    if (!resp.ok) return null;
+    const { publicKey } = await resp.json();
+    return publicKey || null;
+  } catch {
+    return null;
+  }
+}
+
+function subscriptionMatchesKey(sub: PushSubscription, currentPublicKey: string): boolean {
+  try {
+    const opts = sub.options;
+    const buf = opts && (opts as any).applicationServerKey;
+    if (!buf) return false;
+    const subKey = uint8ArrayToBase64Url(new Uint8Array(buf as ArrayBuffer));
+    const normalized = currentPublicKey.replace(/=+$/, "");
+    return subKey === normalized;
+  } catch {
+    return false;
+  }
+}
+
+async function createFreshSubscription(
+  registration: ServiceWorkerRegistration,
+  publicKey: string
+): Promise<PushSubscription | null> {
+  try {
+    return await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey),
+    });
+  } catch (err) {
+    console.error("[Push] subscribe() failed:", err);
+    return null;
+  }
+}
+
 async function subscribeToPush(barbeariaId: number): Promise<boolean> {
   try {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
@@ -90,44 +135,45 @@ async function subscribeToPush(barbeariaId: number): Promise<boolean> {
     }
 
     const registration = await navigator.serviceWorker.ready;
-    console.log("[Push] SW ready, checking existing subscription...");
+    console.log("[Push] SW ready, fetching current VAPID key...");
 
-    const existingSub = await registration.pushManager.getSubscription();
+    const publicKey = await fetchCurrentVapidKey();
+    if (!publicKey) {
+      console.error("[Push] No VAPID public key available from server");
+      return false;
+    }
 
-    if (existingSub) {
-      const subJson = existingSub.toJSON();
-      const expirationTime = subJson.expirationTime;
-      if (expirationTime && expirationTime < Date.now()) {
-        console.log("[Push] Existing subscription expired, unsubscribing...");
-        await existingSub.unsubscribe();
-      } else {
-        console.log("[Push] Re-registering existing subscription on server");
-        return await registerTokenOnServer(barbeariaId, JSON.stringify(subJson), "web");
+    let subscription = await registration.pushManager.getSubscription();
+
+    if (subscription) {
+      const subJson = subscription.toJSON();
+      const expired = subJson.expirationTime && subJson.expirationTime < Date.now();
+      const keyMismatch = !subscriptionMatchesKey(subscription, publicKey);
+      if (expired || keyMismatch) {
+        console.warn(`[Push] Existing subscription invalid (expired=${!!expired}, keyMismatch=${keyMismatch}). Unsubscribing...`);
+        try { await subscription.unsubscribe(); } catch {}
+        subscription = null;
       }
     }
 
-    console.log("[Push] Creating new push subscription...");
-    const vapidResp = await fetch(apiUrl(`/push/vapid-public-key`), {
-      credentials: "include",
-    });
-    if (!vapidResp.ok) {
-      console.error("[Push] Failed to get VAPID key:", vapidResp.status);
-      return false;
-    }
-    const { publicKey } = await vapidResp.json();
-    if (!publicKey) {
-      console.error("[Push] No VAPID public key returned");
-      return false;
+    if (!subscription) {
+      console.log("[Push] Creating new push subscription...");
+      subscription = await createFreshSubscription(registration, publicKey);
+      if (!subscription) return false;
     }
 
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey),
-    });
+    let registered = await registerTokenOnServer(barbeariaId, JSON.stringify(subscription.toJSON()), "web");
 
-    const registered = await registerTokenOnServer(barbeariaId, JSON.stringify(subscription.toJSON()), "web");
+    if (!registered) {
+      console.warn("[Push] Server rejected subscription — recreating once...");
+      try { await subscription.unsubscribe(); } catch {}
+      subscription = await createFreshSubscription(registration, publicKey);
+      if (!subscription) return false;
+      registered = await registerTokenOnServer(barbeariaId, JSON.stringify(subscription.toJSON()), "web");
+    }
+
     if (registered) {
-      console.log("[Push] New web push subscription registered successfully");
+      console.log("[Push] Web push subscription registered successfully");
     }
     return registered;
   } catch (err) {
