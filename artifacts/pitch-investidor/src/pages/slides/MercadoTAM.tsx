@@ -104,15 +104,18 @@ export default function MercadoTAM() {
 
           <div>
             <p className="text-muted font-body text-[0.95vw] tracking-[0.3em] uppercase mb-[1vh]">
-              TAM consumidor · gasto anual da praça
+              Premissas do recorte SAM · SOM
             </p>
-            <p className="font-display text-[2.4vw] text-ink font-light leading-none">
-              ≈ R$ 750 milhões<span className="text-[1.2vw] text-ink/60">/ano</span>
+            <p className="text-ink/80 font-body text-[1vw] leading-snug mb-[0.8vh]">
+              · 35–40% dos CNPJs do setor têm o dono como único profissional
+              (perfil que prefere planilha e converte pouco para SaaS).
             </p>
-            <p className="text-ink/70 font-body text-[1vw] mt-[1vh] leading-snug">
-              ~420 mil consumidores endereçáveis × R$ 1.200–2.000/ano. Esse é o
-              bolo capturado pelos nossos clientes — não é nossa receita, mas
-              dimensiona a saúde financeira da praça.
+            <p className="text-ink/80 font-body text-[1vw] leading-snug mb-[0.8vh]">
+              · 15–20% já usam algum software (Trinks, Belezix, Programa Salão
+              ou Simples Agenda) — concorrência direta.
+            </p>
+            <p className="text-ink/80 font-body text-[1vw] leading-snug">
+              · ~10% têm faturamento abaixo do mínimo viável para mensalidade.
             </p>
           </div>
         </div>
