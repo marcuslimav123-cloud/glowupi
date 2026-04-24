@@ -4,9 +4,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiUrl } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Search, RotateCcw, Settings2, HelpCircle, AlertTriangle } from "lucide-react";
+import { Search, RotateCcw, Settings2, HelpCircle, AlertTriangle, MessageCircle } from "lucide-react";
+import { renderWhatsappTemplate } from "@/lib/waTemplates";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type Parametro = {
@@ -210,6 +212,17 @@ export default function Parametros() {
                   </TooltipProvider>
                 )}
               </div>
+              {categoria === "Templates WhatsApp" ? (
+                <WhatsappTemplatesSection
+                  params={params}
+                  getDisplayValue={getDisplayValue}
+                  handleValueChange={handleValueChange}
+                  isModified={isModified}
+                  onSave={(chave, valor) => saveMutation.mutate({ chave, valor })}
+                  onReset={(chave) => resetMutation.mutate(chave)}
+                  saving={saveMutation.isPending}
+                />
+              ) : (
               <div className="bg-card rounded-2xl border border-border overflow-hidden">
                 {params.map((p, idx) => {
                   const currentVal = getDisplayValue(p);
@@ -270,10 +283,148 @@ export default function Parametros() {
                   );
                 })}
               </div>
+              )}
             </div>
           ))}
         </div>
       )}
     </AppLayout>
+  );
+}
+
+const WA_VARIABLES: Array<{ key: string; label: string; sample: string }> = [
+  { key: "cliente", label: "Nome do cliente", sample: "Maria Silva" },
+  { key: "servico", label: "Nome do serviço", sample: "Corte + Escova" },
+  { key: "data", label: "Data do agendamento", sample: "25/04/2026" },
+  { key: "hora", label: "Hora do agendamento", sample: "14:30" },
+  { key: "profissional", label: "Nome do profissional", sample: "Ana" },
+  { key: "estabelecimento", label: "Nome do estabelecimento", sample: "Glow Upi Salão" },
+  { key: "valor", label: "Valor (R$)", sample: "R$ 80,00" },
+];
+
+const SAMPLE_VARS: Record<string, string> = WA_VARIABLES.reduce((acc, v) => {
+  acc[v.key] = v.sample;
+  return acc;
+}, {} as Record<string, string>);
+
+type WhatsappTemplatesSectionProps = {
+  params: Parametro[];
+  getDisplayValue: (p: Parametro) => string;
+  handleValueChange: (chave: string, valor: string) => void;
+  isModified: (p: Parametro) => boolean;
+  onSave: (chave: string, valor: string) => void;
+  onReset: (chave: string) => void;
+  saving: boolean;
+};
+
+function WhatsappTemplatesSection({
+  params, getDisplayValue, handleValueChange, isModified, onSave, onReset, saving,
+}: WhatsappTemplatesSectionProps) {
+  const insertVariable = (chave: string, currentVal: string, varKey: string) => {
+    handleValueChange(chave, `${currentVal}{{${varKey}}}`);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 rounded-xl p-3">
+        <div className="flex items-start gap-2">
+          <MessageCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+          <div className="text-[12px] text-emerald-900 dark:text-emerald-100 leading-relaxed">
+            <p className="font-semibold mb-1">Variáveis disponíveis</p>
+            <p className="text-[11px] text-emerald-800/90 dark:text-emerald-200/80 mb-2">
+              Use as chaves abaixo entre <code className="bg-emerald-100 dark:bg-emerald-900/60 px-1 rounded">{"{{"}{"}}"}</code> dentro do texto. Elas serão substituídas pelos dados reais quando o WhatsApp abrir.
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {WA_VARIABLES.map(v => (
+                <span
+                  key={v.key}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 text-[10.5px] font-mono"
+                  title={v.label}
+                >
+                  {`{{${v.key}}}`}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {params.map((p) => {
+          const currentVal = getDisplayValue(p);
+          const modified = isModified(p);
+          const preview = renderWhatsappTemplate(currentVal, SAMPLE_VARS);
+          return (
+            <div
+              key={p.chave}
+              className="bg-card rounded-2xl border border-border p-4 space-y-3"
+              data-testid={`wa-template-${p.chave}`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-foreground leading-tight">{p.label}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    size="sm"
+                    onClick={() => onSave(p.chave, currentVal)}
+                    disabled={!modified || saving}
+                    className="h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] disabled:opacity-40"
+                    data-testid={`btn-save-${p.chave}`}
+                  >
+                    Salvar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onReset(p.chave)}
+                    disabled={p.valor === p.valorPadrao && !modified}
+                    className="h-8 w-8 p-0 rounded-lg border-red-200 dark:border-red-800 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 hover:text-red-600 disabled:opacity-40"
+                    title="Restaurar padrão"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              <Textarea
+                value={currentVal}
+                onChange={(e) => handleValueChange(p.chave, e.target.value)}
+                rows={3}
+                className="text-[12.5px] font-mono leading-relaxed"
+                placeholder="Digite a mensagem do WhatsApp..."
+              />
+
+              <div className="flex flex-wrap gap-1.5">
+                <span className="text-[10.5px] text-foreground/50 mr-1 self-center">Inserir variável:</span>
+                {WA_VARIABLES.map(v => (
+                  <button
+                    key={v.key}
+                    type="button"
+                    onClick={() => insertVariable(p.chave, currentVal, v.key)}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted hover:bg-muted/70 text-foreground/70 text-[10.5px] font-mono transition-colors"
+                    title={`Inserir ${v.label}`}
+                  >
+                    + {`{{${v.key}}}`}
+                  </button>
+                ))}
+              </div>
+
+              <div className="rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50/60 dark:bg-emerald-950/20 p-3">
+                <p className="text-[10.5px] uppercase tracking-wide text-emerald-700 dark:text-emerald-300 font-semibold mb-1">
+                  Pré-visualização (com dados de exemplo)
+                </p>
+                <p
+                  className="text-[12.5px] text-foreground/90 whitespace-pre-wrap leading-relaxed"
+                  data-testid={`preview-${p.chave}`}
+                >
+                  {preview || <span className="text-foreground/40 italic">Mensagem vazia</span>}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

@@ -567,6 +567,45 @@ export async function cleanupStalePushTokensOnce(): Promise<void> {
   }
 }
 
+const lastPendingNudgeAt = new Map<number, number>();
+const PENDING_NUDGE_INTERVAL_MS = 30 * 60 * 1000;
+
+export async function sendPendingApprovalNudges(): Promise<void> {
+  try {
+    const pendentes = await db.select().from(agendamentosTable).where(
+      eq(agendamentosTable.status, "pendente_aprovacao")
+    );
+    if (pendentes.length === 0) return;
+    const byBarbearia = new Map<number, typeof pendentes>();
+    for (const p of pendentes) {
+      const arr = byBarbearia.get(p.barbeariaId) || [];
+      arr.push(p);
+      byBarbearia.set(p.barbeariaId, arr);
+    }
+    const now = Date.now();
+    for (const [barbeariaId, items] of byBarbearia) {
+      const last = lastPendingNudgeAt.get(barbeariaId) || 0;
+      if (now - last < PENDING_NUDGE_INTERVAL_MS) continue;
+      lastPendingNudgeAt.set(barbeariaId, now);
+      const count = items.length;
+      const body = count === 1
+        ? `Você tem 1 agendamento aguardando aprovação. Toque para revisar.`
+        : `Você tem ${count} agendamentos aguardando aprovação. Toque para revisar.`;
+      try {
+        await sendPushToBarbearia(barbeariaId, {
+          title: "Lembrete: agendamentos pendentes",
+          body,
+          data: { type: "pending_appointments_nudge", count, url: "/agenda" },
+        });
+      } catch (err) {
+        console.error(`[Push] Pending nudge error for barbearia ${barbeariaId}:`, err);
+      }
+    }
+  } catch (err) {
+    console.error("[Push] sendPendingApprovalNudges error:", err);
+  }
+}
+
 let reminderInterval: ReturnType<typeof setInterval> | null = null;
 
 export function startReminderService(): void {
@@ -582,6 +621,9 @@ export function startReminderService(): void {
     sendClienteAgendamentoReminders().catch(err =>
       console.error("[Push] Client reminder service error:", err)
     );
+    sendPendingApprovalNudges().catch(err =>
+      console.error("[Push] Pending nudge service error:", err)
+    );
   }, 5 * 60 * 1000);
 
   sendAgendamentoReminders().catch(err =>
@@ -589,5 +631,8 @@ export function startReminderService(): void {
   );
   sendClienteAgendamentoReminders().catch(err =>
     console.error("[Push] Initial client reminder check error:", err)
+  );
+  sendPendingApprovalNudges().catch(err =>
+    console.error("[Push] Initial pending nudge check error:", err)
   );
 }

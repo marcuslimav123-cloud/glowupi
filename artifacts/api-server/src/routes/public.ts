@@ -295,7 +295,7 @@ router.get("/:slug/slots", async (req, res) => {
     }
 
     const agendamentos = await db.select().from(agendamentosTable).where(
-      and(eq(agendamentosTable.barbeariaId, barbearia.id), eq(agendamentosTable.data, data as string), eq(agendamentosTable.status, "confirmado"))
+      and(eq(agendamentosTable.barbeariaId, barbearia.id), eq(agendamentosTable.data, data as string), inArray(agendamentosTable.status, ["confirmado", "pendente_aprovacao"]))
     );
 
     const { getParametros, getLocalNow } = await import("../lib/parametros.js");
@@ -483,12 +483,16 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
         eq(agendamentosTable.barbeariaId, barbearia.id),
         eq(agendamentosTable.profissionalId, profissionalId),
         eq(agendamentosTable.data, data),
-        eq(agendamentosTable.status, "confirmado"),
+        inArray(agendamentosTable.status, ["confirmado", "pendente_aprovacao"]),
       )
     );
     if (existingAppts.some(a => horaInicio < a.horaFim && horaFim > a.horaInicio)) {
       return res.status(409).json({ error: "Este horário já está ocupado para o profissional selecionado" });
     }
+
+    const modoConfirmacao = (params || {})["agenda_modo_confirmacao"] || "Automatica";
+    const isManualMode = modoConfirmacao === "Manual_dono" || modoConfirmacao === "Manual_profissional";
+    const statusInicialPub = isManualMode ? "pendente_aprovacao" : "confirmado";
 
     const [agend] = await db.insert(agendamentosTable).values({
       barbeariaId: barbearia.id,
@@ -503,7 +507,7 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       data,
       horaInicio,
       horaFim,
-      status: "confirmado",
+      status: statusInicialPub,
       valor: servico.preco,
       pago: false,
       semPreferencia: semPreferencia ?? false,
@@ -513,7 +517,7 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       origem: "site",
     }).returning();
 
-    if (clienteNotifHabilitada && cliente.email) {
+    if (statusInicialPub === "confirmado" && clienteNotifHabilitada && cliente.email) {
       const { sendEmail } = await import("../lib/brevo.js");
       const nomeEstab = barbearia.nome || "Glow Upi";
       sendEmail({
@@ -549,9 +553,11 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
     }
 
     sendPushToBarbearia(barbearia.id, {
-      title: "Novo Agendamento pelo Site",
-      body: `${clienteUser.nome} agendou ${servico.nome} com ${profissional.nomeExibicao} em ${data} às ${horaInicio}`,
-      data: { agendamentoId: agend.id, type: "new_appointment", url: "/agenda" },
+      title: statusInicialPub === "pendente_aprovacao" ? "Aguardando confirmação" : "Novo Agendamento pelo Site",
+      body: statusInicialPub === "pendente_aprovacao"
+        ? `${clienteUser.nome} solicitou ${servico.nome} com ${profissional.nomeExibicao} em ${data} às ${horaInicio}. Confirme ou recuse.`
+        : `${clienteUser.nome} agendou ${servico.nome} com ${profissional.nomeExibicao} em ${data} às ${horaInicio}`,
+      data: { agendamentoId: agend.id, type: statusInicialPub === "pendente_aprovacao" ? "pending_appointment" : "new_appointment", url: "/agenda" },
     }).catch(err => console.error("[Push] Error on client booking:", err));
 
     return res.status(201).json({
@@ -692,12 +698,16 @@ router.post("/:slug/agendar-simples", async (req, res) => {
         eq(agendamentosTable.barbeariaId, barbearia.id),
         eq(agendamentosTable.profissionalId, profissionalId),
         eq(agendamentosTable.data, data),
-        eq(agendamentosTable.status, "confirmado"),
+        inArray(agendamentosTable.status, ["confirmado", "pendente_aprovacao"]),
       )
     );
     if (existingApptsSimples.some(a => horaInicio < a.horaFim && horaFim > a.horaInicio)) {
       return res.status(409).json({ error: "Este horário já está ocupado para o profissional selecionado" });
     }
+
+    const modoConfirmacaoSimples = (paramsSimples || {})["agenda_modo_confirmacao"] || "Automatica";
+    const isManualModeSimples = modoConfirmacaoSimples === "Manual_dono" || modoConfirmacaoSimples === "Manual_profissional";
+    const statusInicialSimples = isManualModeSimples ? "pendente_aprovacao" : "confirmado";
 
     const [agend] = await db.insert(agendamentosTable).values({
       barbeariaId: barbearia.id,
@@ -712,7 +722,7 @@ router.post("/:slug/agendar-simples", async (req, res) => {
       data,
       horaInicio,
       horaFim,
-      status: "confirmado",
+      status: statusInicialSimples,
       valor: servico.preco,
       pago: false,
       semPreferencia: semPreferencia ?? false,
@@ -722,7 +732,7 @@ router.post("/:slug/agendar-simples", async (req, res) => {
       origem: "site",
     }).returning();
 
-    if (clienteNotifHabilitada && cliente.email) {
+    if (statusInicialSimples === "confirmado" && clienteNotifHabilitada && cliente.email) {
       const { sendEmail } = await import("../lib/brevo.js");
       const nomeEstab = barbearia.nome || "Glow Upi";
       sendEmail({
@@ -758,9 +768,11 @@ router.post("/:slug/agendar-simples", async (req, res) => {
     }
 
     sendPushToBarbearia(barbearia.id, {
-      title: "Novo Agendamento pelo Site",
-      body: `${clienteNome} agendou ${servico.nome} com ${profissional.nomeExibicao} em ${data} às ${horaInicio}`,
-      data: { agendamentoId: agend.id, type: "new_appointment", url: "/agenda" },
+      title: statusInicialSimples === "pendente_aprovacao" ? "Aguardando confirmação" : "Novo Agendamento pelo Site",
+      body: statusInicialSimples === "pendente_aprovacao"
+        ? `${clienteNome} solicitou ${servico.nome} com ${profissional.nomeExibicao} em ${data} às ${horaInicio}. Confirme ou recuse.`
+        : `${clienteNome} agendou ${servico.nome} com ${profissional.nomeExibicao} em ${data} às ${horaInicio}`,
+      data: { agendamentoId: agend.id, type: statusInicialSimples === "pendente_aprovacao" ? "pending_appointment" : "new_appointment", url: "/agenda" },
     }).catch(err => console.error("[Push] Error on client booking:", err));
 
     return res.status(201).json({

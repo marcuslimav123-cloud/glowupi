@@ -18,9 +18,12 @@ interface SendEmailParams {
   htmlContent: string;
   sender?: { name: string; email: string };
   tags?: string[];
+  preferProvider?: "brevo" | "gmail";
 }
 
-async function sendViaBrevo(params: SendEmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
+type SendResult = { success: boolean; messageId?: string; error?: string; provider?: "brevo" | "gmail" };
+
+async function sendViaBrevo(params: SendEmailParams): Promise<SendResult> {
   const body: any = {
     sender: params.sender || { name: "Glow Upi", email: "marcuslimav123@gmail.com" },
     to: params.to,
@@ -42,17 +45,17 @@ async function sendViaBrevo(params: SendEmailParams): Promise<{ success: boolean
   if (!res.ok) {
     const errBody = await res.text();
     console.error(`[Brevo] API error ${res.status}:`, errBody);
-    return { success: false, error: `Brevo API ${res.status}: ${errBody}` };
+    return { success: false, error: `Brevo API ${res.status}: ${errBody}`, provider: "brevo" };
   }
 
   const data = await res.json();
   console.log(`[Brevo] Email sent to ${params.to.map(r => r.email).join(", ")}, messageId=${data.messageId}`);
-  return { success: true, messageId: data.messageId };
+  return { success: true, messageId: data.messageId, provider: "brevo" };
 }
 
-async function sendViaGmail(params: SendEmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
+async function sendViaGmail(params: SendEmailParams): Promise<SendResult> {
   if (!gmailTransporter) {
-    return { success: false, error: "Gmail SMTP não configurado" };
+    return { success: false, error: "Gmail SMTP não configurado", provider: "gmail" };
   }
   const senderName = params.sender?.name || "Glow Upi";
   const recipients = params.to.map(r => r.name ? `"${r.name}" <${r.email}>` : r.email).join(", ");
@@ -63,11 +66,19 @@ async function sendViaGmail(params: SendEmailParams): Promise<{ success: boolean
     html: params.htmlContent,
   });
   console.log(`[Gmail] Email sent to ${recipients}, messageId=${info.messageId}`);
-  return { success: true, messageId: info.messageId };
+  return { success: true, messageId: info.messageId, provider: "gmail" };
 }
 
-export async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
+export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
   try {
+    if (params.preferProvider === "gmail") {
+      const gmailResult = await sendViaGmail(params);
+      if (!gmailResult.success) {
+        console.error("[Email] Gmail (forced for marketing/individual) failed — NOT falling back to Brevo to avoid DMARC/SPF break:", gmailResult.error);
+      }
+      return gmailResult;
+    }
+
     if (BREVO_API_KEY) {
       const result = await sendViaBrevo(params);
       if (result.success) return result;

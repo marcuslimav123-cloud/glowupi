@@ -76,6 +76,7 @@ export async function sendMarketingEmail(params: SendMarketingParams): Promise<{
     htmlContent: fullHtml,
     sender: { name: params.nomeEstabelecimento, email: params.senderEmail || "marcuslimav123@gmail.com" },
     tags: ["email_marketing"],
+    preferProvider: "gmail",
   });
 }
 

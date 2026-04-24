@@ -102,6 +102,7 @@ export default function PublicBooking() {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingStatus, setBookingStatus] = useState<string>("confirmado");
   const [observacao, setObservacao] = useState("");
   const [simplesNome, setSimplesNome] = useState("");
   const [simplesWhatsapp, setSimplesWhatsapp] = useState("");
@@ -240,10 +241,11 @@ export default function PublicBooking() {
             clienteWhatsapp: simplesWhatsapp.trim(),
           }),
         });
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          const data = await res.json();
           throw new Error(data.error || "Erro ao agendar");
         }
+        setBookingStatus(data?.status || "confirmado");
         setStep("sucesso");
       } catch (e: any) {
         setError(e.message);
@@ -275,10 +277,11 @@ export default function PublicBooking() {
           clienteWhatsapp: rawWa,
         }),
       });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.error || "Erro ao agendar");
       }
+      setBookingStatus(data?.status || "confirmado");
       setStep("sucesso");
     } catch (e: any) {
       setError(e.message);
@@ -1238,10 +1241,24 @@ export default function PublicBooking() {
 
           {!showMeusAgendamentos && step === "sucesso" && (
             <div className="text-center py-12">
-              <div className="h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ backgroundColor: `${accent}20` }}>
-                <Check className="h-8 w-8" style={{ color: accent }} />
-              </div>
-              <h2 className="text-xl font-bold mb-2">Agendamento Confirmado!</h2>
+              {bookingStatus === "pendente_aprovacao" ? (
+                <>
+                  <div className="h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-5 bg-yellow-500/20">
+                    <Clock className="h-8 w-8 text-yellow-400" />
+                  </div>
+                  <h2 className="text-xl font-bold mb-2">Pedido Enviado!</h2>
+                  <p className="text-yellow-400/90 text-sm mb-3 px-4">
+                    Aguardando confirmação do estabelecimento. Você será avisado(a) assim que for aprovado.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ backgroundColor: `${accent}20` }}>
+                    <Check className="h-8 w-8" style={{ color: accent }} />
+                  </div>
+                  <h2 className="text-xl font-bold mb-2">Agendamento Confirmado!</h2>
+                </>
+              )}
               <p className="text-white/40 text-sm mb-2">
                 {selectedServico?.nome} com {selectedSlot?.profissionalNome}
                 {selectedFilial ? ` - ${selectedFilial.nome}` : ""}

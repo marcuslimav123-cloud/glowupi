@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatPhone, stripPhone } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import {
   Plus, Search, UserRound, Star, Crown, Phone, Mail,
   Cake, TrendingUp, Edit2, Award, MessageCircle, Eye, FileSpreadsheet, Send
@@ -20,6 +20,7 @@ import { apiUrl } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 import { ImportExcelDialog } from "@/components/ImportExcelDialog";
+import { useWhatsappTemplates, renderWhatsappTemplate, buildWhatsappLink } from "@/lib/waTemplates";
 
 type Cliente = {
   id: number;
@@ -100,6 +101,28 @@ export default function Clientes() {
   const { data: clientes = [], isLoading } = useListClientes(barbeariaId!, {}, { query: { enabled: !!barbeariaId } });
   const createMutation = useCreateCliente();
   const updateMutation = useUpdateCliente();
+  const { data: waTemplates } = useWhatsappTemplates(barbeariaId);
+  const { data: barbeariaInfo } = useQuery<{ nome?: string }>({
+    queryKey: ["barbearia-nome", barbeariaId],
+    queryFn: async () => {
+      if (!barbeariaId) return { nome: "" };
+      const r = await fetch(apiUrl(`/barbearias/${barbeariaId}`), { credentials: "include" });
+      if (!r.ok) return { nome: "" };
+      return r.json();
+    },
+    enabled: !!barbeariaId,
+    staleTime: 60_000,
+  });
+  const nomeEstabelecimento: string = barbeariaInfo?.nome || "";
+
+  const buildRecuperacaoLink = (cliente: Cliente) => {
+    const tpl = waTemplates?.whatsapp_template_recuperacao || "";
+    const text = renderWhatsappTemplate(tpl, {
+      cliente: cliente.nome,
+      estabelecimento: nomeEstabelecimento,
+    });
+    return buildWhatsappLink(cliente.telefone, text);
+  };
 
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -255,8 +278,8 @@ export default function Clientes() {
 
                 <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
                   {c.telefone && (
-                    <a href={`https://wa.me/55${c.telefone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="hidden sm:block">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50" title="WhatsApp">
+                    <a href={buildRecuperacaoLink(c)} target="_blank" rel="noopener noreferrer" className="hidden sm:block" data-testid={`link-whatsapp-cliente-${c.id}`}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50" title="WhatsApp (mensagem de recuperação)">
                         <MessageCircle className="h-4 w-4" />
                       </Button>
                     </a>

@@ -7,7 +7,8 @@ import { apiUrl } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Mail, Plus, Send, Eye, AlertCircle, CheckCircle2, Clock, FileText, Sparkles } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Mail, Plus, Send, Eye, AlertCircle, CheckCircle2, Clock, FileText, Sparkles, Users, X as XIcon } from "lucide-react";
 
 type Campaign = {
   id: number;
@@ -44,11 +45,31 @@ function formatDate(s: string | null) {
   return new Date(s).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
+type Recipient = {
+  id: number;
+  email: string;
+  nome: string | null;
+  status: string;
+  erro: string | null;
+  enviadoEm: string | null;
+  entregueEm: string | null;
+  abertoEm: string | null;
+};
+
+const RECIPIENT_STATUS: Record<string, { label: string; cls: string }> = {
+  pendente: { label: "Pendente", cls: "bg-muted text-foreground/60" },
+  enviado: { label: "Enviado", cls: "bg-blue-500/15 text-blue-700 dark:text-blue-300" },
+  entregue: { label: "Entregue", cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
+  aberto: { label: "Aberto", cls: "bg-violet-500/15 text-violet-700 dark:text-violet-300" },
+  falha: { label: "Falha", cls: "bg-rose-500/15 text-rose-700 dark:text-rose-300" },
+};
+
 export default function EmailMarketing() {
   const { barbeariaId, role } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
   const isDono = role === "dono";
+  const [detailsCampaignId, setDetailsCampaignId] = React.useState<number | null>(null);
 
   const { data: config, isLoading: loadingCfg } = useQuery<Config>({
     queryKey: ["email-marketing-config", barbeariaId],
@@ -72,6 +93,16 @@ export default function EmailMarketing() {
       const data = q.state.data as Campaign[] | undefined;
       return data?.some(c => c.status === "enviando") ? 5000 : false;
     },
+  });
+
+  const { data: details, isLoading: loadingDetails } = useQuery<{ recipients: Recipient[] }>({
+    queryKey: ["email-marketing-campanha-details", barbeariaId, detailsCampaignId],
+    queryFn: async () => {
+      const r = await fetch(apiUrl(`/barbearias/${barbeariaId}/email-marketing/campanhas/${detailsCampaignId}`), { credentials: "include" });
+      if (!r.ok) throw new Error("Erro ao carregar detalhes");
+      return r.json();
+    },
+    enabled: !!barbeariaId && !!detailsCampaignId,
   });
 
   const toggleAtivado = useMutation({
@@ -189,9 +220,22 @@ export default function EmailMarketing() {
                         </div>
                       )}
                     </div>
-                    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full ${meta.cls}`}>
-                      <Icon className="h-3 w-3" /> {meta.label}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {c.status !== "rascunho" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs gap-1"
+                          onClick={() => setDetailsCampaignId(c.id)}
+                          data-testid={`btn-ver-destinatarios-${c.id}`}
+                        >
+                          <Users className="h-3.5 w-3.5" /> Destinatários
+                        </Button>
+                      )}
+                      <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full ${meta.cls}`}>
+                        <Icon className="h-3 w-3" /> {meta.label}
+                      </span>
+                    </div>
                   </div>
                 );
               })}
@@ -199,6 +243,55 @@ export default function EmailMarketing() {
           )}
         </div>
       </div>
+
+      <Dialog open={!!detailsCampaignId} onOpenChange={(o) => !o && setDetailsCampaignId(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" /> Status por destinatário
+            </DialogTitle>
+          </DialogHeader>
+          {loadingDetails ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">Carregando destinatários...</div>
+          ) : !details?.recipients?.length ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">Nenhum destinatário registrado.</div>
+          ) : (
+            <div className="max-h-[60vh] overflow-y-auto -mx-6 px-6">
+              <div className="space-y-1.5">
+                {details.recipients.map(rc => {
+                  const sm = RECIPIENT_STATUS[rc.status] || RECIPIENT_STATUS.pendente;
+                  return (
+                    <div
+                      key={rc.id}
+                      className="flex items-start justify-between gap-3 px-3 py-2.5 rounded-lg border border-border bg-card hover:bg-muted/30"
+                      data-testid={`recipient-row-${rc.id}`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{rc.nome || rc.email}</div>
+                        {rc.nome && <div className="text-[11px] text-muted-foreground truncate">{rc.email}</div>}
+                        {rc.status === "falha" && rc.erro && (
+                          <div className="text-[11px] text-rose-600 dark:text-rose-400 mt-1 flex items-start gap-1">
+                            <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                            <span className="break-words">{rc.erro}</span>
+                          </div>
+                        )}
+                        {rc.status !== "falha" && (rc.entregueEm || rc.enviadoEm) && (
+                          <div className="text-[10.5px] text-muted-foreground mt-0.5">
+                            {rc.entregueEm ? `Entregue: ${formatDate(rc.entregueEm)}` : `Enviado: ${formatDate(rc.enviadoEm)}`}
+                          </div>
+                        )}
+                      </div>
+                      <span className={`inline-flex items-center gap-1 text-[10.5px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${sm.cls}`}>
+                        {sm.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

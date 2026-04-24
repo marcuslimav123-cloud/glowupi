@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight,
-  CheckCircle, XCircle, Receipt, Star, PartyPopper, Lock, Zap,
+  CheckCircle, CheckCircle2, XCircle, Receipt, Star, PartyPopper, Lock, Zap,
   List, Clock, Users, Scissors, ClipboardList, UserCheck,
   Eye, Phone, Search
 } from "lucide-react";
@@ -75,6 +75,8 @@ function getStatusColor(status: string, encaixe?: boolean) {
   switch (status) {
     case 'pago': return 'bg-green-500/20 border-green-500/50 text-green-600';
     case 'confirmado': return 'bg-primary/20 border-primary/50 text-primary';
+    case 'pendente_aprovacao': return 'bg-yellow-400/20 border-yellow-500/60 text-yellow-700 dark:text-yellow-300 ring-2 ring-yellow-400/40 animate-pulse';
+    case 'recusado': return 'bg-red-500/15 border-red-500/40 text-red-600 dark:text-red-400 line-through opacity-70';
     case 'cancelado': return 'bg-destructive/20 border-destructive/50 text-destructive';
     default: return 'bg-secondary border-border text-foreground';
   }
@@ -84,9 +86,19 @@ function getStatusLabel(status: string) {
   switch (status) {
     case 'pago': return 'Pago';
     case 'confirmado': return 'Confirmado';
+    case 'pendente_aprovacao': return 'Pendente de aprovação';
+    case 'recusado': return 'Recusado';
     case 'cancelado': return 'Cancelado';
     default: return status;
   }
+}
+
+function buildWhatsappLink(phone: string | null | undefined, text?: string): string {
+  if (!phone) return "https://wa.me/";
+  const digits = String(phone).replace(/\D/g, "");
+  const normalized = digits.startsWith("55") && digits.length >= 12 ? digits : "55" + digits;
+  const t = text ? `?text=${encodeURIComponent(text)}` : "";
+  return `https://wa.me/${normalized}${t}`;
 }
 
 function timeToMinutes(t: string) {
@@ -164,6 +176,7 @@ export default function Agenda() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [viewMode, setViewMode] = useState<ViewMode>("dia");
   const [selectedProfId, setSelectedProfId] = useState<string>("all");
+  const [showOnlyPendentes, setShowOnlyPendentes] = useState<boolean>(false);
   const [isNewOpen, setIsNewOpen] = useState(false);
   const [isEncaixeOpen, setIsEncaixeOpen] = useState(false);
   const [isBlockOpen, setIsBlockOpen] = useState(false);
@@ -280,10 +293,11 @@ export default function Agenda() {
   }, [timeSlots, formProfId, bloqueios, date]);
 
   const filteredAgendamentos = useMemo(() => {
-    const all = agendamentos as Agendamento[];
+    let all = agendamentos as Agendamento[];
+    if (showOnlyPendentes) all = all.filter(a => a.status === "pendente_aprovacao");
     if (selectedProfId === "all") return all;
     return all.filter(a => a.profissionalId === parseInt(selectedProfId));
-  }, [agendamentos, selectedProfId]);
+  }, [agendamentos, selectedProfId, showOnlyPendentes]);
 
   const fetchBloqueios = async (d: string) => {
     if (!barbeariaId) return;
@@ -372,6 +386,69 @@ export default function Agenda() {
       refetch();
     } catch {
       toast({ title: "Erro ao cancelar", variant: "destructive" });
+    }
+  };
+
+  const [pendingActionLoading, setPendingActionLoading] = useState<"confirmar" | "recusar" | null>(null);
+
+  const handleConfirmarPendente = async () => {
+    if (!detailAgend || !barbeariaId) return;
+    setPendingActionLoading("confirmar");
+    try {
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/agendamentos/${detailAgend.id}/confirmar`), {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || "Erro ao confirmar agendamento");
+      }
+      const data = await res.json();
+      toast({ title: "Agendamento confirmado", description: "Abrindo WhatsApp para enviar a confirmação..." });
+      if (data.waUrl) {
+        window.open(data.waUrl, "_blank", "noopener,noreferrer");
+      }
+      setDetailAgend(null);
+      qc.invalidateQueries({ queryKey: ["agendamentos-pendentes-count", barbeariaId] });
+      refetch();
+    } catch (e: any) {
+      toast({ title: "Erro ao confirmar", description: e?.message || "", variant: "destructive" });
+    } finally {
+      setPendingActionLoading(null);
+    }
+  };
+
+  const handleRecusarPendente = async () => {
+    if (!detailAgend || !barbeariaId) return;
+    const motivo = window.prompt(
+      "Motivo da recusa (opcional) — será enviado ao cliente:",
+      "Horário indisponível"
+    );
+    if (motivo === null) return;
+    setPendingActionLoading("recusar");
+    try {
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/agendamentos/${detailAgend.id}/recusar`), {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ motivo: motivo.trim() || undefined }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || "Erro ao recusar agendamento");
+      }
+      const data = await res.json();
+      toast({ title: "Agendamento recusado", description: "Abrindo WhatsApp para avisar o cliente..." });
+      if (data.waUrl) {
+        window.open(data.waUrl, "_blank", "noopener,noreferrer");
+      }
+      setDetailAgend(null);
+      qc.invalidateQueries({ queryKey: ["agendamentos-pendentes-count", barbeariaId] });
+      refetch();
+    } catch (e: any) {
+      toast({ title: "Erro ao recusar", description: e?.message || "", variant: "destructive" });
+    } finally {
+      setPendingActionLoading(null);
     }
   };
 
@@ -1145,7 +1222,7 @@ export default function Agenda() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> Telefone</span>
                   <a
-                    href={`https://wa.me/${(() => { const digits = detailAgend.clienteTelefone.replace(/\D/g, ''); return digits.startsWith('55') && digits.length >= 12 ? digits : '55' + digits; })()}`}
+                    href={buildWhatsappLink(detailAgend.clienteTelefone)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-medium text-green-500 hover:underline flex items-center gap-1"
@@ -1194,6 +1271,33 @@ export default function Agenda() {
                 </span>
               )}
             </div>
+
+            {detailAgend.status === "pendente_aprovacao" && (
+              <div className="space-y-2 pt-1">
+                <div className="rounded-md border border-yellow-500/40 bg-yellow-50 dark:bg-yellow-500/10 p-2.5 text-xs text-yellow-800 dark:text-yellow-200">
+                  Este agendamento aguarda sua aprovação. Ao confirmar ou recusar, o WhatsApp do cliente será aberto com a mensagem pré-preenchida.
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    className="flex-1 h-9 text-xs bg-green-600 hover:bg-green-700 text-white"
+                    onClick={handleConfirmarPendente}
+                    disabled={pendingActionLoading !== null}
+                    data-testid="btn-confirmar-pendente"
+                  >
+                    {pendingActionLoading === "confirmar" ? "Confirmando..." : <><CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Confirmar</>}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1 h-9 text-xs"
+                    onClick={handleRecusarPendente}
+                    disabled={pendingActionLoading !== null}
+                    data-testid="btn-recusar-pendente"
+                  >
+                    {pendingActionLoading === "recusar" ? "Recusando..." : <><XCircle className="h-3.5 w-3.5 mr-1" /> Recusar</>}
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {detailAgend.status === "confirmado" && (
               <div className="flex gap-2 pt-1">
@@ -1251,6 +1355,35 @@ export default function Agenda() {
             </div>
           </div>
 
+          {(() => {
+            const pendentes = (agendamentos as Agendamento[]).filter(a => a.status === "pendente_aprovacao");
+            if (pendentes.length === 0) return null;
+            return (
+              <div className="mb-3 rounded-lg border border-yellow-500/50 bg-yellow-50 dark:bg-yellow-500/10 p-3 flex items-start gap-3" data-testid="banner-pendentes">
+                <div className="h-9 w-9 rounded-full bg-yellow-500 text-white flex items-center justify-center text-sm font-bold animate-pulse flex-shrink-0">
+                  {pendentes.length}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-yellow-900 dark:text-yellow-100">
+                    {pendentes.length === 1 ? "1 agendamento aguardando sua aprovação" : `${pendentes.length} agendamentos aguardando sua aprovação`}
+                  </p>
+                  <p className="text-xs text-yellow-800/80 dark:text-yellow-200/80 mt-0.5">
+                    Clique em um horário destacado em amarelo para confirmar ou recusar.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-xs border-yellow-600 text-yellow-700 hover:bg-yellow-100 dark:text-yellow-300 dark:hover:bg-yellow-500/20 flex-shrink-0"
+                  onClick={() => setDetailAgend(pendentes[0])}
+                  data-testid="btn-revisar-pendente"
+                >
+                  Revisar primeiro
+                </Button>
+              </div>
+            );
+          })()}
+
           {viewMode === "dia" && renderHorizontalCalendar()}
           {renderProfessionalAvatars()}
           {viewMode === "dia" && renderCurrentTimeBadge()}
@@ -1270,6 +1403,21 @@ export default function Agenda() {
             <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={goToToday}>
               Hoje
             </Button>
+            {(() => {
+              const pendentesAll = (agendamentos as Agendamento[]).filter(a => a.status === "pendente_aprovacao");
+              if (pendentesAll.length === 0 && !showOnlyPendentes) return null;
+              return (
+                <Button
+                  size="sm"
+                  variant={showOnlyPendentes ? "default" : "outline"}
+                  className={`h-8 text-xs ${showOnlyPendentes ? "bg-red-600 hover:bg-red-700 text-white" : "border-red-500 text-red-600 hover:bg-red-50"}`}
+                  onClick={() => setShowOnlyPendentes(v => !v)}
+                  data-testid="filter-pendentes-toggle"
+                >
+                  <CheckCircle2 className="mr-1 h-3.5 w-3.5"/> Pendentes ({pendentesAll.length})
+                </Button>
+              );
+            })()}
           </div>
 
           {viewMode === "dia" && renderDayView()}

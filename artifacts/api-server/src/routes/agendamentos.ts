@@ -8,12 +8,14 @@ import {
   respostasPesquisaTable, pacotesTable, pacotesClienteTable,
   assinantesTable, resgatesTable, usersTable
 } from "@workspace/db/schema";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, inArray } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
 import { sendEmail } from "../lib/brevo.js";
-import { sendPushToBarbearia } from "../lib/pushNotifications.js";
+import { sendPushToBarbearia, sendPushToClienteUser } from "../lib/pushNotifications.js";
+import { clienteUsersTable } from "@workspace/db/schema";
 import { validateAgendamentoEmHorario, validateAgendamentoEmJornadaProf } from "../lib/horarioValidation.js";
+import { buildWhatsappUrl, renderWhatsappTemplate, formatDateBR } from "../lib/whatsappLink.js";
 
 async function notificarAgendamento(barbeariaId: number, params: Record<string, string>, agendData: { clienteNome: string; clienteTelefone?: string; profissionalNome: string; servicoNome: string; data: string; horaInicio: string; clienteId?: number | null; agendamentoId?: number }, tipo: "criado" | "cancelado") {
   try {
@@ -272,7 +274,7 @@ router.post("/", requireAuth, async (req, res) => {
         eq(agendamentosTable.barbeariaId, barbeariaId),
         eq(agendamentosTable.profissionalId, profissionalId),
         eq(agendamentosTable.data, data),
-        eq(agendamentosTable.status, "confirmado"),
+        inArray(agendamentosTable.status, ["confirmado", "pendente_aprovacao"]),
       )
     );
     const hasConflict = existingAppointments.some(a => horaInicio < a.horaFim && horaFim > a.horaInicio);
@@ -323,6 +325,10 @@ router.post("/", requireAuth, async (req, res) => {
     }
   }
 
+  const modoConfirmacao = params["agenda_modo_confirmacao"] || "Automatica";
+  const isManualMode = modoConfirmacao === "Manual_dono" || modoConfirmacao === "Manual_profissional";
+  const statusInicial = isManualMode ? "pendente_aprovacao" : "confirmado";
+
   const [agend] = await db.insert(agendamentosTable).values({
     barbeariaId,
     clienteId: clienteId || null,
@@ -335,7 +341,7 @@ router.post("/", requireAuth, async (req, res) => {
     data,
     horaInicio,
     horaFim,
-    status: "confirmado",
+    status: statusInicial,
     valor: valorEfetivo,
     pago: false,
     semPreferencia: semPreferencia ?? false,
@@ -347,20 +353,215 @@ router.post("/", requireAuth, async (req, res) => {
     origem: origem || "manual",
   }).returning();
 
-  notificarAgendamento(barbeariaId, params, {
-    clienteNome, clienteTelefone, clienteId,
-    profissionalNome: profissional.apelido || profissional.nomeExibicao,
-    servicoNome: servico.nome, data, horaInicio,
-    agendamentoId: agend.id,
-  }, "criado");
+  if (statusInicial === "confirmado") {
+    notificarAgendamento(barbeariaId, params, {
+      clienteNome, clienteTelefone, clienteId,
+      profissionalNome: profissional.apelido || profissional.nomeExibicao,
+      servicoNome: servico.nome, data, horaInicio,
+      agendamentoId: agend.id,
+    }, "criado");
+  }
 
   sendPushToBarbearia(barbeariaId, {
-    title: "Novo Agendamento",
-    body: `${clienteNome} agendou ${servico.nome} com ${profissional.apelido || profissional.nomeExibicao} em ${data} às ${horaInicio}`,
-    data: { agendamentoId: agend.id, type: "new_appointment", url: "/agenda" },
+    title: statusInicial === "pendente_aprovacao" ? "Aguardando confirmação" : "Novo Agendamento",
+    body: statusInicial === "pendente_aprovacao"
+      ? `${clienteNome} solicitou ${servico.nome} com ${profissional.apelido || profissional.nomeExibicao} em ${data} às ${horaInicio}. Confirme ou recuse.`
+      : `${clienteNome} agendou ${servico.nome} com ${profissional.apelido || profissional.nomeExibicao} em ${data} às ${horaInicio}`,
+    data: { agendamentoId: agend.id, type: statusInicial === "pendente_aprovacao" ? "pending_appointment" : "new_appointment", url: "/agenda" },
   }).catch(err => console.error("[Push] Error on new appointment:", err));
 
   return res.status(201).json({ ...formatAgend(agend), pacoteClienteId: pacoteClienteAssociado });
+});
+
+router.get("/pendentes-count", requireAuth, async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const user = (req as any).user;
+  const rows = await db.select({ id: agendamentosTable.id, profissionalId: agendamentosTable.profissionalId })
+    .from(agendamentosTable)
+    .where(and(
+      eq(agendamentosTable.barbeariaId, barbeariaId),
+      eq(agendamentosTable.status, "pendente_aprovacao"),
+    ));
+  const filtered = (user.role === "colaborador" && user.profissionalId)
+    ? rows.filter(r => r.profissionalId === user.profissionalId)
+    : rows;
+  return res.json({ count: filtered.length });
+});
+
+async function buildAgendamentoWaUrl(barbeariaId: number, agend: any, templateKey: "whatsapp_template_confirmacao" | "whatsapp_template_recusa", paramsCache?: Record<string, string>): Promise<string> {
+  const params = paramsCache || await getParametros(barbeariaId);
+  const [barb] = await db.select({ nome: barbeariasTable.nome }).from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
+  const template = params[templateKey] || "";
+  const vars: Record<string, string> = {
+    cliente: agend.clienteNome || "",
+    servico: agend.servicoNome || "",
+    data: formatDateBR(agend.data),
+    hora: (agend.horaInicio || "").slice(0, 5),
+    profissional: agend.profissionalNome || "",
+    estabelecimento: barb?.nome || "",
+    valor: agend.valor ? `R$ ${Number(agend.valor).toFixed(2).replace(".", ",")}` : "",
+  };
+  const message = renderWhatsappTemplate(template, vars);
+  return buildWhatsappUrl(agend.clienteTelefone, message);
+}
+
+function authorizeAprovacao(user: any, agend: any, modo: string): { ok: true } | { ok: false; status: number; error: string } {
+  const role = user.role;
+  if (modo === "Manual_dono") {
+    if (role !== "dono" && role !== "gerente") {
+      return { ok: false, status: 403, error: "Apenas o dono ou gerente pode confirmar/recusar este agendamento" };
+    }
+    return { ok: true };
+  }
+  if (modo === "Manual_profissional") {
+    if (role === "dono" || role === "gerente") return { ok: true };
+    if (role === "colaborador" && user.profissionalId && agend.profissionalId === user.profissionalId) {
+      return { ok: true };
+    }
+    return { ok: false, status: 403, error: "Apenas o profissional designado, dono ou gerente pode confirmar/recusar" };
+  }
+  if (role === "dono" || role === "gerente") return { ok: true };
+  if (role === "colaborador" && user.profissionalId && agend.profissionalId === user.profissionalId) {
+    return { ok: true };
+  }
+  return { ok: false, status: 403, error: "Acesso negado" };
+}
+
+async function findClienteUserForAgend(agend: any): Promise<number | null> {
+  try {
+    if (agend.clienteId) {
+      const [cli] = await db.select().from(clientesTable).where(eq(clientesTable.id, agend.clienteId)).limit(1);
+      if (cli?.email) {
+        const [cu] = await db.select({ id: clienteUsersTable.id }).from(clienteUsersTable).where(eq(clienteUsersTable.email, cli.email)).limit(1);
+        if (cu) return cu.id;
+      }
+      if (cli?.telefone) {
+        const [cu2] = await db.select({ id: clienteUsersTable.id }).from(clienteUsersTable).where(eq(clienteUsersTable.telefone, cli.telefone)).limit(1);
+        if (cu2) return cu2.id;
+      }
+    }
+    if (agend.clienteTelefone) {
+      const [cu3] = await db.select({ id: clienteUsersTable.id }).from(clienteUsersTable).where(eq(clienteUsersTable.telefone, agend.clienteTelefone)).limit(1);
+      if (cu3) return cu3.id;
+    }
+  } catch (e) {
+    console.error("[findClienteUserForAgend] error:", e);
+  }
+  return null;
+}
+
+router.post("/:agendamentoId/confirmar", requireAuth, async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const user = (req as any).user;
+  const id = parseInt(req.params.agendamentoId);
+  const [agend] = await db.select().from(agendamentosTable).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId))).limit(1);
+  if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
+  const params = await getParametros(barbeariaId);
+  const modo = params["agenda_modo_confirmacao"] || "Automatica";
+  const authz = authorizeAprovacao(user, agend, modo);
+  if (!authz.ok) return res.status(authz.status).json({ error: authz.error });
+  if (agend.status !== "pendente_aprovacao" && agend.status !== "recusado") {
+    return res.status(400).json({ error: `Agendamento já está com status '${agend.status}'` });
+  }
+  const [updated] = await db.update(agendamentosTable)
+    .set({ status: "confirmado", updatedAt: new Date() })
+    .where(eq(agendamentosTable.id, id))
+    .returning();
+
+  notificarAgendamento(barbeariaId, params, {
+    clienteNome: updated.clienteNome,
+    clienteTelefone: updated.clienteTelefone || undefined,
+    clienteId: updated.clienteId,
+    profissionalNome: updated.profissionalNome,
+    servicoNome: updated.servicoNome,
+    data: updated.data,
+    horaInicio: updated.horaInicio,
+    agendamentoId: updated.id,
+  }, "criado");
+
+  findClienteUserForAgend(updated).then(cuId => {
+    if (cuId) {
+      sendPushToClienteUser(cuId, {
+        title: "Agendamento confirmado",
+        body: `Seu ${updated.servicoNome} com ${updated.profissionalNome} em ${formatDateBR(updated.data)} às ${(updated.horaInicio || "").slice(0,5)} foi confirmado.`,
+        data: { agendamentoId: updated.id, type: "appointment_confirmed" },
+      }).catch(err => console.error("[Push] cliente confirm:", err));
+    }
+  });
+
+  const waUrl = await buildAgendamentoWaUrl(barbeariaId, updated, "whatsapp_template_confirmacao", params);
+  return res.json({ ...formatAgend(updated), waUrl });
+});
+
+router.post("/:agendamentoId/recusar", requireAuth, async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const user = (req as any).user;
+  const id = parseInt(req.params.agendamentoId);
+  const motivo: string = String(req.body?.motivo || "").trim();
+  const [agend] = await db.select().from(agendamentosTable).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId))).limit(1);
+  if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
+  const params = await getParametros(barbeariaId);
+  const modo = params["agenda_modo_confirmacao"] || "Automatica";
+  const authz = authorizeAprovacao(user, agend, modo);
+  if (!authz.ok) return res.status(authz.status).json({ error: authz.error });
+  if (agend.status !== "pendente_aprovacao") {
+    return res.status(400).json({ error: `Agendamento já está com status '${agend.status}'` });
+  }
+  const obsBase = agend.observacao ? `${agend.observacao}\n\n` : "";
+  const recusaNota = motivo ? `[Recusado] ${motivo}` : "[Recusado]";
+  const [updated] = await db.update(agendamentosTable)
+    .set({ status: "recusado", observacao: `${obsBase}${recusaNota}`, updatedAt: new Date() })
+    .where(eq(agendamentosTable.id, id))
+    .returning();
+
+  // Refusal email to cliente (Brevo transactional — keeps Brevo for transactional per task)
+  try {
+    let clienteEmail: string | null = null;
+    if (updated.clienteId) {
+      const [cli] = await db.select().from(clientesTable).where(eq(clientesTable.id, updated.clienteId)).limit(1);
+      clienteEmail = cli?.email || null;
+    }
+    if (clienteEmail) {
+      const [barb] = await db.select({ nome: barbeariasTable.nome }).from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
+      const escapeHtml = (s: string) => {
+        const map: Record<string, string> = { "<": "&lt;", ">": "&gt;", "&": "&amp;" };
+        return s.replace(/[<>&]/g, c => map[c] ?? c);
+      };
+      const motivoHtml = motivo ? `<p><b>Motivo:</b> ${escapeHtml(motivo)}</p>` : "";
+      await sendEmail({
+        to: [{ email: clienteEmail, name: updated.clienteNome || undefined }],
+        subject: `Agendamento não pôde ser confirmado — ${barb?.nome || ""}`,
+        htmlContent: `
+          <p>Olá ${updated.clienteNome},</p>
+          <p>Infelizmente não conseguimos confirmar seu agendamento de <b>${updated.servicoNome}</b> com <b>${updated.profissionalNome}</b> no dia <b>${formatDateBR(updated.data)}</b> às <b>${(updated.horaInicio || "").slice(0,5)}</b>.</p>
+          ${motivoHtml}
+          <p>Por favor, escolha outro horário.</p>
+          <p>Obrigado(a),<br/>${barb?.nome || ""}</p>
+        `,
+      });
+    }
+  } catch (e) {
+    console.error("[Recusar] email error:", e);
+  }
+
+  // Push to cliente (if linked)
+  findClienteUserForAgend(updated).then(cuId => {
+    if (cuId) {
+      sendPushToClienteUser(cuId, {
+        title: "Agendamento não confirmado",
+        body: motivo
+          ? `Seu agendamento de ${updated.servicoNome} em ${formatDateBR(updated.data)} foi recusado: ${motivo}`
+          : `Seu agendamento de ${updated.servicoNome} em ${formatDateBR(updated.data)} não pôde ser confirmado. Por favor, escolha outro horário.`,
+        data: { agendamentoId: updated.id, type: "appointment_refused" },
+      }).catch(err => console.error("[Push] cliente refused:", err));
+    }
+  });
+
+  const waUrl = await buildAgendamentoWaUrl(barbeariaId, updated, "whatsapp_template_recusa", params);
+  return res.json({ ...formatAgend(updated), waUrl, motivo });
 });
 
 router.get("/:agendamentoId", requireAuth, async (req, res) => {

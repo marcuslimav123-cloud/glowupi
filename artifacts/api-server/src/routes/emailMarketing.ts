@@ -259,11 +259,16 @@ async function processCampaign(campaignId: number, barbeariaId: number, nomeEsta
         unsubscribeUrl: vars.link_descadastrar,
       });
       if (result.success) {
+        // For Gmail SMTP we cannot rely on Brevo delivery webhooks (no brevoMessageId),
+        // so SMTP-accepted by Gmail is our strongest delivery signal — count it as "entregue".
+        // Brevo sends remain "enviado" and are upgraded to "entregue" when the webhook fires.
+        const isGmail = result.provider === "gmail";
         await db.update(emailCampaignRecipientsTable).set({
-          status: "enviado",
+          status: isGmail ? "entregue" : "enviado",
           brevoMessageId: result.messageId || null,
           unsubscribeToken: optoutToken,
           enviadoEm: new Date(),
+          entregueEm: isGmail ? new Date() : null,
         }).where(eq(emailCampaignRecipientsTable.id, r.id));
         enviados++;
       } else {

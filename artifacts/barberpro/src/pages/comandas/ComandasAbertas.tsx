@@ -14,8 +14,11 @@ import {
   Package, DollarSign, Percent, Clock,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery } from "@tanstack/react-query";
+import { useWhatsappTemplates, renderWhatsappTemplate, buildWhatsappLink } from "@/lib/waTemplates";
 
 const METODO_LABEL: Record<string, string> = { pix: "PIX", dinheiro: "Dinheiro", credito: "Crédito", debito: "Débito" };
 const METODO_ICON: Record<string, React.ReactNode> = {
@@ -28,6 +31,19 @@ const METODO_ICON: Record<string, React.ReactNode> = {
 export default function ComandasAbertas() {
   const { barbeariaId, role } = useAuth();
   const { toast } = useToast();
+  const { data: waTemplates } = useWhatsappTemplates(barbeariaId);
+  const { data: barbeariaInfo } = useQuery<{ nome?: string }>({
+    queryKey: ["barbearia-nome", barbeariaId],
+    queryFn: async () => {
+      if (!barbeariaId) return { nome: "" };
+      const r = await fetch(apiUrl(`/barbearias/${barbeariaId}`), { credentials: "include" });
+      if (!r.ok) return { nome: "" };
+      return r.json();
+    },
+    enabled: !!barbeariaId,
+    staleTime: 60_000,
+  });
+  const nomeEstabelecimento = barbeariaInfo?.nome || "";
   const [agendamentos, setAgendamentos] = useState<any[]>([]);
   const [comandasFechadas, setComandasFechadas] = useState<any[]>([]);
   const [profissionais, setProfissionais] = useState<any[]>([]);
@@ -243,7 +259,35 @@ export default function ComandasAbertas() {
         body: JSON.stringify(body),
       });
       if (res.ok) {
-        toast({ title: "Comanda fechada com sucesso!" });
+        const phone = selected?.clienteTelefone || selected?.cliente?.telefone || "";
+        let waUrl = "";
+        if (phone) {
+          const tpl = waTemplates?.whatsapp_template_posatendimento || "";
+          const text = renderWhatsappTemplate(tpl, {
+            cliente: selected?.clienteNome || "",
+            servico: selected?.servicoNome || "",
+            profissional: selected?.profissionalNome || "",
+            estabelecimento: nomeEstabelecimento,
+          });
+          waUrl = buildWhatsappLink(phone, text);
+        }
+        if (waUrl) {
+          toast({
+            title: "Comanda fechada com sucesso!",
+            description: "Quer enviar um agradecimento via WhatsApp para o cliente?",
+            action: (
+              <ToastAction
+                altText="Enviar agradecimento via WhatsApp"
+                onClick={() => { try { window.open(waUrl, "_blank", "noopener,noreferrer"); } catch {} }}
+                data-testid="toast-action-wa-posatendimento"
+              >
+                Enviar WhatsApp
+              </ToastAction>
+            ),
+          });
+        } else {
+          toast({ title: "Comanda fechada com sucesso!" });
+        }
         setCheckoutOpen(false);
         setSelected(null);
         fetchAgendamentos();

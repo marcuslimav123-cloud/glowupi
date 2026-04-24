@@ -553,6 +553,59 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     refetchInterval: 30000,
   });
 
+  const prevPendentesCountRef = React.useRef<number>(0);
+  const { data: pendentesCount } = useQuery<{ count: number }>({
+    queryKey: ["agendamentos-pendentes-count", barbeariaId],
+    queryFn: async () => {
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/agendamentos/pendentes-count`), {
+        credentials: "include",
+      });
+      if (!res.ok) return { count: 0 };
+      return res.json();
+    },
+    enabled: !!barbeariaId && !!user,
+    refetchInterval: 30000,
+  });
+
+  React.useEffect(() => {
+    const current = pendentesCount?.count || 0;
+    const prev = prevPendentesCountRef.current;
+    if (current > prev && prev !== 0 || (current > 0 && prev === 0 && document.visibilityState === "visible" && performance.now() > 5000)) {
+      try {
+        type AudioContextCtor = typeof AudioContext;
+        const w = window as Window & { webkitAudioContext?: AudioContextCtor };
+        const AC: AudioContextCtor | undefined = w.AudioContext || w.webkitAudioContext;
+        if (AC) {
+          const ctx = new AC();
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.type = "sine";
+          o.frequency.value = 880;
+          g.gain.setValueAtTime(0.0001, ctx.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.45);
+          o.connect(g).connect(ctx.destination);
+          o.start();
+          o.stop(ctx.currentTime + 0.5);
+          setTimeout(() => {
+            const o2 = ctx.createOscillator();
+            const g2 = ctx.createGain();
+            o2.type = "sine";
+            o2.frequency.value = 1175;
+            g2.gain.setValueAtTime(0.0001, ctx.currentTime);
+            g2.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.02);
+            g2.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.45);
+            o2.connect(g2).connect(ctx.destination);
+            o2.start();
+            o2.stop(ctx.currentTime + 0.5);
+            setTimeout(() => ctx.close().catch(() => {}), 700);
+          }, 220);
+        }
+      } catch {}
+    }
+    prevPendentesCountRef.current = current;
+  }, [pendentesCount?.count]);
+
   const { data: layoutParams } = useQuery({
     queryKey: ["parametros-layout", barbeariaId],
     queryFn: async () => {
@@ -815,7 +868,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                       : "text-foreground/50 hover:text-foreground hover:bg-muted/50"
                   )} onClick={handleNavClick} {...(HREF_TO_TUTORIAL[item.href!] ? { "data-tutorial": HREF_TO_TUTORIAL[item.href!] } : {})}>
                     <item.icon className="h-[16px] w-[16px]" />
-                    {item.name}
+                    <span className="flex-1">{item.name}</span>
+                    {item.href === "/agenda" && (pendentesCount?.count || 0) > 0 && (
+                      <span className="ml-auto inline-flex items-center justify-center px-2 h-[20px] rounded-full bg-red-600 text-white text-[10px] font-semibold animate-pulse whitespace-nowrap" data-testid="badge-pendentes-agenda" title="Agendamentos aguardando confirmação">
+                        Pendentes: {pendentesCount?.count}
+                      </span>
+                    )}
                   </Link>
                 )}
               </div>
