@@ -81,7 +81,7 @@ export default function VeiculoTracao() {
               Funil de aquisição
             </p>
             <p className="font-display text-[1.5vw] text-ink font-light italic leading-tight">
-              Anúncio Meta <span className="text-primary not-italic">→</span> isca gratuita (CRM de aniversariantes) <span className="text-primary not-italic">→</span> onboarding 1:1 <span className="text-primary not-italic">→</span> assinatura ARPA R$ 164,50.
+              Anúncio Meta <span className="text-primary not-italic">→</span> isca gratuita <span className="text-primary not-italic">→</span> onboarding 1:1 <span className="text-primary not-italic">→</span> assinatura ARPA R$ 164,50.
             </p>
           </div>
           <div className="col-span-5 text-right">
