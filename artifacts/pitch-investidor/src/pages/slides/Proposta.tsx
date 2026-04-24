@@ -86,7 +86,7 @@ export default function Proposta() {
                 <span className="font-display text-[1.7vw] text-primary font-medium leading-none w-[2.8vw]">04</span>
                 <div>
                   <p className="font-display text-[1.55vw] text-ink font-medium leading-tight">Tração mensurável em 90 dias</p>
-                  <p className="text-ink/70 font-body text-[1.1vw] mt-[0.4vh]">R$ 6.400 alocados em mídia paga e iPhone para conteúdo geram MRR antes do encerramento de 2026.</p>
+                  <p className="text-ink/70 font-body text-[1.1vw] mt-[0.4vh]">R$ 14.700 alocados em tráfego pago e orgânico geram MRR antes do encerramento de 2026.</p>
                 </div>
               </div>
             </div>
@@ -95,7 +95,7 @@ export default function Proposta() {
           <div className="bg-ink text-cream px-[2vw] py-[2.5vh] flex items-center justify-between gap-[2vw] mt-[3vh]">
             <div className="min-w-0">
               <p className="text-primary font-body text-[0.95vw] tracking-[0.3em] uppercase mb-[0.5vh]">Composição do aporte</p>
-              <p className="font-display text-[1.25vw] font-light italic leading-snug whitespace-nowrap">R$ 11.400 em capital · iPhone 17 Pro Max</p>
+              <p className="font-display text-[1.25vw] font-light italic leading-snug whitespace-nowrap">R$ 11.400 em capital · R$ 8.300 em tráfego orgânico</p>
             </div>
             <div className="text-right shrink-0">
               <p className="text-cream/55 font-body text-[0.9vw] tracking-[0.25em] uppercase">Total</p>

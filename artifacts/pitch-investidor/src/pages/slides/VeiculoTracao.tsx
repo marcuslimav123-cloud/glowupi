@@ -58,19 +58,19 @@ export default function VeiculoTracao() {
           <div className="bg-cream p-[3vh_2.2vw] flex flex-col justify-between min-h-[32vh] border border-primary/30">
             <div>
               <p className="text-muted font-body text-[1vw] tracking-[0.25em] uppercase mb-[1.5vh]">
-                Presença digital
+                Tráfego orgânico
               </p>
               <p className="font-display text-[3.2vw] text-ink font-medium leading-none mb-[2vh]">
-                iPhone 17 <span className="text-[1.5vw] text-muted">Pro Max</span>
+                R$ 8.300
               </p>
               <p className="text-ink/80 font-body text-[1.2vw] leading-snug">
-                Equipamento dedicado a vídeo profissional vertical,
-                conteúdo orgânico, demonstrações do aplicativo e provas
-                sociais reais com clientes.
+                Produção de vídeo vertical profissional, conteúdo
+                recorrente, demonstrações do aplicativo e provas sociais
+                reais com clientes — combustível do canal orgânico.
               </p>
             </div>
             <p className="text-accent font-body text-[1vw] tracking-[0.2em] uppercase mt-[2vh]">
-              R$ 8.300 · ativo de marca
+              Conteúdo · 90 dias
             </p>
           </div>
         </div>
