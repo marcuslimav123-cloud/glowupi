@@ -18,6 +18,24 @@ if ("serviceWorker" in navigator) {
     .catch((err) => {
       console.error("[SW] Service Worker registration failed:", err);
     });
+
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data && event.data.type === "SW_ACTIVATED") {
+      const reloadKey = "__sw_reload_v";
+      const lastVersion = sessionStorage.getItem(reloadKey);
+      if (lastVersion !== event.data.version) {
+        sessionStorage.setItem(reloadKey, event.data.version);
+        console.log("[SW] New service worker activated, reloading with cache bust");
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set("_swv", String(Date.now()));
+          window.location.replace(url.toString());
+        } catch {
+          window.location.reload();
+        }
+      }
+    }
+  });
 }
 
 createRoot(document.getElementById("root")!).render(<App />);

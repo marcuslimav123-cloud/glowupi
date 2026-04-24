@@ -46,7 +46,13 @@ export class ChunkErrorBoundary extends React.Component<
         await Promise.all(regs.map((r) => r.unregister()));
       }
     } catch {}
-    window.location.reload();
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("_cb", String(Date.now()));
+      window.location.replace(url.toString());
+    } catch {
+      window.location.reload();
+    }
   }
 
   handleManualRecover = async () => {
