@@ -2,7 +2,7 @@ export default function ValidacaoAtual() {
   const validados = [
     {
       title: "Produto em produção",
-      body: "SaaS multi-inquilino rodando hoje em Replit. Web responsiva e app nativo iOS/Android publicáveis nas lojas.",
+      body: "SaaS multi-inquilino rodando hoje em Replit. Painel web responsivo e PWA instalável no celular. App nativo iOS/Android no roadmap pós-aporte.",
     },
     {
       title: "Infraestrutura quitada",

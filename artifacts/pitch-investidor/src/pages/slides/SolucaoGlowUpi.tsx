@@ -32,7 +32,7 @@ export default function SolucaoGlowUpi() {
               Estado atual
             </p>
             <p className="font-display text-[1.7vw] text-ink font-light italic leading-tight">
-              Em produção. Em loja.
+              Em produção.
               <span className="text-primary not-italic"> Pronto para escalar.</span>
             </p>
             <p className="text-muted font-body text-[1vw] mt-[0.8vh] tracking-wide">
@@ -57,10 +57,11 @@ export default function SolucaoGlowUpi() {
             </p>
           </div>
           <div className="border-l-2 border-primary pl-[1.4vw]">
-            <p className="font-display text-[1.55vw] text-ink font-medium leading-tight">Aplicativo nativo</p>
+            <p className="font-display text-[1.55vw] text-ink font-medium leading-tight">App instalável (PWA)</p>
             <p className="text-ink/70 font-body text-[1.1vw] mt-[0.6vh] leading-snug">
-              iOS e Android para a profissional e para o cliente final.
-              Marca a presença digital que faltava.
+              Painel e área do cliente instaláveis no celular como
+              aplicativo, com notificações push. Versão nativa iOS/Android
+              no roadmap pós-aporte.
             </p>
           </div>
           <div className="border-l-2 border-primary pl-[1.4vw]">

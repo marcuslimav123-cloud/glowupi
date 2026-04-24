@@ -71,8 +71,8 @@ export default function Proposta() {
               <div className="flex items-start gap-[1.5vw] border-b border-ink/10 pb-[1.6vh]">
                 <span className="font-display text-[1.7vw] text-primary font-medium leading-none w-[2.8vw]">02</span>
                 <div>
-                  <p className="font-display text-[1.55vw] text-ink font-medium leading-tight">Produto em produção e em loja</p>
-                  <p className="text-ink/70 font-body text-[1.1vw] mt-[0.4vh]">Painel web, aplicativos iOS e Android publicados, agenda, ficha digital e e-mail marketing nativo.</p>
+                  <p className="font-display text-[1.55vw] text-ink font-medium leading-tight">Produto em produção</p>
+                  <p className="text-ink/70 font-body text-[1.1vw] mt-[0.4vh]">Painel web responsivo instalável como PWA, com agenda, ficha digital, e-mail marketing nativo e cobrança recorrente.</p>
                 </div>
               </div>
               <div className="flex items-start gap-[1.5vw] border-b border-ink/10 pb-[2.2vh]">
