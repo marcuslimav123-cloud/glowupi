@@ -51,6 +51,7 @@ import {
   Inbox,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SafeLogoImage } from "@/components/SafeLogoImage";
 import { APP_NAME, getRoleLabel } from "@/lib/utils";
 import { HeaderBar, applyTheme } from "./HeaderBar";
 import { MobileBottomBar } from "./MobileBottomBar";
@@ -769,21 +770,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
           <div className="font-semibold text-[14px] text-foreground tracking-tight flex items-center gap-1.5 min-w-0">
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt={barbeariaNome || APP_NAME}
-                className="h-[24px] w-[24px] object-contain rounded-full shrink-0"
-                onError={(e) => {
-                  const img = e.currentTarget as HTMLImageElement;
-                  if (img.src.indexOf("/logo-icon.png") === -1) {
-                    img.src = `${basePath}logo-icon.png`.replace(/\/+/g, "/");
-                  }
-                }}
-              />
-            ) : (
-              <img src={`${basePath}logo-icon.png`.replace(/\/+/g, "/")} alt={APP_NAME} className="h-[24px] w-[24px] object-contain shrink-0" />
-            )}
+            <SafeLogoImage
+              src={logoUrl || `${basePath}logo-icon.png`.replace(/\/+/g, "/")}
+              alt={barbeariaNome || APP_NAME}
+              className={logoUrl ? "h-[24px] w-[24px] object-contain rounded-full shrink-0" : "h-[24px] w-[24px] object-contain shrink-0"}
+            />
             <span className="truncate">{barbeariaNome || APP_NAME}</span>
           </div>
         </div>
@@ -806,18 +797,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               style={{ aspectRatio: "16/9" }}
             >
               {logoUrl ? (
-                <img
-                  src={logoUrl}
-                  alt="Logo"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const img = e.currentTarget as HTMLImageElement;
-                    img.style.display = "none";
-                  }}
-                />
+                <SafeLogoImage src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <img src={`${basePath}logo-icon.png`.replace(/\/+/g, "/")} alt={APP_NAME} className="h-14 w-14 object-contain opacity-60" />
+                  <SafeLogoImage src={`${basePath}logo-icon.png`.replace(/\/+/g, "/")} alt={APP_NAME} className="h-14 w-14 object-contain opacity-60" />
                 </div>
               )}
             </div>

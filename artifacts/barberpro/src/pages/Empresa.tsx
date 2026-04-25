@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { SafeLogoImage } from "@/components/SafeLogoImage";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGetMyBarbearia, useUpdateBarbearia } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -181,13 +182,10 @@ export default function Empresa() {
       {barbearia && (
         <div className="flex items-center gap-3 mb-6 p-4 bg-card rounded-xl border border-border">
           {logoUrl ? (
-            <img
+            <SafeLogoImage
               src={logoUrl}
               alt={barbearia.nome}
               className="h-12 w-12 rounded-xl object-cover border border-primary/30"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.display = "none";
-              }}
             />
           ) : (
             <div className="h-12 w-12 rounded-xl flex items-center justify-center border border-primary/30" style={{ background: `${corPrimaria}20` }}>
