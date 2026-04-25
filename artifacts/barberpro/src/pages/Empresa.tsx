@@ -167,7 +167,7 @@ export default function Empresa() {
           const regs = await navigator.serviceWorker.getRegistrations();
           await Promise.all(regs.map((r) => r.update().catch(() => {})));
         }
-      } catch {}
+      } catch (err) { console.warn("[barberpro] safe-catch:", err); }
       toast({ title: "Dados atualizados com sucesso!" });
     } catch { toast({ title: "Erro ao salvar", variant: "destructive" }); }
   };

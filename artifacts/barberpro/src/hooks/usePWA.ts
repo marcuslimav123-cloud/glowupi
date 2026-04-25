@@ -114,7 +114,7 @@ export function usePWA({ slug, nome, logoUrl, corPrimaria, startUrl }: PWAOption
           URL.revokeObjectURL(blobUrlRef.current);
           blobUrlRef.current = null;
         }
-      } catch {}
+      } catch (err) { console.warn("[barberpro] safe-catch:", err); }
     };
   }, [slug, nome, logoUrl, corPrimaria, startUrl]);
 
@@ -155,7 +155,7 @@ export function usePWA({ slug, nome, logoUrl, corPrimaria, startUrl }: PWAOption
       if (themeColor) {
         themeColor.content = corPrimaria;
       }
-    } catch {}
+    } catch (err) { console.warn("[barberpro] safe-catch:", err); }
   }, [corPrimaria]);
 
   useEffect(() => {
@@ -172,13 +172,13 @@ export function usePWA({ slug, nome, logoUrl, corPrimaria, startUrl }: PWAOption
       }
       appleTitle.content = nome;
       document.title = nome;
-    } catch {}
+    } catch (err) { console.warn("[barberpro] safe-catch:", err); }
 
     return () => {
       try {
         const amt = document.querySelector('meta[name="apple-mobile-web-app-title"]');
         if (amt) amt.remove();
-      } catch {}
+      } catch (err) { console.warn("[barberpro] safe-catch:", err); }
     };
   }, [nome]);
 }
