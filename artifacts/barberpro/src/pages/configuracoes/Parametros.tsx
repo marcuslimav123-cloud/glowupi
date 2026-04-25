@@ -320,8 +320,30 @@ type WhatsappTemplatesSectionProps = {
 function WhatsappTemplatesSection({
   params, getDisplayValue, handleValueChange, isModified, onSave, onReset, saving,
 }: WhatsappTemplatesSectionProps) {
+  const textareaRefs = React.useRef<Record<string, HTMLTextAreaElement | null>>({});
+
   const insertVariable = (chave: string, currentVal: string, varKey: string) => {
-    handleValueChange(chave, `${currentVal}{{${varKey}}}`);
+    const token = `{{${varKey}}}`;
+    const ta = textareaRefs.current[chave];
+    if (ta && document.activeElement !== ta) {
+      ta.focus();
+    }
+    if (ta && typeof ta.selectionStart === "number" && typeof ta.selectionEnd === "number") {
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      const next = currentVal.slice(0, start) + token + currentVal.slice(end);
+      handleValueChange(chave, next);
+      requestAnimationFrame(() => {
+        const el = textareaRefs.current[chave];
+        if (el) {
+          const pos = start + token.length;
+          el.focus();
+          el.setSelectionRange(pos, pos);
+        }
+      });
+    } else {
+      handleValueChange(chave, `${currentVal}${token}`);
+    }
   };
 
   return (
@@ -388,11 +410,13 @@ function WhatsappTemplatesSection({
               </div>
 
               <Textarea
+                ref={(el) => { textareaRefs.current[p.chave] = el; }}
                 value={currentVal}
                 onChange={(e) => handleValueChange(p.chave, e.target.value)}
                 rows={3}
                 className="text-[12.5px] font-mono leading-relaxed"
                 placeholder="Digite a mensagem do WhatsApp..."
+                data-testid={`textarea-${p.chave}`}
               />
 
               <div className="flex flex-wrap gap-1.5">
