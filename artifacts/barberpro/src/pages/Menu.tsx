@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InstallAppButton } from "@/components/InstallAppButton";
+import { SafeLogoImage } from "@/components/SafeLogoImage";
 
 type LucideIcon = React.ForwardRefExoticComponent<LucideProps & React.RefAttributes<SVGSVGElement>>;
 
@@ -314,7 +315,7 @@ export default function MenuPage() {
               )}
             </div>
             {logoUrl && (
-              <img src={logoUrl} alt="Logo" className="h-10 w-10 rounded-lg object-cover border border-border" />
+              <SafeLogoImage src={logoUrl} alt="Logo" className="h-10 w-10 rounded-lg object-cover border border-border" />
             )}
           </div>
         </div>

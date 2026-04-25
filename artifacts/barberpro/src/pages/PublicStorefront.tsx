@@ -9,6 +9,7 @@ import ClientAuthModal from "@/components/ClientAuthModal";
 import { usePWA } from "@/hooks/usePWA";
 import { useInstallPWA } from "@/hooks/useInstallPWA";
 import { InstallAppButton } from "@/components/InstallAppButton";
+import { SafeLogoImage } from "@/components/SafeLogoImage";
 
 const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, "/");
 
@@ -402,7 +403,7 @@ export default function PublicStorefront() {
               className="flex items-center gap-3 flex-1 min-w-0 text-left hover:opacity-80 transition"
             >
               {barbearia.logoUrl ? (
-                <img src={barbearia.logoUrl} alt={barbearia.nome} className="h-9 w-9 rounded-xl object-cover border border-white/10 flex-shrink-0" />
+                <SafeLogoImage src={barbearia.logoUrl} alt={barbearia.nome} className="h-9 w-9 rounded-xl object-cover border border-white/10 flex-shrink-0" />
               ) : (
                 <div className="h-9 w-9 rounded-xl flex items-center justify-center border border-white/10 flex-shrink-0" style={{ background: `${accent}25` }}>
                   <Scissors className="h-4 w-4" style={{ color: accent }} />
@@ -736,7 +737,7 @@ export default function PublicStorefront() {
             <div className="p-5 space-y-6">
               <div className="flex items-center gap-4">
                 {barbearia.logoUrl ? (
-                  <img src={barbearia.logoUrl} alt={barbearia.nome} className="h-16 w-16 rounded-2xl object-cover border border-white/10" />
+                  <SafeLogoImage src={barbearia.logoUrl} alt={barbearia.nome} className="h-16 w-16 rounded-2xl object-cover border border-white/10" />
                 ) : (
                   <div className="h-16 w-16 rounded-2xl flex items-center justify-center border border-white/10" style={{ background: `${accent}25` }}>
                     <Scissors className="h-7 w-7" style={{ color: accent }} />

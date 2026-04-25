@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useInstallPWA } from "@/hooks/useInstallPWA";
 import { Download, X, Plus, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SafeLogoImage } from "@/components/SafeLogoImage";
 
 interface InstallAppButtonProps {
   nome?: string;
@@ -82,11 +83,10 @@ export function InstallAppButton({ nome, logoUrl, accentColor, className = "", v
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3 min-w-0">
                     {logoUrl ? (
-                      <img
+                      <SafeLogoImage
                         src={logoUrl}
                         alt={nome || "App"}
                         className="h-11 w-11 rounded-2xl object-cover border-2 shadow-lg shrink-0"
-                        style={{ borderColor: `${accent}40` }}
                       />
                     ) : (
                       <div
@@ -241,7 +241,7 @@ export function InstallAppButton({ nome, logoUrl, accentColor, className = "", v
 
                 <div className="mt-4 flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
                   {logoUrl ? (
-                    <img src={logoUrl} alt="" className="h-9 w-9 rounded-xl object-cover border border-white/10 shrink-0" />
+                    <SafeLogoImage src={logoUrl} alt="" className="h-9 w-9 rounded-xl object-cover border border-white/10 shrink-0" />
                   ) : (
                     <div className="h-9 w-9 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shrink-0">
                       <Download className="h-4 w-4 text-white/30" />
