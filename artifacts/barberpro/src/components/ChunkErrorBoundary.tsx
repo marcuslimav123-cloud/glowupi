@@ -43,7 +43,7 @@ export class ChunkErrorBoundary extends React.Component<
           sessionStorage.setItem(RELOAD_KEY, String(now));
           ChunkErrorBoundary.nukeAndReload();
         }
-      } catch (err) { console.warn("[barberpro] safe-catch:", err); }
+      } catch {}
     }
     return { hasError: true, message: shortMessage(error) };
   }
@@ -54,13 +54,13 @@ export class ChunkErrorBoundary extends React.Component<
         const keys = await caches.keys();
         await Promise.all(keys.map((k) => caches.delete(k)));
       }
-    } catch (err) { console.warn("[barberpro] safe-catch:", err); }
+    } catch {}
     try {
       if ("serviceWorker" in navigator) {
         const regs = await navigator.serviceWorker.getRegistrations();
         await Promise.all(regs.map((r) => r.unregister()));
       }
-    } catch (err) { console.warn("[barberpro] safe-catch:", err); }
+    } catch {}
     try {
       const url = new URL(window.location.href);
       url.searchParams.set("_cb", String(Date.now()));
@@ -73,17 +73,12 @@ export class ChunkErrorBoundary extends React.Component<
   handleManualRecover = async () => {
     try {
       sessionStorage.removeItem(RELOAD_KEY);
-    } catch (err) { console.warn("[barberpro] safe-catch:", err); }
+    } catch {}
     await ChunkErrorBoundary.nukeAndReload();
   };
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    try {
-      console.error("[ChunkErrorBoundary] erro capturado:", error);
-      if (info?.componentStack) {
-        console.error("[ChunkErrorBoundary] componentStack:", info.componentStack);
-      }
-    } catch (err) { console.warn("[barberpro] safe-catch:", err); }
+    console.error("[ChunkErrorBoundary] erro capturado:", error, info?.componentStack);
   }
 
   render() {
