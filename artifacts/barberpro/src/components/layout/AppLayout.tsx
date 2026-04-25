@@ -682,6 +682,39 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("open-tutorial", handler);
   }, []);
 
+  const handleNavClick = React.useCallback(() => {
+    setMobileMenuOpen(false);
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTo({ top: 0 });
+    }
+  }, []);
+
+  const filteredNav = React.useMemo(
+    () => filterNavByRole(NAV_ITEMS, role, perfilPermissoes),
+    [role, perfilPermissoes]
+  );
+
+  const searchResults = React.useMemo(() => {
+    const q = sidebarSearch.trim().toLowerCase();
+    if (!q) return null;
+    const results: { name: string; href: string; icon: any; parent?: string }[] = [];
+    const collect = (items: NavItem[], parentName?: string) => {
+      for (const item of items) {
+        if (item.href && item.name.toLowerCase().includes(q)) {
+          results.push({ name: item.name, href: item.href, icon: item.icon, parent: parentName });
+        }
+        if (item.children) collect(item.children, item.name);
+        if (item.subgroups) {
+          for (const sg of item.subgroups) {
+            collect(sg.items, item.name);
+          }
+        }
+      }
+    };
+    collect(filteredNav);
+    return results;
+  }, [sidebarSearch, filteredNav]);
+
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div></div>;
   }
@@ -728,39 +761,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-
-  const handleNavClick = React.useCallback(() => {
-    setMobileMenuOpen(false);
-    if (mainContentRef.current) {
-      mainContentRef.current.scrollTo({ top: 0 });
-    }
-  }, []);
-
-  const filteredNav = React.useMemo(
-    () => filterNavByRole(NAV_ITEMS, role, perfilPermissoes),
-    [role, perfilPermissoes]
-  );
-
-  const searchResults = React.useMemo(() => {
-    const q = sidebarSearch.trim().toLowerCase();
-    if (!q) return null;
-    const results: { name: string; href: string; icon: any; parent?: string }[] = [];
-    const collect = (items: NavItem[], parentName?: string) => {
-      for (const item of items) {
-        if (item.href && item.name.toLowerCase().includes(q)) {
-          results.push({ name: item.name, href: item.href, icon: item.icon, parent: parentName });
-        }
-        if (item.children) collect(item.children, item.name);
-        if (item.subgroups) {
-          for (const sg of item.subgroups) {
-            collect(sg.items, item.name);
-          }
-        }
-      }
-    };
-    collect(filteredNav);
-    return results;
-  }, [sidebarSearch, filteredNav]);
 
   return (
     <div className="h-screen overflow-hidden flex flex-col md:flex-row bg-background">
