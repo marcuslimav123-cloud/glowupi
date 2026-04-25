@@ -161,6 +161,12 @@ export default function Empresa() {
     try {
       await updateMutation.mutateAsync({ data: { nome, telefone: stripPhone(telefone), email: email || null, cnpj: cnpj || null, cep: cep || null, logradouro: logradouro || null, numero: numero || null, bairro: bairro || null, cidade: cidade || null, uf: uf || null, corPrimaria, logoUrl } as any });
       qc.invalidateQueries();
+      try {
+        if ("serviceWorker" in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((r) => r.update().catch(() => {})));
+        }
+      } catch {}
       toast({ title: "Dados atualizados com sucesso!" });
     } catch { toast({ title: "Erro ao salvar", variant: "destructive" }); }
   };
@@ -175,7 +181,14 @@ export default function Empresa() {
       {barbearia && (
         <div className="flex items-center gap-3 mb-6 p-4 bg-card rounded-xl border border-border">
           {logoUrl ? (
-            <img src={logoUrl} alt={barbearia.nome} className="h-12 w-12 rounded-xl object-cover border border-primary/30" />
+            <img
+              src={logoUrl}
+              alt={barbearia.nome}
+              className="h-12 w-12 rounded-xl object-cover border border-primary/30"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
+            />
           ) : (
             <div className="h-12 w-12 rounded-xl flex items-center justify-center border border-primary/30" style={{ background: `${corPrimaria}20` }}>
               <Building2 className="h-6 w-6" style={{ color: corPrimaria }} />

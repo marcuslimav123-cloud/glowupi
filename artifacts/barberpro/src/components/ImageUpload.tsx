@@ -109,7 +109,15 @@ export function ImageUpload({
       });
 
       if (!res.ok) throw new Error("Erro ao preparar upload");
-      const { uploadURL, objectPath } = await res.json();
+      const data = await res.json().catch(() => null);
+      const uploadURL = data?.uploadURL;
+      const objectPath = data?.objectPath;
+      if (typeof uploadURL !== "string" || !uploadURL) {
+        throw new Error("Resposta inválida do servidor (uploadURL)");
+      }
+      if (typeof objectPath !== "string" || !objectPath) {
+        throw new Error("Resposta inválida do servidor (objectPath)");
+      }
 
       const uploadRes = await fetch(uploadURL, {
         method: "PUT",
@@ -119,7 +127,8 @@ export function ImageUpload({
 
       if (!uploadRes.ok) throw new Error("Erro ao enviar arquivo");
 
-      const servingUrl = apiUrl(`/storage${objectPath}`);
+      const path = objectPath.startsWith("/") ? objectPath : `/${objectPath}`;
+      const servingUrl = apiUrl(`/storage${path}`);
       onChange(servingUrl);
     } catch (err: any) {
       console.error("Upload error:", err);
@@ -154,7 +163,14 @@ export function ImageUpload({
         <div className={containerClass} onClick={() => inputRef.current?.click()}>
           {value ? (
             <>
-              <img src={value} alt="Preview" className="h-full w-full object-cover" />
+              <img
+                src={value}
+                alt="Preview"
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = "none";
+                }}
+              />
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
                 <Camera className="h-5 w-5 text-white" />
               </div>

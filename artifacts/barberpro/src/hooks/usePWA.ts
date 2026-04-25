@@ -8,131 +8,177 @@ interface PWAOptions {
   startUrl?: string;
 }
 
+function toAbsoluteIconUrl(
+  raw: string | null | undefined,
+  fallback: string,
+): string {
+  if (!raw || typeof raw !== "string") return fallback;
+  const trimmed = raw.trim();
+  if (!trimmed) return fallback;
+  try {
+    return new URL(trimmed, window.location.origin).href;
+  } catch {
+    return fallback;
+  }
+}
+
 export function usePWA({ slug, nome, logoUrl, corPrimaria, startUrl }: PWAOptions) {
   const blobUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!slug || startUrl) return;
 
-    const basePath = import.meta.env.BASE_URL || "/";
-    const API_BASE = `${basePath}api`.replace(/\/+/g, "/");
-    const manifestUrl = `${API_BASE}/public/${slug}/manifest.json`;
+    try {
+      const basePath = import.meta.env.BASE_URL || "/";
+      const API_BASE = `${basePath}api`.replace(/\/+/g, "/");
+      const manifestUrl = `${API_BASE}/public/${slug}/manifest.json`;
 
-    let manifestLink = document.querySelector<HTMLLinkElement>(
-      'link[rel="manifest"]'
-    );
-    if (!manifestLink) {
-      manifestLink = document.createElement("link");
-      manifestLink.rel = "manifest";
-      document.head.appendChild(manifestLink);
+      let manifestLink = document.querySelector<HTMLLinkElement>(
+        'link[rel="manifest"]'
+      );
+      if (!manifestLink) {
+        manifestLink = document.createElement("link");
+        manifestLink.rel = "manifest";
+        document.head.appendChild(manifestLink);
+      }
+      manifestLink.href = manifestUrl;
+    } catch (err) {
+      console.warn("[usePWA] erro ao apontar manifest publico:", err);
     }
-    manifestLink.href = manifestUrl;
   }, [slug, startUrl]);
 
   useEffect(() => {
     if (slug && !startUrl) return;
     if (!nome) return;
 
-    const basePath = import.meta.env.BASE_URL || "/";
-    const icons: { src: string; sizes: string; type?: string; purpose: string }[] = [];
-    if (logoUrl) {
-      icons.push(
-        { src: logoUrl, sizes: "192x192", purpose: "any" },
-        { src: logoUrl, sizes: "512x512", purpose: "any" },
-        { src: logoUrl, sizes: "192x192", purpose: "maskable" },
-        { src: logoUrl, sizes: "512x512", purpose: "maskable" },
+    try {
+      const basePath = import.meta.env.BASE_URL || "/";
+      const fallbackIcon = toAbsoluteIconUrl(
+        `${basePath}logo-icon.png`,
+        `${window.location.origin}/logo-icon.png`,
       );
-    } else {
-      icons.push(
-        { src: `${basePath}logo-icon.png`, sizes: "192x192", type: "image/png", purpose: "any" },
-      );
-    }
 
-    const manifest = {
-      name: nome,
-      short_name: nome.length > 12 ? nome.slice(0, 12) : nome,
-      description: `Painel - ${nome}`,
-      start_url: startUrl || basePath,
-      scope: basePath,
-      display: "standalone",
-      background_color: "#111111",
-      theme_color: corPrimaria || "#C4943C",
-      icons,
-    };
+      const iconUrl = toAbsoluteIconUrl(logoUrl, fallbackIcon);
+      const usingCustom = !!logoUrl && iconUrl !== fallbackIcon;
 
-    if (blobUrlRef.current) {
-      URL.revokeObjectURL(blobUrlRef.current);
-    }
-    const blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
-    blobUrlRef.current = URL.createObjectURL(blob);
+      const icons: { src: string; sizes: string; type?: string; purpose: string }[] = [];
+      if (usingCustom) {
+        icons.push(
+          { src: iconUrl, sizes: "192x192", purpose: "any" },
+          { src: iconUrl, sizes: "512x512", purpose: "any" },
+          { src: iconUrl, sizes: "192x192", purpose: "maskable" },
+          { src: iconUrl, sizes: "512x512", purpose: "maskable" },
+        );
+      } else {
+        icons.push(
+          { src: fallbackIcon, sizes: "192x192", type: "image/png", purpose: "any" },
+        );
+      }
 
-    let manifestLink = document.querySelector<HTMLLinkElement>(
-      'link[rel="manifest"]'
-    );
-    if (!manifestLink) {
-      manifestLink = document.createElement("link");
-      manifestLink.rel = "manifest";
-      document.head.appendChild(manifestLink);
-    }
-    manifestLink.href = blobUrlRef.current;
+      const manifest = {
+        name: nome,
+        short_name: nome.length > 12 ? nome.slice(0, 12) : nome,
+        description: `Painel - ${nome}`,
+        start_url: startUrl || basePath,
+        scope: basePath,
+        display: "standalone",
+        background_color: "#111111",
+        theme_color: corPrimaria || "#C4943C",
+        icons,
+      };
 
-    return () => {
       if (blobUrlRef.current) {
         URL.revokeObjectURL(blobUrlRef.current);
-        blobUrlRef.current = null;
       }
+      const blob = new Blob([JSON.stringify(manifest)], {
+        type: "application/manifest+json",
+      });
+      blobUrlRef.current = URL.createObjectURL(blob);
+
+      let manifestLink = document.querySelector<HTMLLinkElement>(
+        'link[rel="manifest"]'
+      );
+      if (!manifestLink) {
+        manifestLink = document.createElement("link");
+        manifestLink.rel = "manifest";
+        document.head.appendChild(manifestLink);
+      }
+      manifestLink.href = blobUrlRef.current;
+    } catch (err) {
+      console.warn("[usePWA] erro ao gerar manifest dinamico:", err);
+    }
+
+    return () => {
+      try {
+        if (blobUrlRef.current) {
+          URL.revokeObjectURL(blobUrlRef.current);
+          blobUrlRef.current = null;
+        }
+      } catch {}
     };
   }, [slug, nome, logoUrl, corPrimaria, startUrl]);
 
-
   useEffect(() => {
-    const iconUrl = logoUrl || `${import.meta.env.BASE_URL || "/"}logo-icon.png`;
+    try {
+      const basePath = import.meta.env.BASE_URL || "/";
+      const fallbackIcon = toAbsoluteIconUrl(
+        `${basePath}logo-icon.png`,
+        `${window.location.origin}/logo-icon.png`,
+      );
+      const iconUrl = toAbsoluteIconUrl(logoUrl, fallbackIcon);
 
-    let appleTouchIcon = document.querySelector<HTMLLinkElement>(
-      'link[rel="apple-touch-icon"]'
-    );
-    if (!appleTouchIcon) {
-      appleTouchIcon = document.createElement("link");
-      appleTouchIcon.rel = "apple-touch-icon";
-      document.head.appendChild(appleTouchIcon);
-    }
-    appleTouchIcon.href = iconUrl;
+      let appleTouchIcon = document.querySelector<HTMLLinkElement>(
+        'link[rel="apple-touch-icon"]'
+      );
+      if (!appleTouchIcon) {
+        appleTouchIcon = document.createElement("link");
+        appleTouchIcon.rel = "apple-touch-icon";
+        document.head.appendChild(appleTouchIcon);
+      }
+      appleTouchIcon.href = iconUrl;
 
-    let favicon = document.querySelector<HTMLLinkElement>(
-      'link[rel="icon"]'
-    );
-    if (favicon) {
-      favicon.href = iconUrl;
+      const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+      if (favicon) {
+        favicon.href = iconUrl;
+      }
+    } catch (err) {
+      console.warn("[usePWA] erro ao atualizar favicon/apple-touch-icon:", err);
     }
   }, [logoUrl]);
 
   useEffect(() => {
     if (!corPrimaria) return;
-    const themeColor = document.querySelector<HTMLMetaElement>(
-      'meta[name="theme-color"]'
-    );
-    if (themeColor) {
-      themeColor.content = corPrimaria;
-    }
+    try {
+      const themeColor = document.querySelector<HTMLMetaElement>(
+        'meta[name="theme-color"]'
+      );
+      if (themeColor) {
+        themeColor.content = corPrimaria;
+      }
+    } catch {}
   }, [corPrimaria]);
 
   useEffect(() => {
     if (!nome) return;
 
-    let appleTitle = document.querySelector<HTMLMetaElement>(
-      'meta[name="apple-mobile-web-app-title"]'
-    );
-    if (!appleTitle) {
-      appleTitle = document.createElement("meta");
-      appleTitle.name = "apple-mobile-web-app-title";
-      document.head.appendChild(appleTitle);
-    }
-    appleTitle.content = nome;
-    document.title = nome;
+    try {
+      let appleTitle = document.querySelector<HTMLMetaElement>(
+        'meta[name="apple-mobile-web-app-title"]'
+      );
+      if (!appleTitle) {
+        appleTitle = document.createElement("meta");
+        appleTitle.name = "apple-mobile-web-app-title";
+        document.head.appendChild(appleTitle);
+      }
+      appleTitle.content = nome;
+      document.title = nome;
+    } catch {}
 
     return () => {
-      const amt = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-      if (amt) amt.remove();
+      try {
+        const amt = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+        if (amt) amt.remove();
+      } catch {}
     };
   }, [nome]);
 }

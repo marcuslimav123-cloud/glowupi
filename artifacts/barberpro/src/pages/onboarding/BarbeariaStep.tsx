@@ -40,6 +40,15 @@ const DURACOES = [
   { value: "60", label: "1h" },
   { value: "90", label: "1h30" },
   { value: "120", label: "2h" },
+  { value: "150", label: "2h30" },
+  { value: "180", label: "3h" },
+  { value: "240", label: "4h" },
+  { value: "300", label: "5h" },
+  { value: "360", label: "6h" },
+  { value: "420", label: "7h" },
+  { value: "480", label: "8h" },
+  { value: "600", label: "10h" },
+  { value: "720", label: "12h" },
 ];
 
 const SERVICOS_SUGERIDOS: Record<string, { nome: string; preco: string; duracao: string }[]> = {
