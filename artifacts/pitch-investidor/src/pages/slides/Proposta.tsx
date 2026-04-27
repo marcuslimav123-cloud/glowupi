@@ -70,7 +70,7 @@ export default function Proposta() {
               <div className="flex items-start gap-[1.5vw] border-b border-ink/10 pb-[2.2vh]">
                 <span className="font-display text-[1.7vw] text-primary font-medium leading-none w-[2.8vw]">01</span>
                 <div>
-                  <p className="font-display text-[1.55vw] text-ink font-medium leading-tight">Cinquenta por cento de equity formal</p>
+                  <p className="font-display text-[1.55vw] text-ink font-medium leading-tight">50% de equity formal</p>
                   <p className="text-ink/70 font-body text-[1.1vw] mt-[0.4vh]">Contrato social registrado em junta comercial, com governança e regras de saída claras.</p>
                 </div>
               </div>
