@@ -1,11 +1,134 @@
 import { Router, type IRouter } from "express";
 import crypto from "crypto";
+import multer from "multer";
 import XLSX from "xlsx";
 import { db } from "@workspace/db";
-import { superAdminsTable, barbeariasTable, usersTable, platformConfigTable, comandasTable, brevoEmailLogTable, profissionaisTable, adminLogsTable, lgpdConsentsTable, trialLinksTable, clientesTable } from "@workspace/db/schema";
+import { superAdminsTable, barbeariasTable, usersTable, platformConfigTable, comandasTable, brevoEmailLogTable, profissionaisTable, adminLogsTable, lgpdConsentsTable, trialLinksTable, clientesTable, servicosTable } from "@workspace/db/schema";
 import { eq, sql, desc, count, and, gte, lt, isNull } from "drizzle-orm";
 import { verifyAdminPassword, createAdminSession, deleteAdminSession, requireAdmin } from "../lib/adminAuth.js";
 import { getEmailStats } from "../lib/brevo.js";
+
+const importUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
+
+type ImportRowStatus = "novo" | "duplicado" | "erro";
+interface ImportRow {
+  linha: number;
+  nome: string;
+  preco: number | null;
+  duracaoMinutos: number;
+  descricao: string | null;
+  status: ImportRowStatus;
+  motivo: string | null;
+}
+
+function normalizeName(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function parsePrecoCell(raw: any): { value: number | null; error: string | null } {
+  if (raw === undefined || raw === null || raw === "") {
+    return { value: null, error: "Preço obrigatório" };
+  }
+  if (typeof raw === "number") {
+    if (!Number.isFinite(raw) || raw < 0) return { value: null, error: "Preço inválido" };
+    return { value: Math.round(raw * 100) / 100, error: null };
+  }
+  let str = String(raw).trim();
+  str = str.replace(/^R\$\s*/i, "").replace(/\s+/g, "");
+  if (str.includes(",") && str.includes(".")) {
+    str = str.replace(/\./g, "").replace(",", ".");
+  } else if (str.includes(",")) {
+    str = str.replace(",", ".");
+  }
+  const n = Number(str);
+  if (!Number.isFinite(n) || n < 0) return { value: null, error: "Preço inválido" };
+  return { value: Math.round(n * 100) / 100, error: null };
+}
+
+function parseDuracaoCell(raw: any): { value: number; error: string | null } {
+  if (raw === undefined || raw === null || raw === "") return { value: 30, error: null };
+  const n = Number(typeof raw === "string" ? raw.replace(/[^0-9]/g, "") : raw);
+  if (!Number.isFinite(n) || n < 1) return { value: 30, error: "Duração inválida (use 1 a 1440)" };
+  if (n > 1440) return { value: 30, error: "Duração não pode exceder 1440 min (24h)" };
+  return { value: Math.floor(n), error: null };
+}
+
+function pickRowField(row: any, candidates: string[]): any {
+  for (const key of Object.keys(row)) {
+    const norm = key.toLowerCase().trim().replace(/[^a-z0-9]/g, "");
+    for (const cand of candidates) {
+      if (norm === cand) return row[key];
+    }
+  }
+  return undefined;
+}
+
+async function parseImportFile(buffer: Buffer, barbeariaId: number): Promise<{ rows: ImportRow[]; existingNames: Set<string> }> {
+  let wb: XLSX.WorkBook;
+  try {
+    wb = XLSX.read(buffer, { type: "buffer" });
+  } catch (err) {
+    throw new Error("Arquivo Excel inválido ou corrompido. Verifique se o arquivo é .xlsx válido.");
+  }
+  if (!wb.SheetNames || wb.SheetNames.length === 0) throw new Error("Planilha sem abas. Use o modelo fornecido.");
+
+  const normalizeSheet = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  let sheetName = wb.SheetNames.find(n => normalizeSheet(n) === "servicos") || null;
+  if (!sheetName) {
+    const candidates = wb.SheetNames.filter(n => normalizeSheet(n) !== "instrucoes" && normalizeSheet(n) !== "instrucao");
+    sheetName = candidates[0] || wb.SheetNames[0];
+  }
+  if (!sheetName) throw new Error("Aba 'Serviços' não encontrada na planilha.");
+  const sheet = wb.Sheets[sheetName];
+  const json: any[] = XLSX.utils.sheet_to_json(sheet, { defval: "", raw: true });
+
+  const existing = await db
+    .select({ nome: servicosTable.nome })
+    .from(servicosTable)
+    .where(eq(servicosTable.barbeariaId, barbeariaId));
+  const existingNames = new Set(existing.map(s => normalizeName(s.nome)));
+
+  const seenInFile = new Set<string>();
+  const rows: ImportRow[] = json.map((raw: any, idx: number) => {
+    const linha = idx + 2;
+    const nomeRaw = pickRowField(raw, ["nome", "servico", "service", "nomedoservico", "nomedoservio"]);
+    const precoRaw = pickRowField(raw, ["preco", "preo", "preco", "price", "valor"]);
+    const duracaoRaw = pickRowField(raw, ["duracao", "durao", "duracaomin", "duraomin", "duracaominutos", "duraominutos", "minutos", "tempo"]);
+    const descricaoRaw = pickRowField(raw, ["descricao", "descrio", "description", "desc"]);
+
+    const nome = nomeRaw == null ? "" : String(nomeRaw).trim();
+    const descricao = descricaoRaw == null || descricaoRaw === "" ? null : String(descricaoRaw).trim();
+
+    if (!nome) {
+      return { linha, nome: "", preco: null, duracaoMinutos: 30, descricao: null, status: "erro", motivo: "Nome obrigatório" };
+    }
+    const { value: preco, error: precoErr } = parsePrecoCell(precoRaw);
+    if (precoErr) {
+      return { linha, nome, preco: null, duracaoMinutos: 30, descricao, status: "erro", motivo: precoErr };
+    }
+    const { value: dur, error: durErr } = parseDuracaoCell(duracaoRaw);
+    if (durErr) {
+      return { linha, nome, preco, duracaoMinutos: dur, descricao, status: "erro", motivo: durErr };
+    }
+
+    const norm = normalizeName(nome);
+    if (seenInFile.has(norm)) {
+      return { linha, nome, preco, duracaoMinutos: dur, descricao, status: "erro", motivo: "Nome duplicado dentro da própria planilha" };
+    }
+    seenInFile.add(norm);
+
+    if (existingNames.has(norm)) {
+      return { linha, nome, preco, duracaoMinutos: dur, descricao, status: "duplicado", motivo: "Já existe esse serviço no estabelecimento" };
+    }
+
+    return { linha, nome, preco, duracaoMinutos: dur, descricao, status: "novo", motivo: null };
+  });
+
+  return { rows, existingNames };
+}
 
 const PLAN_MONTHLY_PRICES: Record<string, Record<string, number>> = {
   "1 Pro": { mensal: 79.90, semestral: 67.80, anual: 55.90 },
@@ -660,6 +783,167 @@ router.get("/export-clientes-estabelecimentos", requireAdmin, async (req: any, r
   } catch (e) {
     console.error("export-clientes-estabelecimentos error:", e);
     return res.status(500).json({ error: "Erro ao exportar clientes dos estabelecimentos" });
+  }
+});
+
+router.get("/tenants/:id/servicos-import-template", requireAdmin, async (req: any, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const [barbearia] = await db.select({ id: barbeariasTable.id, nome: barbeariasTable.nome }).from(barbeariasTable).where(eq(barbeariasTable.id, id)).limit(1);
+    if (!barbearia) return res.status(404).json({ error: "Estúdio não encontrado" });
+
+    const exemplo = [
+      { Nome: "Corte Masculino", "Preço": 50.00, "Duração (min)": 30, "Descrição": "Corte tradicional na tesoura ou máquina." },
+      { Nome: "Barba Completa", "Preço": 35.00, "Duração (min)": 30, "Descrição": "Barba feita com toalha quente e produtos premium." },
+      { Nome: "Corte + Barba", "Preço": 75.00, "Duração (min)": 60, "Descrição": "Combo corte + barba com desconto." },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exemplo);
+    ws["!cols"] = [{ wch: 36 }, { wch: 12 }, { wch: 14 }, { wch: 60 }];
+
+    const instrucoes = [
+      ["INSTRUÇÕES — Importação de Serviços"],
+      [],
+      ["1. Preencha a aba 'Serviços' com um serviço por linha."],
+      ["2. Colunas obrigatórias: Nome e Preço."],
+      ["3. Duração em minutos (se vazio, usa 30 min como padrão)."],
+      ["4. Descrição é opcional."],
+      ["5. Preços podem ter vírgula (50,00) ou ponto (50.00) — ambos funcionam."],
+      ["6. Não deixe linhas em branco no meio dos dados."],
+      ["7. Serviços com nome igual ao que já existe no estabelecimento serão pulados (não duplica)."],
+      [],
+      ["Estabelecimento:", barbearia.nome],
+      ["ID:", String(barbearia.id)],
+    ];
+    const wsInstr = XLSX.utils.aoa_to_sheet(instrucoes);
+    wsInstr["!cols"] = [{ wch: 30 }, { wch: 50 }];
+
+    XLSX.utils.book_append_sheet(wb, wsInstr, "Instruções");
+    XLSX.utils.book_append_sheet(wb, ws, "Serviços");
+
+    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename=template_servicos_${barbearia.id}.xlsx`);
+    return res.send(Buffer.from(buf));
+  } catch (e) {
+    console.error("servicos-import-template error:", e);
+    return res.status(500).json({ error: "Erro ao gerar template" });
+  }
+});
+
+const handleImportUpload = (req: any, res: any, next: any) => {
+  importUpload.single("file")(req, res, (err: any) => {
+    if (err) {
+      if (err.code === "LIMIT_FILE_SIZE") {
+        return res.status(400).json({ error: "Arquivo muito grande. Limite máximo: 5MB." });
+      }
+      return res.status(400).json({ error: `Erro no upload: ${err.message || "arquivo inválido"}` });
+    }
+    next();
+  });
+};
+
+router.post("/tenants/:id/servicos-import-preview", requireAdmin, handleImportUpload, async (req: any, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (!req.file || !req.file.buffer) return res.status(400).json({ error: "Envie um arquivo .xlsx" });
+
+    const [barbearia] = await db.select({ id: barbeariasTable.id, nome: barbeariasTable.nome }).from(barbeariasTable).where(eq(barbeariasTable.id, id)).limit(1);
+    if (!barbearia) return res.status(404).json({ error: "Estúdio não encontrado" });
+
+    let parsed;
+    try {
+      parsed = await parseImportFile(req.file.buffer, id);
+    } catch (e: any) {
+      return res.status(400).json({ error: `Erro ao ler planilha: ${e?.message || "formato inválido"}` });
+    }
+
+    const novos = parsed.rows.filter(r => r.status === "novo").length;
+    const duplicados = parsed.rows.filter(r => r.status === "duplicado").length;
+    const erros = parsed.rows.filter(r => r.status === "erro").length;
+
+    return res.json({
+      barbearia: { id: barbearia.id, nome: barbearia.nome },
+      total: parsed.rows.length,
+      novos,
+      duplicados,
+      erros,
+      rows: parsed.rows,
+    });
+  } catch (e) {
+    console.error("servicos-import-preview error:", e);
+    return res.status(500).json({ error: "Erro interno ao processar planilha" });
+  }
+});
+
+router.post("/tenants/:id/servicos-import-confirm", requireAdmin, async (req: any, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const [barbearia] = await db.select({ id: barbeariasTable.id, nome: barbeariasTable.nome }).from(barbeariasTable).where(eq(barbeariasTable.id, id)).limit(1);
+    if (!barbearia) return res.status(404).json({ error: "Estúdio não encontrado" });
+
+    const incoming: any[] = Array.isArray(req.body?.rows) ? req.body.rows : [];
+    if (!incoming.length) return res.status(400).json({ error: "Nenhuma linha pra cadastrar" });
+
+    const existing = await db.select({ nome: servicosTable.nome }).from(servicosTable).where(eq(servicosTable.barbeariaId, id));
+    const existingNorm = new Set(existing.map(s => normalizeName(s.nome)));
+
+    const inseridos: { nome: string; preco: number; id: number }[] = [];
+    const pulados: { nome: string; motivo: string }[] = [];
+    const erros: { nome: string; motivo: string }[] = [];
+
+    const validRows: { nome: string; preco: number; duracaoMinutos: number; descricao: string | null }[] = [];
+
+    for (const row of incoming) {
+      const nome = String(row?.nome || "").trim();
+      if (!nome) { erros.push({ nome: "(vazio)", motivo: "Nome obrigatório" }); continue; }
+      const { value: preco, error: precoErr } = parsePrecoCell(row?.preco);
+      if (precoErr || preco === null) { erros.push({ nome, motivo: precoErr || "Preço inválido" }); continue; }
+      const { value: dur, error: durErr } = parseDuracaoCell(row?.duracaoMinutos);
+      if (durErr) { erros.push({ nome, motivo: durErr }); continue; }
+      const norm = normalizeName(nome);
+      if (existingNorm.has(norm)) { pulados.push({ nome, motivo: "Já existe" }); continue; }
+      existingNorm.add(norm);
+      const descricao = row?.descricao == null || row?.descricao === "" ? null : String(row.descricao).trim();
+      validRows.push({ nome, preco, duracaoMinutos: dur, descricao });
+    }
+
+    if (validRows.length > 0) {
+      await db.transaction(async (tx) => {
+        for (const r of validRows) {
+          const [created] = await tx.insert(servicosTable).values({
+            barbeariaId: id,
+            nome: r.nome,
+            preco: String(r.preco),
+            duracaoMinutos: r.duracaoMinutos,
+            descricao: r.descricao,
+          }).returning({ id: servicosTable.id, nome: servicosTable.nome, preco: servicosTable.preco });
+          inseridos.push({ id: created.id, nome: created.nome, preco: parseFloat(created.preco) });
+        }
+      });
+    }
+
+    await logAdminAction(req.admin.id, "servicos_import", id, {
+      nome: barbearia.nome,
+      inseridos: inseridos.length,
+      pulados: pulados.length,
+      erros: erros.length,
+      nomesInseridos: inseridos.map(i => i.nome),
+    });
+
+    return res.json({
+      barbearia: { id: barbearia.id, nome: barbearia.nome },
+      inseridos,
+      pulados,
+      erros,
+      totalInseridos: inseridos.length,
+      totalPulados: pulados.length,
+      totalErros: erros.length,
+    });
+  } catch (e: any) {
+    console.error("servicos-import-confirm error:", e);
+    return res.status(500).json({ error: `Erro ao cadastrar serviços: ${e?.message || "erro interno"}` });
   }
 });
 

@@ -1,11 +1,29 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { apiUrl } from "@/lib/utils";
 import { StatusBadge } from "./AdminDashboard";
-import { Search, Building2, Users, Calendar, Clock, ChevronDown, ChevronUp, Plus, Minus, History, Download } from "lucide-react";
+import { Search, Building2, Users, Calendar, Clock, ChevronDown, ChevronUp, Plus, Minus, History, Download, FileSpreadsheet, Upload, CheckCircle2, AlertTriangle, XCircle, Loader2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+
+interface ImportPreviewRow {
+  linha: number;
+  nome: string;
+  preco: number | null;
+  duracaoMinutos: number;
+  descricao: string | null;
+  status: "novo" | "duplicado" | "erro";
+  motivo: string | null;
+}
+interface ImportPreview {
+  barbearia: { id: number; nome: string };
+  total: number;
+  novos: number;
+  duplicados: number;
+  erros: number;
+  rows: ImportPreviewRow[];
+}
 
 interface Tenant {
   id: number;
@@ -61,6 +79,12 @@ export default function AdminTenants() {
   const [logsLoading, setLogsLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [diasExtras, setDiasExtras] = useState("");
+  const [importTenant, setImportTenant] = useState<Tenant | null>(null);
+  const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importStep, setImportStep] = useState<"upload" | "preview" | "done">("upload");
+  const [importResult, setImportResult] = useState<{ inseridos: any[]; pulados: any[]; erros: any[] } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const fetchTenants = () => {
     fetch(apiUrl("/admin/tenants"), { credentials: "include" })
@@ -139,6 +163,96 @@ export default function AdminTenants() {
       toast({ title: "Erro ao ajustar datas", variant: "destructive" });
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const openImport = (t: Tenant) => {
+    setImportTenant(t);
+    setImportPreview(null);
+    setImportResult(null);
+    setImportStep("upload");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const closeImport = () => {
+    setImportTenant(null);
+    setImportPreview(null);
+    setImportResult(null);
+    setImportStep("upload");
+    setImportBusy(false);
+  };
+
+  const downloadImportTemplate = async (id: number) => {
+    try {
+      const res = await fetch(apiUrl(`/admin/tenants/${id}/servicos-import-template`), { credentials: "include" });
+      if (!res.ok) throw new Error("Erro");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `template_servicos_${id}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast({ title: "Modelo baixado!", description: "Preencha a aba 'Serviços' e suba aqui de volta." });
+    } catch {
+      toast({ title: "Erro ao baixar modelo", variant: "destructive" });
+    }
+  };
+
+  const uploadAndPreview = async (file: File) => {
+    if (!importTenant) return;
+    setImportBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(apiUrl(`/admin/tenants/${importTenant.id}/servicos-import-preview`), {
+        method: "POST",
+        credentials: "include",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ title: "Erro", description: data?.error || "Falha ao analisar planilha", variant: "destructive" });
+        return;
+      }
+      setImportPreview(data);
+      setImportStep("preview");
+    } catch (e: any) {
+      toast({ title: "Erro de rede", description: e?.message, variant: "destructive" });
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
+  const confirmImport = async () => {
+    if (!importTenant || !importPreview) return;
+    const validRows = importPreview.rows.filter(r => r.status === "novo");
+    if (validRows.length === 0) {
+      toast({ title: "Nada pra cadastrar", description: "Não há linhas novas válidas na planilha.", variant: "destructive" });
+      return;
+    }
+    setImportBusy(true);
+    try {
+      const res = await fetch(apiUrl(`/admin/tenants/${importTenant.id}/servicos-import-confirm`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ rows: validRows }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ title: "Erro", description: data?.error || "Falha ao cadastrar", variant: "destructive" });
+        return;
+      }
+      setImportResult({ inseridos: data.inseridos, pulados: data.pulados, erros: data.erros });
+      setImportStep("done");
+      toast({ title: `${data.totalInseridos} serviço(s) cadastrado(s)!`, description: data.totalPulados > 0 ? `${data.totalPulados} pulado(s) por já existirem.` : undefined });
+    } catch (e: any) {
+      toast({ title: "Erro de rede", description: e?.message, variant: "destructive" });
+    } finally {
+      setImportBusy(false);
     }
   };
 
@@ -329,6 +443,30 @@ export default function AdminTenants() {
                       </div>
 
                       <div className="bg-white/5 rounded-lg p-3">
+                        <p className="text-[11px] text-slate-500 mb-2 flex items-center gap-1"><FileSpreadsheet className="h-3 w-3" /> Importar Serviços por Planilha</p>
+                        <p className="text-xs text-slate-400 mb-3">Cadastre vários serviços de uma vez subindo um arquivo Excel (.xlsx). Baixe o modelo, preencha e suba aqui.</p>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => downloadImportTemplate(t.id)}
+                            className="h-8 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 rounded-lg"
+                          >
+                            <Download className="h-3.5 w-3.5 mr-1.5" />
+                            Baixar modelo
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => openImport(t)}
+                            className="h-8 bg-emerald-500 hover:bg-emerald-400 text-black rounded-lg"
+                          >
+                            <Upload className="h-3.5 w-3.5 mr-1.5" />
+                            Importar planilha
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="bg-white/5 rounded-lg p-3">
                         <p className="text-[11px] text-slate-500 mb-2 flex items-center gap-1"><History className="h-3 w-3" /> Log de Ações</p>
                         {logsLoading ? (
                           <p className="text-slate-500 text-sm">Carregando...</p>
@@ -358,6 +496,160 @@ export default function AdminTenants() {
           </div>
         )}
       </div>
+
+      {importTenant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={importBusy ? undefined : closeImport}>
+          <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-white/10">
+              <div>
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <FileSpreadsheet className="h-5 w-5 text-emerald-400" />
+                  Importar Serviços
+                </h3>
+                <p className="text-sm text-slate-400 mt-0.5">{importTenant.nome}</p>
+              </div>
+              <button onClick={closeImport} disabled={importBusy} className="text-slate-400 hover:text-white disabled:opacity-40">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5">
+              {importStep === "upload" && (
+                <div className="space-y-4">
+                  <div className="bg-slate-800/50 border border-white/5 rounded-lg p-4">
+                    <p className="text-sm text-white font-medium mb-2">Como funciona</p>
+                    <ol className="text-xs text-slate-400 space-y-1 list-decimal list-inside">
+                      <li>Baixe o modelo Excel (clique abaixo).</li>
+                      <li>Abra no Excel ou Google Planilhas, vá na aba "Serviços" e preencha os serviços (1 por linha).</li>
+                      <li>Salve como .xlsx e suba aqui.</li>
+                      <li>Você verá um pré-visualização antes de cadastrar de verdade.</li>
+                    </ol>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <Button onClick={() => downloadImportTemplate(importTenant.id)} variant="outline" className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+                      <Download className="h-4 w-4 mr-2" />
+                      Baixar modelo (.xlsx)
+                    </Button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                      onChange={e => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadAndPreview(f);
+                      }}
+                      className="block w-full text-sm text-slate-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-emerald-500 file:text-black file:font-medium hover:file:bg-emerald-400 file:cursor-pointer cursor-pointer"
+                      disabled={importBusy}
+                    />
+                  </div>
+                  {importBusy && (
+                    <div className="flex items-center gap-2 text-sm text-slate-400">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Analisando planilha...
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {importStep === "preview" && importPreview && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-emerald-400">{importPreview.novos}</p>
+                      <p className="text-[11px] text-emerald-300 uppercase tracking-wide">Novos</p>
+                    </div>
+                    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-yellow-400">{importPreview.duplicados}</p>
+                      <p className="text-[11px] text-yellow-300 uppercase tracking-wide">Já existem</p>
+                    </div>
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-red-400">{importPreview.erros}</p>
+                      <p className="text-[11px] text-red-300 uppercase tracking-wide">Com erro</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-800/50 border border-white/5 rounded-lg overflow-hidden">
+                    <div className="max-h-72 overflow-y-auto">
+                      <table className="w-full text-xs">
+                        <thead className="bg-white/5 sticky top-0">
+                          <tr className="text-left text-slate-400">
+                            <th className="px-3 py-2 w-10">#</th>
+                            <th className="px-3 py-2">Nome</th>
+                            <th className="px-3 py-2 w-20 text-right">Preço</th>
+                            <th className="px-3 py-2 w-16 text-right">Min</th>
+                            <th className="px-3 py-2 w-32">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {importPreview.rows.map(r => (
+                            <tr key={r.linha} className={r.status === "erro" ? "bg-red-500/5" : r.status === "duplicado" ? "bg-yellow-500/5" : ""}>
+                              <td className="px-3 py-2 text-slate-500">{r.linha}</td>
+                              <td className="px-3 py-2 text-white">{r.nome || <span className="text-slate-600 italic">vazio</span>}</td>
+                              <td className="px-3 py-2 text-right text-slate-300">{r.preco != null ? `R$ ${r.preco.toFixed(2)}` : "-"}</td>
+                              <td className="px-3 py-2 text-right text-slate-300">{r.duracaoMinutos}</td>
+                              <td className="px-3 py-2">
+                                {r.status === "novo" && <span className="inline-flex items-center gap-1 text-emerald-400"><CheckCircle2 className="h-3 w-3" /> Novo</span>}
+                                {r.status === "duplicado" && <span className="inline-flex items-center gap-1 text-yellow-400" title={r.motivo || ""}><AlertTriangle className="h-3 w-3" /> Pular</span>}
+                                {r.status === "erro" && <span className="inline-flex items-center gap-1 text-red-400" title={r.motivo || ""}><XCircle className="h-3 w-3" /> {r.motivo}</span>}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-slate-400 bg-slate-800/30 border border-white/5 rounded-lg p-3">
+                    Vou cadastrar apenas os <span className="text-emerald-400 font-semibold">{importPreview.novos} novos</span>. Os duplicados e os com erro serão ignorados.
+                    {importPreview.erros > 0 && <span className="block mt-1 text-red-400">⚠ Para corrigir os erros, edite a planilha e suba novamente.</span>}
+                  </div>
+                </div>
+              )}
+
+              {importStep === "done" && importResult && (
+                <div className="space-y-4">
+                  <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 text-center">
+                    <CheckCircle2 className="h-10 w-10 text-emerald-400 mx-auto mb-2" />
+                    <p className="text-lg font-semibold text-white">{importResult.inseridos.length} serviço(s) cadastrado(s) com sucesso!</p>
+                    {importResult.pulados.length > 0 && <p className="text-sm text-yellow-400 mt-1">{importResult.pulados.length} pulado(s) (já existiam)</p>}
+                    {importResult.erros.length > 0 && <p className="text-sm text-red-400 mt-1">{importResult.erros.length} com erro</p>}
+                  </div>
+
+                  {importResult.inseridos.length > 0 && (
+                    <div className="bg-slate-800/50 border border-white/5 rounded-lg overflow-hidden">
+                      <p className="px-3 py-2 text-[11px] text-slate-400 bg-white/5 uppercase tracking-wide">Cadastrados</p>
+                      <div className="max-h-48 overflow-y-auto divide-y divide-white/5">
+                        {importResult.inseridos.map((s: any) => (
+                          <div key={s.id} className="px-3 py-1.5 flex justify-between text-xs">
+                            <span className="text-white">{s.nome}</span>
+                            <span className="text-emerald-400">R$ {Number(s.preco).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 p-4 border-t border-white/10">
+              {importStep === "upload" && (
+                <Button variant="outline" onClick={closeImport} disabled={importBusy} className="border-white/10 text-white hover:bg-white/5">Cancelar</Button>
+              )}
+              {importStep === "preview" && (
+                <>
+                  <Button variant="outline" onClick={() => { setImportStep("upload"); setImportPreview(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} disabled={importBusy} className="border-white/10 text-white hover:bg-white/5">Voltar</Button>
+                  <Button onClick={confirmImport} disabled={importBusy || (importPreview?.novos ?? 0) === 0} className="bg-emerald-500 hover:bg-emerald-400 text-black">
+                    {importBusy ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Cadastrando...</> : <>Cadastrar {importPreview?.novos ?? 0} serviço(s)</>}
+                  </Button>
+                </>
+              )}
+              {importStep === "done" && (
+                <Button onClick={closeImport} className="bg-emerald-500 hover:bg-emerald-400 text-black">Concluir</Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }
