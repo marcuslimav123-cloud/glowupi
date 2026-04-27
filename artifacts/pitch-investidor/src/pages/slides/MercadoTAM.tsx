@@ -9,7 +9,7 @@ export default function MercadoTAM() {
             05 · Dimensionamento do mercado
           </p>
           <span className="text-muted font-body text-[1vw] tracking-[0.3em] uppercase">
-            05 / 09
+            05 / 10
           </span>
         </div>
 

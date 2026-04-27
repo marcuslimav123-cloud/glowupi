@@ -45,7 +45,7 @@ export default function ValidacaoAtual() {
             06 · Onde estamos · honestidade ofensiva
           </p>
           <span className="text-muted font-body text-[1vw] tracking-[0.3em] uppercase">
-            06 / 09
+            06 / 10
           </span>
         </div>
 

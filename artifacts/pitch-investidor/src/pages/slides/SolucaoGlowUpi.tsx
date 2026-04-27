@@ -4,7 +4,7 @@ export default function SolucaoGlowUpi() {
       <div className="absolute top-0 right-0 w-[45vw] h-full bg-cream" />
       <div className="absolute top-[6vh] right-[6vw] flex items-center gap-[1vw] z-20">
         <div className="w-[1.5vw] h-[1.5vw] rounded-full bg-primary" />
-        <span className="text-muted font-body text-[1vw] tracking-[0.3em] uppercase">03 / 09</span>
+        <span className="text-muted font-body text-[1vw] tracking-[0.3em] uppercase">03 / 10</span>
       </div>
 
       <div className="relative z-10 w-full h-full grid grid-cols-12 px-[6vw] py-[8vh] gap-[3vw]">

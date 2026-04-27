@@ -48,16 +48,24 @@
     "speakerNotes": ""
   },
   {
-    "id": "a1f3c8e2-1111-4b1a-9c1d-001000000007",
+    "id": "a1f3c8e2-1111-4b1a-9c1d-001000000010",
     "position": 7,
+    "filepath": "src/pages/slides/InvestimentoFundador.tsx",
+    "title": "Capital próprio já aplicado pelo fundador",
+    "description": "Skin in the game: R$4.828 em ferramentas e infra + meses de trabalho integral sem pro-labore + repertório dev/marketing aplicado.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1f3c8e2-1111-4b1a-9c1d-001000000007",
+    "position": 8,
     "filepath": "src/pages/slides/VeiculoTracao.tsx",
     "title": "Destinação do Aporte",
-    "description": "R$5k cartão + R$6,4k Meta Ads + R$8,3k tráfego orgânico. Funil de aquisição em uma linha.",
+    "description": "R$2.261 saneamento + R$9.139 Meta Ads + R$8.300 tráfego orgânico. Funil de aquisição em uma linha.",
     "speakerNotes": ""
   },
   {
     "id": "a1f3c8e2-1111-4b1a-9c1d-001000000008",
-    "position": 8,
+    "position": 9,
     "filepath": "src/pages/slides/ProjecaoRealista.tsx",
     "title": "Projeção Realista — Teresina + Timon",
     "description": "MRR/ARR para 200 e 500 clientes, tempo até cada marco e teto de 5 anos sem expansão.",
@@ -65,7 +73,7 @@
   },
   {
     "id": "a1f3c8e2-1111-4b1a-9c1d-001000000009",
-    "position": 9,
+    "position": 10,
     "filepath": "src/pages/slides/Proposta.tsx",
     "title": "Proposta Formal",
     "description": "Âncora R$27k vs aporte R$19.700, quatro entregáveis ao sócio e composição do valor.",
