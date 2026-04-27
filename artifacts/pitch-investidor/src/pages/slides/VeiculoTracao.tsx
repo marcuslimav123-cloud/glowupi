@@ -24,11 +24,12 @@ export default function VeiculoTracao() {
                 Saneamento operacional
               </p>
               <p className="font-display text-[3.2vw] text-ink font-medium leading-none mb-[2vh]">
-                R$ 5.000
+                R$ 2.261
               </p>
               <p className="text-ink/80 font-body text-[1.2vw] leading-snug">
-                Quitação integral da fatura do cartão (vencimento dia 10)
-                que sustenta a infraestrutura atual em produção.
+                Quitação da fatura do cartão usada na finalização do
+                sistema em abril — encerramento do capital próprio
+                aplicado na construção do produto.
               </p>
             </div>
             <p className="text-accent font-body text-[1vw] tracking-[0.2em] uppercase mt-[2vh]">
@@ -42,7 +43,7 @@ export default function VeiculoTracao() {
                 Aquisição · Meta Ads
               </p>
               <p className="font-display text-[3.2vw] text-cream font-medium leading-none mb-[2vh]">
-                R$ 6.400
+                R$ 9.139
               </p>
               <p className="text-cream/85 font-body text-[1.2vw] leading-snug">
                 Campanha de performance segmentada para profissionais e
