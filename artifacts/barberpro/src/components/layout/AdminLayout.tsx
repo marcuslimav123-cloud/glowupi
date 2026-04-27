@@ -16,6 +16,7 @@ import {
   History,
   Link2,
   Megaphone,
+  UserCog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -28,6 +29,7 @@ const ADMIN_NAV = [
   { name: "Logs", href: "/admin/logs", icon: History },
   { name: "LGPD", href: "/admin/lgpd", icon: Shield },
   { name: "Links de Trial", href: "/admin/trial-links", icon: Link2 },
+  { name: "Admins", href: "/admin/admins", icon: UserCog },
 ];
 
 interface AdminUser {

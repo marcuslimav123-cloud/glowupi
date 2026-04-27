@@ -947,4 +947,60 @@ router.post("/tenants/:id/servicos-import-confirm", requireAdmin, async (req: an
   }
 });
 
+router.get("/admins", requireAdmin, async (_req, res) => {
+  try {
+    const rows = await db
+      .select({
+        id: superAdminsTable.id,
+        nome: superAdminsTable.nome,
+        email: superAdminsTable.email,
+        ativo: superAdminsTable.ativo,
+        createdAt: superAdminsTable.createdAt,
+      })
+      .from(superAdminsTable)
+      .orderBy(superAdminsTable.id);
+    return res.json(rows);
+  } catch (e: any) {
+    console.error("list-admins error:", e);
+    return res.status(500).json({ error: "Erro ao listar admins" });
+  }
+});
+
+router.patch("/admins/:id/toggle", requireAdmin, async (req: any, res) => {
+  try {
+    const targetId = parseInt(req.params.id);
+    if (!targetId || isNaN(targetId)) return res.status(400).json({ error: "ID inválido" });
+    if (targetId === req.admin.id) {
+      return res.status(400).json({ error: "Você não pode desativar a si mesmo" });
+    }
+
+    const [target] = await db.select().from(superAdminsTable).where(eq(superAdminsTable.id, targetId)).limit(1);
+    if (!target) return res.status(404).json({ error: "Admin não encontrado" });
+
+    const novoStatus = !target.ativo;
+    const [updated] = await db
+      .update(superAdminsTable)
+      .set({ ativo: novoStatus })
+      .where(eq(superAdminsTable.id, targetId))
+      .returning({
+        id: superAdminsTable.id,
+        nome: superAdminsTable.nome,
+        email: superAdminsTable.email,
+        ativo: superAdminsTable.ativo,
+      });
+
+    await logAdminAction(req.admin.id, novoStatus ? "admin_ativado" : "admin_desativado", undefined, {
+      targetAdminId: targetId,
+      targetEmail: target.email,
+      anteriorAtivo: target.ativo,
+      novoAtivo: novoStatus,
+    });
+
+    return res.json(updated);
+  } catch (e: any) {
+    console.error("toggle-admin error:", e);
+    return res.status(500).json({ error: "Erro ao alterar status do admin" });
+  }
+});
+
 export default router;
