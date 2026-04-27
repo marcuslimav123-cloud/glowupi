@@ -35,23 +35,29 @@ export default function Proposta() {
           </div>
 
           <div className="border-t border-cream/20 pt-[2.5vh]">
-            <p className="text-cream/60 font-body text-[1vw] tracking-[0.3em] uppercase mb-[1.2vh]">
-              Comparativo de valor — preço-âncora
+            <p className="text-cream/60 font-body text-[1vw] tracking-[0.3em] uppercase mb-[1.8vh]">
+              Cronograma de tração — primeiros 120 dias
             </p>
-            <div className="space-y-[1vh]">
-              <div className="flex items-baseline justify-between font-body text-[1.2vw]">
-                <span className="text-cream/70">Custos já investidos + roadmap de melhorias</span>
-                <span className="text-cream/70 line-through font-display text-[1.6vw]">R$ 27.000</span>
+            <div className="space-y-[1.4vh]">
+              <div className="flex items-baseline gap-[1.2vw]">
+                <span className="text-primary font-display text-[1.4vw] font-medium w-[3.5vw] shrink-0">D+15</span>
+                <span className="text-cream/85 font-body text-[1.05vw] leading-snug">
+                  Primeira métrica real de CAC com 5–10 conversões piloto.
+                </span>
               </div>
-              <div className="flex items-baseline justify-between font-body text-[1.2vw]">
-                <span className="text-primary">Aporte solicitado ao investidor</span>
-                <span className="text-primary font-display text-[2vw] font-medium">R$ 19.700</span>
+              <div className="flex items-baseline gap-[1.2vw]">
+                <span className="text-primary font-display text-[1.4vw] font-medium w-[3.5vw] shrink-0">D+60</span>
+                <span className="text-cream/85 font-body text-[1.05vw] leading-snug">
+                  25 clientes ativos pagantes — validação de CAC e churn iniciais.
+                </span>
+              </div>
+              <div className="flex items-baseline gap-[1.2vw]">
+                <span className="text-primary font-display text-[1.4vw] font-medium w-[3.5vw] shrink-0">D+120</span>
+                <span className="text-cream/85 font-body text-[1.05vw] leading-snug">
+                  80 clientes ativos · MRR R$ 14.000 (cenário base).
+                </span>
               </div>
             </div>
-            <p className="text-cream/60 font-body text-[1vw] mt-[1.2vh] italic leading-snug">
-              Diferença de R$ 7.300 absorvida pelo fundador como contrapartida
-              à entrada do sócio.
-            </p>
           </div>
         </div>
 
@@ -86,7 +92,7 @@ export default function Proposta() {
                 <span className="font-display text-[1.7vw] text-primary font-medium leading-none w-[2.8vw]">04</span>
                 <div>
                   <p className="font-display text-[1.55vw] text-ink font-medium leading-tight">Tração mensurável em 90 dias</p>
-                  <p className="text-ink/70 font-body text-[1.1vw] mt-[0.4vh]">R$ 14.700 alocados em tráfego pago e orgânico geram MRR antes do encerramento de 2026.</p>
+                  <p className="text-ink/70 font-body text-[1.1vw] mt-[0.4vh]">R$ 17.439 alocados em tráfego pago e orgânico geram MRR antes do encerramento de 2026.</p>
                 </div>
               </div>
             </div>
