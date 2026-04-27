@@ -1,0 +1,61 @@
+Beleza, vou ser estratégico e honesto. Primeiro a análise, depois a gente decide onde mexe.
+
+O que está te queimando (e nem é o preço)
+O problema não é o número — é a moldura psicológica do deal. Hoje você está vendendo "50% da empresa". Investidor lê isso como liquidação parcial ("o cara está se desfazendo de metade"). Você precisa virar pra "abertura de sociedade 50/50". Mesma coisa juridicamente, leitura totalmente diferente: "ele quer um sócio operador comigo, não está fugindo do barco".
+
+A sobrinha é a decisora — não o tio
+Esse é o ponto mais importante que você ainda não percebeu. O tio se animou na emoção, mas passou pra sobrinha "que cuida disso". Ela vai analisar fato, não discurso. Ela vai olhar:
+
+Payback (em quantos meses recupero os R$ 19.700?)
+Cenário de saída (se der ruim, como saio?)
+Governança (o que decido sozinha? o que decidimos juntos?)
+Risco real (cliente pagante existe? quanto vale o churn?)
+Se o pitch hoje fala pro tio (emoção), você vai perder ela. A apresentação precisa ser refeita pra falar com ela.
+
+Sinais de "preciso de dinheiro" que estão no pitch hoje
+"R$ 27.000 de custo afundado → desconto de R$ 7.300" — isso é o cheiro mais forte. Investidor pensa: "ele tá pedindo desconto do próprio preço, então o preço de partida não vale nada". Tira essa âncora inteira.
+
+"R$ 8.300 em tráfego orgânico" dentro do aporte — parece que você tá pegando parte do dinheiro disfarçado. Se vai usar pra você, fala "pro-labore de fundador, R$ X/mês por Y meses, transparente". Se é serviço mesmo, separa do aporte.
+
+Falta plano de uso do dinheiro mês a mês. Hoje só diz "tráfego pago + orgânico". Investidor sério quer ver: mês 1 faço X, mês 2 faço Y, mês 3 espero Z clientes.
+
+O que dá pra fazer em 14 dias que é VERDADE (não inflação)
+Ela vai pedir tração. Você não tem cliente pagante, mas pode chegar com:
+
+Pré-venda relâmpago (3 a 7 dias): Liga pra 30 barbearias que você conhece, oferece "R$ 49/mês primeiros 6 meses, vaga limitada às primeiras 10, paga hoje no Pix". Você só precisa de 3-5 conversões = R$ 150-250 de MRR REAL. Vira "primeira coorte pagante já fechada antes do investimento".
+
+Cartas de intenção (LOI): Pra quem não pagar, pega 10-15 assinaturas digitais (DocuSign grátis ou WhatsApp formal) dizendo "tenho interesse em contratar quando lançar oficialmente, pelo valor de R$ 149/mês". Não vale dinheiro, mas vale como pipeline qualificado.
+
+Pipeline visível: Planilha com 30-50 barbearias prospectadas (CNPJ, dono, status do contato, próxima ação). Mostra que você tem funil ativo — não está parado esperando milagre.
+
+Vídeo curto (2 min) de um barbeiro real usando o app. Pega um amigo, um conhecido — qualquer barbeiro de verdade. Filma o cara fazendo um agendamento e dando depoimento. Vale mais que 10 slides de feature.
+
+Como tirar o cheiro de urgência sem mentir
+Em vez de "preciso fechar até dia X porque preciso do dinheiro", use urgência de oportunidade:
+
+"Estamos com janela de lançamento em maio. O orçamento de tráfego pra essa janela já está calculado em R$ 11.400. A rodada fecha dia 10 porque a campanha sobe dia 12 — quem entrar agora pega o início da curva, depois disso não tem como atribuir ROI ao mesmo aporte."
+
+Isso é verdade (você precisa do dinheiro pra rodar campanha) mas posiciona como FOMO de oportunidade, não como socorro.
+
+Proteções que mostram CONFIANÇA (não desespero)
+Adicionar isso no contrato faz o deal parecer profissional, não improvisado:
+
+Vesting de 24 meses pros 50% dela — só ganha tudo se ficar na sociedade ativa por 2 anos. Se sumir em 6 meses, devolve parte. Isso protege VOCÊ e sinaliza que você está pensando longo prazo.
+Cláusula de no-compete — ela não pode abrir SaaS de barbearia concorrente.
+Direito de preferência — se um dos dois quiser sair, o outro tem prioridade de compra.
+Veto cruzado em 3-4 decisões críticas (vender empresa, contratar acima de R$ X, mudar produto core) — o resto cada um decide na sua área.
+Pedir essas cláusulas mostra que você entende sociedade — investidor amador foge, investidor sério respeita.
+
+O número honesto sobre o seu prazo
+Falando direto: 14 dias pra fechar 50% de equity com decisora nova (a sobrinha) é apertado mas factível, SE você fizer o pitch certo. Mas eu não dependeria 100% disso. Em paralelo você precisa de plano B real — empréstimo curto, antecipação de FGTS, freela técnico de 1 semana, conversa com 1-2 outros possíveis aportes menores. Apostar tudo em um sim é o que mais te deixa vulnerável (se ela demorar 3 dias pra responder, você já perdeu o prazo).
+
+Resumo do que eu mexeria no pitch (sem fazer ainda, só pra você decidir):
+
+Trocar "vender 50%" por "abrir sociedade 50/50" no slide capa e no Proposta
+Tirar a âncora de R$ 27.000 → R$ 19.700 — substituir por plano de uso do dinheiro mês a mês
+Trocar "R$ 8.300 em tráfego orgânico" por composição limpa (capital + pro-labore transparente, OU 100% capital se você não vai pegar nada)
+Adicionar slide de projeção de retorno pra ela: em X meses ela recupera o aporte via dividendos
+Adicionar slide de governança (vesting, veto, preferência) pra mostrar maturidade
+Adicionar slide de tração proxy (LOIs + pipeline + pré-vendas que você vai fechar nesses 14 dias)
+Reescrever o tom da apresentação inteira pra falar com a sobrinha analista, não com o tio entusiasmado
+Me fala: a sobrinha tem perfil técnico/financeiro (faculdade, área que atua)? Isso muda o nível de detalhe que eu coloco. E você consegue fazer essa pré-venda nos próximos 3-5 dias, ou está sem rede de barbearias pra ligar?
