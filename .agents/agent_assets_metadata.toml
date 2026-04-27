@@ -89,3 +89,9 @@ id = "gp-FF5e4Ifnio7l8llrYA"
 uri = "file://exports/GlowUpi-Colinha-Apresentacao.docx"
 type = "word_document"
 title = "Colinha de apresentação — Glow Upi"
+
+[[outputs]]
+id = "25nG_by0o2Kyz60PnL8WI"
+uri = "file://exports/GlowUpi-Texto-Apresentacao.docx"
+type = "word_document"
+title = "Glow Upi — Texto da apresentação"
