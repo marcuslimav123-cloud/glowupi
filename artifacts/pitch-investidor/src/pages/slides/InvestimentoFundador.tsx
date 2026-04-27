@@ -14,7 +14,7 @@ export default function InvestimentoFundador() {
           className="font-display text-[4.6vw] leading-[0.98] text-ink font-light mb-[5vh] max-w-[80vw]"
           style={{ textWrap: "balance" }}
         >
-          Antes de pedir, eu já apliquei <span className="italic text-primary">R$ 4.828</span> e meses de trabalho integral.
+          Antes de pedir, eu já apliquei <span className="italic text-primary">R$ 30.428</span> em capital e trabalho durante 2 meses.
         </h2>
 
         <div className="grid grid-cols-3 gap-[2vw]">
@@ -43,17 +43,17 @@ export default function InvestimentoFundador() {
                 Trabalho aplicado
               </p>
               <p className="font-display text-[3.2vw] text-cream font-medium leading-none mb-[2vh]">
-                Tempo integral
+                R$ 25.600
               </p>
               <p className="text-cream/85 font-body text-[1.1vw] leading-snug">
-                Desenvolvimento fullstack do produto, arquitetura,
-                design, integrações de pagamento e operação.
-                Sem pro-labore, sem custo para a empresa desde
-                a concepção.
+                2 meses de desenvolvimento fullstack em tempo
+                integral (160h/mês × R$ 80/h, tarifa de mercado
+                conservadora). Sem pro-labore, custo absorvido
+                pelo fundador.
               </p>
             </div>
             <p className="text-primary font-body text-[1vw] tracking-[0.2em] uppercase mt-[2vh]">
-              Sem pro-labore
+              2 meses · sem pro-labore
             </p>
           </div>
 
@@ -84,18 +84,18 @@ export default function InvestimentoFundador() {
               Razão de comprometimento
             </p>
             <p className="font-display text-[1.5vw] text-ink font-light italic leading-tight">
-              Aporte solicitado <span className="text-primary not-italic">R$ 19.700</span> = aproximadamente 4× o capital tangível já investido pelo fundador, somado a meses de trabalho integral não remunerado.
+              Aporte solicitado <span className="text-primary not-italic">R$ 19.700</span> equivale a apenas <span className="text-primary not-italic">65%</span> do que o fundador já investiu (R$ 30.428 entre capital + trabalho a valor de mercado). Para cada R$ 1 da investidora, R$ 1,55 já foi aplicado.
             </p>
           </div>
           <div className="col-span-4 text-right">
             <p className="text-muted font-body text-[1vw] tracking-[0.3em] uppercase mb-[0.5vh]">
-              Recorrente assumido
+              Total já aportado
             </p>
-            <p className="font-display text-[1.6vw] text-ink font-medium leading-none">
-              R$ 87 / mês
+            <p className="font-display text-[1.8vw] text-ink font-medium leading-none">
+              R$ 30.428
             </p>
             <p className="text-ink/60 font-body text-[0.9vw] mt-[0.5vh]">
-              E-mail marketing
+              Capital + trabalho · 2 meses
             </p>
           </div>
         </div>
