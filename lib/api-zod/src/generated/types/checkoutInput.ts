@@ -12,4 +12,5 @@ export interface CheckoutInput {
   produtosAdicionais?: ProdutoCheckout[];
   pagamentos: Pagamento[];
   observacao?: string | null;
+  cupomId?: number | null;
 }

@@ -6,9 +6,9 @@ import {
   bloqueiosHorarioTable, profissionalServicosTable,
   tiposTable, contasProfissionalTable, pesquisaSatisfacaoTable,
   respostasPesquisaTable, pacotesTable, pacotesClienteTable,
-  assinantesTable, resgatesTable, usersTable
+  assinantesTable, resgatesTable, usersTable, cuponsTable
 } from "@workspace/db/schema";
-import { eq, and, gte, lte, inArray } from "drizzle-orm";
+import { eq, and, gte, lte, inArray, sql } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
 import { sendEmail } from "../lib/brevo.js";
@@ -703,7 +703,28 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
   }
 
   const [profissional] = await db.select().from(profissionaisTable).where(eq(profissionaisTable.id, agend.profissionalId)).limit(1);
-  const { produtosAdicionais = [], servicosAdicionais = [], pagamentos, observacao, desconto: rawDesconto = 0, descontoTipo = "valor", parcelas: rawParcelas = 1, gorjeta, tipoComanda: rawTipoComanda, valorTotalOverride } = req.body;
+  const { produtosAdicionais = [], servicosAdicionais = [], pagamentos, observacao, desconto: rawDesconto = 0, descontoTipo = "valor", parcelas: rawParcelas = 1, gorjeta, tipoComanda: rawTipoComanda, valorTotalOverride, cupomId: rawCupomId } = req.body;
+
+  let cupomVinculado: { id: number; codigo: string } | null = null;
+  if (rawCupomId !== undefined && rawCupomId !== null && rawCupomId !== "") {
+    const cupId = parseInt(String(rawCupomId));
+    if (!isNaN(cupId)) {
+      const [cupRow] = await db.select({ id: cuponsTable.id, codigo: cuponsTable.codigo, ativo: cuponsTable.ativo, usoMaximo: cuponsTable.usoMaximo, usoAtual: cuponsTable.usoAtual })
+        .from(cuponsTable)
+        .where(and(eq(cuponsTable.id, cupId), eq(cuponsTable.barbeariaId, barbeariaId)))
+        .limit(1);
+      if (!cupRow) {
+        return res.status(400).json({ error: "Cupom informado não pertence a esta barbearia" });
+      }
+      if (!cupRow.ativo) {
+        return res.status(400).json({ error: "Cupom inativo" });
+      }
+      if (cupRow.usoMaximo && cupRow.usoAtual >= cupRow.usoMaximo) {
+        return res.status(400).json({ error: "Cupom atingiu o limite de uso" });
+      }
+      cupomVinculado = { id: cupRow.id, codigo: cupRow.codigo };
+    }
+  }
 
   if (Array.isArray(produtosAdicionais)) {
     for (const p of produtosAdicionais) {
@@ -920,10 +941,14 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
   }
   const valorLiquido = valorTotal - taxaCartaoTotal;
 
+  const cupomDescontoValor = cupomVinculado ? Math.min(desconto, valorTotal + desconto) : 0;
+
   const comanda = await db.transaction(async (tx) => {
     const [cmd] = await tx.insert(comandasTable).values({
       barbeariaId,
       agendamentoId: id,
+      cupomId: cupomVinculado?.id ?? null,
+      cupomDesconto: cupomVinculado ? String(cupomDescontoValor) : null,
       clienteNome: agend.clienteNome,
       profissionalId: agend.profissionalId,
       profissionalNome: agend.profissionalNome,
@@ -948,6 +973,11 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
       pontosGanhos: 0,
     }).returning();
     await tx.update(agendamentosTable).set({ status: "pago", pago: true, updatedAt: new Date() }).where(eq(agendamentosTable.id, id));
+    if (cupomVinculado) {
+      await tx.update(cuponsTable)
+        .set({ usoAtual: sql`${cuponsTable.usoAtual} + 1` })
+        .where(and(eq(cuponsTable.id, cupomVinculado.id), eq(cuponsTable.barbeariaId, barbeariaId)));
+    }
     if (agend.clienteId) {
       const [cli] = await tx.select().from(clientesTable).where(eq(clientesTable.id, agend.clienteId)).limit(1);
       if (cli) {

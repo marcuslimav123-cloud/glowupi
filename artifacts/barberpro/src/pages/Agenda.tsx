@@ -532,11 +532,9 @@ export default function Agenda() {
           desconto: parseFloat(checkoutDesconto) || 0,
           descontoTipo: checkoutDescontoTipo,
           parcelas: checkoutParcelas,
-        }
+          cupomId: cupomAplicado?.id ?? null,
+        } as any
       });
-      if (cupomAplicado) {
-        try { await fetch(apiUrl(`/barbearias/${barbeariaId}/cupons/${cupomAplicado.id}/usar`), { method: "POST", credentials: "include" }); } catch {}
-      }
       toast({ title: "Checkout realizado!", description: `${formatCurrency(valorFinal)} via ${paymentMethodsToUse.find(m => m.value === checkoutMetodo)?.label || checkoutMetodo}` });
       setCheckoutAgend(null);
       setDetailAgend(null);

@@ -756,6 +756,7 @@ export const CheckoutAgendamentoBody = zod.object({
     }),
   ),
   observacao: zod.string().nullish(),
+  cupomId: zod.number().nullish(),
 });
 
 /**

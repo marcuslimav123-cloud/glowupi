@@ -3,11 +3,14 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { barbeariasTable } from "./barbearias";
 import { agendamentosTable } from "./agendamentos";
+import { cuponsTable } from "./cupons";
 
 export const comandasTable = pgTable("comandas", {
   id: serial("id").primaryKey(),
   barbeariaId: integer("barbearia_id").notNull().references(() => barbeariasTable.id),
   agendamentoId: integer("agendamento_id").notNull().references(() => agendamentosTable.id),
+  cupomId: integer("cupom_id").references(() => cuponsTable.id),
+  cupomDesconto: numeric("cupom_desconto", { precision: 10, scale: 2 }),
   clienteNome: text("cliente_nome").notNull(),
   profissionalId: integer("profissional_id").notNull(),
   profissionalNome: text("profissional_nome").notNull(),

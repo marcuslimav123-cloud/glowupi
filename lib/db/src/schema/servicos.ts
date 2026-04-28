@@ -23,6 +23,8 @@ export const servicosTable = pgTable("servicos", {
   comissaoPorcentagem: numeric("comissao_porcentagem", { precision: 5, scale: 2 }),
   ativo: boolean("ativo").notNull().default(true),
   ordem: integer("ordem").notNull().default(1),
+  sinalModoOverride: text("sinal_modo_override"),
+  sinalValorOverride: numeric("sinal_valor_override", { precision: 10, scale: 2 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

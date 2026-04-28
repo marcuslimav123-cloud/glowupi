@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer, jsonb, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, jsonb, boolean, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
@@ -46,6 +46,14 @@ export const barbeariasTable = pgTable("barbearias", {
   gclid: text("gclid"),
   landingPage: text("landing_page"),
   referrer: text("referrer"),
+  prePagamentoAtivo: boolean("pre_pagamento_ativo").notNull().default(false),
+  pixChave: text("pix_chave"),
+  pixTitular: text("pix_titular"),
+  pixCidade: text("pix_cidade"),
+  sinalModo: text("sinal_modo").notNull().default("percentual"),
+  sinalValor: numeric("sinal_valor", { precision: 10, scale: 2 }).notNull().default("30"),
+  sinalToleranciaMin: integer("sinal_tolerancia_min").notNull().default(30),
+  sinalPoliticaTexto: text("sinal_politica_texto"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

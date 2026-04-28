@@ -31,6 +31,13 @@ export const agendamentosTable = pgTable("agendamentos", {
   encaixe: boolean("encaixe").notNull().default(false),
   pacoteClienteId: integer("pacote_cliente_id"),
   origem: text("origem").default("manual"),
+  sinalStatus: text("sinal_status").notNull().default("nao_aplicavel"),
+  sinalValorDevido: numeric("sinal_valor_devido", { precision: 10, scale: 2 }).notNull().default("0"),
+  sinalValorPago: numeric("sinal_valor_pago", { precision: 10, scale: 2 }).notNull().default("0"),
+  sinalInformadoEm: timestamp("sinal_informado_em"),
+  sinalConfirmadoEm: timestamp("sinal_confirmado_em"),
+  sinalExpiraEm: timestamp("sinal_expira_em"),
+  sinalComprovanteUrl: text("sinal_comprovante_url"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

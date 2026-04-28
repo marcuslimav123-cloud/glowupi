@@ -2,15 +2,20 @@ import React, { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApiList, useApiCreate, useApiUpdate, useApiDelete } from "@/hooks/useCrudApi";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Trash2, Ticket, Percent, DollarSign } from "lucide-react";
+import { Plus, Edit2, Trash2, Ticket, Percent, DollarSign, BarChart3 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
+import { Link } from "wouter";
+import { apiUrl, formatCurrency } from "@/lib/utils";
+
+type CupomReportRow = { cupomId: number; receitaLiquida: number; descontoTotal: number };
 
 export default function Cupons() {
   const { barbeariaId } = useAuth();
@@ -24,6 +29,18 @@ export default function Cupons() {
   const createCupom = useApiCreate("cupons", path);
   const updateCupom = useApiUpdate("cupons", path);
   const deleteCupom = useApiDelete("cupons", path);
+
+  const { data: relatorio = [] } = useQuery<CupomReportRow[]>({
+    queryKey: ["cupons-relatorio-historico", barbeariaId],
+    queryFn: async () => {
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/cupons/relatorio`), { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!barbeariaId,
+    staleTime: 60_000,
+  });
+  const relatorioMap = new Map(relatorio.map(r => [r.cupomId, r]));
 
   function openNew() {
     setEditing(null);
@@ -83,7 +100,12 @@ export default function Cupons() {
           <h1 className="text-3xl font-display font-bold text-foreground">Cupons de Desconto</h1>
           <p className="text-muted-foreground mt-1">Crie e gerencie cupons promocionais</p>
         </div>
-        <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" /> Novo Cupom</Button>
+        <div className="flex gap-2">
+          <Link href="/relatorios/cupons">
+            <Button variant="outline" data-testid="link-relatorio-cupons"><BarChart3 className="h-4 w-4 mr-2" /> Relatório</Button>
+          </Link>
+          <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" /> Novo Cupom</Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -116,31 +138,44 @@ export default function Cupons() {
         <p className="text-center text-muted-foreground py-12">Nenhum cupom criado ainda.</p>
       ) : (
         <div className="space-y-2">
-          {list.map((item: any) => (
-            <div key={item.id} className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Ticket className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="font-mono font-bold text-sm">{item.codigo}</p>
-                  <Badge variant={item.ativo ? "default" : "secondary"}>{item.ativo ? "Ativo" : "Inativo"}</Badge>
+          {list.map((item: any) => {
+            const stat = relatorioMap.get(item.id);
+            const receita = stat?.receitaLiquida ?? 0;
+            const descTotal = stat?.descontoTotal ?? 0;
+            return (
+              <div key={item.id} className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Ticket className="h-5 w-5 text-primary" />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {item.tipo === "percentual" ? `${item.valor}% de desconto` : `R$ ${Number(item.valor).toFixed(2)} de desconto`}
-                  {item.usoMaximo ? ` · ${item.usoAtual || 0}/${item.usoMaximo} usos` : ` · ${item.usoAtual || 0} usos`}
-                  {item.validadeFim && ` · Até ${new Date(item.validadeFim).toLocaleDateString("pt-BR")}`}
-                </p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="font-mono font-bold text-sm">{item.codigo}</p>
+                    <Badge variant={item.ativo ? "default" : "secondary"}>{item.ativo ? "Ativo" : "Inativo"}</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {item.tipo === "percentual" ? `${item.valor}% de desconto` : `R$ ${Number(item.valor).toFixed(2)} de desconto`}
+                    {item.usoMaximo ? ` · ${item.usoAtual || 0}/${item.usoMaximo} usos` : ` · ${item.usoAtual || 0} usos`}
+                    {item.validadeFim && ` · Até ${new Date(item.validadeFim).toLocaleDateString("pt-BR")}`}
+                  </p>
+                </div>
+                <div className="hidden md:flex flex-col items-end shrink-0 min-w-[110px]" data-testid={`receita-cupom-${item.id}`}>
+                  <span className="text-[11px] text-muted-foreground">Receita gerada</span>
+                  <span className="text-sm font-semibold text-primary">{formatCurrency(receita)}</span>
+                </div>
+                <div className="hidden md:flex flex-col items-end shrink-0 min-w-[110px]" data-testid={`desconto-cupom-${item.id}`}>
+                  <span className="text-[11px] text-muted-foreground">Desconto concedido</span>
+                  <span className="text-sm font-semibold text-orange-600">{formatCurrency(descTotal)}</span>
+                </div>
+                <Switch checked={item.ativo} onCheckedChange={() => handleToggle(item)} />
+                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(item)}>
+                  <Edit2 className="h-4 w-4" />
+                </Button>
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400" onClick={() => handleDelete(item.id)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
-              <Switch checked={item.ativo} onCheckedChange={() => handleToggle(item)} />
-              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(item)}>
-                <Edit2 className="h-4 w-4" />
-              </Button>
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400" onClick={() => handleDelete(item.id)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

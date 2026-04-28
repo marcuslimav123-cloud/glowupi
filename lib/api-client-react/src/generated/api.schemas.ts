@@ -117,7 +117,6 @@ export interface UpdateBarbeariaInput {
   cidade?: string | null;
   uf?: string | null;
   corPrimaria?: string | null;
-  logoUrl?: string | null;
   horarioFuncionamento?: UpdateBarbeariaInputHorarioFuncionamento;
 }
 
@@ -410,6 +409,7 @@ export interface CheckoutInput {
   produtosAdicionais?: ProdutoCheckout[];
   pagamentos: Pagamento[];
   observacao?: string | null;
+  cupomId?: number | null;
 }
 
 export type ComandaServicosItem = { [key: string]: unknown };

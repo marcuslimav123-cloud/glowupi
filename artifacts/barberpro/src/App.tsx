@@ -81,6 +81,7 @@ const PacotesReport = React.lazy(() => import("@/pages/relatorios/PacotesReport"
 const ComandasItensReport = React.lazy(() => import("@/pages/relatorios/ComandasItensReport"));
 const DiasSemVir = React.lazy(() => import("@/pages/relatorios/DiasSemVir"));
 const LucroProdutos = React.lazy(() => import("@/pages/relatorios/LucroProdutos"));
+const RelatorioCupons = React.lazy(() => import("@/pages/relatorios/RelatorioCupons"));
 const ClienteDetalhe = React.lazy(() => import("@/pages/gestao/ClienteDetalhe"));
 const Filiais = React.lazy(() => import("@/pages/gestao/Filiais"));
 
@@ -180,6 +181,7 @@ function Router() {
       <Route path="/relatorios/agendamentos" component={AgendamentosReport} />
       <Route path="/relatorios/financeiro" component={FinanceiroReport} />
       <Route path="/relatorios/canceladas" component={ComandasCanceladas} />
+      <Route path="/relatorios/cupons" component={RelatorioCupons} />
       <Route path="/relatorios/rankings" component={RankingsReport} />
       <Route path="/relatorios/rankings-gerencial" component={RankingsReport} />
       <Route path="/relatorios/perfil-cliente" component={PerfilCliente} />

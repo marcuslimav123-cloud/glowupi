@@ -2361,6 +2361,9 @@ components:
         observacao:
           type: string
           nullable: true
+        cupomId:
+          type: integer
+          nullable: true
       required:
         - pagamentos
 

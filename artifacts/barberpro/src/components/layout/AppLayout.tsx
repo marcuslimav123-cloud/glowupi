@@ -187,6 +187,7 @@ const NAV_ITEMS: NavItem[] = [
           { name: "Dias sem Vir", href: "/relatorios/dias-sem-vir", icon: Clock },
           { name: "Lucro Produtos", href: "/relatorios/lucro-produtos", icon: Package },
           { name: "Comandas Canceladas", href: "/relatorios/canceladas", icon: ClipboardList },
+          { name: "Cupons", href: "/relatorios/cupons", icon: Ticket },
           { name: "Comandas Itens", href: "/relatorios/comandas-itens", icon: Newspaper },
           { name: "Estoque", href: "/relatorios/estoque", icon: Package },
           { name: "Pacotes", href: "/relatorios/pacotes", icon: Boxes },
