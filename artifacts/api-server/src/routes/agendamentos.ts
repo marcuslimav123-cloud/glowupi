@@ -310,13 +310,15 @@ router.post("/", requireAuth, async (req, res) => {
       isAniversario = today.slice(5) === aniv;
     }
   }
-  const paramHoraInicio = params["agenda_horario_inicio"];
-  const paramHoraFim = params["agenda_horario_fim"];
-  if (paramHoraInicio && timeToMinutes(horaInicio) < timeToMinutes(paramHoraInicio)) {
-    return res.status(400).json({ error: `Horário antes do início permitido (${paramHoraInicio})` });
-  }
-  if (paramHoraFim && timeToMinutes(horaFim) > timeToMinutes(paramHoraFim)) {
-    return res.status(400).json({ error: `Horário após o fim permitido (${paramHoraFim})` });
+  if (!encaixe) {
+    const paramHoraInicio = params["agenda_horario_inicio"];
+    const paramHoraFim = params["agenda_horario_fim"];
+    if (paramHoraInicio && timeToMinutes(horaInicio) < timeToMinutes(paramHoraInicio)) {
+      return res.status(400).json({ error: `Horário antes do início permitido (${paramHoraInicio})` });
+    }
+    if (paramHoraFim && timeToMinutes(horaFim) > timeToMinutes(paramHoraFim)) {
+      return res.status(400).json({ error: `Horário após o fim permitido (${paramHoraFim})` });
+    }
   }
 
   let pacoteClienteAssociado: number | null = null;

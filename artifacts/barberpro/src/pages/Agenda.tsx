@@ -20,6 +20,10 @@ import {
   List, Clock, Users, Scissors, ClipboardList, UserCheck,
   Eye, Phone, Search
 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { ComporMensagemDialog } from "@/components/mensagens/ComporMensagemDialog";
@@ -192,6 +196,7 @@ export default function Agenda() {
 
   const [newStep, setNewStep] = useState<"client" | "service" | "professional" | "time">("client");
   const [clientSearch, setClientSearch] = useState("");
+  const [serviceSearch, setServiceSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [formNome, setFormNome] = useState("");
   const [formTelefone, setFormTelefone] = useState("");
@@ -218,6 +223,8 @@ export default function Agenda() {
 
   const [bloqueios, setBloqueios] = useState<Bloqueio[]>([]);
   const [barbHorarioFunc, setBarbHorarioFunc] = useState<any[] | null>(null);
+  const [slotInterval, setSlotInterval] = useState<number>(30);
+  const [encaixeConfirm, setEncaixeConfirm] = useState<{ open: boolean; reason: string } | null>(null);
 
   const calendarRef = useRef<HTMLDivElement>(null);
 
@@ -256,6 +263,31 @@ export default function Agenda() {
       .catch(() => {});
   }, [barbeariaId]);
 
+  useEffect(() => {
+    if (!barbeariaId) return;
+    fetch(apiUrl(`/barbearias/${barbeariaId}/parametros`), { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then((params: any) => {
+        if (!Array.isArray(params)) return;
+        const p = params.find((x: any) => x.chave === "agenda_tempo_padrao");
+        const raw = p?.valor || p?.valorPadrao || "30 minutos";
+        const n = parseInt(String(raw), 10);
+        if (!Number.isNaN(n) && n > 0 && n <= 60) setSlotInterval(n);
+      })
+      .catch(() => {});
+  }, [barbeariaId]);
+
+  const sortedProfissionais = useMemo(() => {
+    const arr = (profissionais as any[]).slice();
+    arr.sort((a, b) => {
+      const oa = typeof a.ordem === "number" ? a.ordem : 999;
+      const ob = typeof b.ordem === "number" ? b.ordem : 999;
+      if (oa !== ob) return oa - ob;
+      return a.id - b.id;
+    });
+    return arr;
+  }, [profissionais]);
+
   const DIAS_FUNC_INDEX = [6, 0, 1, 2, 3, 4, 5];
   const daySchedule = useMemo(() => {
     if (!barbHorarioFunc || !Array.isArray(barbHorarioFunc)) return { aberto: true, abertura: "08:00", fechamento: "20:00" };
@@ -268,8 +300,8 @@ export default function Agenda() {
 
   const timeSlots = useMemo(() => {
     if (!daySchedule.aberto) return [];
-    return generateTimeSlots(daySchedule.abertura, daySchedule.fechamento, 30);
-  }, [daySchedule]);
+    return generateTimeSlots(daySchedule.abertura, daySchedule.fechamento, slotInterval);
+  }, [daySchedule, slotInterval]);
 
   const availableTimeSlots = useMemo(() => {
     const now = new Date();
@@ -349,20 +381,12 @@ export default function Agenda() {
     setFormNome(""); setFormTelefone(""); setFormProfId("");
     setFormServId(""); setFormHora(""); setFormObs("");
     setNewStep("client"); setSelectedClientId(null); setClientSearch("");
+    setServiceSearch("");
     setUseNewClient(false); setExtraItems([]);
   };
 
-  const handleCreate = async (e: React.FormEvent, encaixe = false) => {
-    e.preventDefault();
-    if (!formProfId || !formServId || !formHora) {
-      toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
-      return;
-    }
+  const submitCreate = async (encaixe: boolean) => {
     const validExtras = extraItems.filter(it => it.servicoId && it.profissionalId);
-    if (extraItems.length > 0 && validExtras.length !== extraItems.length) {
-      toast({ title: "Preencha serviço e profissional em cada item adicional", variant: "destructive" });
-      return;
-    }
     try {
       if (validExtras.length === 0) {
         await createMutation.mutateAsync({
@@ -408,6 +432,42 @@ export default function Agenda() {
       const msg = err?.response?.data?.error || err?.data?.error || err?.message || "Tente novamente.";
       toast({ title: "Erro ao agendar", description: msg, variant: "destructive" });
     }
+  };
+
+  const handleCreate = async (e: React.FormEvent, encaixe = false) => {
+    e.preventDefault();
+    if (!formProfId || !formServId || !formHora) {
+      toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
+      return;
+    }
+    const validExtras = extraItems.filter(it => it.servicoId && it.profissionalId);
+    if (extraItems.length > 0 && validExtras.length !== extraItems.length) {
+      toast({ title: "Preencha serviço e profissional em cada item adicional", variant: "destructive" });
+      return;
+    }
+
+    if (!encaixe) {
+      const servico = (servicos as any[]).find((s: any) => String(s.id) === formServId);
+      const duracao = servico?.duracaoMinutos || slotInterval;
+      const startMin = timeToMinutes(formHora);
+      const endMin = startMin + duracao;
+      const fechamentoMin = daySchedule.aberto ? timeToMinutes(daySchedule.fechamento) : 0;
+
+      let reason = "";
+      if (!daySchedule.aberto) {
+        reason = "O estabelecimento está fechado neste dia. Deseja registrar como encaixe?";
+      } else if (endMin > fechamentoMin) {
+        const fmt = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+        reason = `Esse horário (${formHora} – ${fmt(endMin)}) ultrapassa o fim do expediente (${daySchedule.fechamento}). Deseja registrar como encaixe?`;
+      }
+
+      if (reason) {
+        setEncaixeConfirm({ open: true, reason });
+        return;
+      }
+    }
+
+    await submitCreate(encaixe);
   };
 
   const handleCancel = async () => {
@@ -589,13 +649,17 @@ export default function Agenda() {
   const getSlotHeight = (agend: Agendamento) => {
     const start = timeToMinutes(agend.horaInicio);
     const end = timeToMinutes(agend.horaFim);
-    const slots = Math.max(1, (end - start) / 30);
+    const slots = Math.max(1, (end - start) / slotInterval);
     return slots * 56 - 2;
   };
 
   const getSlotTop = (agend: Agendamento) => {
-    const idx = timeSlots.findIndex(t => t === agend.horaInicio.slice(0, 5));
-    return idx === -1 ? 0 : idx * 56 + 1;
+    const startMin = timeToMinutes(agend.horaInicio);
+    if (timeSlots.length === 0) return 0;
+    const firstSlotMin = timeToMinutes(timeSlots[0]);
+    const offsetSlots = (startMin - firstSlotMin) / slotInterval;
+    if (offsetSlots < 0) return 0;
+    return offsetSlots * 56 + 1;
   };
 
   const currentTimeStr = useMemo(() => {
@@ -608,10 +672,10 @@ export default function Agenda() {
     if (timeSlots.length === 0) return -1;
     const nowMin = timeToMinutes(currentTimeStr);
     const firstSlotMin = timeToMinutes(timeSlots[0]);
-    const lastSlotMin = timeToMinutes(timeSlots[timeSlots.length - 1]) + 30;
+    const lastSlotMin = timeToMinutes(timeSlots[timeSlots.length - 1]) + slotInterval;
     if (nowMin < firstSlotMin || nowMin > lastSlotMin) return -1;
-    return ((nowMin - firstSlotMin) / 30) * 56;
-  }, [currentTimeStr, timeSlots]);
+    return ((nowMin - firstSlotMin) / slotInterval) * 56;
+  }, [currentTimeStr, timeSlots, slotInterval]);
 
   const isToday = date === new Date().toISOString().split('T')[0];
 
@@ -665,7 +729,7 @@ export default function Agenda() {
   };
 
   const renderProfessionalAvatars = () => {
-    const profs = profissionais as any[];
+    const profs = sortedProfissionais;
     if (profs.length === 0) return null;
     return (
       <div className="mb-3">
@@ -726,7 +790,7 @@ export default function Agenda() {
   };
 
   const renderDayView = () => {
-    const profs = selectedProfId === "all" ? profissionais as any[] : (profissionais as any[]).filter((p: any) => String(p.id) === selectedProfId);
+    const profs = selectedProfId === "all" ? sortedProfissionais : sortedProfissionais.filter((p: any) => String(p.id) === selectedProfId);
     const dayAgends = filteredAgendamentos.filter(a => a.data === date);
 
     if (!daySchedule.aberto) {
@@ -795,16 +859,18 @@ export default function Agenda() {
                   ))}
 
                   {bloqueios.filter(b => b.profissionalId === prof.id).map(b => {
-                    const startIdx = timeSlots.findIndex(t => t === b.horaInicio.slice(0, 5));
+                    if (timeSlots.length === 0) return null;
+                    const firstSlotMin = timeToMinutes(timeSlots[0]);
                     const startMin = timeToMinutes(b.horaInicio);
                     const endMin = timeToMinutes(b.horaFim);
-                    const slots = Math.max(1, (endMin - startMin) / 30);
-                    if (startIdx === -1) return null;
+                    const offsetSlots = (startMin - firstSlotMin) / slotInterval;
+                    const slots = Math.max(1, (endMin - startMin) / slotInterval);
+                    if (offsetSlots < 0) return null;
                     return (
                       <div
                         key={`block-${b.id}`}
                         className="absolute left-0.5 right-0.5 rounded-md bg-gray-200/60 border border-gray-300/60 flex items-center justify-center z-5 cursor-pointer group"
-                        style={{ top: `${startIdx * 56 + 1}px`, height: `${slots * 56 - 2}px` }}
+                        style={{ top: `${offsetSlots * 56 + 1}px`, height: `${slots * 56 - 2}px` }}
                         onClick={() => handleDeleteBlock(b.id)}
                         title={b.motivo || "Bloqueado — clique para remover"}
                       >
@@ -926,16 +992,18 @@ export default function Agenda() {
                         onClick={() => { setDate(wd); resetForm(); setFormHora(time); setIsNewOpen(true); }} />
                     ))}
                     {dayAgends.map(agend => {
-                      const idx = timeSlots.findIndex(t => t === agend.horaInicio.slice(0, 5));
+                      if (timeSlots.length === 0) return null;
+                      const firstSlotMin = timeToMinutes(timeSlots[0]);
                       const startMin = timeToMinutes(agend.horaInicio);
                       const endMin = timeToMinutes(agend.horaFim);
-                      const slots = Math.max(1, (endMin - startMin) / 30);
-                      if (idx === -1) return null;
+                      const offsetSlots = (startMin - firstSlotMin) / slotInterval;
+                      const slots = Math.max(1, (endMin - startMin) / slotInterval);
+                      if (offsetSlots < 0) return null;
                       return (
                         <div
                           key={agend.id}
                           className={`absolute left-0.5 right-0.5 rounded-md border p-1 text-[9px] shadow-sm cursor-pointer z-10 hover:shadow-md transition-all ${getStatusColor(agend.status, agend.encaixe)} ${agend.atendimentoId ? "ring-2 ring-purple-400/60" : ""}`}
-                          style={{ top: `${idx * 48 + 1}px`, height: `${slots * 48 - 2}px` }}
+                          style={{ top: `${offsetSlots * 48 + 1}px`, height: `${slots * 48 - 2}px` }}
                           onClick={() => { setDate(wd); setViewMode("dia"); }}
                           title={`${agend.clienteNome} - ${agend.servicoNome}${agend.atendimentoId ? " (Atendimento conjunto)" : ""}`}
                         >
@@ -1050,6 +1118,10 @@ export default function Agenda() {
     const filteredClients = (clientes as any[]).filter(c =>
       !clientSearch || c.nome?.toLowerCase().includes(clientSearch.toLowerCase()) || c.telefone?.includes(clientSearch)
     );
+    const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const filteredServicos = (servicos as any[])
+      .filter((s: any) => s.ativo !== false)
+      .filter((s: any) => !serviceSearch || normalize(s.nome || "").includes(normalize(serviceSearch)));
 
     return (
       <Dialog open={isEncaixe ? isEncaixeOpen : isNewOpen} onOpenChange={v => { if (isEncaixe) setIsEncaixeOpen(v); else setIsNewOpen(v); if (!v) resetForm(); }}>
@@ -1151,27 +1223,43 @@ export default function Agenda() {
           )}
 
           {newStep === "service" && (
-            <div className="space-y-2 max-h-[300px] overflow-y-auto">
-              {(servicos as any[]).filter((s: any) => s.ativo !== false).map((s: any) => (
-                <button
-                  key={s.id}
-                  onClick={() => { setFormServId(String(s.id)); setNewStep("professional"); }}
-                  className={`w-full flex items-center justify-between px-3 py-3 rounded-xl border transition-all text-left
-                    ${formServId === String(s.id) ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{s.nome}</p>
-                    <p className="text-[11px] text-muted-foreground">{s.duracaoMinutos || 30} min</p>
-                  </div>
-                  <span className="text-sm font-bold text-primary">{formatCurrency(s.preco)}</span>
-                </button>
-              ))}
+            <div className="space-y-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={serviceSearch}
+                  onChange={e => setServiceSearch(e.target.value)}
+                  placeholder="Buscar serviço por nome..."
+                  className="pl-9 bg-background h-10 text-sm"
+                  data-testid="input-service-search"
+                />
+              </div>
+              <div className="space-y-2 max-h-[260px] overflow-y-auto">
+                {filteredServicos.map((s: any) => (
+                  <button
+                    key={s.id}
+                    onClick={() => { setFormServId(String(s.id)); setNewStep("professional"); }}
+                    className={`w-full flex items-center justify-between px-3 py-3 rounded-xl border transition-all text-left
+                      ${formServId === String(s.id) ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                    data-testid={`btn-servico-${s.id}`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{s.nome}</p>
+                      <p className="text-[11px] text-muted-foreground">{s.duracaoMinutos || 30} min</p>
+                    </div>
+                    <span className="text-sm font-bold text-primary">{formatCurrency(s.preco)}</span>
+                  </button>
+                ))}
+                {filteredServicos.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">Nenhum serviço encontrado</p>
+                )}
+              </div>
             </div>
           )}
 
           {newStep === "professional" && (
             <div className="space-y-2 max-h-[300px] overflow-y-auto">
-              {(profissionais as any[]).filter((p: any) => p.ativo !== false).map((p: any) => (
+              {sortedProfissionais.filter((p: any) => p.ativo !== false).map((p: any) => (
                 <button
                   key={p.id}
                   onClick={() => { setFormProfId(String(p.id)); setNewStep("time"); }}
@@ -1663,6 +1751,36 @@ export default function Agenda() {
       {renderNewAppointmentStepFlow(false)}
       {renderNewAppointmentStepFlow(true)}
       {renderDetailModal()}
+
+      <AlertDialog
+        open={!!encaixeConfirm?.open}
+        onOpenChange={v => { if (!v) setEncaixeConfirm(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-amber-500" />
+              Marcar como encaixe?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {encaixeConfirm?.reason}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="btn-encaixe-cancel">Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="btn-encaixe-confirm"
+              className="bg-amber-500 hover:bg-amber-600 text-white"
+              onClick={async () => {
+                setEncaixeConfirm(null);
+                await submitCreate(true);
+              }}
+            >
+              Sim, registrar como encaixe
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Block dialog */}
       <Dialog open={isBlockOpen} onOpenChange={setIsBlockOpen}>

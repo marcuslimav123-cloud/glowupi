@@ -27,7 +27,7 @@ export type ParamDef = {
 export const PARAMETROS_DEFAULTS: ParamDef[] = [
   { chave: "fidelidade_expiracao_pontos", label: "Dias para data de expiração de pontos", categoria: "Fidelidade & Pontos", tipo: "input", valorPadrao: "365" },
   { chave: "cancel_tolerancia_cliente", label: "Limite de tolerância de cancelamento de horário pelo cliente (app)", categoria: "Cancelamentos & Tolerância", tipo: "input", valorPadrao: "2" },
-  { chave: "agenda_tempo_padrao", label: "Tempo (em minutos) padrão para o agendamento (ex: de 15 em 15 ou de 30 em 30min)", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["15 minutos", "30 minutos", "45 minutos", "60 minutos"], valorPadrao: "30 minutos" },
+  { chave: "agenda_tempo_padrao", label: "Intervalo da agenda (granularidade dos slots)", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["5 minutos", "10 minutos", "15 minutos", "20 minutos", "30 minutos"], valorPadrao: "30 minutos" },
   { chave: "tema_layout", label: "Tema/Layout WebAdmin", categoria: "Aparência", tipo: "select", opcoes: ["Claro", "Escuro", "Automático"], valorPadrao: "Claro" },
   { chave: "agenda_limite_antecedencia", label: "Limite de antecedência para agendamento de horário pelo App", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Sem limite", "1 hora", "2 horas", "3 horas", "4 horas", "6 horas", "12 horas", "24 horas"], valorPadrao: "Sem limite" },
   { chave: "notif_mensagem_agendar_cancelar", label: "Habilitar envio de mensagem quando agendar/cancelar pelo aplicativo", categoria: "Notificações & Mensagens", tipo: "select", opcoes: ["Habilitado", "Desabilitado"], valorPadrao: "Habilitado" },

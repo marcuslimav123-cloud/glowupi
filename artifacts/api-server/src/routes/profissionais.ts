@@ -85,7 +85,9 @@ async function syncServicos(
 router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
-  const profs = await db.select().from(profissionaisTable).where(eq(profissionaisTable.barbeariaId, barbeariaId));
+  const profs = await db.select().from(profissionaisTable)
+    .where(eq(profissionaisTable.barbeariaId, barbeariaId))
+    .orderBy(profissionaisTable.ordem, profissionaisTable.id);
 
   const links = await db.select().from(profissionalServicosTable).where(eq(profissionalServicosTable.barbeariaId, barbeariaId));
   const linksByProf: Record<number, typeof links> = {};

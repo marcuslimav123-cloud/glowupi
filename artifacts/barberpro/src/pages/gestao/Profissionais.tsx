@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit2, Trash2, Users, Award, ToggleLeft, ToggleRight, Clock, Calendar, Sparkles, Check, User, Phone, HelpCircle } from "lucide-react";
+import { Plus, Edit2, Trash2, Users, Award, ToggleLeft, ToggleRight, Clock, Calendar, Sparkles, Check, User, Phone, HelpCircle, GripVertical } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCurrency, formatPhone } from "@/lib/utils";
 import { ImageUpload } from "@/components/ImageUpload";
@@ -36,6 +36,7 @@ type Prof = {
   comissaoTipo: string;
   comissaoValor: number;
   ativo: boolean;
+  ordem?: number | null;
   horarios?: any;
   fotoUrl?: string | null;
   servicoIds?: number[];
@@ -383,10 +384,58 @@ export default function Profissionais() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Prof | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Prof | null>(null);
+  const [dragId, setDragId] = useState<number | null>(null);
+  const [dragOverId, setDragOverId] = useState<number | null>(null);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["/api/barbearias", barbeariaId, "profissionais"] });
 
   const queryKey = ["/api/barbearias", barbeariaId, "profissionais"];
+
+  const sortedProfs = React.useMemo(() => {
+    const arr = (profissionais as Prof[]).slice();
+    arr.sort((a, b) => {
+      const oa = typeof a.ordem === "number" ? a.ordem : 999;
+      const ob = typeof b.ordem === "number" ? b.ordem : 999;
+      if (oa !== ob) return oa - ob;
+      return a.id - b.id;
+    });
+    return arr;
+  }, [profissionais]);
+
+  const handleReorder = async (sourceId: number, targetId: number) => {
+    if (sourceId === targetId) return;
+    const list = sortedProfs;
+    const sourceIdx = list.findIndex(p => p.id === sourceId);
+    const targetIdx = list.findIndex(p => p.id === targetId);
+    if (sourceIdx === -1 || targetIdx === -1) return;
+
+    const reordered = list.slice();
+    const [moved] = reordered.splice(sourceIdx, 1);
+    reordered.splice(targetIdx, 0, moved);
+
+    const withNewOrdem = reordered.map((p, i) => ({ ...p, ordem: i + 1 }));
+    const snapshot = qc.getQueryData<Prof[]>(queryKey);
+    qc.setQueryData(queryKey, withNewOrdem);
+
+    try {
+      const changed = withNewOrdem.filter((p, i) => {
+        const prev = list.find(x => x.id === p.id);
+        const prevOrdem = typeof prev?.ordem === "number" ? prev!.ordem : null;
+        return prevOrdem !== i + 1;
+      });
+      await Promise.all(
+        changed.map(p =>
+          updateMutation.mutateAsync({ barbeariaId: barbeariaId!, profissionalId: p.id, data: { ordem: p.ordem as number } })
+        )
+      );
+      toast({ title: "Ordem atualizada" });
+    } catch (err: any) {
+      qc.setQueryData(queryKey, snapshot);
+      toast({ title: "Erro ao reordenar", description: err?.message || undefined, variant: "destructive" });
+    } finally {
+      invalidate();
+    }
+  };
 
   const handleSave = async (data: any) => {
     const snapshot = qc.getQueryData<Prof[]>(queryKey);
@@ -495,7 +544,7 @@ export default function Profissionais() {
 
       {isLoading ? (
         <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-24 bg-card rounded-2xl animate-pulse" />)}</div>
-      ) : (profissionais as Prof[]).length === 0 ? (
+      ) : sortedProfs.length === 0 ? (
         <div className="text-center py-20 bg-card rounded-2xl border border-border">
           <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
           <h3 className="text-lg font-medium">Nenhum profissional cadastrado</h3>
@@ -504,8 +553,30 @@ export default function Profissionais() {
         </div>
       ) : (
         <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-xl">
-          {(profissionais as Prof[]).map((p, i) => (
-            <div key={p.id} className={`flex items-center gap-4 p-5 hover:bg-muted/20 transition-colors ${i !== 0 ? "border-t border-border" : ""} ${!p.ativo ? "opacity-50" : ""}`}>
+          {sortedProfs.map((p, i) => (
+            <div
+              key={p.id}
+              draggable
+              onDragStart={e => { setDragId(p.id); e.dataTransfer.effectAllowed = "move"; }}
+              onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOverId(p.id); }}
+              onDragLeave={() => { if (dragOverId === p.id) setDragOverId(null); }}
+              onDrop={e => {
+                e.preventDefault();
+                const src = dragId;
+                setDragId(null); setDragOverId(null);
+                if (src != null) handleReorder(src, p.id);
+              }}
+              onDragEnd={() => { setDragId(null); setDragOverId(null); }}
+              data-testid={`row-profissional-${p.id}`}
+              className={`flex items-center gap-4 p-5 hover:bg-muted/20 transition-colors ${i !== 0 ? "border-t border-border" : ""} ${!p.ativo ? "opacity-50" : ""} ${dragId === p.id ? "opacity-30" : ""} ${dragOverId === p.id && dragId !== p.id ? "bg-primary/5 ring-1 ring-primary/30" : ""}`}
+            >
+              <div
+                className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0"
+                title="Arraste para reordenar"
+                data-testid={`drag-handle-${p.id}`}
+              >
+                <GripVertical className="h-5 w-5" />
+              </div>
               <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg border border-primary/20 shrink-0 overflow-hidden">
                 {p.fotoUrl ? (
                   <img src={p.fotoUrl} alt={p.nomeExibicao} className="h-full w-full object-cover" />
