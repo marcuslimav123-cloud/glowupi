@@ -1,0 +1,54 @@
+Bom dia, Marcos! Vou ler tudo direitinho e cruzar com o que já existe no sistema antes de te responder.
+
+
+2 actions
+Vou cruzar cada relato com o código pra te dar uma resposta exata. Lendo várias partes em paralelo:
+
+
+4 actions
+Cruzei tudo com o código. Tem uma surpresa importante no final que você precisa saber. Resumo direto:
+
+🟢 JÁ EXISTE — o cliente só não encontrou
+Encaixe que ultrapassa o horário de funcionamento (Áudio 3, segunda parte)
+O sistema já permite lançar um agendamento que passa do horário de fechamento — mas só quando marcado como "encaixe". A flag encaixe no agendamento bypassa as validações de expediente, jornada do profissional e até conflito de horário. O caso do botox de 2h30 começando às 16h funciona se ele marcar encaixe na hora de criar.
+
+Ação: deixar essa opção mais visível ou tornar "encaixe" o fallback automático quando o cliente tenta lançar fora do expediente, com um aviso ("Atenção: passa do horário de fechamento. Confirma?").
+
+Pontos positivos do Áudio 5 — confirmados no código
+
+✅ Programa de fidelidade (Clube de Vantagens com pontos e recompensas)
+✅ Cupom promocional (com %, valor fixo, validade e limite de uso)
+✅ Serviço com valor "a partir de" (tipo de preço configurável + edição na comanda)
+🟡 PARCIAL — a base já existe, falta a parte visível
+1. Reordenar profissionais na agenda (Áudio 2)
+O campo ordem já existe no banco e o backend já aceita atualização via API. Falta:
+
+Tela ou botão de "arrastar pra reordenar" os profissionais.
+Frontend usar esse campo ordem ao montar as colunas da agenda (hoje vem na ordem de criação/ID).
+Esforço estimado: pequeno (2-3 horas) — drag-and-drop na lista de profissionais + sort no frontend.
+
+2. Granularidade da agenda (Áudio 3, primeira parte)
+Hoje os slots da agenda são fixos em 30 min (hardcoded). Já existe um parâmetro agenda_tempo_padrao no backend, mas ele só é usado pra calcular o fim do serviço, não pra desenhar os slots na tela.
+
+Esforço estimado: médio (4-6 horas) — passar o parâmetro pro frontend, ajustar geração de slots e cálculo de altura/posição. Idealmente configurável por estabelecimento (5/10/15/20/30 min).
+
+🔴 NÃO EXISTE — precisa construir do zero
+3. Busca de serviço por digitação ao criar agendamento (Áudio 2)
+A busca por digitação só existe pro cliente (digita e aparece a lista). Pra serviços, é só rolagem. O dono perde tempo procurando.
+
+Esforço estimado: pequeno (1-2 horas) — adicionar um input de busca igual ao de cliente, no passo de seleção de serviço.
+
+4. ⚠️ Sistema de indicação com bônus (Áudio 5) — ATENÇÃO
+Esse aqui é importante: o cliente acha que o Glow Upi tem essa função (ele falou "no seu eu já achei essas vantagens" depois de descrever o que queria). Mas não existe. Não tem tabela de indicações, nem rota, nem UI. Só está mencionado no pitch como estratégia.
+
+Risco: se ele for usar e descobrir que não tem, é um furo de credibilidade. Vale ou (a) avisar ele agora que essa parte ainda está em desenvolvimento, ou (b) priorizar a construção pra não dar tempo dele perceber.
+Esforço estimado: médio-grande (1-2 dias) — banco (tabela de indicações), regras de bônus (crédito ou pontos), tela do cliente pra ver indicações, link/cupom único de indicação, conciliação com a comanda.
+
+Prioridade que eu sugiro
+#	Item	Impacto	Esforço
+1	Busca de serviço por digitação	Alto (uso diário)	Baixo
+2	Reordenar profissionais (drag)	Médio (cosmético, mas valorizado)	Baixo
+3	Encaixe automático com aviso fora do expediente	Alto	Baixo-Médio
+4	Granularidade da agenda configurável	Alto (encaixes rápidos)	Médio
+5	Sistema de indicação	Alto + Risco	Médio-Grande
+Quer que eu transforme isso num plano de tarefas formal? Posso criar 5 tarefas separadas com escopo, arquivos afetados e critério de aceite — você revisa e decide quais aprovar e em qual ordem. É só me confirmar.
