@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiUrl } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { ComporMensagemDialog } from "@/components/mensagens/ComporMensagemDialog";
 import { useNotifications, requestNotificationPermission } from "@/hooks/useNotifications";
 import {
   CalendarDays, DollarSign, FileText, Cake, Mail, UserPlus,
@@ -83,6 +84,8 @@ export function HeaderBar() {
   const [themeOpen, setThemeOpen] = useState(false);
   const [solTab, setSolTab] = useState("todos");
   const { notificacoes, unreadCount, loading: notifLoading, fetchNotificacoes, markAsRead, markAllAsRead } = useNotifications();
+
+  const [composeFor, setComposeFor] = useState<{ id: number; nome: string; telefone: string | null } | null>(null);
 
   const anivBtnRef = useRef<HTMLButtonElement>(null);
   const msgBtnRef = useRef<HTMLButtonElement>(null);
@@ -192,10 +195,18 @@ export function HeaderBar() {
                     <div className="h-7 w-7 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center text-pink-600 dark:text-pink-400 text-[11px] font-bold">
                       {c.nome.charAt(0)}
                     </div>
-                    <div>
-                      <p className="text-[13px] font-medium text-foreground">{c.nome}</p>
-                      <p className="text-[11px] text-foreground/40">{c.telefone}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-medium text-foreground truncate">{c.nome}</p>
+                      <p className="text-[11px] text-foreground/40 truncate">{c.telefone}</p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => { setComposeFor({ id: c.id, nome: c.nome, telefone: c.telefone ?? null }); setActivePopup(null); }}
+                      className="text-[11px] px-2 py-1 rounded-md border border-border hover:bg-muted text-foreground/80"
+                      data-testid={`button-aniversario-mensagem-${c.id}`}
+                    >
+                      Mensagem
+                    </button>
                   </div>
                 ))}
               </div>
@@ -412,6 +423,18 @@ export function HeaderBar() {
           </div>
         </Popup>
       </div>
+
+      {composeFor && (
+        <ComporMensagemDialog
+          open={!!composeFor}
+          onOpenChange={(v) => { if (!v) setComposeFor(null); }}
+          clienteId={composeFor.id}
+          clienteNome={composeFor.nome}
+          clienteTelefone={composeFor.telefone}
+          categoriaSugerida="aniversario"
+          title={`Mensagem de aniversário — ${composeFor.nome}`}
+        />
+      )}
 
       {themeOpen && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[200] flex items-center justify-center" onClick={() => setThemeOpen(false)}>

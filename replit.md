@@ -52,6 +52,7 @@ The design follows a "luxury clinic aesthetic" with warm gold, cream, and off-wh
 - **Promotional Landing Page (Fundadoras):** Women-focused landing page for Meta Ads traffic with specific pricing and a sales funnel structure.
 - **PWA Icons for Android:** Dynamic manifest includes `maskable` purpose icons for Android.
 - **LGPD Consent Tracking:** Server-side consent logging, first-login dialog for privacy policy and terms of use acceptance, and an admin page for consent logs.
+- **Banco de Mensagens & Modo Humano (anti-automação):** Categorized template bank (`mensagens_padrao` with `categoria`, `favorito`, `arquivado`) with CRUD/duplicate/render endpoints supporting variables `{cliente}`, `{servico}`, `{data}`, `{hora}`, `{profissional}`, `{salao}`, `{valor}`. Reusable `ModeloPicker` popover and `ComporMensagemDialog` (edit-before-send with Copy + WhatsApp deep-link) wired into Inbox responder, HeaderBar aniversariantes popup, and Agenda detail dialog (categoria derived from agendamento status). Per-barbearia `modo_humano` flag (in `barbearias`) — toggled at `/configuracoes/comunicacao` — intercepts auto-confirmation/lembrete emails and birthday notifications, routing them to a `mensagens_sugeridas` queue (with `dedupeKey`) shown under Inbox → Sugeridas for manual sending or discard. Owner-driven anti-automation flow — no chatbots or auto-messages when `modo_humano` is active.
 
 ## External Dependencies
 - **Stripe:** Payment processing, subscription management.

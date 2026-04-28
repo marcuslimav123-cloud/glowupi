@@ -31,6 +31,7 @@ import type {
   ComissaoProfissional,
   ContaFinanceira,
   ContaFinanceiraInput,
+  CountMensagensSugeridas200,
   CreateAgendamentoInput,
   CreateAtendimentoInput,
   CreateBarbeariaInput,
@@ -39,8 +40,10 @@ import type {
   CreateProfissionalInput,
   CreateServicoInput,
   DashboardMetrics,
+  EnviarMensagemSugeridaBody,
   ErrorResponse,
   GetDashboardParams,
+  GetModoHumano200,
   GetRelatorioComissoesParams,
   GetRelatorioFaturamentoParams,
   GetSlotsDisponiveisParams,
@@ -51,12 +54,18 @@ import type {
   ListComandasParams,
   ListContasFinanceirasParams,
   ListListaEsperaParams,
+  ListMensagensPadraoParams,
+  ListMensagensSugeridasParams,
   ListPacotesClienteParams,
   ListaEspera,
   ListaEsperaInput,
   LoginInput,
   Mensagem,
   MensagemInput,
+  MensagemPadrao,
+  MensagemPadraoInput,
+  MensagemPadraoUpdateInput,
+  MensagemSugerida,
   MovimentacaoEstoque,
   MovimentacaoEstoqueInput,
   Pacote,
@@ -70,6 +79,8 @@ import type {
   RecompensaInput,
   RegisterUserInput,
   RelatorioFaturamento,
+  RenderMensagemPadrao200,
+  RenderMensagemPadraoInput,
   Resgate,
   ResgateInput,
   Servico,
@@ -79,6 +90,8 @@ import type {
   UpdateBarbeariaInput,
   UpdateClienteInput,
   UpdateListaEsperaBody,
+  UpdateModoHumano200,
+  UpdateModoHumanoBody,
   UpdateProdutoInput,
   UpdateProfissionalInput,
   UpdateServicoInput,
@@ -6653,4 +6666,1223 @@ export const useDeleteMensagem = <
   TContext
 > => {
   return useMutation(getDeleteMensagemMutationOptions(options));
+};
+
+/**
+ * @summary Listar modelos do banco de mensagens
+ */
+export const getListMensagensPadraoUrl = (
+  barbeariaId: number,
+  params?: ListMensagensPadraoParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/barbearias/${barbeariaId}/mensagens-padrao?${stringifiedParams}`
+    : `/api/barbearias/${barbeariaId}/mensagens-padrao`;
+};
+
+export const listMensagensPadrao = async (
+  barbeariaId: number,
+  params?: ListMensagensPadraoParams,
+  options?: RequestInit,
+): Promise<MensagemPadrao[]> => {
+  return customFetch<MensagemPadrao[]>(
+    getListMensagensPadraoUrl(barbeariaId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListMensagensPadraoQueryKey = (
+  barbeariaId: number,
+  params?: ListMensagensPadraoParams,
+) => {
+  return [
+    `/api/barbearias/${barbeariaId}/mensagens-padrao`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getListMensagensPadraoQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMensagensPadrao>>,
+  TError = ErrorType<unknown>,
+>(
+  barbeariaId: number,
+  params?: ListMensagensPadraoParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMensagensPadrao>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getListMensagensPadraoQueryKey(barbeariaId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listMensagensPadrao>>
+  > = ({ signal }) =>
+    listMensagensPadrao(barbeariaId, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!barbeariaId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMensagensPadrao>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMensagensPadraoQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMensagensPadrao>>
+>;
+export type ListMensagensPadraoQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Listar modelos do banco de mensagens
+ */
+
+export function useListMensagensPadrao<
+  TData = Awaited<ReturnType<typeof listMensagensPadrao>>,
+  TError = ErrorType<unknown>,
+>(
+  barbeariaId: number,
+  params?: ListMensagensPadraoParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMensagensPadrao>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMensagensPadraoQueryOptions(
+    barbeariaId,
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Criar modelo
+ */
+export const getCreateMensagemPadraoUrl = (barbeariaId: number) => {
+  return `/api/barbearias/${barbeariaId}/mensagens-padrao`;
+};
+
+export const createMensagemPadrao = async (
+  barbeariaId: number,
+  mensagemPadraoInput: MensagemPadraoInput,
+  options?: RequestInit,
+): Promise<MensagemPadrao> => {
+  return customFetch<MensagemPadrao>(getCreateMensagemPadraoUrl(barbeariaId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(mensagemPadraoInput),
+  });
+};
+
+export const getCreateMensagemPadraoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createMensagemPadrao>>,
+    TError,
+    { barbeariaId: number; data: BodyType<MensagemPadraoInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createMensagemPadrao>>,
+  TError,
+  { barbeariaId: number; data: BodyType<MensagemPadraoInput> },
+  TContext
+> => {
+  const mutationKey = ["createMensagemPadrao"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createMensagemPadrao>>,
+    { barbeariaId: number; data: BodyType<MensagemPadraoInput> }
+  > = (props) => {
+    const { barbeariaId, data } = props ?? {};
+
+    return createMensagemPadrao(barbeariaId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateMensagemPadraoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createMensagemPadrao>>
+>;
+export type CreateMensagemPadraoMutationBody = BodyType<MensagemPadraoInput>;
+export type CreateMensagemPadraoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Criar modelo
+ */
+export const useCreateMensagemPadrao = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createMensagemPadrao>>,
+    TError,
+    { barbeariaId: number; data: BodyType<MensagemPadraoInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createMensagemPadrao>>,
+  TError,
+  { barbeariaId: number; data: BodyType<MensagemPadraoInput> },
+  TContext
+> => {
+  return useMutation(getCreateMensagemPadraoMutationOptions(options));
+};
+
+/**
+ * @summary Atualizar modelo (parcial)
+ */
+export const getUpdateMensagemPadraoUrl = (
+  barbeariaId: number,
+  modeloId: number,
+) => {
+  return `/api/barbearias/${barbeariaId}/mensagens-padrao/${modeloId}`;
+};
+
+export const updateMensagemPadrao = async (
+  barbeariaId: number,
+  modeloId: number,
+  mensagemPadraoUpdateInput: MensagemPadraoUpdateInput,
+  options?: RequestInit,
+): Promise<MensagemPadrao> => {
+  return customFetch<MensagemPadrao>(
+    getUpdateMensagemPadraoUrl(barbeariaId, modeloId),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(mensagemPadraoUpdateInput),
+    },
+  );
+};
+
+export const getUpdateMensagemPadraoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateMensagemPadrao>>,
+    TError,
+    {
+      barbeariaId: number;
+      modeloId: number;
+      data: BodyType<MensagemPadraoUpdateInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateMensagemPadrao>>,
+  TError,
+  {
+    barbeariaId: number;
+    modeloId: number;
+    data: BodyType<MensagemPadraoUpdateInput>;
+  },
+  TContext
+> => {
+  const mutationKey = ["updateMensagemPadrao"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateMensagemPadrao>>,
+    {
+      barbeariaId: number;
+      modeloId: number;
+      data: BodyType<MensagemPadraoUpdateInput>;
+    }
+  > = (props) => {
+    const { barbeariaId, modeloId, data } = props ?? {};
+
+    return updateMensagemPadrao(barbeariaId, modeloId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateMensagemPadraoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateMensagemPadrao>>
+>;
+export type UpdateMensagemPadraoMutationBody =
+  BodyType<MensagemPadraoUpdateInput>;
+export type UpdateMensagemPadraoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Atualizar modelo (parcial)
+ */
+export const useUpdateMensagemPadrao = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateMensagemPadrao>>,
+    TError,
+    {
+      barbeariaId: number;
+      modeloId: number;
+      data: BodyType<MensagemPadraoUpdateInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateMensagemPadrao>>,
+  TError,
+  {
+    barbeariaId: number;
+    modeloId: number;
+    data: BodyType<MensagemPadraoUpdateInput>;
+  },
+  TContext
+> => {
+  return useMutation(getUpdateMensagemPadraoMutationOptions(options));
+};
+
+/**
+ * @summary Excluir modelo
+ */
+export const getDeleteMensagemPadraoUrl = (
+  barbeariaId: number,
+  modeloId: number,
+) => {
+  return `/api/barbearias/${barbeariaId}/mensagens-padrao/${modeloId}`;
+};
+
+export const deleteMensagemPadrao = async (
+  barbeariaId: number,
+  modeloId: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteMensagemPadraoUrl(barbeariaId, modeloId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteMensagemPadraoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteMensagemPadrao>>,
+    TError,
+    { barbeariaId: number; modeloId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteMensagemPadrao>>,
+  TError,
+  { barbeariaId: number; modeloId: number },
+  TContext
+> => {
+  const mutationKey = ["deleteMensagemPadrao"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteMensagemPadrao>>,
+    { barbeariaId: number; modeloId: number }
+  > = (props) => {
+    const { barbeariaId, modeloId } = props ?? {};
+
+    return deleteMensagemPadrao(barbeariaId, modeloId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteMensagemPadraoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteMensagemPadrao>>
+>;
+
+export type DeleteMensagemPadraoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Excluir modelo
+ */
+export const useDeleteMensagemPadrao = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteMensagemPadrao>>,
+    TError,
+    { barbeariaId: number; modeloId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteMensagemPadrao>>,
+  TError,
+  { barbeariaId: number; modeloId: number },
+  TContext
+> => {
+  return useMutation(getDeleteMensagemPadraoMutationOptions(options));
+};
+
+/**
+ * @summary Duplicar modelo
+ */
+export const getDuplicarMensagemPadraoUrl = (
+  barbeariaId: number,
+  modeloId: number,
+) => {
+  return `/api/barbearias/${barbeariaId}/mensagens-padrao/${modeloId}/duplicar`;
+};
+
+export const duplicarMensagemPadrao = async (
+  barbeariaId: number,
+  modeloId: number,
+  options?: RequestInit,
+): Promise<MensagemPadrao> => {
+  return customFetch<MensagemPadrao>(
+    getDuplicarMensagemPadraoUrl(barbeariaId, modeloId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getDuplicarMensagemPadraoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof duplicarMensagemPadrao>>,
+    TError,
+    { barbeariaId: number; modeloId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof duplicarMensagemPadrao>>,
+  TError,
+  { barbeariaId: number; modeloId: number },
+  TContext
+> => {
+  const mutationKey = ["duplicarMensagemPadrao"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof duplicarMensagemPadrao>>,
+    { barbeariaId: number; modeloId: number }
+  > = (props) => {
+    const { barbeariaId, modeloId } = props ?? {};
+
+    return duplicarMensagemPadrao(barbeariaId, modeloId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DuplicarMensagemPadraoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof duplicarMensagemPadrao>>
+>;
+
+export type DuplicarMensagemPadraoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Duplicar modelo
+ */
+export const useDuplicarMensagemPadrao = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof duplicarMensagemPadrao>>,
+    TError,
+    { barbeariaId: number; modeloId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof duplicarMensagemPadrao>>,
+  TError,
+  { barbeariaId: number; modeloId: number },
+  TContext
+> => {
+  return useMutation(getDuplicarMensagemPadraoMutationOptions(options));
+};
+
+/**
+ * @summary Renderizar variáveis do modelo
+ */
+export const getRenderMensagemPadraoUrl = (
+  barbeariaId: number,
+  modeloId: number,
+) => {
+  return `/api/barbearias/${barbeariaId}/mensagens-padrao/${modeloId}/render`;
+};
+
+export const renderMensagemPadrao = async (
+  barbeariaId: number,
+  modeloId: number,
+  renderMensagemPadraoInput: RenderMensagemPadraoInput,
+  options?: RequestInit,
+): Promise<RenderMensagemPadrao200> => {
+  return customFetch<RenderMensagemPadrao200>(
+    getRenderMensagemPadraoUrl(barbeariaId, modeloId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(renderMensagemPadraoInput),
+    },
+  );
+};
+
+export const getRenderMensagemPadraoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof renderMensagemPadrao>>,
+    TError,
+    {
+      barbeariaId: number;
+      modeloId: number;
+      data: BodyType<RenderMensagemPadraoInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof renderMensagemPadrao>>,
+  TError,
+  {
+    barbeariaId: number;
+    modeloId: number;
+    data: BodyType<RenderMensagemPadraoInput>;
+  },
+  TContext
+> => {
+  const mutationKey = ["renderMensagemPadrao"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof renderMensagemPadrao>>,
+    {
+      barbeariaId: number;
+      modeloId: number;
+      data: BodyType<RenderMensagemPadraoInput>;
+    }
+  > = (props) => {
+    const { barbeariaId, modeloId, data } = props ?? {};
+
+    return renderMensagemPadrao(barbeariaId, modeloId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RenderMensagemPadraoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof renderMensagemPadrao>>
+>;
+export type RenderMensagemPadraoMutationBody =
+  BodyType<RenderMensagemPadraoInput>;
+export type RenderMensagemPadraoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Renderizar variáveis do modelo
+ */
+export const useRenderMensagemPadrao = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof renderMensagemPadrao>>,
+    TError,
+    {
+      barbeariaId: number;
+      modeloId: number;
+      data: BodyType<RenderMensagemPadraoInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof renderMensagemPadrao>>,
+  TError,
+  {
+    barbeariaId: number;
+    modeloId: number;
+    data: BodyType<RenderMensagemPadraoInput>;
+  },
+  TContext
+> => {
+  return useMutation(getRenderMensagemPadraoMutationOptions(options));
+};
+
+/**
+ * @summary Listar mensagens sugeridas
+ */
+export const getListMensagensSugeridasUrl = (
+  barbeariaId: number,
+  params?: ListMensagensSugeridasParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/barbearias/${barbeariaId}/mensagens-sugeridas?${stringifiedParams}`
+    : `/api/barbearias/${barbeariaId}/mensagens-sugeridas`;
+};
+
+export const listMensagensSugeridas = async (
+  barbeariaId: number,
+  params?: ListMensagensSugeridasParams,
+  options?: RequestInit,
+): Promise<MensagemSugerida[]> => {
+  return customFetch<MensagemSugerida[]>(
+    getListMensagensSugeridasUrl(barbeariaId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListMensagensSugeridasQueryKey = (
+  barbeariaId: number,
+  params?: ListMensagensSugeridasParams,
+) => {
+  return [
+    `/api/barbearias/${barbeariaId}/mensagens-sugeridas`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getListMensagensSugeridasQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMensagensSugeridas>>,
+  TError = ErrorType<unknown>,
+>(
+  barbeariaId: number,
+  params?: ListMensagensSugeridasParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMensagensSugeridas>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getListMensagensSugeridasQueryKey(barbeariaId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listMensagensSugeridas>>
+  > = ({ signal }) =>
+    listMensagensSugeridas(barbeariaId, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!barbeariaId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMensagensSugeridas>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMensagensSugeridasQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMensagensSugeridas>>
+>;
+export type ListMensagensSugeridasQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Listar mensagens sugeridas
+ */
+
+export function useListMensagensSugeridas<
+  TData = Awaited<ReturnType<typeof listMensagensSugeridas>>,
+  TError = ErrorType<unknown>,
+>(
+  barbeariaId: number,
+  params?: ListMensagensSugeridasParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMensagensSugeridas>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMensagensSugeridasQueryOptions(
+    barbeariaId,
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Contagem de pendentes
+ */
+export const getCountMensagensSugeridasUrl = (barbeariaId: number) => {
+  return `/api/barbearias/${barbeariaId}/mensagens-sugeridas/count`;
+};
+
+export const countMensagensSugeridas = async (
+  barbeariaId: number,
+  options?: RequestInit,
+): Promise<CountMensagensSugeridas200> => {
+  return customFetch<CountMensagensSugeridas200>(
+    getCountMensagensSugeridasUrl(barbeariaId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getCountMensagensSugeridasQueryKey = (barbeariaId: number) => {
+  return [`/api/barbearias/${barbeariaId}/mensagens-sugeridas/count`] as const;
+};
+
+export const getCountMensagensSugeridasQueryOptions = <
+  TData = Awaited<ReturnType<typeof countMensagensSugeridas>>,
+  TError = ErrorType<unknown>,
+>(
+  barbeariaId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof countMensagensSugeridas>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getCountMensagensSugeridasQueryKey(barbeariaId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof countMensagensSugeridas>>
+  > = ({ signal }) =>
+    countMensagensSugeridas(barbeariaId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!barbeariaId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof countMensagensSugeridas>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type CountMensagensSugeridasQueryResult = NonNullable<
+  Awaited<ReturnType<typeof countMensagensSugeridas>>
+>;
+export type CountMensagensSugeridasQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Contagem de pendentes
+ */
+
+export function useCountMensagensSugeridas<
+  TData = Awaited<ReturnType<typeof countMensagensSugeridas>>,
+  TError = ErrorType<unknown>,
+>(
+  barbeariaId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof countMensagensSugeridas>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getCountMensagensSugeridasQueryOptions(
+    barbeariaId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Marcar como enviada
+ */
+export const getEnviarMensagemSugeridaUrl = (
+  barbeariaId: number,
+  sugeridaId: number,
+) => {
+  return `/api/barbearias/${barbeariaId}/mensagens-sugeridas/${sugeridaId}/enviar`;
+};
+
+export const enviarMensagemSugerida = async (
+  barbeariaId: number,
+  sugeridaId: number,
+  enviarMensagemSugeridaBody?: EnviarMensagemSugeridaBody,
+  options?: RequestInit,
+): Promise<MensagemSugerida> => {
+  return customFetch<MensagemSugerida>(
+    getEnviarMensagemSugeridaUrl(barbeariaId, sugeridaId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(enviarMensagemSugeridaBody),
+    },
+  );
+};
+
+export const getEnviarMensagemSugeridaMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof enviarMensagemSugerida>>,
+    TError,
+    {
+      barbeariaId: number;
+      sugeridaId: number;
+      data: BodyType<EnviarMensagemSugeridaBody>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof enviarMensagemSugerida>>,
+  TError,
+  {
+    barbeariaId: number;
+    sugeridaId: number;
+    data: BodyType<EnviarMensagemSugeridaBody>;
+  },
+  TContext
+> => {
+  const mutationKey = ["enviarMensagemSugerida"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof enviarMensagemSugerida>>,
+    {
+      barbeariaId: number;
+      sugeridaId: number;
+      data: BodyType<EnviarMensagemSugeridaBody>;
+    }
+  > = (props) => {
+    const { barbeariaId, sugeridaId, data } = props ?? {};
+
+    return enviarMensagemSugerida(
+      barbeariaId,
+      sugeridaId,
+      data,
+      requestOptions,
+    );
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type EnviarMensagemSugeridaMutationResult = NonNullable<
+  Awaited<ReturnType<typeof enviarMensagemSugerida>>
+>;
+export type EnviarMensagemSugeridaMutationBody =
+  BodyType<EnviarMensagemSugeridaBody>;
+export type EnviarMensagemSugeridaMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Marcar como enviada
+ */
+export const useEnviarMensagemSugerida = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof enviarMensagemSugerida>>,
+    TError,
+    {
+      barbeariaId: number;
+      sugeridaId: number;
+      data: BodyType<EnviarMensagemSugeridaBody>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof enviarMensagemSugerida>>,
+  TError,
+  {
+    barbeariaId: number;
+    sugeridaId: number;
+    data: BodyType<EnviarMensagemSugeridaBody>;
+  },
+  TContext
+> => {
+  return useMutation(getEnviarMensagemSugeridaMutationOptions(options));
+};
+
+/**
+ * @summary Descartar
+ */
+export const getDescartarMensagemSugeridaUrl = (
+  barbeariaId: number,
+  sugeridaId: number,
+) => {
+  return `/api/barbearias/${barbeariaId}/mensagens-sugeridas/${sugeridaId}/descartar`;
+};
+
+export const descartarMensagemSugerida = async (
+  barbeariaId: number,
+  sugeridaId: number,
+  options?: RequestInit,
+): Promise<MensagemSugerida> => {
+  return customFetch<MensagemSugerida>(
+    getDescartarMensagemSugeridaUrl(barbeariaId, sugeridaId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getDescartarMensagemSugeridaMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof descartarMensagemSugerida>>,
+    TError,
+    { barbeariaId: number; sugeridaId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof descartarMensagemSugerida>>,
+  TError,
+  { barbeariaId: number; sugeridaId: number },
+  TContext
+> => {
+  const mutationKey = ["descartarMensagemSugerida"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof descartarMensagemSugerida>>,
+    { barbeariaId: number; sugeridaId: number }
+  > = (props) => {
+    const { barbeariaId, sugeridaId } = props ?? {};
+
+    return descartarMensagemSugerida(barbeariaId, sugeridaId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DescartarMensagemSugeridaMutationResult = NonNullable<
+  Awaited<ReturnType<typeof descartarMensagemSugerida>>
+>;
+
+export type DescartarMensagemSugeridaMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Descartar
+ */
+export const useDescartarMensagemSugerida = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof descartarMensagemSugerida>>,
+    TError,
+    { barbeariaId: number; sugeridaId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof descartarMensagemSugerida>>,
+  TError,
+  { barbeariaId: number; sugeridaId: number },
+  TContext
+> => {
+  return useMutation(getDescartarMensagemSugeridaMutationOptions(options));
+};
+
+/**
+ * @summary Obter status do Modo Humano
+ */
+export const getGetModoHumanoUrl = (barbeariaId: number) => {
+  return `/api/barbearias/${barbeariaId}/modo-humano`;
+};
+
+export const getModoHumano = async (
+  barbeariaId: number,
+  options?: RequestInit,
+): Promise<GetModoHumano200> => {
+  return customFetch<GetModoHumano200>(getGetModoHumanoUrl(barbeariaId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetModoHumanoQueryKey = (barbeariaId: number) => {
+  return [`/api/barbearias/${barbeariaId}/modo-humano`] as const;
+};
+
+export const getGetModoHumanoQueryOptions = <
+  TData = Awaited<ReturnType<typeof getModoHumano>>,
+  TError = ErrorType<unknown>,
+>(
+  barbeariaId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getModoHumano>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetModoHumanoQueryKey(barbeariaId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getModoHumano>>> = ({
+    signal,
+  }) => getModoHumano(barbeariaId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!barbeariaId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getModoHumano>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetModoHumanoQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getModoHumano>>
+>;
+export type GetModoHumanoQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Obter status do Modo Humano
+ */
+
+export function useGetModoHumano<
+  TData = Awaited<ReturnType<typeof getModoHumano>>,
+  TError = ErrorType<unknown>,
+>(
+  barbeariaId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getModoHumano>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetModoHumanoQueryOptions(barbeariaId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Alternar Modo Humano
+ */
+export const getUpdateModoHumanoUrl = (barbeariaId: number) => {
+  return `/api/barbearias/${barbeariaId}/modo-humano`;
+};
+
+export const updateModoHumano = async (
+  barbeariaId: number,
+  updateModoHumanoBody: UpdateModoHumanoBody,
+  options?: RequestInit,
+): Promise<UpdateModoHumano200> => {
+  return customFetch<UpdateModoHumano200>(getUpdateModoHumanoUrl(barbeariaId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateModoHumanoBody),
+  });
+};
+
+export const getUpdateModoHumanoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateModoHumano>>,
+    TError,
+    { barbeariaId: number; data: BodyType<UpdateModoHumanoBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateModoHumano>>,
+  TError,
+  { barbeariaId: number; data: BodyType<UpdateModoHumanoBody> },
+  TContext
+> => {
+  const mutationKey = ["updateModoHumano"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateModoHumano>>,
+    { barbeariaId: number; data: BodyType<UpdateModoHumanoBody> }
+  > = (props) => {
+    const { barbeariaId, data } = props ?? {};
+
+    return updateModoHumano(barbeariaId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateModoHumanoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateModoHumano>>
+>;
+export type UpdateModoHumanoMutationBody = BodyType<UpdateModoHumanoBody>;
+export type UpdateModoHumanoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Alternar Modo Humano
+ */
+export const useUpdateModoHumano = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateModoHumano>>,
+    TError,
+    { barbeariaId: number; data: BodyType<UpdateModoHumanoBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateModoHumano>>,
+  TError,
+  { barbeariaId: number; data: BodyType<UpdateModoHumanoBody> },
+  TContext
+> => {
+  return useMutation(getUpdateModoHumanoMutationOptions(options));
 };

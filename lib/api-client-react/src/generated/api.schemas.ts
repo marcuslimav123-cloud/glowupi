@@ -77,6 +77,7 @@ export interface Barbearia {
   planoStatus: string;
   planoVencimento?: string | null;
   onboardingStep: number;
+  modoHumano?: boolean;
   createdAt?: string;
 }
 
@@ -829,6 +830,70 @@ export interface MensagemInput {
   status?: string;
 }
 
+export interface MensagemPadrao {
+  id: number;
+  barbeariaId: number;
+  tipo: string;
+  titulo: string;
+  conteudo: string;
+  categoria: string;
+  favorito: boolean;
+  arquivado: boolean;
+  ativo: boolean;
+  createdAt?: string;
+}
+
+export interface MensagemPadraoInput {
+  tipo?: string;
+  titulo: string;
+  conteudo: string;
+  categoria: string;
+  favorito?: boolean;
+  arquivado?: boolean;
+  ativo?: boolean;
+}
+
+export interface MensagemPadraoUpdateInput {
+  tipo?: string;
+  titulo?: string;
+  conteudo?: string;
+  categoria?: string;
+  favorito?: boolean;
+  arquivado?: boolean;
+  ativo?: boolean;
+}
+
+export type RenderMensagemPadraoInputOverrides = { [key: string]: string };
+
+export interface RenderMensagemPadraoInput {
+  agendamentoId?: number | null;
+  clienteId?: number | null;
+  overrides?: RenderMensagemPadraoInputOverrides;
+}
+
+export type MensagemSugeridaContexto = { [key: string]: unknown };
+
+export interface MensagemSugerida {
+  id: number;
+  barbeariaId: number;
+  tipo: string;
+  agendamentoId?: number | null;
+  clienteId?: number | null;
+  modeloPadraoId?: number | null;
+  contexto?: MensagemSugeridaContexto;
+  conteudoSugerido: string;
+  status: string;
+  createdAt: string;
+  resolvedAt?: string | null;
+  clienteNome?: string | null;
+  clienteEmail?: string | null;
+  clienteTelefone?: string | null;
+  agendamentoData?: string | null;
+  agendamentoHora?: string | null;
+  servicoNome?: string | null;
+  profissionalNome?: string | null;
+}
+
 export type ListClientesParams = {
   search?: string;
 };
@@ -896,4 +961,38 @@ export type ListListaEsperaParams = {
 
 export type UpdateListaEsperaBody = {
   status?: string;
+};
+
+export type ListMensagensPadraoParams = {
+  categoria?: string;
+  favorito?: boolean;
+  arquivado?: boolean;
+};
+
+export type RenderMensagemPadrao200 = {
+  conteudo: string;
+};
+
+export type ListMensagensSugeridasParams = {
+  status?: string;
+};
+
+export type CountMensagensSugeridas200 = {
+  count: number;
+};
+
+export type EnviarMensagemSugeridaBody = {
+  conteudo?: string;
+};
+
+export type GetModoHumano200 = {
+  modoHumano: boolean;
+};
+
+export type UpdateModoHumanoBody = {
+  modoHumano: boolean;
+};
+
+export type UpdateModoHumano200 = {
+  modoHumano: boolean;
 };

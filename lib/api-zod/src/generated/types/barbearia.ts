@@ -27,5 +27,6 @@ export interface Barbearia {
   planoStatus: string;
   planoVencimento?: string | null;
   onboardingStep: number;
+  modoHumano?: boolean;
   createdAt?: string;
 }

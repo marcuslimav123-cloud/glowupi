@@ -54,6 +54,7 @@ export const barbeariasTable = pgTable("barbearias", {
   sinalValor: numeric("sinal_valor", { precision: 10, scale: 2 }).notNull().default("30"),
   sinalToleranciaMin: integer("sinal_tolerancia_min").notNull().default(30),
   sinalPoliticaTexto: text("sinal_politica_texto"),
+  modoHumano: boolean("modo_humano").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

@@ -9,6 +9,9 @@ export const mensagensPadraoTable = pgTable("mensagens_padrao", {
   tipo: text("tipo").notNull(),
   titulo: text("titulo").notNull(),
   conteudo: text("conteudo").notNull(),
+  categoria: text("categoria").notNull().default("outro"),
+  favorito: boolean("favorito").notNull().default(false),
+  arquivado: boolean("arquivado").notNull().default(false),
   ativo: boolean("ativo").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

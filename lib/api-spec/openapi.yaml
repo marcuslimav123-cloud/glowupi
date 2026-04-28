@@ -45,6 +45,12 @@ tags:
     description: Inventory movements
   - name: mensagens
     description: Messages and promotions
+  - name: mensagens-padrao
+    description: Banco de modelos de mensagens
+  - name: mensagens-sugeridas
+    description: Fila de mensagens sugeridas (Modo Humano)
+  - name: modo-humano
+    description: Toggle Modo Humano (anti-automação)
 
 paths:
   /healthz:
@@ -1691,6 +1697,304 @@ paths:
         "200":
           description: Deleted
 
+  /barbearias/{barbeariaId}/mensagens-padrao:
+    get:
+      operationId: listMensagensPadrao
+      tags: [mensagens-padrao]
+      summary: Listar modelos do banco de mensagens
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: categoria
+          in: query
+          required: false
+          schema: { type: string }
+        - name: favorito
+          in: query
+          required: false
+          schema: { type: boolean }
+        - name: arquivado
+          in: query
+          required: false
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: Modelos listados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MensagemPadrao"
+    post:
+      operationId: createMensagemPadrao
+      tags: [mensagens-padrao]
+      summary: Criar modelo
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MensagemPadraoInput"
+      responses:
+        "201":
+          description: Criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MensagemPadrao"
+
+  /barbearias/{barbeariaId}/mensagens-padrao/{modeloId}:
+    put:
+      operationId: updateMensagemPadrao
+      tags: [mensagens-padrao]
+      summary: Atualizar modelo (parcial)
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: modeloId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MensagemPadraoUpdateInput"
+      responses:
+        "200":
+          description: Atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MensagemPadrao"
+    delete:
+      operationId: deleteMensagemPadrao
+      tags: [mensagens-padrao]
+      summary: Excluir modelo
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: modeloId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Excluído
+
+  /barbearias/{barbeariaId}/mensagens-padrao/{modeloId}/duplicar:
+    post:
+      operationId: duplicarMensagemPadrao
+      tags: [mensagens-padrao]
+      summary: Duplicar modelo
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: modeloId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "201":
+          description: Duplicado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MensagemPadrao"
+
+  /barbearias/{barbeariaId}/mensagens-padrao/{modeloId}/render:
+    post:
+      operationId: renderMensagemPadrao
+      tags: [mensagens-padrao]
+      summary: Renderizar variáveis do modelo
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: modeloId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenderMensagemPadraoInput"
+      responses:
+        "200":
+          description: Conteúdo renderizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conteudo:
+                    type: string
+                required: [conteudo]
+
+  /barbearias/{barbeariaId}/mensagens-sugeridas:
+    get:
+      operationId: listMensagensSugeridas
+      tags: [mensagens-sugeridas]
+      summary: Listar mensagens sugeridas
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: status
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Sugeridas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MensagemSugerida"
+
+  /barbearias/{barbeariaId}/mensagens-sugeridas/count:
+    get:
+      operationId: countMensagensSugeridas
+      tags: [mensagens-sugeridas]
+      summary: Contagem de pendentes
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Contagem
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count: { type: integer }
+                required: [count]
+
+  /barbearias/{barbeariaId}/mensagens-sugeridas/{sugeridaId}/enviar:
+    post:
+      operationId: enviarMensagemSugerida
+      tags: [mensagens-sugeridas]
+      summary: Marcar como enviada
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: sugeridaId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                conteudo: { type: string }
+      responses:
+        "200":
+          description: Enviada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MensagemSugerida"
+
+  /barbearias/{barbeariaId}/mensagens-sugeridas/{sugeridaId}/descartar:
+    post:
+      operationId: descartarMensagemSugerida
+      tags: [mensagens-sugeridas]
+      summary: Descartar
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: sugeridaId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Descartada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MensagemSugerida"
+
+  /barbearias/{barbeariaId}/modo-humano:
+    get:
+      operationId: getModoHumano
+      tags: [modo-humano]
+      summary: Obter status do Modo Humano
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  modoHumano: { type: boolean }
+                required: [modoHumano]
+    put:
+      operationId: updateModoHumano
+      tags: [modo-humano]
+      summary: Alternar Modo Humano
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                modoHumano: { type: boolean }
+              required: [modoHumano]
+      responses:
+        "200":
+          description: Atualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  modoHumano: { type: boolean }
+                required: [modoHumano]
+
 components:
   schemas:
     HealthStatus:
@@ -1851,6 +2155,8 @@ components:
           nullable: true
         onboardingStep:
           type: integer
+        modoHumano:
+          type: boolean
         createdAt:
           type: string
       required:
@@ -3370,3 +3676,75 @@ components:
         status:
           type: string
       required: [tipo, titulo, conteudo]
+
+    MensagemPadrao:
+      type: object
+      properties:
+        id: { type: integer }
+        barbeariaId: { type: integer }
+        tipo: { type: string }
+        titulo: { type: string }
+        conteudo: { type: string }
+        categoria: { type: string }
+        favorito: { type: boolean }
+        arquivado: { type: boolean }
+        ativo: { type: boolean }
+        createdAt: { type: string }
+      required: [id, barbeariaId, tipo, titulo, conteudo, categoria, favorito, arquivado, ativo]
+
+    MensagemPadraoInput:
+      type: object
+      properties:
+        tipo: { type: string }
+        titulo: { type: string }
+        conteudo: { type: string }
+        categoria: { type: string }
+        favorito: { type: boolean }
+        arquivado: { type: boolean }
+        ativo: { type: boolean }
+      required: [titulo, conteudo, categoria]
+
+    MensagemPadraoUpdateInput:
+      type: object
+      properties:
+        tipo: { type: string }
+        titulo: { type: string }
+        conteudo: { type: string }
+        categoria: { type: string }
+        favorito: { type: boolean }
+        arquivado: { type: boolean }
+        ativo: { type: boolean }
+
+    RenderMensagemPadraoInput:
+      type: object
+      properties:
+        agendamentoId: { type: integer, nullable: true }
+        clienteId: { type: integer, nullable: true }
+        overrides:
+          type: object
+          additionalProperties: { type: string }
+
+    MensagemSugerida:
+      type: object
+      properties:
+        id: { type: integer }
+        barbeariaId: { type: integer }
+        tipo: { type: string }
+        agendamentoId: { type: integer, nullable: true }
+        clienteId: { type: integer, nullable: true }
+        modeloPadraoId: { type: integer, nullable: true }
+        contexto:
+          type: object
+          additionalProperties: true
+        conteudoSugerido: { type: string }
+        status: { type: string }
+        createdAt: { type: string }
+        resolvedAt: { type: string, nullable: true }
+        clienteNome: { type: string, nullable: true }
+        clienteEmail: { type: string, nullable: true }
+        clienteTelefone: { type: string, nullable: true }
+        agendamentoData: { type: string, nullable: true }
+        agendamentoHora: { type: string, nullable: true }
+        servicoNome: { type: string, nullable: true }
+        profissionalNome: { type: string, nullable: true }
+      required: [id, barbeariaId, tipo, conteudoSugerido, status, createdAt]

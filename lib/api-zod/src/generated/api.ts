@@ -89,6 +89,7 @@ export const GetCurrentUserResponse = zod
           planoStatus: zod.string(),
           planoVencimento: zod.string().nullish(),
           onboardingStep: zod.number(),
+          modoHumano: zod.boolean().optional(),
           createdAt: zod.string().optional(),
         })
         .nullish(),
@@ -138,6 +139,7 @@ export const GetMyBarbeariaResponse = zod.object({
   planoStatus: zod.string(),
   planoVencimento: zod.string().nullish(),
   onboardingStep: zod.number(),
+  modoHumano: zod.boolean().optional(),
   createdAt: zod.string().optional(),
 });
 
@@ -179,6 +181,7 @@ export const UpdateBarbeariaResponse = zod.object({
   planoStatus: zod.string(),
   planoVencimento: zod.string().nullish(),
   onboardingStep: zod.number(),
+  modoHumano: zod.boolean().optional(),
   createdAt: zod.string().optional(),
 });
 
@@ -1732,4 +1735,249 @@ export const CreateMensagemBody = zod.object({
 export const DeleteMensagemParams = zod.object({
   barbeariaId: zod.coerce.number(),
   mensagemId: zod.coerce.number(),
+});
+
+/**
+ * @summary Listar modelos do banco de mensagens
+ */
+export const ListMensagensPadraoParams = zod.object({
+  barbeariaId: zod.coerce.number(),
+});
+
+export const ListMensagensPadraoQueryParams = zod.object({
+  categoria: zod.coerce.string().optional(),
+  favorito: zod.coerce.boolean().optional(),
+  arquivado: zod.coerce.boolean().optional(),
+});
+
+export const ListMensagensPadraoResponseItem = zod.object({
+  id: zod.number(),
+  barbeariaId: zod.number(),
+  tipo: zod.string(),
+  titulo: zod.string(),
+  conteudo: zod.string(),
+  categoria: zod.string(),
+  favorito: zod.boolean(),
+  arquivado: zod.boolean(),
+  ativo: zod.boolean(),
+  createdAt: zod.string().optional(),
+});
+export const ListMensagensPadraoResponse = zod.array(
+  ListMensagensPadraoResponseItem,
+);
+
+/**
+ * @summary Criar modelo
+ */
+export const CreateMensagemPadraoParams = zod.object({
+  barbeariaId: zod.coerce.number(),
+});
+
+export const CreateMensagemPadraoBody = zod.object({
+  tipo: zod.string().optional(),
+  titulo: zod.string(),
+  conteudo: zod.string(),
+  categoria: zod.string(),
+  favorito: zod.boolean().optional(),
+  arquivado: zod.boolean().optional(),
+  ativo: zod.boolean().optional(),
+});
+
+/**
+ * @summary Atualizar modelo (parcial)
+ */
+export const UpdateMensagemPadraoParams = zod.object({
+  barbeariaId: zod.coerce.number(),
+  modeloId: zod.coerce.number(),
+});
+
+export const UpdateMensagemPadraoBody = zod.object({
+  tipo: zod.string().optional(),
+  titulo: zod.string().optional(),
+  conteudo: zod.string().optional(),
+  categoria: zod.string().optional(),
+  favorito: zod.boolean().optional(),
+  arquivado: zod.boolean().optional(),
+  ativo: zod.boolean().optional(),
+});
+
+export const UpdateMensagemPadraoResponse = zod.object({
+  id: zod.number(),
+  barbeariaId: zod.number(),
+  tipo: zod.string(),
+  titulo: zod.string(),
+  conteudo: zod.string(),
+  categoria: zod.string(),
+  favorito: zod.boolean(),
+  arquivado: zod.boolean(),
+  ativo: zod.boolean(),
+  createdAt: zod.string().optional(),
+});
+
+/**
+ * @summary Excluir modelo
+ */
+export const DeleteMensagemPadraoParams = zod.object({
+  barbeariaId: zod.coerce.number(),
+  modeloId: zod.coerce.number(),
+});
+
+/**
+ * @summary Duplicar modelo
+ */
+export const DuplicarMensagemPadraoParams = zod.object({
+  barbeariaId: zod.coerce.number(),
+  modeloId: zod.coerce.number(),
+});
+
+/**
+ * @summary Renderizar variáveis do modelo
+ */
+export const RenderMensagemPadraoParams = zod.object({
+  barbeariaId: zod.coerce.number(),
+  modeloId: zod.coerce.number(),
+});
+
+export const RenderMensagemPadraoBody = zod.object({
+  agendamentoId: zod.number().nullish(),
+  clienteId: zod.number().nullish(),
+  overrides: zod.record(zod.string(), zod.string()).optional(),
+});
+
+export const RenderMensagemPadraoResponse = zod.object({
+  conteudo: zod.string(),
+});
+
+/**
+ * @summary Listar mensagens sugeridas
+ */
+export const ListMensagensSugeridasParams = zod.object({
+  barbeariaId: zod.coerce.number(),
+});
+
+export const ListMensagensSugeridasQueryParams = zod.object({
+  status: zod.coerce.string().optional(),
+});
+
+export const ListMensagensSugeridasResponseItem = zod.object({
+  id: zod.number(),
+  barbeariaId: zod.number(),
+  tipo: zod.string(),
+  agendamentoId: zod.number().nullish(),
+  clienteId: zod.number().nullish(),
+  modeloPadraoId: zod.number().nullish(),
+  contexto: zod.record(zod.string(), zod.unknown()).optional(),
+  conteudoSugerido: zod.string(),
+  status: zod.string(),
+  createdAt: zod.string(),
+  resolvedAt: zod.string().nullish(),
+  clienteNome: zod.string().nullish(),
+  clienteEmail: zod.string().nullish(),
+  clienteTelefone: zod.string().nullish(),
+  agendamentoData: zod.string().nullish(),
+  agendamentoHora: zod.string().nullish(),
+  servicoNome: zod.string().nullish(),
+  profissionalNome: zod.string().nullish(),
+});
+export const ListMensagensSugeridasResponse = zod.array(
+  ListMensagensSugeridasResponseItem,
+);
+
+/**
+ * @summary Contagem de pendentes
+ */
+export const CountMensagensSugeridasParams = zod.object({
+  barbeariaId: zod.coerce.number(),
+});
+
+export const CountMensagensSugeridasResponse = zod.object({
+  count: zod.number(),
+});
+
+/**
+ * @summary Marcar como enviada
+ */
+export const EnviarMensagemSugeridaParams = zod.object({
+  barbeariaId: zod.coerce.number(),
+  sugeridaId: zod.coerce.number(),
+});
+
+export const EnviarMensagemSugeridaBody = zod.object({
+  conteudo: zod.string().optional(),
+});
+
+export const EnviarMensagemSugeridaResponse = zod.object({
+  id: zod.number(),
+  barbeariaId: zod.number(),
+  tipo: zod.string(),
+  agendamentoId: zod.number().nullish(),
+  clienteId: zod.number().nullish(),
+  modeloPadraoId: zod.number().nullish(),
+  contexto: zod.record(zod.string(), zod.unknown()).optional(),
+  conteudoSugerido: zod.string(),
+  status: zod.string(),
+  createdAt: zod.string(),
+  resolvedAt: zod.string().nullish(),
+  clienteNome: zod.string().nullish(),
+  clienteEmail: zod.string().nullish(),
+  clienteTelefone: zod.string().nullish(),
+  agendamentoData: zod.string().nullish(),
+  agendamentoHora: zod.string().nullish(),
+  servicoNome: zod.string().nullish(),
+  profissionalNome: zod.string().nullish(),
+});
+
+/**
+ * @summary Descartar
+ */
+export const DescartarMensagemSugeridaParams = zod.object({
+  barbeariaId: zod.coerce.number(),
+  sugeridaId: zod.coerce.number(),
+});
+
+export const DescartarMensagemSugeridaResponse = zod.object({
+  id: zod.number(),
+  barbeariaId: zod.number(),
+  tipo: zod.string(),
+  agendamentoId: zod.number().nullish(),
+  clienteId: zod.number().nullish(),
+  modeloPadraoId: zod.number().nullish(),
+  contexto: zod.record(zod.string(), zod.unknown()).optional(),
+  conteudoSugerido: zod.string(),
+  status: zod.string(),
+  createdAt: zod.string(),
+  resolvedAt: zod.string().nullish(),
+  clienteNome: zod.string().nullish(),
+  clienteEmail: zod.string().nullish(),
+  clienteTelefone: zod.string().nullish(),
+  agendamentoData: zod.string().nullish(),
+  agendamentoHora: zod.string().nullish(),
+  servicoNome: zod.string().nullish(),
+  profissionalNome: zod.string().nullish(),
+});
+
+/**
+ * @summary Obter status do Modo Humano
+ */
+export const GetModoHumanoParams = zod.object({
+  barbeariaId: zod.coerce.number(),
+});
+
+export const GetModoHumanoResponse = zod.object({
+  modoHumano: zod.boolean(),
+});
+
+/**
+ * @summary Alternar Modo Humano
+ */
+export const UpdateModoHumanoParams = zod.object({
+  barbeariaId: zod.coerce.number(),
+});
+
+export const UpdateModoHumanoBody = zod.object({
+  modoHumano: zod.boolean(),
+});
+
+export const UpdateModoHumanoResponse = zod.object({
+  modoHumano: zod.boolean(),
 });

@@ -28,9 +28,28 @@ async function notificarAgendamento(barbeariaId: number, params: Record<string, 
       ? `Seu agendamento de <strong>${agendData.servicoNome}</strong> com <strong>${agendData.profissionalNome}</strong> em ${agendData.data} às ${agendData.horaInicio} foi confirmado.`
       : `Seu agendamento de <strong>${agendData.servicoNome}</strong> com <strong>${agendData.profissionalNome}</strong> em ${agendData.data} às ${agendData.horaInicio} foi cancelado.`;
 
+    const modoHumano = !!barb?.modoHumano;
     const clienteNotifHabilitada = (params["notif_mensagem_agendar_cancelar"] || "Habilitado") === "Habilitado";
     const suprimirConfirmacao = tipo === "criado" && params["notif_nao_enviar_confirmacao"] === "Sim";
-    const devEnviarCliente = clienteNotifHabilitada && !suprimirConfirmacao;
+    const devEnviarCliente = clienteNotifHabilitada && !suprimirConfirmacao && !modoHumano;
+
+    if (modoHumano && tipo === "criado" && clienteNotifHabilitada && !suprimirConfirmacao && agendData.agendamentoId) {
+      try {
+        const { criarSugerida } = await import("../lib/mensagensSugeridas.js");
+        await criarSugerida({
+          barbeariaId,
+          tipo: "confirmacao",
+          agendamentoId: agendData.agendamentoId,
+          clienteId: agendData.clienteId ?? null,
+          contexto: { servico: agendData.servicoNome, profissional: agendData.profissionalNome, data: agendData.data, hora: agendData.horaInicio },
+          dedupeKey: `confirm:${barbeariaId}:${agendData.agendamentoId}`,
+          fallbackTexto: `Olá ${agendData.clienteNome}! Seu horário de ${agendData.servicoNome} com ${agendData.profissionalNome} em ${agendData.data} às ${agendData.horaInicio} está confirmado. ${nomeEstab}`,
+          categoriaPreferida: "confirmacao",
+        });
+      } catch (e) {
+        console.error("[Notif] Erro ao criar sugerida de confirmação:", e);
+      }
+    }
 
     if (devEnviarCliente && agendData.clienteId) {
       const [cliente] = await db.select().from(clientesTable).where(eq(clientesTable.id, agendData.clienteId)).limit(1);

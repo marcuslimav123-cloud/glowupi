@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { ComporMensagemDialog } from "@/components/mensagens/ComporMensagemDialog";
 
 type Agendamento = {
   id: number;
@@ -187,6 +188,7 @@ export default function Agenda() {
   const [checkoutAgend, setCheckoutAgend] = useState<Agendamento | null>(null);
   const [cancelAgend, setCancelAgend] = useState<Agendamento | null>(null);
   const [detailAgend, setDetailAgend] = useState<Agendamento | null>(null);
+  const [composeAgend, setComposeAgend] = useState<Agendamento | null>(null);
 
   const [newStep, setNewStep] = useState<"client" | "service" | "professional" | "time">("client");
   const [clientSearch, setClientSearch] = useState("");
@@ -1297,6 +1299,7 @@ export default function Agenda() {
   const renderDetailModal = () => {
     if (!detailAgend) return null;
     return (
+      <>
       <Dialog open={!!detailAgend} onOpenChange={v => { if (!v) setDetailAgend(null); }}>
         <DialogContent className="bg-card border-border sm:max-w-[420px]">
           <DialogHeader>
@@ -1396,7 +1399,7 @@ export default function Agenda() {
               )}
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-wrap">
               {detailAgend.aniversario && (
                 <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 border border-yellow-200">
                   <PartyPopper className="h-3 w-3" /> Aniversário
@@ -1406,6 +1409,16 @@ export default function Agenda() {
                 <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
                   <Star className="h-3 w-3" /> VIP
                 </span>
+              )}
+              {detailAgend.clienteId && (
+                <button
+                  type="button"
+                  onClick={() => setComposeAgend(detailAgend)}
+                  className="ml-auto inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20"
+                  data-testid="btn-agenda-detail-mensagem"
+                >
+                  <ClipboardList className="h-3 w-3" /> Mensagem
+                </button>
               )}
             </div>
 
@@ -1456,6 +1469,23 @@ export default function Agenda() {
           </div>
         </DialogContent>
       </Dialog>
+      {composeAgend && composeAgend.clienteId && (
+        <ComporMensagemDialog
+          open={!!composeAgend}
+          onOpenChange={(v) => { if (!v) setComposeAgend(null); }}
+          clienteId={composeAgend.clienteId}
+          clienteNome={composeAgend.clienteNome}
+          clienteTelefone={composeAgend.clienteTelefone ?? null}
+          categoriaSugerida={
+            composeAgend.status === "pendente_aprovacao" ? "confirmacao" :
+            composeAgend.status === "confirmado" ? "lembrete" :
+            composeAgend.status === "realizado" ? "pos_agendamento" :
+            undefined
+          }
+          title={`Mensagem — ${composeAgend.clienteNome}`}
+        />
+      )}
+      </>
     );
   };
 

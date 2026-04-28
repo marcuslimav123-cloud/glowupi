@@ -39,6 +39,7 @@ export * from "./anamnese";
 export * from "./bandeiras";
 export * from "./remuneracoes";
 export * from "./mensagensPadrao";
+export * from "./mensagensSugeridas";
 export * from "./pesquisaSatisfacao";
 export * from "./rodizio";
 export * from "./documentos";

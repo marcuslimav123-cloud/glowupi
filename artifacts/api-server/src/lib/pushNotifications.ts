@@ -480,9 +480,13 @@ export async function sendClienteAgendamentoReminders(): Promise<void> {
 
       const barbeariaIds = [...new Set(agendamentos.map(a => a.barbeariaId))];
       const barbeariaParams: Record<number, Record<string, string>> = {};
+      const barbeariaModoHumano: Record<number, boolean> = {};
       for (const bid of barbeariaIds) {
         try {
           barbeariaParams[bid] = await getParametros(bid);
+          const [b] = await db.select({ modoHumano: barbeariasTable.modoHumano })
+            .from(barbeariasTable).where(eq(barbeariasTable.id, bid)).limit(1);
+          barbeariaModoHumano[bid] = !!b?.modoHumano;
         } catch {}
       }
 
@@ -492,6 +496,26 @@ export async function sendClienteAgendamentoReminders(): Promise<void> {
 
         const params = barbeariaParams[agend.barbeariaId] || {};
         if (params[interval.paramKey] !== "Sim") continue;
+
+        if (barbeariaModoHumano[agend.barbeariaId]) {
+          sentClientReminders.add(reminderKey);
+          try {
+            const { criarSugerida } = await import("./mensagensSugeridas.js");
+            await criarSugerida({
+              barbeariaId: agend.barbeariaId,
+              tipo: "lembrete",
+              agendamentoId: agend.id,
+              clienteId: agend.clienteId ?? null,
+              contexto: { intervalo: interval.label, servico: agend.servicoNome, profissional: agend.profissionalNome, data: agend.data, hora: agend.horaInicio },
+              dedupeKey: `lembrete:${agend.barbeariaId}:${agend.id}:${interval.label}`,
+              fallbackTexto: `Olá ${agend.clienteNome}! Lembrando do seu horário de ${agend.servicoNome} com ${agend.profissionalNome} em ${agend.data} às ${agend.horaInicio}.`,
+              categoriaPreferida: "lembrete",
+            });
+          } catch (e) {
+            console.error("[Push] sugerida lembrete error:", e);
+          }
+          continue;
+        }
 
         if (!agend.clienteId) continue;
 

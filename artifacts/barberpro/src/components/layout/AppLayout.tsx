@@ -49,6 +49,7 @@ import {
   ShieldAlert,
   Search,
   Inbox,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SafeLogoImage } from "@/components/SafeLogoImage";
@@ -235,6 +236,7 @@ const NAV_ITEMS: NavItem[] = [
           { name: "Avaliações", href: "/avaliacoes", icon: Star },
           { name: "Lista de Restrições", href: "/configuracoes/restricoes", icon: ShieldAlert },
           { name: "Funcionamento", href: "/configuracoes/funcionamento", icon: Clock },
+          { name: "Comunicação", href: "/configuracoes/comunicacao", icon: MessageCircle },
           { name: "Alertas", href: "/configuracoes/alertas", icon: Bell },
         ],
       },
@@ -555,6 +557,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     refetchInterval: 30000,
   });
 
+  const { data: sugeridasCount } = useQuery<{ count: number }>({
+    queryKey: ["mensagens-sugeridas-count", barbeariaId],
+    queryFn: async () => {
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/mensagens-sugeridas/count`), {
+        credentials: "include",
+      });
+      if (!res.ok) return { count: 0 };
+      return res.json();
+    },
+    enabled: !!barbeariaId && !!user,
+    refetchInterval: 30000,
+  });
+
   const prevPendentesCountRef = React.useRef<number>(0);
   const { data: pendentesCount } = useQuery<{ count: number }>({
     queryKey: ["agendamentos-pendentes-count", barbeariaId],
@@ -860,7 +875,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     location={location}
                     onNavigate={handleNavClick}
                     mainRef={mainContentRef}
-                    badgeCounts={{ "/comunicacao/inbox": inboxCount?.count || 0 }}
+                    badgeCounts={{ "/comunicacao/inbox": (inboxCount?.count || 0) + (sugeridasCount?.count || 0) }}
                   />
                 ) : (
                   <Link href={item.href!} className={cn(

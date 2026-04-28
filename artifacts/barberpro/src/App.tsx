@@ -102,6 +102,7 @@ const DocumentosClientePage = React.lazy(() => import("@/pages/configuracoes/Doc
 const DocumentosProfissionalPage = React.lazy(() => import("@/pages/configuracoes/Documentos").then(m => ({ default: m.DocumentosProfissionalPage })));
 const RestricaoCliente = React.lazy(() => import("@/pages/configuracoes/RestricaoCliente"));
 const Funcionamento = React.lazy(() => import("@/pages/configuracoes/Funcionamento"));
+const ConfiguracoesComunicacao = React.lazy(() => import("@/pages/configuracoes/Comunicacao"));
 
 const AdminLogin = React.lazy(() => import("@/pages/admin/AdminLogin"));
 const AdminDashboard = React.lazy(() => import("@/pages/admin/AdminDashboard"));
@@ -230,6 +231,7 @@ function Router() {
       <Route path="/configuracoes/documentos-profissionais" component={DocumentosProfissionalPage} />
       <Route path="/configuracoes/restricoes" component={RestricaoCliente} />
       <Route path="/configuracoes/funcionamento" component={Funcionamento} />
+      <Route path="/configuracoes/comunicacao" component={ConfiguracoesComunicacao} />
 
       <Route path="/menu" component={MenuPage} />
       <Route path="/empresa" component={Empresa} />
