@@ -27,5 +27,8 @@ export interface Agendamento {
   observacao?: string | null;
   aniversario: boolean;
   vip: boolean;
+  encaixe?: boolean | null;
+  pacoteClienteId?: number | null;
+  atendimentoId?: number | null;
   createdAt?: string;
 }

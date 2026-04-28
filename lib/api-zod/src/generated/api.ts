@@ -609,6 +609,9 @@ export const ListAgendamentosResponseItem = zod.object({
   observacao: zod.string().nullish(),
   aniversario: zod.boolean(),
   vip: zod.boolean(),
+  encaixe: zod.boolean().nullish(),
+  pacoteClienteId: zod.number().nullish(),
+  atendimentoId: zod.number().nullish(),
   createdAt: zod.string().optional(),
 });
 export const ListAgendamentosResponse = zod.array(ListAgendamentosResponseItem);
@@ -667,6 +670,9 @@ export const GetAgendamentoResponse = zod.object({
   observacao: zod.string().nullish(),
   aniversario: zod.boolean(),
   vip: zod.boolean(),
+  encaixe: zod.boolean().nullish(),
+  pacoteClienteId: zod.number().nullish(),
+  atendimentoId: zod.number().nullish(),
   createdAt: zod.string().optional(),
 });
 
@@ -715,6 +721,9 @@ export const UpdateAgendamentoResponse = zod.object({
   observacao: zod.string().nullish(),
   aniversario: zod.boolean(),
   vip: zod.boolean(),
+  encaixe: zod.boolean().nullish(),
+  pacoteClienteId: zod.number().nullish(),
+  atendimentoId: zod.number().nullish(),
   createdAt: zod.string().optional(),
 });
 
@@ -1337,6 +1346,107 @@ export const UsarSessaoPacoteResponse = zod.object({
   dataCompra: zod.string().optional(),
   dataValidade: zod.string().nullish(),
   pacoteNome: zod.string().optional(),
+});
+
+/**
+ * @summary Schedule all sessions of a sold package at once
+ */
+export const AgendarPacoteClienteParams = zod.object({
+  barbeariaId: zod.coerce.number(),
+  pacoteClienteId: zod.coerce.number(),
+});
+
+export const AgendarPacoteClienteBody = zod.object({
+  itens: zod.array(
+    zod.object({
+      servicoId: zod.number(),
+      profissionalId: zod.number(),
+      data: zod.string(),
+      horaInicio: zod.string(),
+      observacao: zod.string().nullish(),
+    }),
+  ),
+});
+
+/**
+ * @summary Create a multi-professional simultaneous attendance
+ */
+export const CreateAtendimentoParams = zod.object({
+  barbeariaId: zod.coerce.number(),
+});
+
+export const CreateAtendimentoBody = zod.object({
+  clienteId: zod.number().nullish(),
+  clienteNome: zod.string(),
+  clienteTelefone: zod.string().nullish(),
+  data: zod.string(),
+  horaInicio: zod.string(),
+  observacao: zod.string().nullish(),
+  encaixe: zod.boolean().nullish(),
+  pacoteClienteId: zod.number().nullish(),
+  itens: zod.array(
+    zod.object({
+      servicoId: zod.number(),
+      profissionalId: zod.number(),
+      observacao: zod.string().nullish(),
+    }),
+  ),
+});
+
+/**
+ * @summary Get attendance with all linked appointments
+ */
+export const GetAtendimentoParams = zod.object({
+  barbeariaId: zod.coerce.number(),
+  atendimentoId: zod.coerce.number(),
+});
+
+export const GetAtendimentoResponse = zod.object({
+  atendimento: zod.object({
+    id: zod.number(),
+    barbeariaId: zod.number(),
+    clienteId: zod.number().nullish(),
+    clienteNome: zod.string(),
+    clienteTelefone: zod.string(),
+    data: zod.string(),
+    horaInicio: zod.string(),
+    observacao: zod.string().nullish(),
+    pacoteClienteId: zod.number().nullish(),
+    createdAt: zod.string().optional(),
+  }),
+  agendamentos: zod.array(
+    zod.object({
+      id: zod.number(),
+      barbeariaId: zod.number(),
+      clienteId: zod.number().nullish(),
+      clienteNome: zod.string(),
+      clienteTelefone: zod.string(),
+      profissionalId: zod.number(),
+      profissionalNome: zod.string(),
+      servicoId: zod.number(),
+      servicoNome: zod.string(),
+      data: zod.string(),
+      horaInicio: zod.string(),
+      horaFim: zod.string(),
+      status: zod.enum([
+        "confirmado",
+        "pago",
+        "cancelado",
+        "nao_compareceu",
+        "bloqueio",
+      ]),
+      valor: zod.number(),
+      pago: zod.boolean(),
+      semPreferencia: zod.boolean(),
+      observacao: zod.string().nullish(),
+      aniversario: zod.boolean(),
+      vip: zod.boolean(),
+      encaixe: zod.boolean().nullish(),
+      pacoteClienteId: zod.number().nullish(),
+      atendimentoId: zod.number().nullish(),
+      createdAt: zod.string().optional(),
+    }),
+  ),
 });
 
 /**

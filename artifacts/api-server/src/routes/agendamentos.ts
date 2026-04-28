@@ -651,7 +651,21 @@ router.delete("/:agendamentoId", requireAuth, async (req, res) => {
     }
   }
 
-  await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId)));
+  await db.transaction(async (tx) => {
+    await tx.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId)));
+
+    // Refund pacote session if applicable (idempotent: only when leaving an active state)
+    if (agend.pacoteClienteId && (agend.status === "confirmado" || agend.status === "pendente_aprovacao" || agend.status === "pago")) {
+      const [pc] = await tx.select().from(pacotesClienteTable).where(eq(pacotesClienteTable.id, agend.pacoteClienteId)).limit(1);
+      if (pc && pc.sessoesUsadas > 0) {
+        const novasUsadas = pc.sessoesUsadas - 1;
+        const novoStatus = pc.status === "concluido" ? "ativo" : pc.status;
+        await tx.update(pacotesClienteTable)
+          .set({ sessoesUsadas: novasUsadas, status: novoStatus })
+          .where(eq(pacotesClienteTable.id, pc.id));
+      }
+    }
+  });
 
   notificarAgendamento(barbeariaId, params, {
     clienteNome: agend.clienteNome,
@@ -694,16 +708,37 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
   const [agend] = await db.select().from(agendamentosTable).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId))).limit(1);
   if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
 
-  const comandasExistentes = await db.select({ id: comandasTable.id, status: comandasTable.status }).from(comandasTable).where(
-    and(eq(comandasTable.barbeariaId, barbeariaId), eq(comandasTable.agendamentoId, id))
+  // Atendimento conjunto: load siblings of the same atendimento_id (active only)
+  const atendimentoSiblings = agend.atendimentoId
+    ? await db.select().from(agendamentosTable).where(
+        and(
+          eq(agendamentosTable.barbeariaId, barbeariaId),
+          eq(agendamentosTable.atendimentoId, agend.atendimentoId),
+          inArray(agendamentosTable.status, ["confirmado", "pendente_aprovacao"]),
+        )
+      )
+    : [];
+  const siblingIds = atendimentoSiblings.filter(s => s.id !== id).map(s => s.id);
+
+  // Block if THIS or ANY sibling already has an active/paid comanda — keeps the conjunto in one comanda.
+  const idsToCheck = [id, ...siblingIds];
+  const comandasExistentes = await db.select({ id: comandasTable.id, status: comandasTable.status, agendamentoId: comandasTable.agendamentoId }).from(comandasTable).where(
+    and(eq(comandasTable.barbeariaId, barbeariaId), inArray(comandasTable.agendamentoId, idsToCheck))
   );
   const comandaAtiva = comandasExistentes.find(c => c.status === "aberta" || c.status === "ativa" || c.status === "paga" || c.status === "fechada");
   if (comandaAtiva) {
-    return res.status(409).json({ error: "Este agendamento já possui comanda ativa ou paga", comandaId: comandaAtiva.id, status: comandaAtiva.status });
+    const isSelf = comandaAtiva.agendamentoId === id;
+    return res.status(409).json({
+      error: isSelf
+        ? "Este agendamento já possui comanda ativa ou paga"
+        : "Outro item deste atendimento conjunto já possui comanda ativa ou paga",
+      comandaId: comandaAtiva.id,
+      status: comandaAtiva.status,
+    });
   }
 
   const [profissional] = await db.select().from(profissionaisTable).where(eq(profissionaisTable.id, agend.profissionalId)).limit(1);
-  const { produtosAdicionais = [], servicosAdicionais = [], pagamentos, observacao, desconto: rawDesconto = 0, descontoTipo = "valor", parcelas: rawParcelas = 1, gorjeta, tipoComanda: rawTipoComanda, valorTotalOverride, cupomId: rawCupomId } = req.body;
+  const { produtosAdicionais = [], servicosAdicionais: clientServicosAdicionais = [], pagamentos, observacao, desconto: rawDesconto = 0, descontoTipo = "valor", parcelas: rawParcelas = 1, gorjeta, tipoComanda: rawTipoComanda, valorTotalOverride, cupomId: rawCupomId } = req.body;
 
   let cupomVinculado: { id: number; codigo: string } | null = null;
   if (rawCupomId !== undefined && rawCupomId !== null && rawCupomId !== "") {
@@ -725,6 +760,17 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
       cupomVinculado = { id: cupRow.id, codigo: cupRow.codigo };
     }
   }
+
+  // Auto-merge siblings into servicosAdicionais (if not already passed by the client),
+  // so a single comanda consolidates all services of the atendimento conjunto.
+  const clientPassedServicoIds = new Set(
+    (Array.isArray(clientServicosAdicionais) ? clientServicosAdicionais : []).map((s: any) => `${s.servicoId}:${s.profissionalId ?? ""}`)
+  );
+  const autoSiblings = atendimentoSiblings
+    .filter(s => s.id !== id)
+    .filter(s => !clientPassedServicoIds.has(`${s.servicoId}:${s.profissionalId}`))
+    .map(s => ({ servicoId: s.servicoId, profissionalId: s.profissionalId, _siblingAgendamentoId: s.id }));
+  const servicosAdicionais = [...(Array.isArray(clientServicosAdicionais) ? clientServicosAdicionais : []), ...autoSiblings];
 
   if (Array.isArray(produtosAdicionais)) {
     for (const p of produtosAdicionais) {
@@ -977,6 +1023,14 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
       await tx.update(cuponsTable)
         .set({ usoAtual: sql`${cuponsTable.usoAtual} + 1` })
         .where(and(eq(cuponsTable.id, cupomVinculado.id), eq(cuponsTable.barbeariaId, barbeariaId)));
+    }
+    if (siblingIds.length > 0) {
+      await tx.update(agendamentosTable)
+        .set({ status: "pago", pago: true, updatedAt: new Date() })
+        .where(and(
+          eq(agendamentosTable.barbeariaId, barbeariaId),
+          inArray(agendamentosTable.id, siblingIds),
+        ));
     }
     if (agend.clienteId) {
       const [cli] = await tx.select().from(clientesTable).where(eq(clientesTable.id, agend.clienteId)).limit(1);

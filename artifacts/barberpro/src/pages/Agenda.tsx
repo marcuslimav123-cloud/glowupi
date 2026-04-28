@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   useListAgendamentos, useListProfissionais, useListServicos,
   useCreateAgendamento, useUpdateAgendamento, useCheckoutAgendamento,
-  useListClientes
+  useListClientes, useCreateAtendimento
 } from "@workspace/api-client-react";
 import { useApiList } from "@/hooks/useCrudApi";
 import { generateTimeSlots, formatCurrency, apiUrl, formatPhone } from "@/lib/utils";
@@ -42,7 +42,11 @@ type Agendamento = {
   vip: boolean;
   encaixe?: boolean;
   observacao: string | null;
+  atendimentoId?: number | null;
+  pacoteClienteId?: number | null;
 };
+
+type ExtraItem = { servicoId: string; profissionalId: string };
 
 type Bloqueio = {
   id: number;
@@ -194,6 +198,7 @@ export default function Agenda() {
   const [formHora, setFormHora] = useState("");
   const [formObs, setFormObs] = useState("");
   const [useNewClient, setUseNewClient] = useState(false);
+  const [extraItems, setExtraItems] = useState<ExtraItem[]>([]);
 
   const [blockProfId, setBlockProfId] = useState("");
   const [blockHoraInicio, setBlockHoraInicio] = useState("");
@@ -236,6 +241,7 @@ export default function Agenda() {
   const { data: agendamentos = [], refetch } = useListAgendamentos(barbeariaId!, dateRangeParams, { query: { enabled: !!barbeariaId } });
 
   const createMutation = useCreateAgendamento();
+  const createAtendimentoMutation = useCreateAtendimento();
   const updateMutation = useUpdateAgendamento();
   const checkoutMutation = useCheckoutAgendamento();
 
@@ -341,7 +347,7 @@ export default function Agenda() {
     setFormNome(""); setFormTelefone(""); setFormProfId("");
     setFormServId(""); setFormHora(""); setFormObs("");
     setNewStep("client"); setSelectedClientId(null); setClientSearch("");
-    setUseNewClient(false);
+    setUseNewClient(false); setExtraItems([]);
   };
 
   const handleCreate = async (e: React.FormEvent, encaixe = false) => {
@@ -350,28 +356,54 @@ export default function Agenda() {
       toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
       return;
     }
+    const validExtras = extraItems.filter(it => it.servicoId && it.profissionalId);
+    if (extraItems.length > 0 && validExtras.length !== extraItems.length) {
+      toast({ title: "Preencha serviço e profissional em cada item adicional", variant: "destructive" });
+      return;
+    }
     try {
-      await createMutation.mutateAsync({
-        barbeariaId: barbeariaId!,
-        data: {
-          clienteId: selectedClientId || undefined,
-          clienteNome: formNome,
-          clienteTelefone: formTelefone,
-          profissionalId: Number(formProfId),
-          servicoId: Number(formServId),
-          data: date,
-          horaInicio: formHora,
-          observacao: formObs || undefined,
-          encaixe: encaixe || undefined,
-        },
-      });
-      toast({ title: encaixe ? "Encaixe realizado!" : "Agendado com sucesso!" });
+      if (validExtras.length === 0) {
+        await createMutation.mutateAsync({
+          barbeariaId: barbeariaId!,
+          data: {
+            clienteId: selectedClientId || undefined,
+            clienteNome: formNome,
+            clienteTelefone: formTelefone,
+            profissionalId: Number(formProfId),
+            servicoId: Number(formServId),
+            data: date,
+            horaInicio: formHora,
+            observacao: formObs || undefined,
+            encaixe: encaixe || undefined,
+          },
+        });
+        toast({ title: encaixe ? "Encaixe realizado!" : "Agendado com sucesso!" });
+      } else {
+        const itens = [
+          { servicoId: Number(formServId), profissionalId: Number(formProfId) },
+          ...validExtras.map(it => ({ servicoId: Number(it.servicoId), profissionalId: Number(it.profissionalId) })),
+        ];
+        await createAtendimentoMutation.mutateAsync({
+          barbeariaId: barbeariaId!,
+          data: {
+            clienteId: selectedClientId ?? undefined,
+            clienteNome: formNome,
+            clienteTelefone: formTelefone || null,
+            data: date,
+            horaInicio: formHora,
+            observacao: formObs || null,
+            encaixe: encaixe || null,
+            itens,
+          },
+        });
+        toast({ title: `Atendimento conjunto criado (${itens.length} serviços)` });
+      }
       setIsNewOpen(false);
       setIsEncaixeOpen(false);
       resetForm();
       refetch();
     } catch (err: any) {
-      const msg = err?.response?.data?.error || err?.message || "Tente novamente.";
+      const msg = err?.response?.data?.error || err?.data?.error || err?.message || "Tente novamente.";
       toast({ title: "Erro ao agendar", description: msg, variant: "destructive" });
     }
   };
@@ -786,10 +818,20 @@ export default function Agenda() {
                   {dayAgends.filter(a => a.profissionalId === prof.id).map(agend => (
                     <div
                       key={agend.id}
-                      className={`absolute left-0.5 right-0.5 rounded-lg border p-1.5 text-[10px] shadow-sm cursor-pointer z-10 flex flex-col justify-between group hover:shadow-md transition-all ${getStatusColor(agend.status, agend.encaixe)}`}
+                      className={`absolute left-0.5 right-0.5 rounded-lg border p-1.5 text-[10px] shadow-sm cursor-pointer z-10 flex flex-col justify-between group hover:shadow-md transition-all ${getStatusColor(agend.status, agend.encaixe)} ${agend.atendimentoId ? "ring-2 ring-purple-400/60 ring-offset-0" : ""}`}
                       style={{ top: `${getSlotTop(agend)}px`, height: `${getSlotHeight(agend)}px` }}
                       onClick={() => setDetailAgend(agend)}
+                      data-testid={`bloco-agendamento-${agend.id}`}
                     >
+                      {agend.atendimentoId && (
+                        <span
+                          className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-purple-500 text-white text-[8px] font-bold shadow z-20"
+                          title="Atendimento conjunto"
+                          data-testid={`badge-conjunto-bloco-${agend.id}`}
+                        >
+                          <Users className="h-2.5 w-2.5" />
+                        </span>
+                      )}
                       <div className="flex items-start justify-between gap-1">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-0.5">
@@ -890,11 +932,14 @@ export default function Agenda() {
                       return (
                         <div
                           key={agend.id}
-                          className={`absolute left-0.5 right-0.5 rounded-md border p-1 text-[9px] shadow-sm cursor-pointer z-10 hover:shadow-md transition-all ${getStatusColor(agend.status, agend.encaixe)}`}
+                          className={`absolute left-0.5 right-0.5 rounded-md border p-1 text-[9px] shadow-sm cursor-pointer z-10 hover:shadow-md transition-all ${getStatusColor(agend.status, agend.encaixe)} ${agend.atendimentoId ? "ring-2 ring-purple-400/60" : ""}`}
                           style={{ top: `${idx * 48 + 1}px`, height: `${slots * 48 - 2}px` }}
                           onClick={() => { setDate(wd); setViewMode("dia"); }}
-                          title={`${agend.clienteNome} - ${agend.servicoNome}`}
+                          title={`${agend.clienteNome} - ${agend.servicoNome}${agend.atendimentoId ? " (Atendimento conjunto)" : ""}`}
                         >
+                          {agend.atendimentoId && (
+                            <Users className="h-2.5 w-2.5 absolute top-0.5 right-0.5 text-purple-500" />
+                          )}
                           <p className="font-semibold truncate">{agend.clienteNome}</p>
                           <p className="truncate opacity-70">{agend.horaInicio.slice(0,5)}</p>
                         </div>
@@ -1160,6 +1205,57 @@ export default function Agenda() {
                 {formProfId && <div className="flex justify-between"><span className="text-muted-foreground">Profissional</span><span className="font-medium">{(profissionais as any[]).find((p: any) => String(p.id) === formProfId)?.nomeExibicao}</span></div>}
               </div>
 
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Itens adicionais (atendimento conjunto)</Label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[11px]"
+                    onClick={() => setExtraItems(prev => [...prev, { servicoId: "", profissionalId: "" }])}
+                    data-testid="btn-adicionar-item"
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> Adicionar serviço
+                  </Button>
+                </div>
+                {extraItems.map((it, idx) => (
+                  <div key={idx} className="rounded-lg border border-border p-2 space-y-1.5 bg-muted/20">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-muted-foreground">Item extra #{idx + 1}</span>
+                      <button
+                        type="button"
+                        className="text-[11px] text-destructive hover:underline"
+                        onClick={() => setExtraItems(prev => prev.filter((_, i) => i !== idx))}
+                      >
+                        Remover
+                      </button>
+                    </div>
+                    <Select value={it.servicoId} onValueChange={v => setExtraItems(prev => prev.map((p, i) => i === idx ? { ...p, servicoId: v } : p))}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Serviço" /></SelectTrigger>
+                      <SelectContent>
+                        {(servicos as any[]).filter((s: any) => s.ativo !== false).map((s: any) => (
+                          <SelectItem key={s.id} value={String(s.id)}>{s.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={it.profissionalId} onValueChange={v => setExtraItems(prev => prev.map((p, i) => i === idx ? { ...p, profissionalId: v } : p))}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Profissional" /></SelectTrigger>
+                      <SelectContent>
+                        {(profissionais as any[]).filter((p: any) => p.ativo !== false).map((p: any) => (
+                          <SelectItem key={p.id} value={String(p.id)}>{p.apelido || p.nomeExibicao}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+                {extraItems.length > 0 && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Todos os itens iniciam no mesmo horário (cada profissional ocupa o seu próprio slot).
+                  </p>
+                )}
+              </div>
+
               <div className="space-y-1.5">
                 <Label className="text-xs">Horário *</Label>
                 <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5 max-h-[180px] overflow-y-auto">
@@ -1182,8 +1278,14 @@ export default function Agenda() {
                 <Input value={formObs} onChange={e => setFormObs(e.target.value)} placeholder="Ex: Trazer foto de referência" className="bg-background h-9 text-sm" />
               </div>
 
-              <Button type="submit" className="w-full h-10 text-sm font-medium" disabled={!formHora || createMutation.isPending}>
-                {createMutation.isPending ? "Agendando..." : isEncaixe ? "Confirmar Encaixe" : "Confirmar Agendamento"}
+              <Button type="submit" className="w-full h-10 text-sm font-medium" disabled={!formHora || createMutation.isPending || createAtendimentoMutation.isPending}>
+                {createMutation.isPending || createAtendimentoMutation.isPending
+                  ? "Agendando..."
+                  : isEncaixe
+                    ? "Confirmar Encaixe"
+                    : extraItems.length > 0
+                      ? `Confirmar Atendimento Conjunto (${extraItems.length + 1} itens)`
+                      : "Confirmar Agendamento"}
               </Button>
             </form>
           )}
@@ -1205,11 +1307,48 @@ export default function Agenda() {
           </DialogHeader>
 
           <div className="space-y-3 mt-1">
-            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(detailAgend.status, detailAgend.encaixe)}`}>
-              {detailAgend.encaixe && <Zap className="h-3 w-3" />}
-              {getStatusLabel(detailAgend.status)}
-              {detailAgend.encaixe && " (Encaixe)"}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(detailAgend.status, detailAgend.encaixe)}`}>
+                {detailAgend.encaixe && <Zap className="h-3 w-3" />}
+                {getStatusLabel(detailAgend.status)}
+                {detailAgend.encaixe && " (Encaixe)"}
+              </div>
+              {detailAgend.atendimentoId && (
+                <span
+                  className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/40"
+                  data-testid="badge-atendimento-conjunto"
+                >
+                  <Users className="h-3 w-3" /> Atendimento conjunto
+                </span>
+              )}
+              {detailAgend.pacoteClienteId && (
+                <span className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/40">
+                  Pacote
+                </span>
+              )}
             </div>
+
+            {detailAgend.atendimentoId && (() => {
+              const siblings = (agendamentos as any[]).filter(
+                (a: any) => a.atendimentoId === detailAgend.atendimentoId && a.id !== detailAgend.id
+              );
+              if (siblings.length === 0) return null;
+              return (
+                <div className="rounded-xl border border-purple-200 bg-purple-50/50 dark:border-purple-500/30 dark:bg-purple-500/10 p-2.5 space-y-1.5">
+                  <p className="text-[11px] font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-1">
+                    <Users className="h-3 w-3" /> Outros itens deste atendimento ({siblings.length})
+                  </p>
+                  <div className="space-y-1">
+                    {siblings.map((s: any) => (
+                      <div key={s.id} className="flex justify-between text-[11px] text-foreground">
+                        <span>{s.servicoNome} — {s.profissionalNome}</span>
+                        <span className="text-muted-foreground">{s.horaInicio}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-2 text-sm">
               <div className="flex justify-between">

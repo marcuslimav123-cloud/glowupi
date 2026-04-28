@@ -33,6 +33,8 @@ tags:
     description: Financial accounts management
   - name: pacotes
     description: Service packages
+  - name: atendimentos
+    description: Multi-professional simultaneous attendances
   - name: avaliacoes
     description: Satisfaction surveys
   - name: listaEspera
@@ -1227,6 +1229,85 @@ paths:
               schema:
                 $ref: "#/components/schemas/PacoteCliente"
 
+  /barbearias/{barbeariaId}/pacotes-cliente/{pacoteClienteId}/agendar:
+    post:
+      operationId: agendarPacoteCliente
+      tags: [pacotes]
+      summary: Schedule all sessions of a sold package at once
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: pacoteClienteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgendarPacoteInput"
+      responses:
+        "201":
+          description: Sessions scheduled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgendarPacoteResponse"
+
+  /barbearias/{barbeariaId}/atendimentos:
+    post:
+      operationId: createAtendimento
+      tags: [atendimentos]
+      summary: Create a multi-professional simultaneous attendance
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAtendimentoInput"
+      responses:
+        "201":
+          description: Attendance created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AtendimentoResponse"
+
+  /barbearias/{barbeariaId}/atendimentos/{atendimentoId}:
+    get:
+      operationId: getAtendimento
+      tags: [atendimentos]
+      summary: Get attendance with all linked appointments
+      parameters:
+        - name: barbeariaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: atendimentoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Attendance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AtendimentoResponse"
+
   /barbearias/{barbeariaId}/avaliacoes:
     get:
       operationId: listAvaliacoes
@@ -2273,6 +2354,15 @@ components:
           type: boolean
         vip:
           type: boolean
+        encaixe:
+          type: boolean
+          nullable: true
+        pacoteClienteId:
+          type: integer
+          nullable: true
+        atendimentoId:
+          type: integer
+          nullable: true
         createdAt:
           type: string
       required:
@@ -2914,6 +3004,133 @@ components:
         clienteNome:
           type: string
       required: [pacoteId, clienteNome]
+
+    AgendarPacoteItem:
+      type: object
+      properties:
+        servicoId:
+          type: integer
+        profissionalId:
+          type: integer
+        data:
+          type: string
+        horaInicio:
+          type: string
+        observacao:
+          type: string
+          nullable: true
+      required: [servicoId, profissionalId, data, horaInicio]
+
+    AgendarPacoteInput:
+      type: object
+      properties:
+        itens:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgendarPacoteItem"
+      required: [itens]
+
+    AgendarPacoteResponse:
+      type: object
+      properties:
+        pacoteCliente:
+          $ref: "#/components/schemas/PacoteCliente"
+        agendamentos:
+          type: array
+          items:
+            $ref: "#/components/schemas/Agendamento"
+      required: [pacoteCliente, agendamentos]
+
+    AtendimentoItemInput:
+      type: object
+      properties:
+        servicoId:
+          type: integer
+        profissionalId:
+          type: integer
+        observacao:
+          type: string
+          nullable: true
+      required: [servicoId, profissionalId]
+
+    CreateAtendimentoInput:
+      type: object
+      properties:
+        clienteId:
+          type: integer
+          nullable: true
+        clienteNome:
+          type: string
+        clienteTelefone:
+          type: string
+          nullable: true
+        data:
+          type: string
+        horaInicio:
+          type: string
+        observacao:
+          type: string
+          nullable: true
+        encaixe:
+          type: boolean
+          nullable: true
+        pacoteClienteId:
+          type: integer
+          nullable: true
+        itens:
+          type: array
+          items:
+            $ref: "#/components/schemas/AtendimentoItemInput"
+      required:
+        - clienteNome
+        - data
+        - horaInicio
+        - itens
+
+    Atendimento:
+      type: object
+      properties:
+        id:
+          type: integer
+        barbeariaId:
+          type: integer
+        clienteId:
+          type: integer
+          nullable: true
+        clienteNome:
+          type: string
+        clienteTelefone:
+          type: string
+        data:
+          type: string
+        horaInicio:
+          type: string
+        observacao:
+          type: string
+          nullable: true
+        pacoteClienteId:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - barbeariaId
+        - clienteNome
+        - clienteTelefone
+        - data
+        - horaInicio
+
+    AtendimentoResponse:
+      type: object
+      properties:
+        atendimento:
+          $ref: "#/components/schemas/Atendimento"
+        agendamentos:
+          type: array
+          items:
+            $ref: "#/components/schemas/Agendamento"
+      required: [atendimento, agendamentos]
 
     Avaliacao:
       type: object

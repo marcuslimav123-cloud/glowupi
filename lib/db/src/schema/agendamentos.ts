@@ -30,6 +30,7 @@ export const agendamentosTable = pgTable("agendamentos", {
   vip: boolean("vip").notNull().default(false),
   encaixe: boolean("encaixe").notNull().default(false),
   pacoteClienteId: integer("pacote_cliente_id"),
+  atendimentoId: integer("atendimento_id"),
   origem: text("origem").default("manual"),
   sinalStatus: text("sinal_status").notNull().default("nao_aplicavel"),
   sinalValorDevido: numeric("sinal_valor_devido", { precision: 10, scale: 2 }).notNull().default("0"),

@@ -5,6 +5,7 @@ export * from "./profissionais";
 export * from "./servicos";
 export * from "./clientes";
 export * from "./agendamentos";
+export * from "./atendimentos";
 export * from "./comandas";
 export * from "./produtos";
 export * from "./contasFinanceiras";

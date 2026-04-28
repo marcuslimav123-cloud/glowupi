@@ -8,9 +8,15 @@
 
 export * from "./agendamento";
 export * from "./agendamentoStatus";
+export * from "./agendarPacoteInput";
+export * from "./agendarPacoteItem";
+export * from "./agendarPacoteResponse";
 export * from "./alerta";
 export * from "./alertaNivel";
 export * from "./alertaTipo";
+export * from "./atendimento";
+export * from "./atendimentoItemInput";
+export * from "./atendimentoResponse";
 export * from "./authResponse";
 export * from "./avaliacao";
 export * from "./avaliacaoInput";
@@ -25,6 +31,7 @@ export * from "./comissaoProfissional";
 export * from "./contaFinanceira";
 export * from "./contaFinanceiraInput";
 export * from "./createAgendamentoInput";
+export * from "./createAtendimentoInput";
 export * from "./createBarbeariaInput";
 export * from "./createClienteInput";
 export * from "./createProdutoInput";

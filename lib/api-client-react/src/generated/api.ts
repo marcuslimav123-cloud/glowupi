@@ -18,6 +18,9 @@ import type {
 
 import type {
   Agendamento,
+  AgendarPacoteInput,
+  AgendarPacoteResponse,
+  AtendimentoResponse,
   AuthResponse,
   Avaliacao,
   AvaliacaoInput,
@@ -29,6 +32,7 @@ import type {
   ContaFinanceira,
   ContaFinanceiraInput,
   CreateAgendamentoInput,
+  CreateAtendimentoInput,
   CreateBarbeariaInput,
   CreateClienteInput,
   CreateProdutoInput,
@@ -4764,6 +4768,323 @@ export const useUsarSessaoPacote = <
 > => {
   return useMutation(getUsarSessaoPacoteMutationOptions(options));
 };
+
+/**
+ * @summary Schedule all sessions of a sold package at once
+ */
+export const getAgendarPacoteClienteUrl = (
+  barbeariaId: number,
+  pacoteClienteId: number,
+) => {
+  return `/api/barbearias/${barbeariaId}/pacotes-cliente/${pacoteClienteId}/agendar`;
+};
+
+export const agendarPacoteCliente = async (
+  barbeariaId: number,
+  pacoteClienteId: number,
+  agendarPacoteInput: AgendarPacoteInput,
+  options?: RequestInit,
+): Promise<AgendarPacoteResponse> => {
+  return customFetch<AgendarPacoteResponse>(
+    getAgendarPacoteClienteUrl(barbeariaId, pacoteClienteId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(agendarPacoteInput),
+    },
+  );
+};
+
+export const getAgendarPacoteClienteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof agendarPacoteCliente>>,
+    TError,
+    {
+      barbeariaId: number;
+      pacoteClienteId: number;
+      data: BodyType<AgendarPacoteInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof agendarPacoteCliente>>,
+  TError,
+  {
+    barbeariaId: number;
+    pacoteClienteId: number;
+    data: BodyType<AgendarPacoteInput>;
+  },
+  TContext
+> => {
+  const mutationKey = ["agendarPacoteCliente"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof agendarPacoteCliente>>,
+    {
+      barbeariaId: number;
+      pacoteClienteId: number;
+      data: BodyType<AgendarPacoteInput>;
+    }
+  > = (props) => {
+    const { barbeariaId, pacoteClienteId, data } = props ?? {};
+
+    return agendarPacoteCliente(
+      barbeariaId,
+      pacoteClienteId,
+      data,
+      requestOptions,
+    );
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AgendarPacoteClienteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof agendarPacoteCliente>>
+>;
+export type AgendarPacoteClienteMutationBody = BodyType<AgendarPacoteInput>;
+export type AgendarPacoteClienteMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Schedule all sessions of a sold package at once
+ */
+export const useAgendarPacoteCliente = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof agendarPacoteCliente>>,
+    TError,
+    {
+      barbeariaId: number;
+      pacoteClienteId: number;
+      data: BodyType<AgendarPacoteInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof agendarPacoteCliente>>,
+  TError,
+  {
+    barbeariaId: number;
+    pacoteClienteId: number;
+    data: BodyType<AgendarPacoteInput>;
+  },
+  TContext
+> => {
+  return useMutation(getAgendarPacoteClienteMutationOptions(options));
+};
+
+/**
+ * @summary Create a multi-professional simultaneous attendance
+ */
+export const getCreateAtendimentoUrl = (barbeariaId: number) => {
+  return `/api/barbearias/${barbeariaId}/atendimentos`;
+};
+
+export const createAtendimento = async (
+  barbeariaId: number,
+  createAtendimentoInput: CreateAtendimentoInput,
+  options?: RequestInit,
+): Promise<AtendimentoResponse> => {
+  return customFetch<AtendimentoResponse>(
+    getCreateAtendimentoUrl(barbeariaId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(createAtendimentoInput),
+    },
+  );
+};
+
+export const getCreateAtendimentoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAtendimento>>,
+    TError,
+    { barbeariaId: number; data: BodyType<CreateAtendimentoInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createAtendimento>>,
+  TError,
+  { barbeariaId: number; data: BodyType<CreateAtendimentoInput> },
+  TContext
+> => {
+  const mutationKey = ["createAtendimento"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createAtendimento>>,
+    { barbeariaId: number; data: BodyType<CreateAtendimentoInput> }
+  > = (props) => {
+    const { barbeariaId, data } = props ?? {};
+
+    return createAtendimento(barbeariaId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateAtendimentoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createAtendimento>>
+>;
+export type CreateAtendimentoMutationBody = BodyType<CreateAtendimentoInput>;
+export type CreateAtendimentoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a multi-professional simultaneous attendance
+ */
+export const useCreateAtendimento = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAtendimento>>,
+    TError,
+    { barbeariaId: number; data: BodyType<CreateAtendimentoInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createAtendimento>>,
+  TError,
+  { barbeariaId: number; data: BodyType<CreateAtendimentoInput> },
+  TContext
+> => {
+  return useMutation(getCreateAtendimentoMutationOptions(options));
+};
+
+/**
+ * @summary Get attendance with all linked appointments
+ */
+export const getGetAtendimentoUrl = (
+  barbeariaId: number,
+  atendimentoId: number,
+) => {
+  return `/api/barbearias/${barbeariaId}/atendimentos/${atendimentoId}`;
+};
+
+export const getAtendimento = async (
+  barbeariaId: number,
+  atendimentoId: number,
+  options?: RequestInit,
+): Promise<AtendimentoResponse> => {
+  return customFetch<AtendimentoResponse>(
+    getGetAtendimentoUrl(barbeariaId, atendimentoId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetAtendimentoQueryKey = (
+  barbeariaId: number,
+  atendimentoId: number,
+) => {
+  return [
+    `/api/barbearias/${barbeariaId}/atendimentos/${atendimentoId}`,
+  ] as const;
+};
+
+export const getGetAtendimentoQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAtendimento>>,
+  TError = ErrorType<unknown>,
+>(
+  barbeariaId: number,
+  atendimentoId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAtendimento>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getGetAtendimentoQueryKey(barbeariaId, atendimentoId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAtendimento>>> = ({
+    signal,
+  }) =>
+    getAtendimento(barbeariaId, atendimentoId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(barbeariaId && atendimentoId),
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAtendimento>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAtendimentoQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAtendimento>>
+>;
+export type GetAtendimentoQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get attendance with all linked appointments
+ */
+
+export function useGetAtendimento<
+  TData = Awaited<ReturnType<typeof getAtendimento>>,
+  TError = ErrorType<unknown>,
+>(
+  barbeariaId: number,
+  atendimentoId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAtendimento>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAtendimentoQueryOptions(
+    barbeariaId,
+    atendimentoId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary List satisfaction surveys

@@ -347,6 +347,9 @@ export interface Agendamento {
   observacao?: string | null;
   aniversario: boolean;
   vip: boolean;
+  encaixe?: boolean | null;
+  pacoteClienteId?: number | null;
+  atendimentoId?: number | null;
   createdAt?: string;
 }
 
@@ -650,6 +653,59 @@ export interface VendaPacoteInput {
   pacoteId: number;
   clienteId?: number;
   clienteNome: string;
+}
+
+export interface AgendarPacoteItem {
+  servicoId: number;
+  profissionalId: number;
+  data: string;
+  horaInicio: string;
+  observacao?: string | null;
+}
+
+export interface AgendarPacoteInput {
+  itens: AgendarPacoteItem[];
+}
+
+export interface AgendarPacoteResponse {
+  pacoteCliente: PacoteCliente;
+  agendamentos: Agendamento[];
+}
+
+export interface AtendimentoItemInput {
+  servicoId: number;
+  profissionalId: number;
+  observacao?: string | null;
+}
+
+export interface CreateAtendimentoInput {
+  clienteId?: number | null;
+  clienteNome: string;
+  clienteTelefone?: string | null;
+  data: string;
+  horaInicio: string;
+  observacao?: string | null;
+  encaixe?: boolean | null;
+  pacoteClienteId?: number | null;
+  itens: AtendimentoItemInput[];
+}
+
+export interface Atendimento {
+  id: number;
+  barbeariaId: number;
+  clienteId?: number | null;
+  clienteNome: string;
+  clienteTelefone: string;
+  data: string;
+  horaInicio: string;
+  observacao?: string | null;
+  pacoteClienteId?: number | null;
+  createdAt?: string;
+}
+
+export interface AtendimentoResponse {
+  atendimento: Atendimento;
+  agendamentos: Agendamento[];
 }
 
 export interface Avaliacao {
