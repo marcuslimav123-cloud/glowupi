@@ -187,6 +187,8 @@ router.post("/", requireAuth, async (req, res) => {
     return res.status(403).json({ error: "Agendamento bloqueado para profissionais não-gestores" });
   }
 
+  const isGestor = user.role === "dono" || user.role === "gerente";
+
   const limiteFuturoDias = parseInt(params["agenda_limite_futuro_dias"] || "30");
   const dataAgend = new Date(data + "T12:00:00");
   const hoje = new Date();
@@ -196,9 +198,11 @@ router.post("/", requireAuth, async (req, res) => {
     return res.status(400).json({ error: `Agendamento não pode exceder ${limiteFuturoDias} dias no futuro` });
   }
 
-  const limitePassadoDias = parseInt(params["agenda_limite_passado"] || "7");
-  if (diffDias < 0 && Math.abs(diffDias) > limitePassadoDias) {
-    return res.status(400).json({ error: `Agendamento não pode exceder ${limitePassadoDias} dias no passado` });
+  if (!isGestor) {
+    const limitePassadoDias = parseInt(params["agenda_limite_passado"] || "7");
+    if (diffDias < 0 && Math.abs(diffDias) > limitePassadoDias) {
+      return res.status(400).json({ error: `Agendamento não pode exceder ${limitePassadoDias} dias no passado` });
+    }
   }
 
   if (user.role === "colaborador") {
@@ -240,13 +244,15 @@ router.post("/", requireAuth, async (req, res) => {
   const diffMs = agendDataObj.getTime() - agoraDate.getTime();
   const diffHoras = diffMs / (1000 * 60 * 60);
 
-  if (diffMs < 0) {
-    return res.status(400).json({ error: "Não é possível agendar em um horário que já passou" });
-  }
+  if (!isGestor) {
+    if (diffMs < 0) {
+      return res.status(400).json({ error: "Não é possível agendar em um horário que já passou" });
+    }
 
-  const limiteAntecedencia = parseInt(params["agenda_limite_antecedencia"] || "2");
-  if (diffHoras < limiteAntecedencia && diffHoras >= 0) {
-    return res.status(400).json({ error: `Agendamento requer no mínimo ${limiteAntecedencia} hora(s) de antecedência` });
+    const limiteAntecedencia = parseInt(params["agenda_limite_antecedencia"] || "2");
+    if (diffHoras < limiteAntecedencia && diffHoras >= 0) {
+      return res.status(400).json({ error: `Agendamento requer no mínimo ${limiteAntecedencia} hora(s) de antecedência` });
+    }
   }
 
   const [servico] = await db.select().from(servicosTable).where(and(eq(servicosTable.id, servicoId), eq(servicosTable.barbeariaId, barbeariaId))).limit(1);
