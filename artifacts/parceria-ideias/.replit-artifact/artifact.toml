@@ -1,0 +1,31 @@
+kind = "slides"
+previewPath = "/parceria-ideias/"
+title = "Ideias para nossa parceria"
+version = "1.0.0"
+id = "artifacts/parceria-ideias"
+router = "path"
+
+[[integratedSkills]]
+name = "slides"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/parceria-ideias/" ]
+localPort = 20786
+
+[services.development]
+run = "pnpm --filter @workspace/parceria-ideias run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/parceria-ideias", "run", "build" ]
+publicDir = "artifacts/parceria-ideias/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20786"
+BASE_PATH = "/parceria-ideias/"
