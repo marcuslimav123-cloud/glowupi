@@ -1,1 +1,50 @@
-[]
+[
+  {
+    "id": "0585b5fa-a68b-439a-aeb9-ad7c47062246",
+    "position": 1,
+    "filepath": "src/pages/slides/Slide1Capa.tsx",
+    "title": "Capa",
+    "description": "Slide de abertura: Ideias para nossa parceria.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "3961bc9c-e112-4050-a2a0-5860a059821b",
+    "position": 2,
+    "filepath": "src/pages/slides/Slide2Contexto.tsx",
+    "title": "Contexto",
+    "description": "Por que esta conversa não é um plano de execução.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "02cffeec-ccf8-49f3-8ea5-7ae87f9f83be",
+    "position": 3,
+    "filepath": "src/pages/slides/Slide3MobiEduca.tsx",
+    "title": "MobiEduca.me",
+    "description": "Caso de inspiração: vertical SaaS feito no Piauí.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "6c471781-671f-4f26-921d-a31b21dfc9bb",
+    "position": 4,
+    "filepath": "src/pages/slides/Slide4Tese.tsx",
+    "title": "A tese",
+    "description": "Vertical SaaS Regional: princípios e quatro verticais possíveis.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "cf846b30-804a-43a5-816f-a4cd56f99f5f",
+    "position": 5,
+    "filepath": "src/pages/slides/Slide5ClubeGlow.tsx",
+    "title": "ClubeGlow",
+    "description": "A ideia do cartão multi-serviço refinada como ClubeGlow.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "4a5306cb-5429-401e-b3ef-920e9ca896db",
+    "position": 6,
+    "filepath": "src/pages/slides/Slide6Fechamento.tsx",
+    "title": "Fechamento",
+    "description": "O que eu trago para essa parceria.",
+    "speakerNotes": ""
+  }
+]

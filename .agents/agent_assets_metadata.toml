@@ -18,6 +18,12 @@ uri = "file://artifacts/pitch-investidor/public/growth-abstract.png"
 type = "image"
 title = "growth abstract gold"
 
+[[generated]]
+id = "VDVGfIJcDDNhrpofPKn2M"
+uri = "file://artifacts/parceria-ideias/public/illust-strategy-conversation.png"
+type = "image"
+title = "minimalist business conversation"
+
 [[outputs]]
 id = "1cLEOM0wmAzydbwDUrYSv"
 uri = "file://exports/glow-upi-copywriting.docx"
