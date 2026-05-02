@@ -27,8 +27,9 @@ import { SkeletonList } from "@/components/Skeleton";
 import {
   apiUrl, fetchJson, formatCurrency, todayStr, dateToStr, strToDate,
   shortDateLabel, getHorizontalRange, getWeekDates, WEEKDAYS_PT, MONTHS_PT,
-  whatsappLink,
+  whatsappLink, generateTimeSlots,
 } from "@/lib/api";
+import { TextInput, KeyboardAvoidingView } from "react-native";
 
 type ViewMode = "dia" | "semana" | "mes";
 
@@ -89,6 +90,12 @@ export default function AgendaIndex() {
   const [showOnlyPendentes, setShowOnlyPendentes] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
+  const [blockOpen, setBlockOpen] = useState(false);
+  const [blockProfId, setBlockProfId] = useState<string>("");
+  const [blockHoraInicio, setBlockHoraInicio] = useState<string>("");
+  const [blockHoraFim, setBlockHoraFim] = useState<string>("");
+  const [blockMotivo, setBlockMotivo] = useState<string>("");
+  const [blockSubmitting, setBlockSubmitting] = useState(false);
 
   const horizontalDates = useMemo(() => getHorizontalRange(date, 3, 10), [date]);
   const weekDates = useMemo(() => getWeekDates(date), [date]);
@@ -216,8 +223,8 @@ export default function AgendaIndex() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.iconBtn}
-          onPress={() => router.push("/(tabs)/agenda/bloqueios")}
-          accessibilityLabel="Bloqueios"
+          onPress={() => setBlockOpen(true)}
+          accessibilityLabel="Bloquear horário"
         >
           <Feather name="lock" size={20} color={Colors.text} />
         </TouchableOpacity>
@@ -377,6 +384,123 @@ export default function AgendaIndex() {
         />
       )}
 
+      <Modal visible={blockOpen} animationType="slide" transparent onRequestClose={() => setBlockOpen(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: "#000a", justifyContent: "flex-end" }}>
+          <View style={[styles.blockSheet, { paddingBottom: 24 + insets.bottom }]}>
+            <View style={styles.blockHeader}>
+              <Text style={styles.blockTitle}>Bloquear horário</Text>
+              <TouchableOpacity onPress={() => setBlockOpen(false)} accessibilityLabel="Fechar">
+                <Feather name="x" size={22} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.blockSubtitle}>Data: {strToDate(date).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}</Text>
+
+            <View style={styles.blockField}>
+              <Text style={styles.blockLabel}>Profissional *</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.blockChips}>
+                {sortedProfs.map(p => (
+                  <TouchableOpacity
+                    key={p.id}
+                    style={[styles.blockChip, blockProfId === String(p.id) && styles.blockChipActive]}
+                    onPress={() => setBlockProfId(String(p.id))}
+                  >
+                    <Text style={[styles.blockChipText, blockProfId === String(p.id) && styles.blockChipTextActive]}>
+                      {p.apelido || p.nomeExibicao.split(" ")[0]}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <View style={[styles.blockField, { flex: 1 }]}>
+                <Text style={styles.blockLabel}>Início *</Text>
+                <TextInput
+                  style={styles.blockInput}
+                  value={blockHoraInicio}
+                  onChangeText={(v) => {
+                    const digits = v.replace(/[^\d]/g, "").slice(0, 4);
+                    const fmt = digits.length >= 3 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits;
+                    setBlockHoraInicio(fmt);
+                  }}
+                  placeholder="HH:MM"
+                  placeholderTextColor={Colors.textMuted}
+                  keyboardType="number-pad"
+                />
+              </View>
+              <View style={[styles.blockField, { flex: 1 }]}>
+                <Text style={styles.blockLabel}>Fim *</Text>
+                <TextInput
+                  style={styles.blockInput}
+                  value={blockHoraFim}
+                  onChangeText={(v) => {
+                    const digits = v.replace(/[^\d]/g, "").slice(0, 4);
+                    const fmt = digits.length >= 3 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits;
+                    setBlockHoraFim(fmt);
+                  }}
+                  placeholder="HH:MM"
+                  placeholderTextColor={Colors.textMuted}
+                  keyboardType="number-pad"
+                />
+              </View>
+            </View>
+
+            <View style={styles.blockField}>
+              <Text style={styles.blockLabel}>Motivo (opcional)</Text>
+              <TextInput
+                style={styles.blockInput}
+                value={blockMotivo}
+                onChangeText={setBlockMotivo}
+                placeholder="Almoço, folga, manutenção…"
+                placeholderTextColor={Colors.textMuted}
+              />
+            </View>
+
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, borderRadius: 12, paddingVertical: 12, alignItems: "center" }}
+                onPress={() => { setBlockOpen(false); router.push(`/(tabs)/agenda/bloqueios?date=${date}`); }}
+              >
+                <Text style={{ color: Colors.text, fontFamily: "Inter_500Medium", fontSize: 13 }}>Ver todos</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: Colors.accent, borderRadius: 12, paddingVertical: 12, alignItems: "center", opacity: blockSubmitting ? 0.5 : 1 }}
+                disabled={blockSubmitting}
+                onPress={async () => {
+                  if (!blockProfId || !/^\d{2}:\d{2}$/.test(blockHoraInicio) || !/^\d{2}:\d{2}$/.test(blockHoraFim)) {
+                    Alert.alert("Campos obrigatórios", "Selecione profissional e informe horários no formato HH:MM.");
+                    return;
+                  }
+                  if (blockHoraFim <= blockHoraInicio) {
+                    Alert.alert("Período inválido", "O fim deve ser após o início.");
+                    return;
+                  }
+                  setBlockSubmitting(true);
+                  try {
+                    await fetchJson(`/barbearias/${barbeariaId}/bloqueios`, {
+                      method: "POST",
+                      body: { profissionalId: Number(blockProfId), data: date, horaInicio: blockHoraInicio, horaFim: blockHoraFim, motivo: blockMotivo || null },
+                    });
+                    qc.invalidateQueries({ queryKey: ["agendamentos"] });
+                    qc.invalidateQueries({ queryKey: ["bloqueios"] });
+                    setBlockOpen(false);
+                    setBlockProfId(""); setBlockHoraInicio(""); setBlockHoraFim(""); setBlockMotivo("");
+                    if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  } catch (e: unknown) {
+                    const msg = e instanceof Error ? e.message : String(e);
+                    Alert.alert("Erro ao bloquear", msg || "Tente novamente.");
+                  } finally {
+                    setBlockSubmitting(false);
+                  }
+                }}
+              >
+                {blockSubmitting ? <ActivityIndicator color="#000" /> : <Text style={{ color: "#000", fontFamily: "Inter_600SemiBold", fontSize: 14 }}>Bloquear</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       <View style={[styles.fabContainer, { bottom: (Platform.OS === "web" ? 84 : 76 + insets.bottom) }]}>
         {fabOpen && (
           <View style={styles.fabMenu}>
@@ -433,7 +557,7 @@ export default function AgendaIndex() {
   );
 }
 
-function AgendamentoCard({ a, router, compact }: { a: Agendamento; router: any; compact?: boolean }) {
+function AgendamentoCard({ a, router, compact }: { a: Agendamento; router: ReturnType<typeof useRouter>; compact?: boolean }) {
   const info = statusInfo(a.status, a.encaixe);
   const phoneDigits = (a.clienteTelefone || "").replace(/\D/g, "");
   const hasWa = phoneDigits.length >= 10;
@@ -490,8 +614,9 @@ function AgendamentoCard({ a, router, compact }: { a: Agendamento; router: any; 
 }
 
 function DayTimeline(props: {
-  agendamentos: Agendamento[]; isLoading: boolean; isError: boolean; error: any;
-  refetch: () => void; refreshing: boolean; onRefresh: () => void; insets: any; router: any;
+  agendamentos: Agendamento[]; isLoading: boolean; isError: boolean; error: unknown;
+  refetch: () => void; refreshing: boolean; onRefresh: () => void; insets: { bottom: number };
+  router: ReturnType<typeof useRouter>;
   dateLabel: string;
 }) {
   const { agendamentos, isLoading, isError, error, refetch, refreshing, onRefresh, insets, router, dateLabel } = props;
@@ -563,57 +688,69 @@ function DayTimeline(props: {
 }
 
 function WeekGrid(props: {
-  agendamentos: Agendamento[]; weekDates: string[]; isLoading: boolean; isError: boolean; error: any;
-  refetch: () => void; refreshing: boolean; onRefresh: () => void; insets: any; router: any;
+  agendamentos: Agendamento[]; weekDates: string[]; isLoading: boolean; isError: boolean; error: unknown;
+  refetch: () => void; refreshing: boolean; onRefresh: () => void; insets: { bottom: number };
+  router: ReturnType<typeof useRouter>;
   onSelectDate: (d: string) => void;
 }) {
   const { agendamentos, weekDates, isLoading, isError, error, refetch, refreshing, onRefresh, insets, router, onSelectDate } = props;
   if (isLoading) return <ScrollView style={styles.list} contentContainerStyle={styles.listContent}><SkeletonList count={4} variant="card" /></ScrollView>;
   if (isError) return <ScrollView style={styles.list} contentContainerStyle={styles.listContent}><ErrorView title="Não foi possível carregar a agenda" error={error} onRetry={() => refetch()} /></ScrollView>;
+  const today = todayStr();
   return (
     <ScrollView
       style={styles.list}
-      contentContainerStyle={[styles.listContent, { paddingBottom: Platform.OS === "web" ? 140 : 110 + insets.bottom }]}
+      contentContainerStyle={{ paddingBottom: Platform.OS === "web" ? 140 : 110 + insets.bottom }}
+      horizontal={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
     >
-      {weekDates.map(d => {
-        const day = strToDate(d);
-        const items = agendamentos.filter(a => a.data === d).sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
-        const isToday = d === todayStr();
-        return (
-          <View key={d} style={styles.weekDayBlock}>
-            <TouchableOpacity onPress={() => onSelectDate(d)} style={styles.weekDayHeader}>
-              <View style={[styles.weekDayBadge, isToday && { backgroundColor: Colors.accent }]}>
-                <Text style={[styles.weekDayWeek, isToday && { color: "#000" }]}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 8 }}>
+        {weekDates.map(d => {
+          const day = strToDate(d);
+          const items = agendamentos.filter(a => a.data === d).sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
+          const isToday = d === today;
+          return (
+            <View key={d} style={styles.weekColumn}>
+              <TouchableOpacity onPress={() => onSelectDate(d)} style={[styles.weekColHeader, isToday && { backgroundColor: Colors.accent }]}>
+                <Text style={[styles.weekColWeek, isToday && { color: "#000" }]}>
                   {day.toLocaleDateString("pt-BR", { weekday: "short" }).slice(0, 3)}
                 </Text>
-                <Text style={[styles.weekDayNum, isToday && { color: "#000" }]}>{day.getDate()}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.weekDayTitle}>
-                  {day.toLocaleDateString("pt-BR", { weekday: "long" })}
+                <Text style={[styles.weekColNum, isToday && { color: "#000" }]}>{day.getDate()}</Text>
+                <Text style={[styles.weekColCount, isToday && { color: "#000" }]}>
+                  {items.length}
                 </Text>
-                <Text style={styles.weekDayCount}>
-                  {items.length === 0 ? "Sem atendimentos" : `${items.length} atendimento${items.length > 1 ? "s" : ""}`}
-                </Text>
+              </TouchableOpacity>
+              <View style={styles.weekColBody}>
+                {items.length === 0 ? (
+                  <Text style={styles.weekColEmpty}>—</Text>
+                ) : (
+                  items.map(a => {
+                    const info = statusInfo(a.status, a.encaixe);
+                    return (
+                      <TouchableOpacity
+                        key={a.id}
+                        style={[styles.weekColCard, { borderLeftColor: info.color }]}
+                        onPress={() => router.push(`/(tabs)/agenda/${a.id}`)}
+                      >
+                        <Text style={styles.weekColTime}>{a.horaInicio}</Text>
+                        <Text style={styles.weekColName} numberOfLines={1}>{a.clienteNome}</Text>
+                        <Text style={styles.weekColServ} numberOfLines={1}>{a.servicoNome}</Text>
+                      </TouchableOpacity>
+                    );
+                  })
+                )}
               </View>
-              <Feather name="chevron-right" size={18} color={Colors.textMuted} />
-            </TouchableOpacity>
-            {items.length > 0 && (
-              <View style={{ paddingLeft: 12 }}>
-                {items.map(a => <AgendamentoCard key={a.id} a={a} router={router} compact />)}
-              </View>
-            )}
-          </View>
-        );
-      })}
+            </View>
+          );
+        })}
+      </ScrollView>
     </ScrollView>
   );
 }
 
 function MonthCalendar(props: {
-  agendamentos: Agendamento[]; dateStr: string; isLoading: boolean; isError: boolean; error: any;
-  refetch: () => void; refreshing: boolean; onRefresh: () => void; insets: any;
+  agendamentos: Agendamento[]; dateStr: string; isLoading: boolean; isError: boolean; error: unknown;
+  refetch: () => void; refreshing: boolean; onRefresh: () => void; insets: { bottom: number };
   onSelectDate: (d: string) => void; onChangeMonth: (delta: number) => void;
 }) {
   const { agendamentos, dateStr, isLoading, isError, error, refetch, refreshing, onRefresh, insets, onSelectDate, onChangeMonth } = props;
@@ -710,13 +847,29 @@ const styles = StyleSheet.create({
   hourLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: Colors.textMuted, marginTop: 2 },
   hourLine: { flex: 1, width: 1, backgroundColor: Colors.surfaceBorder, marginTop: 4 },
   emptyHourSlot: { height: 28, borderTopWidth: 1, borderTopColor: Colors.surfaceBorder, opacity: 0.4 },
-  weekDayBlock: { marginBottom: 14 },
-  weekDayHeader: { flexDirection: "row", alignItems: "center", gap: 12, padding: 10, borderRadius: 12, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, marginBottom: 6 },
-  weekDayBadge: { width: 48, height: 56, borderRadius: 10, backgroundColor: Colors.surfaceLight, alignItems: "center", justifyContent: "center" },
-  weekDayWeek: { fontSize: 10, fontFamily: "Inter_500Medium", color: Colors.textSecondary, textTransform: "uppercase" },
-  weekDayNum: { fontSize: 20, fontFamily: "Inter_700Bold", color: Colors.text, marginTop: 1 },
-  weekDayTitle: { fontSize: 14, fontFamily: "Inter_700Bold", color: Colors.text, textTransform: "capitalize" },
-  weekDayCount: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginTop: 2 },
+  weekColumn: { width: 132, marginRight: 8 },
+  weekColHeader: { padding: 8, borderRadius: 10, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center", marginBottom: 6 },
+  weekColWeek: { fontSize: 10, fontFamily: "Inter_500Medium", color: Colors.textSecondary, textTransform: "uppercase" },
+  weekColNum: { fontSize: 18, fontFamily: "Inter_700Bold", color: Colors.text, marginTop: 1 },
+  weekColCount: { fontSize: 10, fontFamily: "Inter_500Medium", color: Colors.textSecondary, marginTop: 2 },
+  weekColBody: { gap: 6, paddingBottom: 12 },
+  weekColEmpty: { textAlign: "center", color: Colors.textMuted, fontSize: 11, fontFamily: "Inter_400Regular", paddingVertical: 16 },
+  weekColCard: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, borderLeftWidth: 3, borderRadius: 8, padding: 8 },
+  weekColTime: { fontSize: 11, fontFamily: "Inter_700Bold", color: Colors.accent },
+  weekColName: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: Colors.text, marginTop: 2 },
+  weekColServ: { fontSize: 10, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginTop: 1 },
+  blockSheet: { backgroundColor: Colors.background, padding: 16, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: Colors.surfaceBorder },
+  blockHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  blockTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: Colors.text },
+  blockSubtitle: { fontSize: 12, color: Colors.textSecondary, fontFamily: "Inter_400Regular", marginBottom: 12 },
+  blockField: { marginBottom: 10 },
+  blockLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
+  blockInput: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: Colors.text, fontSize: 14, fontFamily: "Inter_400Regular" },
+  blockChips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  blockChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder },
+  blockChipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
+  blockChipText: { fontSize: 12, fontFamily: "Inter_500Medium", color: Colors.text },
+  blockChipTextActive: { color: "#000" },
   monthHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10, paddingHorizontal: 4 },
   monthNavBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "center" },
   monthTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: Colors.text, textTransform: "capitalize" },

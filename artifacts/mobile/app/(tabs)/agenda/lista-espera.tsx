@@ -144,9 +144,9 @@ export default function ListaEsperaScreen() {
         </View>
         <View style={styles.statBox}>
           <Text style={[styles.statValue, { color: Colors.success }]}>
-            {(itens as Item[]).filter(i => i.status === "confirmado").length}
+            {(itens as Item[]).filter(i => i.status === "atendido").length}
           </Text>
-          <Text style={styles.statLabel}>Confirmados</Text>
+          <Text style={styles.statLabel}>Atendidos</Text>
         </View>
         <View style={styles.statBox}>
           <Text style={[styles.statValue, { color: Colors.accent }]}>{(itens as Item[]).length}</Text>
@@ -190,7 +190,8 @@ export default function ListaEsperaScreen() {
                     <View style={styles.cardActions}>
                       <TouchableOpacity
                         style={[styles.actionBtn, { backgroundColor: Colors.success + "20", borderColor: Colors.success + "55" }]}
-                        onPress={() => setStatus(item, "confirmado")}
+                        onPress={() => setStatus(item, "atendido")}
+                        accessibilityLabel="Marcar como atendido"
                       >
                         <Feather name="check" size={14} color={Colors.success} />
                       </TouchableOpacity>
@@ -198,11 +199,12 @@ export default function ListaEsperaScreen() {
                         <TouchableOpacity
                           style={[styles.actionBtn, { backgroundColor: Colors.success + "10" }]}
                           onPress={() => Linking.openURL(whatsappLink(item.clienteTelefone))}
+                          accessibilityLabel="Avisar pelo WhatsApp"
                         >
                           <Feather name="message-circle" size={14} color={Colors.success} />
                         </TouchableOpacity>
                       )}
-                      <TouchableOpacity style={styles.actionBtn} onPress={() => remove(item)}>
+                      <TouchableOpacity style={styles.actionBtn} onPress={() => remove(item)} accessibilityLabel="Remover da lista">
                         <Feather name="trash-2" size={14} color={Colors.error} />
                       </TouchableOpacity>
                     </View>

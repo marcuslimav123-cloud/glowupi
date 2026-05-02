@@ -21,7 +21,7 @@ import Colors from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   fetchJson, formatCurrency, formatPhone, stripPhone, todayStr,
-  generateTimeSlots, timeToMinutes, addMinutesToTime, strToDate,
+  generateTimeSlots, timeToMinutes, addMinutesToTime, strToDate, dateToStr,
 } from "@/lib/api";
 
 type Step = "client" | "service" | "professional" | "time";
@@ -40,8 +40,8 @@ export default function NovoAgendamentoScreen() {
   const qc = useQueryClient();
 
   const isEncaixe = params.encaixe === "1";
-  const dateStr = params.date || todayStr();
 
+  const [dateStr, setDateStr] = useState<string>(params.date || todayStr());
   const [step, setStep] = useState<Step>("client");
   const [clientSearch, setClientSearch] = useState("");
   const [serviceSearch, setServiceSearch] = useState("");
@@ -198,13 +198,42 @@ export default function NovoAgendamentoScreen() {
 
     setSubmitting(true);
     try {
+      let clienteIdToUse: number | null = selectedClientId;
+      const telDigits = stripPhone(formTelefone);
+      if (useNewClient && !clienteIdToUse) {
+        try {
+          const created = await fetchJson<{ id: number }>(`/barbearias/${barbeariaId}/clientes`, {
+            method: "POST",
+            body: { nome: formNome, telefone: telDigits },
+          });
+          if (created?.id) clienteIdToUse = created.id;
+        } catch (e: any) {
+          const msg = String(e?.message || "");
+          if (/já existe|exists|409|duplic/i.test(msg)) {
+            try {
+              const existing = await fetchJson<Array<{ id: number; telefone?: string | null; nome?: string }>>(
+                `/barbearias/${barbeariaId}/clientes?busca=${encodeURIComponent(telDigits || formNome)}`,
+              );
+              const match = Array.isArray(existing) && telDigits
+                ? existing.find(c => stripPhone(c.telefone || "") === telDigits)
+                : null;
+              if (match?.id) clienteIdToUse = match.id;
+            } catch {}
+          } else {
+            Alert.alert("Erro ao cadastrar cliente", msg || "Tente novamente.");
+            setSubmitting(false);
+            return;
+          }
+        }
+      }
+
       if (validExtras.length === 0) {
         await fetchJson(`/barbearias/${barbeariaId}/agendamentos`, {
           method: "POST",
           body: {
-            clienteId: selectedClientId || undefined,
+            clienteId: clienteIdToUse || undefined,
             clienteNome: formNome,
-            clienteTelefone: stripPhone(formTelefone),
+            clienteTelefone: telDigits,
             profissionalId: Number(formProfId),
             servicoId: Number(formServId),
             data: dateStr,
@@ -221,9 +250,9 @@ export default function NovoAgendamentoScreen() {
         await fetchJson(`/barbearias/${barbeariaId}/atendimentos`, {
           method: "POST",
           body: {
-            clienteId: selectedClientId ?? undefined,
+            clienteId: clienteIdToUse ?? undefined,
             clienteNome: formNome,
-            clienteTelefone: stripPhone(formTelefone) || null,
+            clienteTelefone: telDigits || null,
             data: dateStr,
             horaInicio: formHora,
             observacao: formObs || null,
@@ -390,24 +419,64 @@ export default function NovoAgendamentoScreen() {
                 onChangeText={setServiceSearch}
               />
             </View>
-            {filteredServicos.map(s => (
-              <TouchableOpacity
-                key={s.id}
-                style={[styles.option, formServId === String(s.id) && styles.optionActive]}
-                onPress={() => { setFormServId(String(s.id)); setStep("professional"); }}
-              >
-                <View style={[styles.avatarSm, { backgroundColor: Colors.accent + "22" }]}>
-                  <Feather name="scissors" size={16} color={Colors.accent} />
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.optionTitle} numberOfLines={1}>{s.nome}</Text>
-                  <Text style={styles.optionSub}>{s.duracaoMinutos || 30} min</Text>
-                </View>
-                <Text style={styles.servicePrice}>{formatCurrency(Number(s.preco))}</Text>
-              </TouchableOpacity>
-            ))}
+            <Text style={styles.helperText}>
+              Toque para selecionar. O primeiro vira o serviço principal e os demais entram como atendimento conjunto (você definirá o profissional de cada extra na próxima etapa).
+            </Text>
+            {filteredServicos.map(s => {
+              const sid = String(s.id);
+              const isPrimary = formServId === sid;
+              const extraIdx = extraItems.findIndex(it => it.servicoId === sid);
+              const isExtra = extraIdx >= 0;
+              const isSelected = isPrimary || isExtra;
+              const orderIdx = isPrimary ? 1 : (isExtra ? extraIdx + 2 : 0);
+              return (
+                <TouchableOpacity
+                  key={s.id}
+                  style={[styles.option, isSelected && styles.optionActive]}
+                  onPress={() => {
+                    if (isPrimary) return;
+                    if (isExtra) {
+                      setExtraItems(prev => prev.filter(it => it.servicoId !== sid));
+                      return;
+                    }
+                    if (!formServId) {
+                      setFormServId(sid);
+                    } else {
+                      setExtraItems(prev => [...prev, { servicoId: sid, profissionalId: formProfId || "" }]);
+                    }
+                    if (Platform.OS !== "web") Haptics.selectionAsync();
+                  }}
+                >
+                  <View style={[styles.avatarSm, { backgroundColor: Colors.accent + "22" }]}>
+                    {isSelected ? (
+                      <Text style={[styles.avatarSmText, { color: Colors.accent }]}>{orderIdx}</Text>
+                    ) : (
+                      <Feather name="scissors" size={16} color={Colors.accent} />
+                    )}
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.optionTitle} numberOfLines={1}>
+                      {s.nome}
+                      {isPrimary ? " · principal" : isExtra ? ` · extra ${extraIdx + 1}` : ""}
+                    </Text>
+                    <Text style={styles.optionSub}>{s.duracaoMinutos || 30} min</Text>
+                  </View>
+                  <Text style={styles.servicePrice}>{formatCurrency(Number(s.preco))}</Text>
+                </TouchableOpacity>
+              );
+            })}
             {filteredServicos.length === 0 && (
               <Text style={styles.empty}>Nenhum serviço encontrado.</Text>
+            )}
+            {formServId && (
+              <TouchableOpacity
+                style={[styles.btnPrimary, { marginTop: 16 }]}
+                onPress={() => setStep("professional")}
+              >
+                <Text style={styles.btnPrimaryText}>
+                  Continuar ({extraItems.length + 1} {extraItems.length === 0 ? "serviço" : "serviços"})
+                </Text>
+              </TouchableOpacity>
             )}
           </View>
         )}
@@ -441,7 +510,36 @@ export default function NovoAgendamentoScreen() {
               <SummaryRow label="Cliente" value={formNome} />
               {selectedServico && <SummaryRow label="Serviço" value={selectedServico.nome} />}
               {selectedProf && <SummaryRow label="Profissional" value={selectedProf.nomeExibicao} />}
+              <SummaryRow label="Data" value={strToDate(dateStr).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })} />
             </View>
+
+            <Text style={styles.sectionLabel}>Data *</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 4 }}>
+              {Array.from({ length: 29 }, (_, i) => {
+                const base = strToDate(dateStr);
+                const d = new Date(base);
+                d.setDate(base.getDate() + (i - 14));
+                const dStr = dateToStr(d);
+                const sel = dStr === dateStr;
+                const isToday = dStr === todayStr();
+                return (
+                  <TouchableOpacity
+                    key={dStr}
+                    style={[styles.dateChip, sel && styles.dateChipActive, !sel && isToday && { borderColor: Colors.accent }]}
+                    onPress={() => {
+                      setDateStr(dStr);
+                      setFormHora("");
+                      if (Platform.OS !== "web") Haptics.selectionAsync();
+                    }}
+                  >
+                    <Text style={[styles.dateChipWeek, sel && { color: "#000" }]}>
+                      {d.toLocaleDateString("pt-BR", { weekday: "short" }).slice(0, 3)}
+                    </Text>
+                    <Text style={[styles.dateChipNum, sel && { color: "#000" }]}>{d.getDate()}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
 
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 14, marginBottom: 4 }}>
               <Text style={styles.sectionLabel}>
@@ -666,4 +764,9 @@ const styles = StyleSheet.create({
   miniChipText: { fontSize: 11, fontFamily: "Inter_500Medium", color: Colors.text },
   addItemBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 10, marginBottom: 6 },
   addItemText: { color: Colors.accent, fontFamily: "Inter_600SemiBold", fontSize: 12 },
+  helperText: { fontSize: 12, color: Colors.textMuted, fontFamily: "Inter_400Regular", marginBottom: 10, lineHeight: 17 },
+  dateChip: { minWidth: 52, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: Colors.surfaceBorder, backgroundColor: Colors.surface, alignItems: "center" },
+  dateChipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
+  dateChipWeek: { fontSize: 10, color: Colors.textSecondary, fontFamily: "Inter_500Medium", textTransform: "capitalize" },
+  dateChipNum: { fontSize: 16, color: Colors.text, fontFamily: "Inter_700Bold", marginTop: 2 },
 });

@@ -7,6 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchJson, dateToStr } from "@/lib/api";
+import { ErrorView } from "@/components/ErrorView";
+import { EmptyState } from "@/components/EmptyState";
 
 const HORAS = Array.from({ length: 13 }, (_, i) => `${(i + 8).toString().padStart(2, "0")}:00`);
 const DIAS_SEMANA = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"];
@@ -45,11 +47,12 @@ export default function PicosScreen() {
   const dataInicio = allDays[0];
   const dataFim = allDays[allDays.length - 1];
 
-  const { data: agendamentos = [], isLoading } = useQuery<any[]>({
+  type AgendamentoLite = { data: string; horaInicio: string; status: string };
+  const { data: agendamentos = [], isLoading, isError, error, refetch } = useQuery<AgendamentoLite[]>({
     queryKey: ["agendamentos-picos", barbeariaId, dataInicio, dataFim],
     queryFn: async () => {
       if (!barbeariaId) return [];
-      const data = await fetchJson<any[]>(
+      const data = await fetchJson<AgendamentoLite[]>(
         `/barbearias/${barbeariaId}/agendamentos?dataInicio=${dataInicio}&dataFim=${dataFim}`,
       );
       return Array.isArray(data) ? data : [];
@@ -111,6 +114,14 @@ export default function PicosScreen() {
           <View style={{ paddingTop: 60, alignItems: "center" }}>
             <ActivityIndicator color={Colors.accent} />
           </View>
+        ) : isError ? (
+          <ErrorView title="Não foi possível carregar os horários de pico" error={error} onRetry={() => refetch()} />
+        ) : agendamentos.length === 0 ? (
+          <EmptyState
+            icon="trending-up"
+            title="Sem dados ainda"
+            description="Quando você tiver agendamentos nos últimos 30 dias, eles aparecerão aqui como mapa de calor de ocupação por dia e hora."
+          />
         ) : (
           <>
             {insights.maxPct > 0 && (
