@@ -26,6 +26,8 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSUserTrackingUsageDescription": "Permite que o Glow Upi Pro envie eventos anônimos para entender como o app é usado e melhorar funcionalidades. Nenhum dado pessoal é compartilhado.",
+        "NSCameraUsageDescription": "O Glow Upi Pro usa a câmera para tirar fotos de profissionais, clientes e documentos do estabelecimento.",
+        "NSPhotoLibraryUsageDescription": "O Glow Upi Pro acessa sua galeria para escolher fotos de profissionais, clientes e documentos do estabelecimento.",
         "LSApplicationQueriesSchemes": [
           "whatsapp",
           "tel",
