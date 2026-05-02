@@ -1,12 +1,39 @@
 import React from "react";
-import { PlaceholderScreen } from "@/components/PlaceholderScreen";
+import { ReportListScreen } from "@/components/ReportListScreen";
+import { formatCurrency } from "@/lib/api";
 
-export default function AgendamentosReportScreen() {
+type Row = {
+  id: number;
+  data: string;
+  horaInicio: string;
+  clienteNome: string;
+  profissionalNome: string;
+  servicoNome: string;
+  status: string;
+  valor: number;
+  encaixe: boolean;
+};
+
+export default function RelatorioAgendamentos() {
   return (
-    <PlaceholderScreen
+    <ReportListScreen<Row>
       title="Agendamentos"
-      icon="calendar"
-      description="Relatório detalhado de agendamentos por status, profissional e período em breve."
+      subtitle="Status, profissional e período"
+      endpoint={(id, di, df) => `/barbearias/${id}/relatorios/agendamentos-report?dataInicio=${di}&dataFim=${df}`}
+      queryKey="rel-agendamentos"
+      csvFilename="agendamentos"
+      itemKey={(r) => r.id}
+      emptyMessage="Nenhum agendamento no período."
+      emptyIcon="calendar"
+      fields={[
+        { label: "Data", value: (r) => `${r.data}${r.horaInicio ? " • " + r.horaInicio : ""}` },
+        { label: "Cliente", value: (r) => r.clienteNome, prominent: true },
+        { label: "Profissional", value: (r) => r.profissionalNome },
+        { label: "Serviço", value: (r) => r.servicoNome },
+        { label: "Status", value: (r) => r.status },
+        { label: "Valor", value: (r) => formatCurrency(r.valor), csv: (r) => Number(r.valor || 0).toFixed(2) },
+        { label: "Encaixe", value: (r) => (r.encaixe ? "Sim" : "Não") },
+      ]}
     />
   );
 }

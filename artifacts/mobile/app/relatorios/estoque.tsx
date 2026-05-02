@@ -1,12 +1,35 @@
 import React from "react";
-import { PlaceholderScreen } from "@/components/PlaceholderScreen";
+import { ReportListScreen } from "@/components/ReportListScreen";
+import { formatCurrency } from "@/lib/api";
 
-export default function RelatorioEstoqueScreen() {
+type Row = {
+  nome: string;
+  categoria: string | null;
+  quantidade: number;
+  precoVenda: number;
+  validade: string | null;
+  ativo: boolean;
+};
+
+export default function EstoqueScreen() {
   return (
-    <PlaceholderScreen
-      title="Estoque"
-      icon="box"
-      description="Posição atual e reposição sugerida do estoque em breve."
+    <ReportListScreen<Row>
+      title="Posição de estoque"
+      subtitle="Saldo atual de produtos"
+      endpoint={(id, di, df) => `/barbearias/${id}/relatorios/estoque?dataInicio=${di}&dataFim=${df}`}
+      queryKey="rel-estoque"
+      csvFilename="estoque"
+      itemKey={(r, idx) => `${r.nome}-${idx}`}
+      emptyIcon="box"
+      emptyMessage="Sem produtos cadastrados."
+      fields={[
+        { label: "Produto", value: (r) => r.nome, prominent: true },
+        { label: "Categoria", value: (r) => r.categoria || "—" },
+        { label: "Qtd atual", value: (r) => String(r.quantidade ?? 0) },
+        { label: "Preço venda", value: (r) => formatCurrency(r.precoVenda), csv: (r) => Number(r.precoVenda || 0).toFixed(2) },
+        { label: "Validade", value: (r) => r.validade || "—" },
+        { label: "Status", value: (r) => (r.ativo ? "Ativo" : "Inativo") },
+      ]}
     />
   );
 }
