@@ -7,6 +7,7 @@ import {
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, router, type Href } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
 import React, { useEffect } from "react";
@@ -17,7 +18,7 @@ import { setBaseUrl } from "@workspace/api-client-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ATTExplainer } from "@/components/ATTExplainer";
 import { AuthProvider } from "@/contexts/AuthContext";
-import Colors from "@/constants/colors";
+import { ThemeProvider, useTheme } from "@/lib/theme";
 import { hasAskedATT, requestTrackingPermissionNow, markATTAsked } from "@/lib/tracking";
 
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
@@ -27,20 +28,26 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
+  const { colors, resolved } = useTheme();
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.background } }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="login" options={{ gestureEnabled: false }} />
-      <Stack.Screen name="register" options={{ gestureEnabled: true }} />
-      <Stack.Screen name="comandas" />
-      <Stack.Screen name="financeiro" />
-      <Stack.Screen name="cadastros" />
-      <Stack.Screen name="clientes" />
-      <Stack.Screen name="marketing" />
-      <Stack.Screen name="configuracoes" />
-      <Stack.Screen name="equipe" />
-      <Stack.Screen name="relatorios" />
-    </Stack>
+    <>
+      <StatusBar style={resolved === "claro" ? "dark" : "light"} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="login" options={{ gestureEnabled: false }} />
+        <Stack.Screen name="register" options={{ gestureEnabled: true }} />
+        <Stack.Screen name="comandas" />
+        <Stack.Screen name="financeiro" />
+        <Stack.Screen name="cadastros" />
+        <Stack.Screen name="clientes" />
+        <Stack.Screen name="marketing" />
+        <Stack.Screen name="configuracoes" />
+        <Stack.Screen name="equipe" />
+        <Stack.Screen name="relatorios" />
+        <Stack.Screen name="pacotes" />
+        <Stack.Screen name="caixa" />
+      </Stack>
+    </>
   );
 }
 
@@ -96,20 +103,22 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView>
-            <AuthProvider>
-              <RootLayoutNav />
-              <ATTExplainer
-                visible={attVisible}
-                onContinue={async () => {
-                  setAttVisible(false);
-                  await requestTrackingPermissionNow();
-                }}
-                onSkip={async () => {
-                  setAttVisible(false);
-                  await markATTAsked();
-                }}
-              />
-            </AuthProvider>
+            <ThemeProvider>
+              <AuthProvider>
+                <RootLayoutNav />
+                <ATTExplainer
+                  visible={attVisible}
+                  onContinue={async () => {
+                    setAttVisible(false);
+                    await requestTrackingPermissionNow();
+                  }}
+                  onSkip={async () => {
+                    setAttVisible(false);
+                    await markATTAsked();
+                  }}
+                />
+              </AuthProvider>
+            </ThemeProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>
       </ErrorBoundary>

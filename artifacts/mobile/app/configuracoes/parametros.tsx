@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from "react";
 import { Alert, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
@@ -25,6 +25,8 @@ type Editor = { row: ParamRow; value: string } | null;
 export default function ParametrosScreen() {
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [search, setSearch] = useState("");
   const [picker, setPicker] = useState<Picker>(null);
   const [editor, setEditor] = useState<Editor>(null);
@@ -78,12 +80,12 @@ export default function ParametrosScreen() {
   return (
     <ScreenContainer title="Parâmetros" subtitle="Configurações operacionais">
       <View style={styles.searchWrap}>
-        <Feather name="search" size={14} color={Colors.textMuted} />
+        <Feather name="search" size={14} color={colors.textMuted} />
         <TextInput
           value={search}
           onChangeText={setSearch}
           placeholder="Buscar parâmetro…"
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={colors.textMuted}
           style={styles.search}
         />
       </View>
@@ -109,7 +111,7 @@ export default function ParametrosScreen() {
                     <Text style={styles.label}>{row.label}</Text>
                     <Text style={styles.value}>{row.valor || "—"}</Text>
                   </View>
-                  <Feather name={row.tipo === "select" ? "chevron-right" : "edit-2"} size={16} color={Colors.textMuted} />
+                  <Feather name={row.tipo === "select" ? "chevron-right" : "edit-2"} size={16} color={colors.textMuted} />
                 </Pressable>
               ))}
             </View>
@@ -129,10 +131,10 @@ export default function ParametrosScreen() {
                     if (picker) onChangeValue(picker.row.chave, opt);
                     setPicker(null);
                   }}
-                  style={({ pressed }) => [styles.optRow, pressed && { backgroundColor: Colors.surfaceLight }]}
+                  style={({ pressed }) => [styles.optRow, pressed && { backgroundColor: colors.surfaceLight }]}
                 >
-                  <Text style={[styles.optText, picker?.row.valor === opt && { color: Colors.accent }]}>{opt}</Text>
-                  {picker?.row.valor === opt ? <Feather name="check" size={16} color={Colors.accent} /> : null}
+                  <Text style={[styles.optText, picker?.row.valor === opt && { color: colors.accent }]}>{opt}</Text>
+                  {picker?.row.valor === opt ? <Feather name="check" size={16} color={colors.accent} /> : null}
                 </Pressable>
               ))}
             </View>
@@ -148,7 +150,7 @@ export default function ParametrosScreen() {
               value={editor?.value ?? ""}
               onChangeText={(t) => setEditor((cur) => (cur ? { ...cur, value: t } : cur))}
               style={styles.input}
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
             />
             <View style={styles.modalActions}>
@@ -172,25 +174,25 @@ export default function ParametrosScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
   searchWrap: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: Colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
+    borderColor: c.surfaceBorder,
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === "ios" ? 10 : 6,
     marginBottom: 8,
   },
-  search: { flex: 1, color: Colors.text, fontFamily: "Inter_500Medium", fontSize: 13 },
+  search: { flex: 1, color: c.text, fontFamily: "Inter_500Medium", fontSize: 13 },
   card: {
-    backgroundColor: Colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
+    borderColor: c.surfaceBorder,
     overflow: "hidden",
   },
   row: {
@@ -200,21 +202,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.surfaceBorder,
+    borderBottomColor: c.surfaceBorder,
   },
-  label: { color: Colors.text, fontFamily: "Inter_500Medium", fontSize: 13 },
-  value: { color: Colors.textSecondary, fontFamily: "Inter_500Medium", fontSize: 12 },
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  label: { color: c.text, fontFamily: "Inter_500Medium", fontSize: 13 },
+  value: { color: c.textSecondary, fontFamily: "Inter_500Medium", fontSize: 12 },
+  modalBackdrop: { flex: 1, backgroundColor: c.overlay, justifyContent: "flex-end" },
   modalSheet: {
-    backgroundColor: Colors.surface,
+    backgroundColor: c.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 18,
     maxHeight: "75%",
     borderTopWidth: 1,
-    borderColor: Colors.surfaceBorder,
+    borderColor: c.surfaceBorder,
   },
-  modalTitle: { fontSize: 15, fontFamily: "Inter_700Bold", color: Colors.text, marginBottom: 8 },
+  modalTitle: { fontSize: 15, fontFamily: "Inter_700Bold", color: c.text, marginBottom: 8 },
   optRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -223,23 +225,23 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 10,
   },
-  optText: { color: Colors.text, fontFamily: "Inter_500Medium", fontSize: 14 },
+  optText: { color: c.text, fontFamily: "Inter_500Medium", fontSize: 14 },
   input: {
-    backgroundColor: Colors.surfaceLight,
+    backgroundColor: c.surfaceLight,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
+    borderColor: c.surfaceBorder,
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === "ios" ? 12 : 10,
-    color: Colors.text,
+    color: c.text,
     fontFamily: "Inter_500Medium",
     fontSize: 14,
     marginTop: 12,
   },
   modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 14 },
   btn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10 },
-  btnGhost: { backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  btnGhostText: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  btnPrimary: { backgroundColor: Colors.accent },
-  btnPrimaryText: { color: "#000", fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  btnGhost: { backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder },
+  btnGhostText: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  btnPrimary: { backgroundColor: c.accent },
+  btnPrimaryText: { color: c.invertedText, fontFamily: "Inter_600SemiBold", fontSize: 13 },
 });

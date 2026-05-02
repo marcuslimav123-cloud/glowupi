@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import { useRouter, Stack } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   initRevenueCat,
@@ -31,6 +31,8 @@ const PRIVACY_URL = "https://glowupi.com/legal/privacidade";
 export default function PaywallScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { token } = useAuth();
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
@@ -97,7 +99,7 @@ export default function PaywallScreen() {
           accessibilityRole="button"
           accessibilityLabel="Fechar"
         >
-          <Feather name="x" size={22} color={Colors.text} />
+          <Feather name="x" size={22} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -117,7 +119,7 @@ export default function PaywallScreen() {
           ].map((b) => (
             <View key={b.t} style={styles.benefitRow}>
               <View style={styles.benefitIcon}>
-                <Feather name={b.icon as any} size={16} color={Colors.accent} />
+                <Feather name={b.icon as any} size={16} color={colors.accent} />
               </View>
               <Text style={styles.benefitText}>{b.t}</Text>
             </View>
@@ -126,11 +128,11 @@ export default function PaywallScreen() {
 
         {loading ? (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color={Colors.accent} />
+            <ActivityIndicator size="large" color={colors.accent} />
           </View>
         ) : !available || packages.length === 0 ? (
           <View style={styles.notice}>
-            <Feather name="info" size={18} color={Colors.warning} />
+            <Feather name="info" size={18} color={colors.warning} />
             <Text style={styles.noticeText}>
               Os planos não estão disponíveis no momento.
               {"\n"}
@@ -175,7 +177,7 @@ export default function PaywallScreen() {
               accessibilityLabel="Assinar agora"
             >
               {purchasing ? (
-                <ActivityIndicator color="#000" />
+                <ActivityIndicator color={colors.invertedText} />
               ) : (
                 <Text style={styles.ctaText}>Assinar agora</Text>
               )}
@@ -189,7 +191,7 @@ export default function PaywallScreen() {
               accessibilityLabel="Restaurar compras"
             >
               {restoring ? (
-                <ActivityIndicator size="small" color={Colors.textSecondary} />
+                <ActivityIndicator size="small" color={colors.textSecondary} />
               ) : (
                 <Text style={styles.restoreText}>Restaurar compras</Text>
               )}
@@ -215,59 +217,59 @@ export default function PaywallScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   header: { flexDirection: "row", justifyContent: "flex-end", padding: 12 },
   closeBtn: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: Colors.surface, alignItems: "center", justifyContent: "center",
-    borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, alignItems: "center", justifyContent: "center",
+    borderWidth: 1, borderColor: c.surfaceBorder,
   },
   scroll: { padding: 20, paddingBottom: 60 },
-  title: { fontSize: 30, fontFamily: "Inter_700Bold", color: Colors.text, marginBottom: 8 },
-  subtitle: { fontSize: 15, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginBottom: 24 },
+  title: { fontSize: 30, fontFamily: "Inter_700Bold", color: c.text, marginBottom: 8 },
+  subtitle: { fontSize: 15, fontFamily: "Inter_400Regular", color: c.textSecondary, marginBottom: 24 },
   benefits: { marginBottom: 28 },
   benefitRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10 },
   benefitIcon: {
     width: 30, height: 30, borderRadius: 15,
-    backgroundColor: Colors.accent + "20", alignItems: "center", justifyContent: "center",
+    backgroundColor: c.accent + "20", alignItems: "center", justifyContent: "center",
   },
-  benefitText: { fontSize: 14, fontFamily: "Inter_500Medium", color: Colors.text, flex: 1 },
+  benefitText: { fontSize: 14, fontFamily: "Inter_500Medium", color: c.text, flex: 1 },
   center: { paddingVertical: 40, alignItems: "center" },
   notice: {
     flexDirection: "row", alignItems: "center", gap: 12,
-    backgroundColor: Colors.warning + "15",
-    borderColor: Colors.warning + "40", borderWidth: 1,
+    backgroundColor: c.warning + "15",
+    borderColor: c.warning + "40", borderWidth: 1,
     padding: 14, borderRadius: 12, marginBottom: 20,
   },
-  noticeText: { flex: 1, fontSize: 13, color: Colors.text, fontFamily: "Inter_400Regular" },
+  noticeText: { flex: 1, fontSize: 13, color: c.text, fontFamily: "Inter_400Regular" },
   planCard: {
     flexDirection: "row", alignItems: "center",
-    backgroundColor: Colors.surface, borderRadius: 16, padding: 16,
-    borderWidth: 2, borderColor: Colors.surfaceBorder, marginBottom: 12,
+    backgroundColor: c.surface, borderRadius: 16, padding: 16,
+    borderWidth: 2, borderColor: c.surfaceBorder, marginBottom: 12,
   },
-  planCardActive: { borderColor: Colors.accent },
+  planCardActive: { borderColor: c.accent },
   planLeft: { flex: 1 },
-  planTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: Colors.text, marginBottom: 4 },
-  planDesc: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.textSecondary },
+  planTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: c.text, marginBottom: 4 },
+  planDesc: { fontSize: 12, fontFamily: "Inter_400Regular", color: c.textSecondary },
   planRight: { alignItems: "flex-end", gap: 8 },
-  planPrice: { fontSize: 16, fontFamily: "Inter_700Bold", color: Colors.text },
+  planPrice: { fontSize: 16, fontFamily: "Inter_700Bold", color: c.text },
   radio: {
     width: 22, height: 22, borderRadius: 11,
-    borderWidth: 2, borderColor: Colors.surfaceBorder,
+    borderWidth: 2, borderColor: c.surfaceBorder,
     alignItems: "center", justifyContent: "center",
   },
-  radioActive: { borderColor: Colors.accent },
-  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.accent },
+  radioActive: { borderColor: c.accent },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.accent },
   cta: {
     marginTop: 16, height: 52, borderRadius: 14,
-    backgroundColor: Colors.accent, alignItems: "center", justifyContent: "center",
+    backgroundColor: c.accent, alignItems: "center", justifyContent: "center",
   },
-  ctaText: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#000" },
+  ctaText: { fontSize: 16, fontFamily: "Inter_700Bold", color: c.invertedText },
   restoreBtn: { marginTop: 12, alignItems: "center", paddingVertical: 8 },
-  restoreText: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.textSecondary, textDecorationLine: "underline" },
-  legal: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.textMuted, marginTop: 24, lineHeight: 16, textAlign: "center" },
+  restoreText: { fontSize: 13, fontFamily: "Inter_500Medium", color: c.textSecondary, textDecorationLine: "underline" },
+  legal: { fontSize: 11, fontFamily: "Inter_400Regular", color: c.textMuted, marginTop: 24, lineHeight: 16, textAlign: "center" },
   legalLinks: { flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 10, gap: 6 },
-  legalLink: { fontSize: 12, fontFamily: "Inter_500Medium", color: Colors.accent, textDecorationLine: "underline" },
-  legalDot: { fontSize: 12, color: Colors.textMuted },
+  legalLink: { fontSize: 12, fontFamily: "Inter_500Medium", color: c.accent, textDecorationLine: "underline" },
+  legalDot: { fontSize: 12, color: c.textMuted },
 });

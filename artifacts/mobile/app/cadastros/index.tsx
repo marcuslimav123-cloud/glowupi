@@ -1,13 +1,15 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useRouter, type Href } from "expo-router";
 import { View, StyleSheet } from "react-native";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { ListRow } from "@/components/ListRow";
 import { SectionHeader } from "@/components/SectionHeader";
 
 export default function CadastrosIndex() {
   const router = useRouter();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const go = (p: Href) => () => router.push(p);
 
   return (
@@ -42,9 +44,37 @@ export default function CadastrosIndex() {
           description="Gestão de unidades"
           onPress={go("/cadastros/filiais")}
         />
+        <ListRow
+          icon="briefcase"
+          label="Empresa"
+          description="Dados, endereço e marca"
+          onPress={go("/configuracoes/empresa")}
+        />
       </View>
 
-      <SectionHeader label="Clientes e fidelização" />
+      <SectionHeader label="Pacotes e clube" />
+      <View style={styles.card}>
+        <ListRow
+          icon="gift"
+          label="Pacotes"
+          description="Crie pacotes e venda"
+          onPress={go("/pacotes")}
+        />
+        <ListRow
+          icon="award"
+          label="Clube de assinatura"
+          description="Planos recorrentes para clientes"
+          onPress={go("/cadastros/clubes")}
+        />
+        <ListRow
+          icon="star"
+          label="Clube de vantagens"
+          description="Programa de pontos e fidelidade"
+          onPress={go("/marketing/fidelidade")}
+        />
+      </View>
+
+      <SectionHeader label="Clientes e segmentação" />
       <View style={styles.card}>
         <ListRow
           icon="users"
@@ -53,15 +83,9 @@ export default function CadastrosIndex() {
           onPress={go("/cadastros/grupos-clientes")}
         />
         <ListRow
-          icon="award"
-          label="Clube de vantagens"
-          description="Programa de fidelidade"
-          onPress={go("/cadastros/clube-vantagens")}
-        />
-        <ListRow
           icon="layers"
-          label="Tipos"
-          description="Categorias de receita e despesa"
+          label="Tipos de receita e despesa"
+          description="Categorias do financeiro"
           onPress={go("/cadastros/tipos")}
         />
       </View>
@@ -69,12 +93,13 @@ export default function CadastrosIndex() {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
-    overflow: "hidden",
-  },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: c.surfaceBorder,
+      overflow: "hidden",
+    },
+  });

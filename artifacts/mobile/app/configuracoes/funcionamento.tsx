@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { SkeletonList } from "@/components/Skeleton";
 import { fetchJson, getErrorMessage } from "@/lib/api";
@@ -33,6 +33,8 @@ const DEFAULT_HORARIOS: Horario[] = DIAS.map((d, i) => ({
 export default function FuncionamentoScreen() {
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [horarios, setHorarios] = useState<Horario[]>(DEFAULT_HORARIOS);
   const [dirty, setDirty] = useState(false);
   const [profsFora, setProfsFora] = useState<ProfFora[]>([]);
@@ -104,10 +106,10 @@ export default function FuncionamentoScreen() {
                 <Switch
                   value={h.ativo}
                   onValueChange={(v) => update(i, { ativo: v })}
-                  trackColor={{ false: Colors.surfaceLight, true: Colors.accent }}
+                  trackColor={{ false: colors.surfaceLight, true: colors.accent }}
                   thumbColor="#fff"
                 />
-                <Text style={[styles.dia, !h.ativo && { color: Colors.textMuted }]}>{h.dia}</Text>
+                <Text style={[styles.dia, !h.ativo && { color: colors.textMuted }]}>{h.dia}</Text>
                 {!h.ativo ? <Text style={styles.fechado}>Fechado</Text> : null}
               </View>
               {h.ativo ? (
@@ -130,7 +132,7 @@ export default function FuncionamentoScreen() {
               pressed && { opacity: 0.8 },
             ]}
           >
-            <Feather name="save" size={16} color="#000" />
+            <Feather name="save" size={16} color={colors.invertedText} />
             <Text style={styles.saveBtnText}>{saveMutation.isPending ? "Salvando…" : "Salvar horários"}</Text>
           </Pressable>
         </View>
@@ -152,8 +154,8 @@ export default function FuncionamentoScreen() {
                     }
                     style={styles.profRow}
                   >
-                    <View style={[styles.checkbox, checked && { backgroundColor: Colors.accent, borderColor: Colors.accent }]}>
-                      {checked ? <Feather name="check" size={12} color="#000" /> : null}
+                    <View style={[styles.checkbox, checked && { backgroundColor: colors.accent, borderColor: colors.accent }]}>
+                      {checked ? <Feather name="check" size={12} color={colors.invertedText} /> : null}
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.profName}>{p.nome}</Text>
@@ -185,6 +187,8 @@ export default function FuncionamentoScreen() {
 }
 
 function TimeField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.timeField}>
       <Text style={styles.timeLabel}>{label}</Text>
@@ -192,7 +196,7 @@ function TimeField({ label, value, onChange }: { label: string; value: string; o
         value={value}
         onChangeText={onChange}
         placeholder="00:00"
-        placeholderTextColor={Colors.textMuted}
+        placeholderTextColor={colors.textMuted}
         style={styles.timeInput}
         keyboardType={Platform.OS === "ios" ? "numbers-and-punctuation" : "default"}
         maxLength={5}
@@ -201,29 +205,29 @@ function TimeField({ label, value, onChange }: { label: string; value: string; o
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
+    borderColor: c.surfaceBorder,
     padding: 14,
     gap: 10,
   },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  dia: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 14, flex: 1 },
-  fechado: { color: Colors.textMuted, fontFamily: "Inter_500Medium", fontSize: 12, fontStyle: "italic" },
+  dia: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 14, flex: 1 },
+  fechado: { color: c.textMuted, fontFamily: "Inter_500Medium", fontSize: 12, fontStyle: "italic" },
   timesRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   timeField: { flexBasis: "48%", flexGrow: 1 },
-  timeLabel: { color: Colors.textMuted, fontSize: 11, fontFamily: "Inter_500Medium", marginBottom: 4 },
+  timeLabel: { color: c.textMuted, fontSize: 11, fontFamily: "Inter_500Medium", marginBottom: 4 },
   timeInput: {
-    backgroundColor: Colors.surfaceLight,
+    backgroundColor: c.surfaceLight,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
+    borderColor: c.surfaceBorder,
     paddingHorizontal: 10,
     paddingVertical: Platform.OS === "ios" ? 10 : 8,
-    color: Colors.text,
+    color: c.text,
     fontFamily: "Inter_500Medium",
     fontSize: 13,
     textAlign: "center",
@@ -233,35 +237,35 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: Colors.accent,
+    backgroundColor: c.accent,
     paddingVertical: 12,
     borderRadius: 12,
     marginTop: 8,
   },
-  saveBtnText: { color: "#000", fontFamily: "Inter_700Bold", fontSize: 14 },
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  saveBtnText: { color: c.invertedText, fontFamily: "Inter_700Bold", fontSize: 14 },
+  backdrop: { flex: 1, backgroundColor: c.overlay, justifyContent: "flex-end" },
   sheet: {
-    backgroundColor: Colors.surface,
+    backgroundColor: c.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 18,
     maxHeight: "80%",
   },
-  modalTitle: { color: Colors.text, fontFamily: "Inter_700Bold", fontSize: 15 },
-  modalDesc: { color: Colors.textSecondary, fontFamily: "Inter_500Medium", fontSize: 12, marginTop: 4, marginBottom: 12 },
+  modalTitle: { color: c.text, fontFamily: "Inter_700Bold", fontSize: 15 },
+  modalDesc: { color: c.textSecondary, fontFamily: "Inter_500Medium", fontSize: 12, marginTop: 4, marginBottom: 12 },
   profRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
   checkbox: {
     width: 20, height: 20, borderRadius: 6,
-    borderWidth: 1, borderColor: Colors.surfaceBorder,
+    borderWidth: 1, borderColor: c.surfaceBorder,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: Colors.surfaceLight,
+    backgroundColor: c.surfaceLight,
   },
-  profName: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  profMotivo: { color: Colors.warning, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 1 },
+  profName: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  profMotivo: { color: c.warning, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 1 },
   actions: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 14 },
   btn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
-  btnGhost: { backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  btnGhostText: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  btnPrimary: { backgroundColor: Colors.accent },
-  btnPrimaryText: { color: "#000", fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  btnGhost: { backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder },
+  btnGhostText: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  btnPrimary: { backgroundColor: c.accent },
+  btnPrimaryText: { color: c.invertedText, fontFamily: "Inter_600SemiBold", fontSize: 13 },
 });

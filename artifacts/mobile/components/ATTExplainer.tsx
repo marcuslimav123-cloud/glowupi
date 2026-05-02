@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Modal,
   View,
@@ -8,7 +8,7 @@ import {
   Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 
 export interface ATTExplainerProps {
   visible: boolean;
@@ -17,6 +17,8 @@ export interface ATTExplainerProps {
 }
 
 export function ATTExplainer({ visible, onContinue, onSkip }: ATTExplainerProps) {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   if (Platform.OS !== "ios") return null;
 
   return (
@@ -29,7 +31,7 @@ export function ATTExplainer({ visible, onContinue, onSkip }: ATTExplainerProps)
       <View style={styles.backdrop}>
         <View style={styles.card}>
           <View style={styles.iconWrap}>
-            <Feather name="shield" size={28} color={Colors.accent} />
+            <Feather name="shield" size={28} color={colors.accent} />
           </View>
 
           <Text style={styles.title}>Sua privacidade vem primeiro</Text>
@@ -65,69 +67,70 @@ export function ATTExplainer({ visible, onContinue, onSkip }: ATTExplainerProps)
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  card: {
-    width: "100%",
-    maxWidth: 380,
-    backgroundColor: Colors.surface,
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
-  },
-  iconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.accent + "20",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-    alignSelf: "center",
-  },
-  title: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-    color: Colors.text,
-    textAlign: "center",
-    marginBottom: 14,
-  },
-  body: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 20,
-  },
-  bold: { fontFamily: "Inter_600SemiBold", color: Colors.text },
-  primaryBtn: {
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: Colors.accent,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-  primaryText: {
-    fontSize: 15,
-    fontFamily: "Inter_700Bold",
-    color: "#000",
-  },
-  skipBtn: {
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  skipText: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    color: Colors.textSecondary,
-  },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: c.overlay,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 24,
+    },
+    card: {
+      width: "100%",
+      maxWidth: 380,
+      backgroundColor: c.surface,
+      borderRadius: 20,
+      padding: 24,
+      borderWidth: 1,
+      borderColor: c.surfaceBorder,
+    },
+    iconWrap: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: c.accent + "20",
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 16,
+      alignSelf: "center",
+    },
+    title: {
+      fontSize: 20,
+      fontFamily: "Inter_700Bold",
+      color: c.text,
+      textAlign: "center",
+      marginBottom: 14,
+    },
+    body: {
+      fontSize: 14,
+      fontFamily: "Inter_400Regular",
+      color: c.textSecondary,
+      lineHeight: 20,
+      marginBottom: 20,
+    },
+    bold: { fontFamily: "Inter_600SemiBold", color: c.text },
+    primaryBtn: {
+      height: 48,
+      borderRadius: 12,
+      backgroundColor: c.accent,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 8,
+    },
+    primaryText: {
+      fontSize: 15,
+      fontFamily: "Inter_700Bold",
+      color: c.invertedText,
+    },
+    skipBtn: {
+      height: 44,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    skipText: {
+      fontSize: 13,
+      fontFamily: "Inter_500Medium",
+      color: c.textSecondary,
+    },
+  });

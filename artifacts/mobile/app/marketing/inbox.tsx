@@ -1,11 +1,11 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform, Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
@@ -24,14 +24,16 @@ interface Mensagem {
   createdAt: string;
 }
 
-const STATUS_COLOR: Record<string, string> = {
-  rascunho: Colors.textMuted,
-  enviada: Colors.success,
-  agendada: Colors.info,
-  falha: Colors.error,
-};
+const makeStatusColor = (c: ColorPalette): Record<string, string> => ({
+  rascunho: c.textMuted,
+  enviada: c.success,
+  agendada: c.info,
+  falha: c.error,
+});
 
 export default function InboxScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
@@ -91,8 +93,8 @@ export default function InboxScreen() {
             <View key={m.id} style={styles.card}>
               <View style={styles.cardTop}>
                 <Text style={styles.tipo}>{m.tipo.toUpperCase()}</Text>
-                <View style={[styles.pill, { backgroundColor: (STATUS_COLOR[m.status] || Colors.textMuted) + "22" }]}>
-                  <Text style={[styles.pillText, { color: STATUS_COLOR[m.status] || Colors.textMuted }]}>
+                <View style={[styles.pill, { backgroundColor: (makeStatusColor(colors)[m.status] || colors.textMuted) + "22" }]}>
+                  <Text style={[styles.pillText, { color: makeStatusColor(colors)[m.status] || colors.textMuted }]}>
                     {m.status.toUpperCase()}
                   </Text>
                 </View>
@@ -106,9 +108,9 @@ export default function InboxScreen() {
                 </Text>
                 <TouchableOpacity onPress={() => onDelete(m)} accessibilityLabel="Excluir">
                   {deleteMut.isPending && deleteMut.variables === m.id ? (
-                    <ActivityIndicator size="small" color={Colors.error} />
+                    <ActivityIndicator size="small" color={colors.error} />
                   ) : (
-                    <Feather name="trash-2" size={16} color={Colors.error} />
+                    <Feather name="trash-2" size={16} color={colors.error} />
                   )}
                 </TouchableOpacity>
               </View>
@@ -119,20 +121,21 @@ export default function InboxScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
-    marginBottom: 10, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderRadius: 14, padding: 14,
+    marginBottom: 10, borderWidth: 1, borderColor: c.surfaceBorder,
   },
   cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  tipo: { fontSize: 10, fontFamily: "Inter_700Bold", color: Colors.accent, letterSpacing: 0.8 },
+  tipo: { fontSize: 10, fontFamily: "Inter_700Bold", color: c.accent, letterSpacing: 0.8 },
   pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   pillText: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
-  titulo: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: Colors.text, marginBottom: 4 },
-  conteudo: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.textSecondary, lineHeight: 18 },
+  titulo: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: c.text, marginBottom: 4 },
+  conteudo: { fontSize: 13, fontFamily: "Inter_400Regular", color: c.textSecondary, lineHeight: 18 },
   footer: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    marginTop: 10, borderTopWidth: 1, borderTopColor: Colors.surfaceBorder, paddingTop: 8,
+    marginTop: 10, borderTopWidth: 1, borderTopColor: c.surfaceBorder, paddingTop: 8,
   },
-  meta: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.textMuted },
+  meta: { fontSize: 11, fontFamily: "Inter_400Regular", color: c.textMuted },
 });

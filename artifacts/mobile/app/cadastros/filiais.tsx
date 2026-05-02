@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -20,7 +20,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorView } from "@/components/ErrorView";
 import { SkeletonList } from "@/components/Skeleton";
 import { useAuth } from "@/contexts/AuthContext";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { fetchJson } from "@/lib/api";
 
 type Filial = {
@@ -41,6 +41,8 @@ type FiliaisRes = { eligible: boolean; filiais: Filial[] };
 export default function FiliaisScreen() {
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [editing, setEditing] = useState<Filial | null>(null);
   const [open, setOpen] = useState(false);
 
@@ -106,14 +108,14 @@ export default function FiliaisScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardTitle}>{f.nome}</Text>
                 <Text style={styles.cardSub}>{[f.logradouro, f.numero, f.bairro, f.cidade, f.uf].filter(Boolean).join(", ") || "Endereço não informado"}</Text>
-                {f.telefone && <Text style={styles.cardSub}><Feather name="phone" size={11} color={Colors.textMuted} /> {f.telefone}</Text>}
+                {f.telefone && <Text style={styles.cardSub}><Feather name="phone" size={11} color={colors.textMuted} /> {f.telefone}</Text>}
               </View>
               <View style={styles.rowActions}>
                 <TouchableOpacity style={styles.miniBtn} onPress={() => { setEditing(f); setOpen(true); }}>
-                  <Feather name="edit-2" size={15} color={Colors.textSecondary} />
+                  <Feather name="edit-2" size={15} color={colors.textSecondary} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.miniBtn} onPress={() => handleDelete(f)}>
-                  <Feather name="trash-2" size={15} color={Colors.error} />
+                  <Feather name="trash-2" size={15} color={colors.error} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -127,6 +129,8 @@ export default function FiliaisScreen() {
 }
 
 function FilialFormModal({ visible, editing, onClose, onSave, saving }: { visible: boolean; editing: Filial | null; onClose: () => void; onSave: (d: Partial<Filial>) => void; saving: boolean }) {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [nome, setNome] = useState("");
   const [cep, setCep] = useState("");
   const [logradouro, setLogradouro] = useState("");
@@ -160,25 +164,25 @@ function FilialFormModal({ visible, editing, onClose, onSave, saving }: { visibl
         <View style={styles.modalCard}>
           <View style={styles.modalHead}>
             <Text style={styles.modalTitle}>{editing ? "Editar filial" : "Nova filial"}</Text>
-            <TouchableOpacity onPress={onClose}><Feather name="x" size={22} color={Colors.text} /></TouchableOpacity>
+            <TouchableOpacity onPress={onClose}><Feather name="x" size={22} color={colors.text} /></TouchableOpacity>
           </View>
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Field label="Nome *"><TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Unidade Centro" placeholderTextColor={Colors.textMuted} /></Field>
+            <Field label="Nome *"><TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Unidade Centro" placeholderTextColor={colors.textMuted} /></Field>
             <View style={{ flexDirection: "row", gap: 10 }}>
-              <View style={{ flex: 1 }}><Field label="CEP"><TextInput style={styles.input} value={cep} onChangeText={setCep} placeholder="00000-000" placeholderTextColor={Colors.textMuted} keyboardType="number-pad" /></Field></View>
-              <View style={{ flex: 1 }}><Field label="Telefone"><TextInput style={styles.input} value={telefone} onChangeText={setTelefone} placeholder="(00) 00000-0000" placeholderTextColor={Colors.textMuted} keyboardType="phone-pad" /></Field></View>
+              <View style={{ flex: 1 }}><Field label="CEP"><TextInput style={styles.input} value={cep} onChangeText={setCep} placeholder="00000-000" placeholderTextColor={colors.textMuted} keyboardType="number-pad" /></Field></View>
+              <View style={{ flex: 1 }}><Field label="Telefone"><TextInput style={styles.input} value={telefone} onChangeText={setTelefone} placeholder="(00) 00000-0000" placeholderTextColor={colors.textMuted} keyboardType="phone-pad" /></Field></View>
             </View>
-            <Field label="Logradouro"><TextInput style={styles.input} value={logradouro} onChangeText={setLogradouro} placeholderTextColor={Colors.textMuted} /></Field>
+            <Field label="Logradouro"><TextInput style={styles.input} value={logradouro} onChangeText={setLogradouro} placeholderTextColor={colors.textMuted} /></Field>
             <View style={{ flexDirection: "row", gap: 10 }}>
-              <View style={{ flex: 1 }}><Field label="Número"><TextInput style={styles.input} value={numero} onChangeText={setNumero} placeholderTextColor={Colors.textMuted} /></Field></View>
-              <View style={{ flex: 2 }}><Field label="Bairro"><TextInput style={styles.input} value={bairro} onChangeText={setBairro} placeholderTextColor={Colors.textMuted} /></Field></View>
+              <View style={{ flex: 1 }}><Field label="Número"><TextInput style={styles.input} value={numero} onChangeText={setNumero} placeholderTextColor={colors.textMuted} /></Field></View>
+              <View style={{ flex: 2 }}><Field label="Bairro"><TextInput style={styles.input} value={bairro} onChangeText={setBairro} placeholderTextColor={colors.textMuted} /></Field></View>
             </View>
             <View style={{ flexDirection: "row", gap: 10 }}>
-              <View style={{ flex: 2 }}><Field label="Cidade"><TextInput style={styles.input} value={cidade} onChangeText={setCidade} placeholderTextColor={Colors.textMuted} /></Field></View>
-              <View style={{ flex: 1 }}><Field label="UF"><TextInput style={styles.input} value={uf} onChangeText={(t) => setUf(t.toUpperCase().slice(0, 2))} maxLength={2} placeholderTextColor={Colors.textMuted} /></Field></View>
+              <View style={{ flex: 2 }}><Field label="Cidade"><TextInput style={styles.input} value={cidade} onChangeText={setCidade} placeholderTextColor={colors.textMuted} /></Field></View>
+              <View style={{ flex: 1 }}><Field label="UF"><TextInput style={styles.input} value={uf} onChangeText={(t) => setUf(t.toUpperCase().slice(0, 2))} maxLength={2} placeholderTextColor={colors.textMuted} /></Field></View>
             </View>
             <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} disabled={saving} onPress={submit}>
-              {saving ? <ActivityIndicator color="#000" /> : <Text style={styles.saveBtnText}>Salvar</Text>}
+              {saving ? <ActivityIndicator color={colors.invertedText} /> : <Text style={styles.saveBtnText}>Salvar</Text>}
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -188,21 +192,23 @@ function FilialFormModal({ visible, editing, onClose, onSave, saving }: { visibl
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return <View style={{ marginTop: 12 }}><Text style={styles.label}>{label}</Text>{children}</View>;
 }
 
-const styles = StyleSheet.create({
-  card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  cardTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: Colors.text },
-  cardSub: { fontSize: 12, color: Colors.textSecondary, marginTop: 4 },
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
+  card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: c.surface, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: c.surfaceBorder },
+  cardTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: c.text },
+  cardSub: { fontSize: 12, color: c.textSecondary, marginTop: 4 },
   rowActions: { flexDirection: "row", gap: 4 },
-  miniBtn: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: Colors.surfaceLight },
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-  modalCard: { backgroundColor: Colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 32, maxHeight: "90%", borderTopWidth: 1, borderColor: Colors.surfaceBorder },
+  miniBtn: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: c.surfaceLight },
+  modalBackdrop: { flex: 1, backgroundColor: c.overlay, justifyContent: "flex-end" },
+  modalCard: { backgroundColor: c.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 32, maxHeight: "90%", borderTopWidth: 1, borderColor: c.surfaceBorder },
   modalHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: Colors.text },
-  label: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
-  input: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, height: 44, color: Colors.text, fontSize: 14 },
-  saveBtn: { marginTop: 20, backgroundColor: Colors.accent, height: 50, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  saveBtnText: { color: "#000", fontFamily: "Inter_700Bold", fontSize: 15 },
+  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: c.text },
+  label: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: c.textSecondary, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
+  input: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, height: 44, color: c.text, fontSize: 14 },
+  saveBtn: { marginTop: 20, backgroundColor: c.accent, height: 50, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  saveBtnText: { color: c.invertedText, fontFamily: "Inter_700Bold", fontSize: 15 },
 });

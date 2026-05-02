@@ -17,7 +17,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   fetchJson, formatCurrency, formatPhone, stripPhone, todayStr,
@@ -33,6 +33,8 @@ type Servico = { id: number; nome: string; preco: number | string; duracaoMinuto
 type Profissional = { id: number; nomeExibicao: string; apelido?: string | null; ativo?: boolean; especialidade?: string | null };
 
 export default function NovoAgendamentoScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ date?: string; encaixe?: string; profissionalId?: string; horaInicio?: string }>();
@@ -284,11 +286,11 @@ export default function NovoAgendamentoScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={{ flex: 1, backgroundColor: Colors.background }}
+      style={{ flex: 1, backgroundColor: colors.background }}
     >
       <View style={[styles.header, { paddingTop: webTopPad }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Feather name="chevron-left" size={22} color={Colors.text} />
+          <Feather name="chevron-left" size={22} color={colors.text} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>{isEncaixe ? "Novo encaixe" : "Novo agendamento"}</Text>
@@ -309,8 +311,8 @@ export default function NovoAgendamentoScreen() {
             ]}
             onPress={() => setStep(s)}
           >
-            <Text style={[styles.stepNum, step === s && { color: "#000" }]}>{i + 1}</Text>
-            <Text style={[styles.stepLabel, step === s && { color: "#000" }]}>
+            <Text style={[styles.stepNum, step === s && { color: colors.invertedText }]}>{i + 1}</Text>
+            <Text style={[styles.stepLabel, step === s && { color: colors.invertedText }]}>
               {s === "client" ? "Cliente" : s === "service" ? "Serviço" : s === "professional" ? "Profissional" : "Horário"}
             </Text>
           </Pressable>
@@ -323,11 +325,11 @@ export default function NovoAgendamentoScreen() {
             {!useNewClient ? (
               <>
                 <View style={styles.searchBox}>
-                  <Feather name="search" size={16} color={Colors.textMuted} />
+                  <Feather name="search" size={16} color={colors.textMuted} />
                   <TextInput
                     style={styles.searchInput}
                     placeholder="Buscar por nome ou telefone…"
-                    placeholderTextColor={Colors.textMuted}
+                    placeholderTextColor={colors.textMuted}
                     value={clientSearch}
                     onChangeText={setClientSearch}
                   />
@@ -358,14 +360,14 @@ export default function NovoAgendamentoScreen() {
                       <Text style={styles.optionTitle} numberOfLines={1}>{c.nome}</Text>
                       {c.telefone && <Text style={styles.optionSub}>{formatPhone(c.telefone)}</Text>}
                     </View>
-                    {c.vip && <Feather name="star" size={14} color={Colors.warning} />}
+                    {c.vip && <Feather name="star" size={14} color={colors.warning} />}
                   </TouchableOpacity>
                 ))}
                 {filteredClients.length === 0 && (
                   <Text style={styles.empty}>Nenhum cliente encontrado.</Text>
                 )}
                 <TouchableOpacity onPress={() => setUseNewClient(true)} style={styles.linkBtn}>
-                  <Feather name="plus-circle" size={16} color={Colors.accent} />
+                  <Feather name="plus-circle" size={16} color={colors.accent} />
                   <Text style={styles.linkText}>Novo cliente sem cadastro</Text>
                 </TouchableOpacity>
               </>
@@ -376,7 +378,7 @@ export default function NovoAgendamentoScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="Ex: Mariana Silva"
-                    placeholderTextColor={Colors.textMuted}
+                    placeholderTextColor={colors.textMuted}
                     value={formNome}
                     onChangeText={setFormNome}
                   />
@@ -386,7 +388,7 @@ export default function NovoAgendamentoScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="(11) 99999-9999"
-                    placeholderTextColor={Colors.textMuted}
+                    placeholderTextColor={colors.textMuted}
                     value={formTelefone}
                     onChangeText={(v) => setFormTelefone(formatPhone(v))}
                     keyboardType="phone-pad"
@@ -415,11 +417,11 @@ export default function NovoAgendamentoScreen() {
         {step === "service" && (
           <View>
             <View style={styles.searchBox}>
-              <Feather name="search" size={16} color={Colors.textMuted} />
+              <Feather name="search" size={16} color={colors.textMuted} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Buscar serviço…"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 value={serviceSearch}
                 onChangeText={setServiceSearch}
               />
@@ -452,11 +454,11 @@ export default function NovoAgendamentoScreen() {
                     if (Platform.OS !== "web") Haptics.selectionAsync();
                   }}
                 >
-                  <View style={[styles.avatarSm, { backgroundColor: Colors.accent + "22" }]}>
+                  <View style={[styles.avatarSm, { backgroundColor: colors.accent + "22" }]}>
                     {isSelected ? (
-                      <Text style={[styles.avatarSmText, { color: Colors.accent }]}>{orderIdx}</Text>
+                      <Text style={[styles.avatarSmText, { color: colors.accent }]}>{orderIdx}</Text>
                     ) : (
-                      <Feather name="scissors" size={16} color={Colors.accent} />
+                      <Feather name="scissors" size={16} color={colors.accent} />
                     )}
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
@@ -494,8 +496,8 @@ export default function NovoAgendamentoScreen() {
                 style={[styles.option, formProfId === String(p.id) && styles.optionActive]}
                 onPress={() => { setFormProfId(String(p.id)); setStep("time"); }}
               >
-                <View style={[styles.avatarSm, { backgroundColor: Colors.accent + "22" }]}>
-                  <Text style={[styles.avatarSmText, { color: Colors.accent }]}>{p.nomeExibicao.charAt(0).toUpperCase()}</Text>
+                <View style={[styles.avatarSm, { backgroundColor: colors.accent + "22" }]}>
+                  <Text style={[styles.avatarSmText, { color: colors.accent }]}>{p.nomeExibicao.charAt(0).toUpperCase()}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.optionTitle}>{p.nomeExibicao}</Text>
@@ -530,17 +532,17 @@ export default function NovoAgendamentoScreen() {
                 return (
                   <TouchableOpacity
                     key={dStr}
-                    style={[styles.dateChip, sel && styles.dateChipActive, !sel && isToday && { borderColor: Colors.accent }]}
+                    style={[styles.dateChip, sel && styles.dateChipActive, !sel && isToday && { borderColor: colors.accent }]}
                     onPress={() => {
                       setDateStr(dStr);
                       setFormHora("");
                       if (Platform.OS !== "web") Haptics.selectionAsync();
                     }}
                   >
-                    <Text style={[styles.dateChipWeek, sel && { color: "#000" }]}>
+                    <Text style={[styles.dateChipWeek, sel && { color: colors.invertedText }]}>
                       {d.toLocaleDateString("pt-BR", { weekday: "short" }).slice(0, 3)}
                     </Text>
-                    <Text style={[styles.dateChipNum, sel && { color: "#000" }]}>{d.getDate()}</Text>
+                    <Text style={[styles.dateChipNum, sel && { color: colors.invertedText }]}>{d.getDate()}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -548,7 +550,7 @@ export default function NovoAgendamentoScreen() {
 
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 14, marginBottom: 4 }}>
               <Text style={styles.sectionLabel}>
-                Horário * {slotsLoading ? <Text style={{ color: Colors.textMuted, fontSize: 11 }}> (carregando…)</Text> : null}
+                Horário * {slotsLoading ? <Text style={{ color: colors.textMuted, fontSize: 11 }}> (carregando…)</Text> : null}
               </Text>
               <TouchableOpacity onPress={() => setShowCustom(v => !v)}>
                 <Text style={styles.linkText}>{showCustom ? "Usar grade" : "Horário customizado"}</Text>
@@ -559,7 +561,7 @@ export default function NovoAgendamentoScreen() {
                 <TextInput
                   style={[styles.input, { flex: 1 }]}
                   placeholder="HH:MM (ex: 14:30)"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={colors.textMuted}
                   value={customTime}
                   onChangeText={(v) => {
                     const digits = v.replace(/[^\d]/g, "").slice(0, 4);
@@ -588,9 +590,9 @@ export default function NovoAgendamentoScreen() {
                 </TouchableOpacity>
               </View>
             ) : visibleSlots.length === 0 && slotsFetched && !slotsLoading ? (
-              <View style={[styles.warnBox, { backgroundColor: Colors.surface, borderColor: Colors.surfaceBorder }]}>
-                <Feather name="alert-circle" size={14} color={Colors.textSecondary} />
-                <Text style={[styles.warnText, { color: Colors.textSecondary }]}>
+              <View style={[styles.warnBox, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}>
+                <Feather name="alert-circle" size={14} color={colors.textSecondary} />
+                <Text style={[styles.warnText, { color: colors.textSecondary }]}>
                   Sem horários disponíveis para esse profissional/serviço/data. Use "Horário customizado" para registrar como encaixe.
                 </Text>
               </View>
@@ -621,8 +623,8 @@ export default function NovoAgendamentoScreen() {
                     >
                       <Text style={[
                         styles.slotText,
-                        sel && { color: "#000" },
-                        !allowSelect && !sel && { color: Colors.textMuted, textDecorationLine: "line-through" },
+                        sel && { color: colors.invertedText },
+                        !allowSelect && !sel && { color: colors.textMuted, textDecorationLine: "line-through" },
                       ]}>{t}</Text>
                     </TouchableOpacity>
                   );
@@ -631,7 +633,7 @@ export default function NovoAgendamentoScreen() {
             )}
             {formHora && !useFallback && !isSlotAvailable(formHora) && (
               <View style={styles.warnBox}>
-                <Feather name="alert-triangle" size={14} color={Colors.warning} />
+                <Feather name="alert-triangle" size={14} color={colors.warning} />
                 <Text style={styles.warnText}>
                   {slotsData.find(s => s.horaInicio === formHora)
                     ? "Horário ocupado/bloqueado — será registrado como encaixe."
@@ -657,7 +659,7 @@ export default function NovoAgendamentoScreen() {
                       style={[styles.miniChip, it.servicoId === String(s.id) && styles.miniChipActive]}
                       onPress={() => setExtraItems(prev => prev.map((p, i) => i === idx ? { ...p, servicoId: String(s.id) } : p))}
                     >
-                      <Text style={[styles.miniChipText, it.servicoId === String(s.id) && { color: "#000" }]}>{s.nome}</Text>
+                      <Text style={[styles.miniChipText, it.servicoId === String(s.id) && { color: colors.invertedText }]}>{s.nome}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -669,22 +671,22 @@ export default function NovoAgendamentoScreen() {
                       style={[styles.miniChip, it.profissionalId === String(p.id) && styles.miniChipActive]}
                       onPress={() => setExtraItems(prev => prev.map((pp, i) => i === idx ? { ...pp, profissionalId: String(p.id) } : pp))}
                     >
-                      <Text style={[styles.miniChipText, it.profissionalId === String(p.id) && { color: "#000" }]}>{p.apelido || p.nomeExibicao}</Text>
+                      <Text style={[styles.miniChipText, it.profissionalId === String(p.id) && { color: colors.invertedText }]}>{p.apelido || p.nomeExibicao}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
               </View>
             ))}
             <TouchableOpacity style={styles.addItemBtn} onPress={() => setExtraItems(prev => [...prev, { servicoId: "", profissionalId: "" }])}>
-              <Feather name="plus" size={16} color={Colors.accent} />
+              <Feather name="plus" size={16} color={colors.accent} />
               <Text style={styles.addItemText}>Adicionar serviço extra</Text>
             </TouchableOpacity>
 
-            <Text style={styles.sectionLabel}>Observação <Text style={{ color: Colors.textMuted }}>(opcional)</Text></Text>
+            <Text style={styles.sectionLabel}>Observação <Text style={{ color: colors.textMuted }}>(opcional)</Text></Text>
             <TextInput
               style={[styles.input, { minHeight: 70, textAlignVertical: "top" }]}
               placeholder="Ex: trazer foto de referência"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               value={formObs}
               onChangeText={setFormObs}
               multiline
@@ -696,7 +698,7 @@ export default function NovoAgendamentoScreen() {
               onPress={handleSubmit}
             >
               {submitting ? (
-                <ActivityIndicator color="#000" />
+                <ActivityIndicator color={colors.invertedText} />
               ) : (
                 <Text style={styles.btnPrimaryText}>
                   {isEncaixe
@@ -715,63 +717,65 @@ export default function NovoAgendamentoScreen() {
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
+  const colors = useColors();
   return (
     <View style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 4 }}>
-      <Text style={{ fontSize: 12, color: Colors.textSecondary, fontFamily: "Inter_400Regular" }}>{label}</Text>
-      <Text style={{ fontSize: 12, color: Colors.text, fontFamily: "Inter_600SemiBold", maxWidth: "65%" }} numberOfLines={1}>{value}</Text>
+      <Text style={{ fontSize: 12, color: colors.textSecondary, fontFamily: "Inter_400Regular" }}>{label}</Text>
+      <Text style={{ fontSize: 12, color: colors.text, fontFamily: "Inter_600SemiBold", maxWidth: "65%" }} numberOfLines={1}>{value}</Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
   header: { flexDirection: "row", alignItems: "flex-start", paddingHorizontal: 12, paddingBottom: 8, gap: 8 },
-  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "center" },
-  title: { fontSize: 22, fontFamily: "Inter_700Bold", color: Colors.text },
-  subtitle: { fontSize: 13, color: Colors.textSecondary, fontFamily: "Inter_400Regular", marginTop: 2, textTransform: "capitalize" },
+  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, alignItems: "center", justifyContent: "center" },
+  title: { fontSize: 22, fontFamily: "Inter_700Bold", color: c.text },
+  subtitle: { fontSize: 13, color: c.textSecondary, fontFamily: "Inter_400Regular", marginTop: 2, textTransform: "capitalize" },
   steps: { flexDirection: "row", paddingHorizontal: 12, gap: 6, marginTop: 4, flexWrap: "wrap" },
-  stepChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  stepChipDone: { backgroundColor: Colors.accent + "22", borderColor: Colors.accent + "55" },
-  stepChipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  stepNum: { fontSize: 11, fontFamily: "Inter_700Bold", color: Colors.textSecondary },
-  stepLabel: { fontSize: 11, fontFamily: "Inter_500Medium", color: Colors.textSecondary },
-  searchBox: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, borderRadius: 12, paddingHorizontal: 12, height: 44, marginBottom: 12 },
-  searchInput: { flex: 1, color: Colors.text, fontSize: 14, fontFamily: "Inter_400Regular" },
-  option: { flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: Colors.surfaceBorder, backgroundColor: Colors.surface, marginBottom: 8 },
-  optionActive: { borderColor: Colors.accent, backgroundColor: Colors.accent + "0d" },
-  avatarSm: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: Colors.surfaceLight },
-  avatarSmText: { fontSize: 14, fontFamily: "Inter_700Bold", color: Colors.text },
-  optionTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: Colors.text },
-  optionSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginTop: 2 },
-  servicePrice: { fontSize: 14, fontFamily: "Inter_700Bold", color: Colors.accent },
-  empty: { textAlign: "center", color: Colors.textMuted, paddingVertical: 24, fontSize: 13 },
+  stepChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder },
+  stepChipDone: { backgroundColor: c.accent + "22", borderColor: c.accent + "55" },
+  stepChipActive: { backgroundColor: c.accent, borderColor: c.accent },
+  stepNum: { fontSize: 11, fontFamily: "Inter_700Bold", color: c.textSecondary },
+  stepLabel: { fontSize: 11, fontFamily: "Inter_500Medium", color: c.textSecondary },
+  searchBox: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, borderRadius: 12, paddingHorizontal: 12, height: 44, marginBottom: 12 },
+  searchInput: { flex: 1, color: c.text, fontSize: 14, fontFamily: "Inter_400Regular" },
+  option: { flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: c.surfaceBorder, backgroundColor: c.surface, marginBottom: 8 },
+  optionActive: { borderColor: c.accent, backgroundColor: c.accent + "0d" },
+  avatarSm: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: c.surfaceLight },
+  avatarSmText: { fontSize: 14, fontFamily: "Inter_700Bold", color: c.text },
+  optionTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: c.text },
+  optionSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: c.textSecondary, marginTop: 2 },
+  servicePrice: { fontSize: 14, fontFamily: "Inter_700Bold", color: c.accent },
+  empty: { textAlign: "center", color: c.textMuted, paddingVertical: 24, fontSize: 13 },
   slotDisabled: { opacity: 0.45 },
-  warnBox: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10, padding: 10, borderRadius: 10, backgroundColor: Colors.warning + "12", borderWidth: 1, borderColor: Colors.warning + "55" },
-  warnText: { flex: 1, fontSize: 12, color: Colors.warning, fontFamily: "Inter_500Medium" },
+  warnBox: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10, padding: 10, borderRadius: 10, backgroundColor: c.warning + "12", borderWidth: 1, borderColor: c.warning + "55" },
+  warnText: { flex: 1, fontSize: 12, color: c.warning, fontFamily: "Inter_500Medium" },
   linkBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 12, marginTop: 4 },
-  linkText: { color: Colors.accent, fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  fieldLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary, marginBottom: 6, marginTop: 8, textTransform: "uppercase", letterSpacing: 0.5 },
-  input: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: Colors.text, fontSize: 14, fontFamily: "Inter_400Regular" },
-  btnPrimary: { backgroundColor: Colors.accent, borderRadius: 12, paddingVertical: 14, alignItems: "center", justifyContent: "center" },
-  btnPrimaryText: { color: "#000", fontFamily: "Inter_600SemiBold", fontSize: 14 },
-  btnGhost: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-  btnGhostText: { color: Colors.text, fontFamily: "Inter_500Medium", fontSize: 14 },
-  summaryBox: { padding: 12, borderRadius: 12, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, marginBottom: 10 },
-  sectionLabel: { fontSize: 12, fontFamily: "Inter_700Bold", color: Colors.textSecondary, marginTop: 14, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6 },
+  linkText: { color: c.accent, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  fieldLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: c.textSecondary, marginBottom: 6, marginTop: 8, textTransform: "uppercase", letterSpacing: 0.5 },
+  input: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: c.text, fontSize: 14, fontFamily: "Inter_400Regular" },
+  btnPrimary: { backgroundColor: c.accent, borderRadius: 12, paddingVertical: 14, alignItems: "center", justifyContent: "center" },
+  btnPrimaryText: { color: c.invertedText, fontFamily: "Inter_600SemiBold", fontSize: 14 },
+  btnGhost: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+  btnGhostText: { color: c.text, fontFamily: "Inter_500Medium", fontSize: 14 },
+  summaryBox: { padding: 12, borderRadius: 12, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, marginBottom: 10 },
+  sectionLabel: { fontSize: 12, fontFamily: "Inter_700Bold", color: c.textSecondary, marginTop: 14, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6 },
   slotsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  slot: { paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10, borderWidth: 1, borderColor: Colors.surfaceBorder, backgroundColor: Colors.surface, minWidth: 64, alignItems: "center" },
-  slotActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  slotText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: Colors.text },
-  extraBox: { padding: 10, borderRadius: 12, backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder, marginBottom: 10 },
-  extraTitle: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary, textTransform: "uppercase" },
-  removeLink: { color: Colors.error, fontFamily: "Inter_500Medium", fontSize: 12 },
-  miniChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, marginRight: 6 },
-  miniChipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  miniChipText: { fontSize: 11, fontFamily: "Inter_500Medium", color: Colors.text },
+  slot: { paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10, borderWidth: 1, borderColor: c.surfaceBorder, backgroundColor: c.surface, minWidth: 64, alignItems: "center" },
+  slotActive: { backgroundColor: c.accent, borderColor: c.accent },
+  slotText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: c.text },
+  extraBox: { padding: 10, borderRadius: 12, backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder, marginBottom: 10 },
+  extraTitle: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: c.textSecondary, textTransform: "uppercase" },
+  removeLink: { color: c.error, fontFamily: "Inter_500Medium", fontSize: 12 },
+  miniChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, marginRight: 6 },
+  miniChipActive: { backgroundColor: c.accent, borderColor: c.accent },
+  miniChipText: { fontSize: 11, fontFamily: "Inter_500Medium", color: c.text },
   addItemBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 10, marginBottom: 6 },
-  addItemText: { color: Colors.accent, fontFamily: "Inter_600SemiBold", fontSize: 12 },
-  helperText: { fontSize: 12, color: Colors.textMuted, fontFamily: "Inter_400Regular", marginBottom: 10, lineHeight: 17 },
-  dateChip: { minWidth: 52, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: Colors.surfaceBorder, backgroundColor: Colors.surface, alignItems: "center" },
-  dateChipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  dateChipWeek: { fontSize: 10, color: Colors.textSecondary, fontFamily: "Inter_500Medium", textTransform: "capitalize" },
-  dateChipNum: { fontSize: 16, color: Colors.text, fontFamily: "Inter_700Bold", marginTop: 2 },
+  addItemText: { color: c.accent, fontFamily: "Inter_600SemiBold", fontSize: 12 },
+  helperText: { fontSize: 12, color: c.textMuted, fontFamily: "Inter_400Regular", marginBottom: 10, lineHeight: 17 },
+  dateChip: { minWidth: 52, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: c.surfaceBorder, backgroundColor: c.surface, alignItems: "center" },
+  dateChipActive: { backgroundColor: c.accent, borderColor: c.accent },
+  dateChipWeek: { fontSize: 10, color: c.textSecondary, fontFamily: "Inter_500Medium", textTransform: "capitalize" },
+  dateChipNum: { fontSize: 16, color: c.text, fontFamily: "Inter_700Bold", marginTop: 2 },
 });

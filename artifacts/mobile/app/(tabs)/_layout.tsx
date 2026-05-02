@@ -7,7 +7,7 @@ import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Colors from "@/constants/colors";
+import { useColors, useTheme } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 
 function NativeTabLayout() {
@@ -41,18 +41,20 @@ function ClassicTabLayout() {
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
   const safeAreaInsets = useSafeAreaInsets();
+  const colors = useColors();
+  const { resolved } = useTheme();
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.tabActive,
-        tabBarInactiveTintColor: Colors.tabInactive,
+        tabBarActiveTintColor: colors.tabActive,
+        tabBarInactiveTintColor: colors.tabInactive,
         tabBarStyle: {
           position: "absolute" as const,
-          backgroundColor: isIOS ? "transparent" : Colors.surface,
+          backgroundColor: isIOS ? "transparent" : colors.surface,
           borderTopWidth: isWeb ? 1 : 0,
-          borderTopColor: Colors.surfaceBorder,
+          borderTopColor: colors.surfaceBorder,
           elevation: 0,
           paddingBottom: isWeb ? 0 : safeAreaInsets.bottom,
           ...(isWeb ? { height: 84 } : {}),
@@ -61,14 +63,14 @@ function ClassicTabLayout() {
           isIOS ? (
             <BlurView
               intensity={100}
-              tint="dark"
+              tint={resolved === "claro" ? "light" : "dark"}
               style={StyleSheet.absoluteFill}
             />
           ) : isWeb ? (
             <View
               style={[
                 StyleSheet.absoluteFill,
-                { backgroundColor: Colors.surface },
+                { backgroundColor: colors.surface },
               ]}
             />
           ) : null,
@@ -140,11 +142,12 @@ function ClassicTabLayout() {
 
 export default function TabLayout() {
   const { isAuthenticated, isLoading } = useAuth();
+  const colors = useColors();
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, backgroundColor: Colors.background, alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator size="large" color={Colors.accent} />
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }

@@ -1,7 +1,7 @@
 import React from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Redirect } from "expo-router";
-import Colors from "@/constants/colors";
+import { useColors } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 
 export type AuthGuardProps = {
@@ -10,18 +10,19 @@ export type AuthGuardProps = {
 
 export function AuthGuard({ children }: AuthGuardProps) {
   const { isAuthenticated, isLoading } = useAuth();
+  const colors = useColors();
 
   if (isLoading) {
     return (
       <View
         style={{
           flex: 1,
-          backgroundColor: Colors.background,
+          backgroundColor: colors.background,
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <ActivityIndicator size="large" color={Colors.accent} />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }

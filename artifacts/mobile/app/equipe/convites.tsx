@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Alert, FlatList, Modal, Platform, Pressable, RefreshControl, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
@@ -36,21 +36,23 @@ type Form = {
 
 const EMPTY_FORM: Form = { email: "", role: "colaborador", nomeConvidado: "", perfilAcessoId: "", enviarEmail: true };
 
-const STATUS_META: Record<string, { label: string; color: string }> = {
-  pendente: { label: "Pendente", color: Colors.warning },
-  aceito: { label: "Aceito", color: Colors.success },
-  expirado: { label: "Expirado", color: Colors.textMuted },
-  cancelado: { label: "Cancelado", color: Colors.textMuted },
-};
-
 const ROLE_LABELS: Record<string, string> = { gerente: "Gerente", colaborador: "Colaborador" };
 
 export default function ConvitesScreen() {
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
   const insets = useSafeAreaInsets();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<Form>(EMPTY_FORM);
+
+  const STATUS_META: Record<string, { label: string; color: string }> = {
+    pendente: { label: "Pendente", color: colors.warning },
+    aceito: { label: "Aceito", color: colors.success },
+    expirado: { label: "Expirado", color: colors.textMuted },
+    cancelado: { label: "Cancelado", color: colors.textMuted },
+  };
 
   const convitesQuery = useQuery<Convite[]>({
     queryKey: ["convites", barbeariaId],
@@ -132,7 +134,7 @@ export default function ConvitesScreen() {
         data={convitesQuery.data ?? []}
         keyExtractor={(c) => String(c.id)}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 100 + insets.bottom }}
-        refreshControl={<RefreshControl refreshing={convitesQuery.isRefetching && !convitesQuery.isLoading} onRefresh={() => convitesQuery.refetch()} tintColor={Colors.accent} colors={[Colors.accent]} />}
+        refreshControl={<RefreshControl refreshing={convitesQuery.isRefetching && !convitesQuery.isLoading} onRefresh={() => convitesQuery.refetch()} tintColor={colors.accent} colors={[colors.accent]} />}
         ListEmptyComponent={
           convitesQuery.isLoading ? <SkeletonList count={3} variant="card" /> :
           convitesQuery.isError ? <EmptyState icon="alert-triangle" title="Erro" description={getErrorMessage(convitesQuery.error)} /> :
@@ -144,7 +146,7 @@ export default function ConvitesScreen() {
           const isPendente = status === "pendente";
           return (
             <View style={styles.card}>
-              <View style={styles.iconWrap}><Feather name="mail" size={18} color={Colors.accent} /></View>
+              <View style={styles.iconWrap}><Feather name="mail" size={18} color={colors.accent} /></View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.email}>{item.email}</Text>
                 {item.nomeConvidado ? <Text style={styles.name}>{item.nomeConvidado}</Text> : null}
@@ -163,7 +165,7 @@ export default function ConvitesScreen() {
                     onPress={() => resendMutation.mutate(item.id)}
                     style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.6 }]}
                   >
-                    <Feather name="refresh-cw" size={14} color={Colors.text} />
+                    <Feather name="refresh-cw" size={14} color={colors.text} />
                   </Pressable>
                 ) : null}
                 <Pressable
@@ -176,7 +178,7 @@ export default function ConvitesScreen() {
                   }
                   style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.6 }]}
                 >
-                  <Feather name="trash-2" size={14} color={Colors.error} />
+                  <Feather name="trash-2" size={14} color={colors.error} />
                 </Pressable>
               </View>
             </View>
@@ -194,7 +196,7 @@ export default function ConvitesScreen() {
               value={form.nomeConvidado}
               onChangeText={(t) => setForm((f) => ({ ...f, nomeConvidado: t }))}
               placeholder="Nome do convidado"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               style={styles.input}
             />
 
@@ -203,7 +205,7 @@ export default function ConvitesScreen() {
               value={form.email}
               onChangeText={(t) => setForm((f) => ({ ...f, email: t }))}
               placeholder="email@exemplo.com"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
               keyboardType="email-address"
               autoCorrect={false}
@@ -218,7 +220,7 @@ export default function ConvitesScreen() {
                   onPress={() => setForm((f) => ({ ...f, role: r }))}
                   style={[styles.chip, form.role === r && styles.chipActive]}
                 >
-                  <Text style={[styles.chipText, form.role === r && { color: "#000" }]}>{ROLE_LABELS[r]}</Text>
+                  <Text style={[styles.chipText, form.role === r && { color: colors.invertedText }]}>{ROLE_LABELS[r]}</Text>
                 </Pressable>
               ))}
             </View>
@@ -242,7 +244,7 @@ export default function ConvitesScreen() {
                           onPress={() => setForm((f) => ({ ...f, perfilAcessoId: String(p.id) }))}
                           style={[styles.chip, active && styles.chipActive]}
                         >
-                          <Text style={[styles.chipText, active && { color: "#000" }]}>{p.nome}</Text>
+                          <Text style={[styles.chipText, active && { color: colors.invertedText }]}>{p.nome}</Text>
                         </Pressable>
                       );
                     })}
@@ -256,7 +258,7 @@ export default function ConvitesScreen() {
               <Switch
                 value={form.enviarEmail}
                 onValueChange={(v) => setForm((f) => ({ ...f, enviarEmail: v }))}
-                trackColor={{ false: Colors.surfaceLight, true: Colors.accent }}
+                trackColor={{ false: colors.surfaceLight, true: colors.accent }}
                 thumbColor="#fff"
               />
             </View>
@@ -280,47 +282,47 @@ export default function ConvitesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
   card: {
     flexDirection: "row", alignItems: "flex-start", gap: 12,
-    backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.surfaceBorder,
     padding: 12, marginBottom: 8,
   },
   iconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(196,164,106,0.15)", alignItems: "center", justifyContent: "center" },
-  email: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  name: { color: Colors.textSecondary, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 2 },
+  email: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  name: { color: c.textSecondary, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 2 },
   badges: { flexDirection: "row", gap: 6, marginTop: 6, flexWrap: "wrap" },
   badge: {
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999,
-    backgroundColor: Colors.surfaceLight,
+    backgroundColor: c.surfaceLight,
   },
-  badgeText: { color: Colors.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 10 },
+  badgeText: { color: c.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 10 },
   actions: { flexDirection: "row", gap: 6 },
   actionBtn: {
-    width: 32, height: 32, borderRadius: 8, backgroundColor: Colors.surfaceLight,
-    borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "center",
+    width: 32, height: 32, borderRadius: 8, backgroundColor: c.surfaceLight,
+    borderWidth: 1, borderColor: c.surfaceBorder, alignItems: "center", justifyContent: "center",
   },
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-  sheet: { backgroundColor: Colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 18, maxHeight: "92%" },
-  modalTitle: { color: Colors.text, fontFamily: "Inter_700Bold", fontSize: 15, marginBottom: 4 },
-  label: { color: Colors.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 10, marginBottom: 4 },
+  backdrop: { flex: 1, backgroundColor: c.overlay, justifyContent: "flex-end" },
+  sheet: { backgroundColor: c.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 18, maxHeight: "92%" },
+  modalTitle: { color: c.text, fontFamily: "Inter_700Bold", fontSize: 15, marginBottom: 4 },
+  label: { color: c.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 10, marginBottom: 4 },
   input: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.surfaceBorder,
-    paddingHorizontal: 12, paddingVertical: Platform.OS === "ios" ? 10 : 8, color: Colors.text, fontFamily: "Inter_500Medium", fontSize: 13,
+    backgroundColor: c.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: c.surfaceBorder,
+    paddingHorizontal: 12, paddingVertical: Platform.OS === "ios" ? 10 : 8, color: c.text, fontFamily: "Inter_500Medium", fontSize: 13,
   },
   chips: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
   chip: {
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999,
-    backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder,
   },
-  chipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  chipText: { color: Colors.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12 },
+  chipActive: { backgroundColor: c.accent, borderColor: c.accent },
+  chipText: { color: c.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12 },
   switchRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 },
-  hint: { color: Colors.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 4 },
+  hint: { color: c.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 4 },
   modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 14 },
   btn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10 },
-  btnGhost: { backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  btnGhostText: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  btnPrimary: { backgroundColor: Colors.accent },
-  btnPrimaryText: { color: "#000", fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  btnGhost: { backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder },
+  btnGhostText: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  btnPrimary: { backgroundColor: c.accent },
+  btnPrimaryText: { color: c.invertedText, fontFamily: "Inter_600SemiBold", fontSize: 13 },
 });

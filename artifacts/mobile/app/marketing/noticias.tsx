@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
   ActivityIndicator, Modal, KeyboardAvoidingView, Platform, Switch, Alert, Image,
@@ -6,7 +6,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
@@ -35,6 +35,8 @@ type FormState = {
 const empty: FormState = { titulo: "", conteudo: "", imagemUrl: "", publicadoEm: "", ativo: true };
 
 export default function NoticiasScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
@@ -144,8 +146,8 @@ export default function NoticiasScreen() {
               <View style={styles.cardBody}>
                 <View style={styles.cardTop}>
                   <Text style={styles.titulo} numberOfLines={2}>{n.titulo}</Text>
-                  <View style={[styles.pill, { backgroundColor: n.ativo ? Colors.success + "22" : Colors.textMuted + "22" }]}>
-                    <Text style={[styles.pillText, { color: n.ativo ? Colors.success : Colors.textMuted }]}>
+                  <View style={[styles.pill, { backgroundColor: n.ativo ? colors.success + "22" : colors.textMuted + "22" }]}>
+                    <Text style={[styles.pillText, { color: n.ativo ? colors.success : colors.textMuted }]}>
                       {n.ativo ? "ATIVO" : "INATIVO"}
                     </Text>
                   </View>
@@ -156,16 +158,16 @@ export default function NoticiasScreen() {
                 ) : null}
                 <View style={styles.actions}>
                   <TouchableOpacity style={styles.actionBtn} onPress={() => toggleMut.mutate(n)}>
-                    <Feather name={n.ativo ? "eye-off" : "eye"} size={14} color={Colors.text} />
+                    <Feather name={n.ativo ? "eye-off" : "eye"} size={14} color={colors.text} />
                     <Text style={styles.actionText}>{n.ativo ? "Ocultar" : "Publicar"}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.actionBtn} onPress={() => openEdit(n)}>
-                    <Feather name="edit-2" size={14} color={Colors.text} />
+                    <Feather name="edit-2" size={14} color={colors.text} />
                     <Text style={styles.actionText}>Editar</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.actionBtn} onPress={() => onDelete(n)}>
-                    <Feather name="trash-2" size={14} color={Colors.error} />
-                    <Text style={[styles.actionText, { color: Colors.error }]}>Excluir</Text>
+                    <Feather name="trash-2" size={14} color={colors.error} />
+                    <Text style={[styles.actionText, { color: colors.error }]}>Excluir</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -183,13 +185,13 @@ export default function NoticiasScreen() {
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>{editing ? "Editar notícia" : "Nova notícia"}</Text>
                 <TouchableOpacity onPress={() => setModalOpen(false)} accessibilityLabel="Fechar">
-                  <Feather name="x" size={22} color={Colors.text} />
+                  <Feather name="x" size={22} color={colors.text} />
                 </TouchableOpacity>
               </View>
 
               {formError ? (
                 <View style={styles.errorBox}>
-                  <Feather name="alert-circle" size={14} color={Colors.error} />
+                  <Feather name="alert-circle" size={14} color={colors.error} />
                   <Text style={styles.errorText}>{formError}</Text>
                 </View>
               ) : null}
@@ -200,7 +202,7 @@ export default function NoticiasScreen() {
                 value={form.titulo}
                 onChangeText={(v) => setForm({ ...form, titulo: v })}
                 placeholder="Ex: Promoção de inverno"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
 
               <Text style={styles.label}>Conteúdo *</Text>
@@ -209,7 +211,7 @@ export default function NoticiasScreen() {
                 value={form.conteudo}
                 onChangeText={(v) => setForm({ ...form, conteudo: v })}
                 placeholder="Texto completo da notícia..."
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 multiline
                 textAlignVertical="top"
               />
@@ -220,7 +222,7 @@ export default function NoticiasScreen() {
                 value={form.imagemUrl}
                 onChangeText={(v) => setForm({ ...form, imagemUrl: v })}
                 placeholder="https://..."
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 autoCapitalize="none"
               />
 
@@ -230,7 +232,7 @@ export default function NoticiasScreen() {
                 value={form.publicadoEm}
                 onChangeText={(v) => setForm({ ...form, publicadoEm: v })}
                 placeholder="2026-01-15"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 autoCapitalize="none"
               />
 
@@ -239,8 +241,8 @@ export default function NoticiasScreen() {
                 <Switch
                   value={form.ativo}
                   onValueChange={(v) => setForm({ ...form, ativo: v })}
-                  trackColor={{ false: Colors.surfaceLight, true: Colors.accent + "80" }}
-                  thumbColor={form.ativo ? Colors.accent : "#888"}
+                  trackColor={{ false: colors.surfaceLight, true: colors.accent + "80" }}
+                  thumbColor={form.ativo ? colors.accent : "#888"}
                 />
               </View>
 
@@ -249,7 +251,7 @@ export default function NoticiasScreen() {
                 onPress={() => { setFormError(null); saveMut.mutate(); }}
                 disabled={saveMut.isPending}
               >
-                {saveMut.isPending ? <ActivityIndicator color="#000" /> : (
+                {saveMut.isPending ? <ActivityIndicator color={colors.invertedText} /> : (
                   <Text style={styles.saveBtnText}>{editing ? "Salvar alterações" : "Publicar"}</Text>
                 )}
               </TouchableOpacity>
@@ -261,49 +263,50 @@ export default function NoticiasScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface, borderRadius: 14, marginBottom: 10,
-    borderWidth: 1, borderColor: Colors.surfaceBorder, overflow: "hidden",
+    backgroundColor: c.surface, borderRadius: 14, marginBottom: 10,
+    borderWidth: 1, borderColor: c.surfaceBorder, overflow: "hidden",
   },
-  image: { width: "100%", height: 140, backgroundColor: Colors.surfaceLight },
+  image: { width: "100%", height: 140, backgroundColor: c.surfaceLight },
   cardBody: { padding: 14 },
   cardTop: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginBottom: 6 },
-  titulo: { flex: 1, fontSize: 15, fontFamily: "Inter_600SemiBold", color: Colors.text },
-  conteudo: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.textSecondary, lineHeight: 18, marginBottom: 6 },
-  meta: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.textMuted, marginBottom: 10 },
+  titulo: { flex: 1, fontSize: 15, fontFamily: "Inter_600SemiBold", color: c.text },
+  conteudo: { fontSize: 13, fontFamily: "Inter_400Regular", color: c.textSecondary, lineHeight: 18, marginBottom: 6 },
+  meta: { fontSize: 11, fontFamily: "Inter_400Regular", color: c.textMuted, marginBottom: 10 },
   pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   pillText: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
-  actions: { flexDirection: "row", gap: 8, borderTopWidth: 1, borderTopColor: Colors.surfaceBorder, paddingTop: 10, marginTop: 4 },
+  actions: { flexDirection: "row", gap: 8, borderTopWidth: 1, borderTopColor: c.surfaceBorder, paddingTop: 10, marginTop: 4 },
   actionBtn: {
     flexDirection: "row", alignItems: "center", gap: 6,
     paddingHorizontal: 10, paddingVertical: 6,
-    backgroundColor: Colors.surfaceLight, borderRadius: 8,
+    backgroundColor: c.surfaceLight, borderRadius: 8,
   },
-  actionText: { fontSize: 12, fontFamily: "Inter_500Medium", color: Colors.text },
+  actionText: { fontSize: 12, fontFamily: "Inter_500Medium", color: c.text },
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
   modalCard: {
-    backgroundColor: Colors.background,
+    backgroundColor: c.background,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 20, paddingBottom: 32, maxHeight: "92%",
-    borderTopWidth: 1, borderColor: Colors.surfaceBorder,
+    borderTopWidth: 1, borderColor: c.surfaceBorder,
   },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: Colors.text },
+  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: c.text },
   errorBox: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: Colors.error + "15", borderColor: Colors.error + "40",
+    backgroundColor: c.error + "15", borderColor: c.error + "40",
     borderWidth: 1, padding: 10, borderRadius: 10, marginBottom: 12,
   },
-  errorText: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.error, flex: 1 },
+  errorText: { fontSize: 13, fontFamily: "Inter_400Regular", color: c.error, flex: 1 },
   label: {
-    fontSize: 12, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary,
+    fontSize: 12, fontFamily: "Inter_600SemiBold", color: c.textSecondary,
     marginTop: 12, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder,
     borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
-    color: Colors.text, fontSize: 15, fontFamily: "Inter_400Regular",
+    color: c.text, fontSize: 15, fontFamily: "Inter_400Regular",
     minHeight: 46,
   },
   textarea: { minHeight: 140 },
@@ -311,10 +314,10 @@ const styles = StyleSheet.create({
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     marginTop: 14, paddingVertical: 4,
   },
-  switchLabel: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium", color: Colors.text },
+  switchLabel: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium", color: c.text },
   saveBtn: {
-    marginTop: 18, backgroundColor: Colors.accent, borderRadius: 12,
+    marginTop: 18, backgroundColor: c.accent, borderRadius: 12,
     height: 50, alignItems: "center", justifyContent: "center",
   },
-  saveBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#000" },
+  saveBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: c.invertedText },
 });

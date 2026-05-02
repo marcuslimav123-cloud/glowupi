@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchJson, dateToStr } from "@/lib/api";
 import { ErrorView } from "@/components/ErrorView";
@@ -18,8 +18,8 @@ const DIA_NOME: Record<string, string> = {
   sexta: "Sexta", sabado: "Sábado", domingo: "Domingo",
 };
 
-function heatColor(pct: number): { bg: string; text: string } {
-  if (pct === 0) return { bg: Colors.surface, text: Colors.textMuted };
+function heatColor(pct: number, c: ColorPalette): { bg: string; text: string } {
+  if (pct === 0) return { bg: c.surface, text: c.textMuted };
   if (pct < 20) return { bg: "#3b82f61a", text: "#93c5fd" };
   if (pct < 40) return { bg: "#3b82f633", text: "#bfdbfe" };
   if (pct < 60) return { bg: "#facc1533", text: "#fde68a" };
@@ -28,6 +28,8 @@ function heatColor(pct: number): { bg: string; text: string } {
 }
 
 export default function PicosScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { barbeariaId } = useAuth();
@@ -119,7 +121,7 @@ export default function PicosScreen() {
     <View style={[styles.container, { paddingTop: webTopPad }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Feather name="chevron-left" size={22} color={Colors.text} />
+          <Feather name="chevron-left" size={22} color={colors.text} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Horários de pico</Text>
@@ -130,7 +132,7 @@ export default function PicosScreen() {
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 + insets.bottom }}>
         {isLoading ? (
           <View style={{ paddingTop: 60, alignItems: "center" }}>
-            <ActivityIndicator color={Colors.accent} />
+            <ActivityIndicator color={colors.accent} />
           </View>
         ) : isError ? (
           <ErrorView title="Não foi possível carregar os horários de pico" error={error} onRetry={() => refetch()} />
@@ -171,7 +173,7 @@ export default function PicosScreen() {
 
             <View style={styles.heatCard}>
               <View style={styles.heatHeader}>
-                <Feather name="zap" size={16} color={Colors.accent} />
+                <Feather name="zap" size={16} color={colors.accent} />
                 <Text style={styles.heatTitle}>Mapa de calor</Text>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -188,7 +190,7 @@ export default function PicosScreen() {
                       {DIAS_SEMANA.map((dia) => {
                         const { total, ocupados } = heatmap[dia][hora];
                         const pct = total > 0 ? (ocupados / total) * 100 : 0;
-                        const c = heatColor(pct);
+                        const c = heatColor(pct, colors);
                         return (
                           <View key={dia} style={[styles.heatCell, { backgroundColor: c.bg }]}>
                             <Text style={[styles.heatCellText, { color: c.text }]}>
@@ -203,12 +205,12 @@ export default function PicosScreen() {
               </ScrollView>
               <View style={styles.legend}>
                 {[
-                  { label: "0%", c: heatColor(0) },
-                  { label: "<20", c: heatColor(10) },
-                  { label: "20-40", c: heatColor(30) },
-                  { label: "40-60", c: heatColor(50) },
-                  { label: "60-80", c: heatColor(70) },
-                  { label: ">80", c: heatColor(90) },
+                  { label: "0%", c: heatColor(0, colors) },
+                  { label: "<20", c: heatColor(10, colors) },
+                  { label: "20-40", c: heatColor(30, colors) },
+                  { label: "40-60", c: heatColor(50, colors) },
+                  { label: "60-80", c: heatColor(70, colors) },
+                  { label: ">80", c: heatColor(90, colors) },
                 ].map((item) => (
                   <View key={item.label} style={styles.legendItem}>
                     <View style={[styles.legendSwatch, { backgroundColor: item.c.bg }]} />
@@ -220,13 +222,13 @@ export default function PicosScreen() {
 
             <View style={[styles.heatCard, { marginTop: 14 }]}>
               <View style={styles.heatHeader}>
-                <Feather name="bar-chart-2" size={16} color={Colors.accent} />
+                <Feather name="bar-chart-2" size={16} color={colors.accent} />
                 <Text style={styles.heatTitle}>Ocupação por hora do dia</Text>
               </View>
               <View style={{ gap: 6 }}>
                 {barsByHora.map((b) => {
                   const w = maxBarPct > 0 ? Math.max(2, (b.pct / maxBarPct) * 100) : 0;
-                  const c = heatColor(b.pct);
+                  const c = heatColor(b.pct, colors);
                   return (
                     <View key={b.hora} style={styles.barRow}>
                       <Text style={styles.barLabel}>{b.hora}</Text>
@@ -243,7 +245,7 @@ export default function PicosScreen() {
             {(insights.maxPct > 70 || insights.minPct < 20) && (
               <View style={[styles.heatCard, { marginTop: 14 }]}>
                 <View style={styles.heatHeader}>
-                  <Feather name="star" size={16} color={Colors.accent} />
+                  <Feather name="star" size={16} color={colors.accent} />
                   <Text style={styles.heatTitle}>Sugestões</Text>
                 </View>
                 {insights.maxPct > 70 && (
@@ -271,34 +273,35 @@ export default function PicosScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   header: { flexDirection: "row", alignItems: "flex-start", paddingHorizontal: 12, paddingBottom: 8, gap: 8 },
-  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "center" },
-  title: { fontSize: 22, fontFamily: "Inter_700Bold", color: Colors.text },
-  subtitle: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginTop: 2 },
+  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, alignItems: "center", justifyContent: "center" },
+  title: { fontSize: 22, fontFamily: "Inter_700Bold", color: c.text },
+  subtitle: { fontSize: 13, fontFamily: "Inter_400Regular", color: c.textSecondary, marginTop: 2 },
   insightCard: { flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderRadius: 12, borderWidth: 1 },
   insightIcon: { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  insightLabel: { fontSize: 11, fontFamily: "Inter_500Medium", color: Colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5 },
-  insightValue: { fontSize: 14, fontFamily: "Inter_700Bold", color: Colors.text, marginTop: 2 },
-  heatCard: { backgroundColor: Colors.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: Colors.surfaceBorder },
+  insightLabel: { fontSize: 11, fontFamily: "Inter_500Medium", color: c.textMuted, textTransform: "uppercase", letterSpacing: 0.5 },
+  insightValue: { fontSize: 14, fontFamily: "Inter_700Bold", color: c.text, marginTop: 2 },
+  heatCard: { backgroundColor: c.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: c.surfaceBorder },
   heatHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
-  heatTitle: { fontSize: 14, fontFamily: "Inter_700Bold", color: Colors.text },
+  heatTitle: { fontSize: 14, fontFamily: "Inter_700Bold", color: c.text },
   heatRow: { flexDirection: "row", alignItems: "center" },
-  heatLabel: { width: 48, fontSize: 11, fontFamily: "Inter_500Medium", color: Colors.textMuted },
+  heatLabel: { width: 48, fontSize: 11, fontFamily: "Inter_500Medium", color: c.textMuted },
   heatHourLabel: { paddingVertical: 4 },
-  heatColLabel: { width: 40, textAlign: "center", fontSize: 11, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary },
+  heatColLabel: { width: 40, textAlign: "center", fontSize: 11, fontFamily: "Inter_600SemiBold", color: c.textSecondary },
   heatCell: { width: 36, height: 32, marginHorizontal: 2, marginVertical: 2, borderRadius: 6, alignItems: "center", justifyContent: "center" },
   heatCellText: { fontSize: 10, fontFamily: "Inter_600SemiBold" },
   legend: { flexDirection: "row", flexWrap: "wrap", marginTop: 12, gap: 10 },
   legendItem: { flexDirection: "row", alignItems: "center", gap: 4 },
   legendSwatch: { width: 14, height: 12, borderRadius: 4 },
-  legendText: { fontSize: 10, fontFamily: "Inter_500Medium", color: Colors.textMuted },
+  legendText: { fontSize: 10, fontFamily: "Inter_500Medium", color: c.textMuted },
   suggestionBox: { padding: 12, borderRadius: 10, borderWidth: 1, marginBottom: 8 },
-  suggestionText: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.text, lineHeight: 17 },
+  suggestionText: { fontSize: 12, fontFamily: "Inter_400Regular", color: c.text, lineHeight: 17 },
   barRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  barLabel: { width: 44, fontSize: 11, fontFamily: "Inter_500Medium", color: Colors.textMuted },
-  barTrack: { flex: 1, height: 18, backgroundColor: Colors.background, borderRadius: 6, overflow: "hidden", borderWidth: 1, borderColor: Colors.surfaceBorder },
+  barLabel: { width: 44, fontSize: 11, fontFamily: "Inter_500Medium", color: c.textMuted },
+  barTrack: { flex: 1, height: 18, backgroundColor: c.background, borderRadius: 6, overflow: "hidden", borderWidth: 1, borderColor: c.surfaceBorder },
   barFill: { height: "100%", borderRadius: 5, borderWidth: 1 },
-  barValue: { width: 40, textAlign: "right", fontSize: 11, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary },
+  barValue: { width: 40, textAlign: "right", fontSize: 11, fontFamily: "Inter_600SemiBold", color: c.textSecondary },
 });

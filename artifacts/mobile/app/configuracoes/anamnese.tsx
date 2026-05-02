@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
@@ -46,6 +46,8 @@ const EMPTY_CAMPO: CampoForm = { label: "", tipo: "texto", obrigatorio: false, o
 export default function AnamneseScreen() {
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [tab, setTab] = useState<"tipos" | "formularios">("tipos");
   const [editTipo, setEditTipo] = useState<TipoForm | null>(null);
   const [editForm, setEditForm] = useState<FormForm | null>(null);
@@ -148,7 +150,7 @@ export default function AnamneseScreen() {
       <View style={styles.tabs}>
         {(["tipos", "formularios"] as const).map((t) => (
           <Pressable key={t} onPress={() => setTab(t)} style={[styles.tab, tab === t && styles.tabActive]}>
-            <Text style={[styles.tabText, tab === t && { color: "#000" }]}>
+            <Text style={[styles.tabText, tab === t && { color: colors.invertedText }]}>
               {t === "tipos" ? "Tipos" : "Formulários"}
             </Text>
           </Pressable>
@@ -166,7 +168,7 @@ export default function AnamneseScreen() {
           ) : (
             (tiposQuery.data ?? []).map((t) => (
               <View key={t.id} style={styles.card}>
-                <View style={styles.iconWrap}><Feather name="layers" size={18} color={Colors.accent} /></View>
+                <View style={styles.iconWrap}><Feather name="layers" size={18} color={colors.accent} /></View>
                 <View style={{ flex: 1 }}>
                   <View style={styles.titleRow}>
                     <Text style={styles.title}>{t.nome}</Text>
@@ -180,7 +182,7 @@ export default function AnamneseScreen() {
                     onPress={() => setEditTipo({ id: t.id, nome: t.nome, descricao: t.descricao || "", ativo: t.ativo })}
                     style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.6 }]}
                   >
-                    <Feather name="edit-2" size={14} color={Colors.text} />
+                    <Feather name="edit-2" size={14} color={colors.text} />
                   </Pressable>
                   <Pressable
                     hitSlop={8}
@@ -192,7 +194,7 @@ export default function AnamneseScreen() {
                     }
                     style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.6 }]}
                   >
-                    <Feather name="trash-2" size={14} color={Colors.error} />
+                    <Feather name="trash-2" size={14} color={colors.error} />
                   </Pressable>
                 </View>
               </View>
@@ -210,7 +212,7 @@ export default function AnamneseScreen() {
           ) : (
             (formsQuery.data ?? []).map((f) => (
               <View key={f.id} style={styles.card}>
-                <View style={styles.iconWrap}><Feather name="clipboard" size={18} color={Colors.accent} /></View>
+                <View style={styles.iconWrap}><Feather name="clipboard" size={18} color={colors.accent} /></View>
                 <View style={{ flex: 1 }}>
                   <View style={styles.titleRow}>
                     <Text style={styles.title}>{f.titulo}</Text>
@@ -249,7 +251,7 @@ export default function AnamneseScreen() {
                     }
                     style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.6 }]}
                   >
-                    <Feather name="edit-2" size={14} color={Colors.text} />
+                    <Feather name="edit-2" size={14} color={colors.text} />
                   </Pressable>
                   <Pressable
                     hitSlop={8}
@@ -261,7 +263,7 @@ export default function AnamneseScreen() {
                     }
                     style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.6 }]}
                   >
-                    <Feather name="trash-2" size={14} color={Colors.error} />
+                    <Feather name="trash-2" size={14} color={colors.error} />
                   </Pressable>
                 </View>
               </View>
@@ -281,7 +283,7 @@ export default function AnamneseScreen() {
               value={editTipo?.nome ?? ""}
               onChangeText={(t) => setEditTipo((f) => (f ? { ...f, nome: t } : f))}
               placeholder="Ex.: Anamnese capilar"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               style={styles.input}
             />
 
@@ -290,7 +292,7 @@ export default function AnamneseScreen() {
               value={editTipo?.descricao ?? ""}
               onChangeText={(t) => setEditTipo((f) => (f ? { ...f, descricao: t } : f))}
               placeholder="Opcional"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               style={[styles.input, { minHeight: 70, textAlignVertical: "top" }]}
               multiline
             />
@@ -300,7 +302,7 @@ export default function AnamneseScreen() {
               <Switch
                 value={editTipo?.ativo ?? true}
                 onValueChange={(v) => setEditTipo((f) => (f ? { ...f, ativo: v } : f))}
-                trackColor={{ false: Colors.surfaceLight, true: Colors.accent }}
+                trackColor={{ false: colors.surfaceLight, true: colors.accent }}
                 thumbColor="#fff"
               />
             </View>
@@ -338,7 +340,7 @@ export default function AnamneseScreen() {
                 value={editForm?.titulo ?? ""}
                 onChangeText={(t) => setEditForm((f) => (f ? { ...f, titulo: t } : f))}
                 placeholder="Ex.: Avaliação inicial"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 style={styles.input}
               />
 
@@ -352,7 +354,7 @@ export default function AnamneseScreen() {
                       onPress={() => setEditForm((f) => (f ? { ...f, tipoId: String(t.id) } : f))}
                       style={[styles.chip, active && styles.chipActive]}
                     >
-                      <Text style={[styles.chipText, active && { color: "#000" }]}>{t.nome}</Text>
+                      <Text style={[styles.chipText, active && { color: colors.invertedText }]}>{t.nome}</Text>
                     </Pressable>
                   );
                 })}
@@ -363,7 +365,7 @@ export default function AnamneseScreen() {
                 <Switch
                   value={editForm?.ativo ?? true}
                   onValueChange={(v) => setEditForm((f) => (f ? { ...f, ativo: v } : f))}
-                  trackColor={{ false: Colors.surfaceLight, true: Colors.accent }}
+                  trackColor={{ false: colors.surfaceLight, true: colors.accent }}
                   thumbColor="#fff"
                 />
               </View>
@@ -380,14 +382,14 @@ export default function AnamneseScreen() {
                   }
                   style={({ pressed }) => [styles.addFieldBtn, pressed && { opacity: 0.6 }]}
                 >
-                  <Feather name="plus" size={12} color="#000" />
+                  <Feather name="plus" size={12} color={colors.invertedText} />
                   <Text style={styles.addFieldText}>Adicionar</Text>
                 </Pressable>
               </View>
 
               {(!editForm?.campos || editForm.campos.length === 0) ? (
                 <View style={styles.fieldsEmpty}>
-                  <Feather name="list" size={20} color={Colors.textMuted} />
+                  <Feather name="list" size={20} color={colors.textMuted} />
                   <Text style={styles.fieldsEmptyText}>Nenhum campo adicionado</Text>
                 </View>
               ) : (
@@ -414,7 +416,7 @@ export default function AnamneseScreen() {
                             (pressed || i === 0) && { opacity: 0.4 },
                           ]}
                         >
-                          <Feather name="chevron-up" size={14} color={Colors.text} />
+                          <Feather name="chevron-up" size={14} color={colors.text} />
                         </Pressable>
                         <Pressable
                           hitSlop={6}
@@ -432,7 +434,7 @@ export default function AnamneseScreen() {
                             (pressed || i === editForm.campos.length - 1) && { opacity: 0.4 },
                           ]}
                         >
-                          <Feather name="chevron-down" size={14} color={Colors.text} />
+                          <Feather name="chevron-down" size={14} color={colors.text} />
                         </Pressable>
                         <Pressable
                           hitSlop={6}
@@ -443,7 +445,7 @@ export default function AnamneseScreen() {
                           }
                           style={({ pressed }) => [styles.fieldIconBtn, pressed && { opacity: 0.6 }]}
                         >
-                          <Feather name="trash-2" size={14} color={Colors.error} />
+                          <Feather name="trash-2" size={14} color={colors.error} />
                         </Pressable>
                       </View>
 
@@ -461,7 +463,7 @@ export default function AnamneseScreen() {
                           )
                         }
                         placeholder="Ex.: Possui alergia?"
-                        placeholderTextColor={Colors.textMuted}
+                        placeholderTextColor={colors.textMuted}
                         style={styles.input}
                       />
 
@@ -490,7 +492,7 @@ export default function AnamneseScreen() {
                               }
                               style={[styles.chip, active && styles.chipActive]}
                             >
-                              <Text style={[styles.chipText, active && { color: "#000" }]}>
+                              <Text style={[styles.chipText, active && { color: colors.invertedText }]}>
                                 {ft.label}
                               </Text>
                             </Pressable>
@@ -516,7 +518,7 @@ export default function AnamneseScreen() {
                               )
                             }
                             placeholder={"Opção 1\nOpção 2"}
-                            placeholderTextColor={Colors.textMuted}
+                            placeholderTextColor={colors.textMuted}
                             style={[styles.input, { minHeight: 70, textAlignVertical: "top" }]}
                             multiline
                           />
@@ -539,7 +541,7 @@ export default function AnamneseScreen() {
                                 : f,
                             )
                           }
-                          trackColor={{ false: Colors.surfaceLight, true: Colors.accent }}
+                          trackColor={{ false: colors.surfaceLight, true: colors.accent }}
                           thumbColor="#fff"
                         />
                       </View>
@@ -580,75 +582,75 @@ export default function AnamneseScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
   tabs: { flexDirection: "row", gap: 6, marginBottom: 12 },
-  tab: { flex: 1, paddingVertical: 9, alignItems: "center", borderRadius: 999, backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  tabActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  tabText: { color: Colors.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12 },
+  tab: { flex: 1, paddingVertical: 9, alignItems: "center", borderRadius: 999, backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder },
+  tabActive: { backgroundColor: c.accent, borderColor: c.accent },
+  tabText: { color: c.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12 },
   card: {
     flexDirection: "row", alignItems: "flex-start", gap: 12,
-    backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.surfaceBorder,
     padding: 12, marginBottom: 8,
   },
   iconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(196,164,106,0.15)", alignItems: "center", justifyContent: "center" },
   titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  title: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  inactive: { color: Colors.warning, fontFamily: "Inter_700Bold", fontSize: 9, letterSpacing: 0.4 },
-  subtitle: { color: Colors.textSecondary, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 2 },
+  title: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  inactive: { color: c.warning, fontFamily: "Inter_700Bold", fontSize: 9, letterSpacing: 0.4 },
+  subtitle: { color: c.textSecondary, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 2 },
   fieldChips: { flexDirection: "row", gap: 4, marginTop: 6, flexWrap: "wrap" },
   fieldChip: {
-    backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder,
     paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6,
-    color: Colors.textSecondary, fontFamily: "Inter_500Medium", fontSize: 10,
+    color: c.textSecondary, fontFamily: "Inter_500Medium", fontSize: 10,
     overflow: "hidden",
   },
   actions: { flexDirection: "row", gap: 6 },
   actionBtn: {
-    width: 32, height: 32, borderRadius: 8, backgroundColor: Colors.surfaceLight,
-    borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "center",
+    width: 32, height: 32, borderRadius: 8, backgroundColor: c.surfaceLight,
+    borderWidth: 1, borderColor: c.surfaceBorder, alignItems: "center", justifyContent: "center",
   },
-  note: { color: Colors.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, textAlign: "center", marginTop: 12 },
+  note: { color: c.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, textAlign: "center", marginTop: 12 },
   fieldsHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 16, marginBottom: 6 },
-  fieldsHeaderText: { color: Colors.text, fontFamily: "Inter_700Bold", fontSize: 13 },
+  fieldsHeaderText: { color: c.text, fontFamily: "Inter_700Bold", fontSize: 13 },
   addFieldBtn: {
     flexDirection: "row", alignItems: "center", gap: 4,
-    backgroundColor: Colors.accent, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8,
+    backgroundColor: c.accent, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8,
   },
-  addFieldText: { color: "#000", fontFamily: "Inter_600SemiBold", fontSize: 11 },
+  addFieldText: { color: c.invertedText, fontFamily: "Inter_600SemiBold", fontSize: 11 },
   fieldsEmpty: {
     alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 20,
-    backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.surfaceBorder, borderStyle: "dashed",
+    backgroundColor: c.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: c.surfaceBorder, borderStyle: "dashed",
   },
-  fieldsEmptyText: { color: Colors.textMuted, fontFamily: "Inter_500Medium", fontSize: 11 },
+  fieldsEmptyText: { color: c.textMuted, fontFamily: "Inter_500Medium", fontSize: 11 },
   fieldCard: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 12, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surfaceLight, borderRadius: 12, borderWidth: 1, borderColor: c.surfaceBorder,
     padding: 12, marginTop: 8,
   },
   fieldCardHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
-  fieldIndex: { color: Colors.textMuted, fontFamily: "Inter_700Bold", fontSize: 11 },
+  fieldIndex: { color: c.textMuted, fontFamily: "Inter_700Bold", fontSize: 11 },
   fieldIconBtn: {
-    width: 28, height: 28, borderRadius: 8, backgroundColor: Colors.surface,
-    borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "center",
+    width: 28, height: 28, borderRadius: 8, backgroundColor: c.surface,
+    borderWidth: 1, borderColor: c.surfaceBorder, alignItems: "center", justifyContent: "center",
   },
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-  sheet: { backgroundColor: Colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 18, maxHeight: "85%" },
-  modalTitle: { color: Colors.text, fontFamily: "Inter_700Bold", fontSize: 15, marginBottom: 4 },
-  label: { color: Colors.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 10, marginBottom: 4 },
+  backdrop: { flex: 1, backgroundColor: c.overlay, justifyContent: "flex-end" },
+  sheet: { backgroundColor: c.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 18, maxHeight: "85%" },
+  modalTitle: { color: c.text, fontFamily: "Inter_700Bold", fontSize: 15, marginBottom: 4 },
+  label: { color: c.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 10, marginBottom: 4 },
   input: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.surfaceBorder,
-    paddingHorizontal: 12, paddingVertical: Platform.OS === "ios" ? 12 : 10, color: Colors.text, fontFamily: "Inter_500Medium", fontSize: 13,
+    backgroundColor: c.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: c.surfaceBorder,
+    paddingHorizontal: 12, paddingVertical: Platform.OS === "ios" ? 12 : 10, color: c.text, fontFamily: "Inter_500Medium", fontSize: 13,
   },
   switchRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 10 },
   chip: {
     paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999,
-    backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder,
   },
-  chipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  chipText: { color: Colors.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12 },
+  chipActive: { backgroundColor: c.accent, borderColor: c.accent },
+  chipText: { color: c.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12 },
   modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 14 },
   btn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10 },
-  btnGhost: { backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  btnGhostText: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  btnPrimary: { backgroundColor: Colors.accent },
-  btnPrimaryText: { color: "#000", fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  btnGhost: { backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder },
+  btnGhostText: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  btnPrimary: { backgroundColor: c.accent },
+  btnPrimaryText: { color: c.invertedText, fontFamily: "Inter_600SemiBold", fontSize: 13 },
 });

@@ -1,12 +1,6 @@
-import React from "react";
-import { PlaceholderScreen } from "@/components/PlaceholderScreen";
+import React, { useEffect } from "react";
+import { Redirect } from "expo-router";
 
-export default function ClubeVantagensScreen() {
-  return (
-    <PlaceholderScreen
-      title="Clube de vantagens"
-      icon="award"
-      description="Configuração do programa de fidelidade e benefícios em breve."
-    />
-  );
+export default function ClubeVantagensRedirect() {
+  return <Redirect href="/marketing/fidelidade" />;
 }

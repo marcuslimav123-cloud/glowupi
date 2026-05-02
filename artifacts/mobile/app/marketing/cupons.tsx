@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
   ActivityIndicator, RefreshControl, Modal, KeyboardAvoidingView, Platform, Switch, Alert,
@@ -6,7 +6,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
@@ -42,6 +42,8 @@ const emptyForm: FormState = {
 };
 
 export default function CuponsScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
@@ -168,8 +170,8 @@ export default function CuponsScreen() {
                 <Text style={styles.codigo}>{c.codigo}</Text>
                 <Text style={styles.meta}>{fmtValor(c)}</Text>
               </View>
-              <View style={[styles.statusPill, { backgroundColor: c.ativo ? Colors.success + "22" : Colors.textMuted + "22" }]}>
-                <Text style={[styles.statusText, { color: c.ativo ? Colors.success : Colors.textMuted }]}>
+              <View style={[styles.statusPill, { backgroundColor: c.ativo ? colors.success + "22" : colors.textMuted + "22" }]}>
+                <Text style={[styles.statusText, { color: c.ativo ? colors.success : colors.textMuted }]}>
                   {c.ativo ? "ATIVO" : "INATIVO"}
                 </Text>
               </View>
@@ -186,16 +188,16 @@ export default function CuponsScreen() {
             </View>
             <View style={styles.actions}>
               <TouchableOpacity style={styles.actionBtn} onPress={() => toggleMut.mutate(c)}>
-                <Feather name={c.ativo ? "pause" : "play"} size={14} color={Colors.text} />
+                <Feather name={c.ativo ? "pause" : "play"} size={14} color={colors.text} />
                 <Text style={styles.actionText}>{c.ativo ? "Desativar" : "Ativar"}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={() => openEdit(c)}>
-                <Feather name="edit-2" size={14} color={Colors.text} />
+                <Feather name="edit-2" size={14} color={colors.text} />
                 <Text style={styles.actionText}>Editar</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={() => confirmDelete(c)}>
-                <Feather name="trash-2" size={14} color={Colors.error} />
-                <Text style={[styles.actionText, { color: Colors.error }]}>Excluir</Text>
+                <Feather name="trash-2" size={14} color={colors.error} />
+                <Text style={[styles.actionText, { color: colors.error }]}>Excluir</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -212,13 +214,13 @@ export default function CuponsScreen() {
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>{editing ? "Editar cupom" : "Novo cupom"}</Text>
                 <TouchableOpacity onPress={() => setModalOpen(false)} accessibilityLabel="Fechar">
-                  <Feather name="x" size={22} color={Colors.text} />
+                  <Feather name="x" size={22} color={colors.text} />
                 </TouchableOpacity>
               </View>
 
               {formError ? (
                 <View style={styles.errorBox}>
-                  <Feather name="alert-circle" size={14} color={Colors.error} />
+                  <Feather name="alert-circle" size={14} color={colors.error} />
                   <Text style={styles.errorText}>{formError}</Text>
                 </View>
               ) : null}
@@ -229,7 +231,7 @@ export default function CuponsScreen() {
                 value={form.codigo}
                 onChangeText={(v) => setForm({ ...form, codigo: v })}
                 placeholder="EX: PROMO10"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 autoCapitalize="characters"
               />
 
@@ -254,7 +256,7 @@ export default function CuponsScreen() {
                 value={form.valor}
                 onChangeText={(v) => setForm({ ...form, valor: v })}
                 placeholder={form.tipo === "percentual" ? "10" : "20.00"}
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 keyboardType="decimal-pad"
               />
 
@@ -264,7 +266,7 @@ export default function CuponsScreen() {
                 value={form.validadeInicio}
                 onChangeText={(v) => setForm({ ...form, validadeInicio: v })}
                 placeholder="2026-01-01"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 autoCapitalize="none"
               />
 
@@ -274,7 +276,7 @@ export default function CuponsScreen() {
                 value={form.validadeFim}
                 onChangeText={(v) => setForm({ ...form, validadeFim: v })}
                 placeholder="2026-12-31"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 autoCapitalize="none"
               />
 
@@ -284,7 +286,7 @@ export default function CuponsScreen() {
                 value={form.usoMaximo}
                 onChangeText={(v) => setForm({ ...form, usoMaximo: v.replace(/\D/g, "") })}
                 placeholder="Ilimitado"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 keyboardType="number-pad"
               />
 
@@ -293,8 +295,8 @@ export default function CuponsScreen() {
                 <Switch
                   value={form.ativo}
                   onValueChange={(v) => setForm({ ...form, ativo: v })}
-                  trackColor={{ false: Colors.surfaceLight, true: Colors.accent + "80" }}
-                  thumbColor={form.ativo ? Colors.accent : "#888"}
+                  trackColor={{ false: colors.surfaceLight, true: colors.accent + "80" }}
+                  thumbColor={form.ativo ? colors.accent : "#888"}
                 />
               </View>
 
@@ -304,7 +306,7 @@ export default function CuponsScreen() {
                 disabled={saveMut.isPending}
               >
                 {saveMut.isPending ? (
-                  <ActivityIndicator color="#000" />
+                  <ActivityIndicator color={colors.invertedText} />
                 ) : (
                   <Text style={styles.saveBtnText}>{editing ? "Salvar alterações" : "Criar cupom"}</Text>
                 )}
@@ -317,70 +319,71 @@ export default function CuponsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
+    borderColor: c.surfaceBorder,
   },
   cardTop: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-  codigo: { fontSize: 16, fontFamily: "Inter_700Bold", color: Colors.text, letterSpacing: 0.5 },
-  meta: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.accent, marginTop: 2 },
-  metaSmall: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.textSecondary },
+  codigo: { fontSize: 16, fontFamily: "Inter_700Bold", color: c.text, letterSpacing: 0.5 },
+  meta: { fontSize: 13, fontFamily: "Inter_500Medium", color: c.accent, marginTop: 2 },
+  metaSmall: { fontSize: 12, fontFamily: "Inter_400Regular", color: c.textSecondary },
   row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12 },
   statusPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
   statusText: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
-  actions: { flexDirection: "row", gap: 8, borderTopWidth: 1, borderTopColor: Colors.surfaceBorder, paddingTop: 10 },
+  actions: { flexDirection: "row", gap: 8, borderTopWidth: 1, borderTopColor: c.surfaceBorder, paddingTop: 10 },
   actionBtn: {
     flexDirection: "row", alignItems: "center", gap: 6,
     paddingHorizontal: 10, paddingVertical: 6,
-    backgroundColor: Colors.surfaceLight, borderRadius: 8,
+    backgroundColor: c.surfaceLight, borderRadius: 8,
   },
-  actionText: { fontSize: 12, fontFamily: "Inter_500Medium", color: Colors.text },
+  actionText: { fontSize: 12, fontFamily: "Inter_500Medium", color: c.text },
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
   modalCard: {
-    backgroundColor: Colors.background,
+    backgroundColor: c.background,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 20, paddingBottom: 32, maxHeight: "90%",
-    borderTopWidth: 1, borderColor: Colors.surfaceBorder,
+    borderTopWidth: 1, borderColor: c.surfaceBorder,
   },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: Colors.text },
+  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: c.text },
   errorBox: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: Colors.error + "15", borderColor: Colors.error + "40",
+    backgroundColor: c.error + "15", borderColor: c.error + "40",
     borderWidth: 1, padding: 10, borderRadius: 10, marginBottom: 12,
   },
-  errorText: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.error, flex: 1 },
+  errorText: { fontSize: 13, fontFamily: "Inter_400Regular", color: c.error, flex: 1 },
   label: {
-    fontSize: 12, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary,
+    fontSize: 12, fontFamily: "Inter_600SemiBold", color: c.textSecondary,
     marginTop: 12, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder,
     borderRadius: 12, paddingHorizontal: 14, height: 46,
-    color: Colors.text, fontSize: 15, fontFamily: "Inter_400Regular",
+    color: c.text, fontSize: 15, fontFamily: "Inter_400Regular",
   },
   segGroup: { flexDirection: "row", gap: 8 },
   segBtn: {
     flex: 1, paddingVertical: 12, borderRadius: 10,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder,
     alignItems: "center",
   },
-  segBtnActive: { backgroundColor: Colors.accent + "22", borderColor: Colors.accent },
-  segText: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.textSecondary },
-  segTextActive: { color: Colors.accent },
+  segBtnActive: { backgroundColor: c.accent + "22", borderColor: c.accent },
+  segText: { fontSize: 13, fontFamily: "Inter_500Medium", color: c.textSecondary },
+  segTextActive: { color: c.accent },
   switchRow: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     marginTop: 16, paddingVertical: 4,
   },
-  switchLabel: { fontSize: 14, fontFamily: "Inter_500Medium", color: Colors.text },
+  switchLabel: { fontSize: 14, fontFamily: "Inter_500Medium", color: c.text },
   saveBtn: {
-    marginTop: 18, backgroundColor: Colors.accent, borderRadius: 12,
+    marginTop: 18, backgroundColor: c.accent, borderRadius: 12,
     height: 50, alignItems: "center", justifyContent: "center",
   },
-  saveBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#000" },
+  saveBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: c.invertedText },
 });

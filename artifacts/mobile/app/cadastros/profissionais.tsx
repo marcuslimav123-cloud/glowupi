@@ -22,7 +22,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorView } from "@/components/ErrorView";
 import { SkeletonList } from "@/components/Skeleton";
 import { useAuth } from "@/contexts/AuthContext";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { fetchJson, formatPhone, stripPhone } from "@/lib/api";
 import { pickImageFromLibrary, pickImageFromCamera, uploadPickedImage, resolveImageUrl } from "@/lib/uploadImage";
 
@@ -60,6 +60,8 @@ const DEFAULT_HORARIO: DiaHorario = { inicio: "09:00", fim: "18:00", folga: fals
 export default function ProfissionaisScreen() {
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [editing, setEditing] = useState<Profissional | null>(null);
   const [open, setOpen] = useState(false);
 
@@ -136,10 +138,10 @@ export default function ProfissionaisScreen() {
               </View>
               <View style={styles.rowActions}>
                 <TouchableOpacity style={styles.miniBtn} onPress={() => { setEditing(p); setOpen(true); }}>
-                  <Feather name="edit-2" size={15} color={Colors.textSecondary} />
+                  <Feather name="edit-2" size={15} color={colors.textSecondary} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.miniBtn} onPress={() => handleDelete(p)}>
-                  <Feather name="trash-2" size={15} color={Colors.error} />
+                  <Feather name="trash-2" size={15} color={colors.error} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -160,6 +162,8 @@ export default function ProfissionaisScreen() {
 }
 
 function ProfFormModal({ visible, editing, servicos, onClose, onSave, saving }: { visible: boolean; editing: Profissional | null; servicos: Servico[]; onClose: () => void; onSave: (d: any) => void; saving: boolean }) {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [nome, setNome] = useState("");
   const [apelido, setApelido] = useState("");
   const [especialidade, setEspecialidade] = useState("");
@@ -237,27 +241,26 @@ function ProfFormModal({ visible, editing, servicos, onClose, onSave, saving }: 
         <View style={styles.modalCard}>
           <View style={styles.modalHead}>
             <Text style={styles.modalTitle}>{editing ? "Editar profissional" : "Novo profissional"}</Text>
-            <TouchableOpacity onPress={onClose}><Feather name="x" size={22} color={Colors.text} /></TouchableOpacity>
+            <TouchableOpacity onPress={onClose}><Feather name="x" size={22} color={colors.text} /></TouchableOpacity>
           </View>
           <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Photo */}
             <View style={{ alignItems: "center", marginVertical: 8 }}>
               <TouchableOpacity onPress={handlePickImage} disabled={uploading} style={styles.photoTouch}>
                 {uploading ? (
-                  <ActivityIndicator color={Colors.accent} />
+                  <ActivityIndicator color={colors.accent} />
                 ) : fotoUrl ? (
                   <Image source={{ uri: resolveImageUrl(fotoUrl) || "" }} style={styles.photoPreview} />
                 ) : (
-                  <Feather name="camera" size={28} color={Colors.textSecondary} />
+                  <Feather name="camera" size={28} color={colors.textSecondary} />
                 )}
               </TouchableOpacity>
-              <Text style={{ color: Colors.textSecondary, fontSize: 11, marginTop: 6 }}>Toque para alterar foto</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 6 }}>Toque para alterar foto</Text>
             </View>
 
-            <Field label="Nome *"><TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Ex: Mariana Silva" placeholderTextColor={Colors.textMuted} /></Field>
-            <Field label="Apelido"><TextInput style={styles.input} value={apelido} onChangeText={setApelido} placeholder="Mari" placeholderTextColor={Colors.textMuted} /></Field>
-            <Field label="Especialidade"><TextInput style={styles.input} value={especialidade} onChangeText={setEspecialidade} placeholder="Ex: Manicure" placeholderTextColor={Colors.textMuted} /></Field>
-            <Field label="Celular"><TextInput style={styles.input} value={celular} onChangeText={(t) => setCelular(formatPhone(t))} keyboardType="phone-pad" placeholderTextColor={Colors.textMuted} /></Field>
+            <Field label="Nome *"><TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Ex: Mariana Silva" placeholderTextColor={colors.textMuted} /></Field>
+            <Field label="Apelido"><TextInput style={styles.input} value={apelido} onChangeText={setApelido} placeholder="Mari" placeholderTextColor={colors.textMuted} /></Field>
+            <Field label="Especialidade"><TextInput style={styles.input} value={especialidade} onChangeText={setEspecialidade} placeholder="Ex: Manicure" placeholderTextColor={colors.textMuted} /></Field>
+            <Field label="Celular"><TextInput style={styles.input} value={celular} onChangeText={(t) => setCelular(formatPhone(t))} keyboardType="phone-pad" placeholderTextColor={colors.textMuted} /></Field>
 
             <Text style={[styles.label, { marginTop: 18 }]}>Comissão</Text>
             <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
@@ -274,7 +277,7 @@ function ProfFormModal({ visible, editing, servicos, onClose, onSave, saving }: 
               onChangeText={setComissaoValor}
               keyboardType="decimal-pad"
               placeholder={comissaoTipo === "percentual" ? "30 (%)" : "50.00 (R$)"}
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
             />
 
             <Text style={[styles.label, { marginTop: 18 }]}>Horários por dia</Text>
@@ -283,9 +286,9 @@ function ProfFormModal({ visible, editing, servicos, onClose, onSave, saving }: 
                 const h = horarios[d.key] || DEFAULT_HORARIO;
                 return (
                   <View key={d.key} style={styles.diaRow}>
-                    <Text style={{ color: Colors.text, width: 42, fontFamily: "Inter_600SemiBold" }}>{d.label}</Text>
+                    <Text style={{ color: colors.text, width: 42, fontFamily: "Inter_600SemiBold" }}>{d.label}</Text>
                     {h.folga ? (
-                      <Text style={{ color: Colors.textMuted, flex: 1, fontStyle: "italic" }}>Folga</Text>
+                      <Text style={{ color: colors.textMuted, flex: 1, fontStyle: "italic" }}>Folga</Text>
                     ) : (
                       <>
                         <TextInput
@@ -293,22 +296,22 @@ function ProfFormModal({ visible, editing, servicos, onClose, onSave, saving }: 
                           value={h.inicio}
                           onChangeText={(t) => setHorarios({ ...horarios, [d.key]: { ...h, inicio: t } })}
                           placeholder="09:00"
-                          placeholderTextColor={Colors.textMuted}
+                          placeholderTextColor={colors.textMuted}
                         />
-                        <Text style={{ color: Colors.textMuted, marginHorizontal: 4 }}>—</Text>
+                        <Text style={{ color: colors.textMuted, marginHorizontal: 4 }}>—</Text>
                         <TextInput
                           style={styles.timeInput}
                           value={h.fim}
                           onChangeText={(t) => setHorarios({ ...horarios, [d.key]: { ...h, fim: t } })}
                           placeholder="18:00"
-                          placeholderTextColor={Colors.textMuted}
+                          placeholderTextColor={colors.textMuted}
                         />
                       </>
                     )}
                     <Switch
                       value={!h.folga}
                       onValueChange={(v) => setHorarios({ ...horarios, [d.key]: { ...h, folga: !v } })}
-                      trackColor={{ true: Colors.accent, false: Colors.surfaceLight }}
+                      trackColor={{ true: colors.accent, false: colors.surfaceLight }}
                       thumbColor={!h.folga ? "#000" : "#fff"}
                     />
                   </View>
@@ -318,7 +321,7 @@ function ProfFormModal({ visible, editing, servicos, onClose, onSave, saving }: 
 
             <Text style={[styles.label, { marginTop: 18 }]}>Serviços vinculados</Text>
             {servicos.length === 0 ? (
-              <Text style={{ color: Colors.textMuted, fontSize: 12, marginTop: 8 }}>Nenhum serviço cadastrado.</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 8 }}>Nenhum serviço cadastrado.</Text>
             ) : (
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
                 {servicos.map((s) => {
@@ -333,7 +336,7 @@ function ProfFormModal({ visible, editing, servicos, onClose, onSave, saving }: 
                       }}
                       style={[styles.chip, checked && styles.chipActive]}
                     >
-                      {checked && <Feather name="check" size={12} color="#000" />}
+                      {checked && <Feather name="check" size={12} color={colors.invertedText} />}
                       <Text style={[styles.chipText, checked && styles.chipTextActive]}>{s.nome}</Text>
                     </TouchableOpacity>
                   );
@@ -342,7 +345,7 @@ function ProfFormModal({ visible, editing, servicos, onClose, onSave, saving }: 
             )}
 
             <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} disabled={saving || uploading} onPress={submit}>
-              {saving ? <ActivityIndicator color="#000" /> : <Text style={styles.saveBtnText}>Salvar</Text>}
+              {saving ? <ActivityIndicator color={colors.invertedText} /> : <Text style={styles.saveBtnText}>Salvar</Text>}
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -352,36 +355,38 @@ function ProfFormModal({ visible, editing, servicos, onClose, onSave, saving }: 
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return <View style={{ marginTop: 12 }}><Text style={styles.label}>{label}</Text>{children}</View>;
 }
 
-const styles = StyleSheet.create({
-  card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: Colors.surface, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.surfaceLight },
-  avatarPlaceholder: { alignItems: "center", justifyContent: "center", backgroundColor: Colors.accent + "22" },
-  avatarText: { color: Colors.accent, fontFamily: "Inter_700Bold" },
-  cardTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: Colors.text },
-  cardSub: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
+  card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: c.surface, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: c.surfaceBorder },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: c.surfaceLight },
+  avatarPlaceholder: { alignItems: "center", justifyContent: "center", backgroundColor: c.accent + "22" },
+  avatarText: { color: c.accent, fontFamily: "Inter_700Bold" },
+  cardTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: c.text },
+  cardSub: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
   rowActions: { flexDirection: "row", gap: 4 },
-  miniBtn: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: Colors.surfaceLight },
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-  modalCard: { backgroundColor: Colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 32, maxHeight: "92%", borderTopWidth: 1, borderColor: Colors.surfaceBorder },
+  miniBtn: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: c.surfaceLight },
+  modalBackdrop: { flex: 1, backgroundColor: c.overlay, justifyContent: "flex-end" },
+  modalCard: { backgroundColor: c.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 32, maxHeight: "92%", borderTopWidth: 1, borderColor: c.surfaceBorder },
   modalHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: Colors.text },
-  label: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
-  input: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, height: 44, color: Colors.text, fontSize: 14 },
-  saveBtn: { marginTop: 24, backgroundColor: Colors.accent, height: 50, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  saveBtnText: { color: "#000", fontFamily: "Inter_700Bold", fontSize: 15 },
-  photoTouch: { width: 90, height: 90, borderRadius: 45, backgroundColor: Colors.surface, borderWidth: 2, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: c.text },
+  label: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: c.textSecondary, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
+  input: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, height: 44, color: c.text, fontSize: 14 },
+  saveBtn: { marginTop: 24, backgroundColor: c.accent, height: 50, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  saveBtnText: { color: c.invertedText, fontFamily: "Inter_700Bold", fontSize: 15 },
+  photoTouch: { width: 90, height: 90, borderRadius: 45, backgroundColor: c.surface, borderWidth: 2, borderColor: c.surfaceBorder, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   photoPreview: { width: "100%", height: "100%" },
-  choice: { flex: 1, padding: 10, borderRadius: 10, alignItems: "center", borderWidth: 1, borderColor: Colors.surfaceBorder, backgroundColor: Colors.surface },
-  choiceActive: { borderColor: Colors.accent, backgroundColor: Colors.accent + "15" },
-  choiceText: { color: Colors.textSecondary, fontSize: 13, fontFamily: "Inter_500Medium" },
-  choiceTextActive: { color: Colors.accent, fontFamily: "Inter_600SemiBold" },
-  diaRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: Colors.surfaceBorder },
-  timeInput: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, borderRadius: 8, paddingHorizontal: 8, height: 36, color: Colors.text, width: 64, textAlign: "center", fontSize: 13 },
-  chip: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, borderWidth: 1, borderColor: Colors.surfaceBorder, backgroundColor: Colors.surface },
-  chipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  chipText: { color: Colors.textSecondary, fontSize: 12, fontFamily: "Inter_500Medium" },
-  chipTextActive: { color: "#000", fontFamily: "Inter_700Bold" },
+  choice: { flex: 1, padding: 10, borderRadius: 10, alignItems: "center", borderWidth: 1, borderColor: c.surfaceBorder, backgroundColor: c.surface },
+  choiceActive: { borderColor: c.accent, backgroundColor: c.accent + "15" },
+  choiceText: { color: c.textSecondary, fontSize: 13, fontFamily: "Inter_500Medium" },
+  choiceTextActive: { color: c.accent, fontFamily: "Inter_600SemiBold" },
+  diaRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: c.surfaceBorder },
+  timeInput: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, borderRadius: 8, paddingHorizontal: 8, height: 36, color: c.text, width: 64, textAlign: "center", fontSize: 13 },
+  chip: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, borderWidth: 1, borderColor: c.surfaceBorder, backgroundColor: c.surface },
+  chipActive: { backgroundColor: c.accent, borderColor: c.accent },
+  chipText: { color: c.textSecondary, fontSize: 12, fontFamily: "Inter_500Medium" },
+  chipTextActive: { color: c.invertedText, fontFamily: "Inter_700Bold" },
 });

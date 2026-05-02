@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -20,7 +20,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorView } from "@/components/ErrorView";
 import { SkeletonList } from "@/components/Skeleton";
 import { useAuth } from "@/contexts/AuthContext";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { fetchJson, formatCurrency } from "@/lib/api";
 
 type Produto = {
@@ -40,6 +40,8 @@ type Movimentacao = { id: number; tipo: string; quantidade: number; motivo: stri
 export default function ProdutosScreen() {
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [editing, setEditing] = useState<Produto | null>(null);
   const [open, setOpen] = useState(false);
   const [movProduto, setMovProduto] = useState<Produto | null>(null);
@@ -96,8 +98,8 @@ export default function ProdutosScreen() {
         <View>
           {baixoEstoque > 0 && (
             <View style={styles.alert}>
-              <Feather name="alert-triangle" size={14} color={Colors.warning} />
-              <Text style={{ color: Colors.warning, fontSize: 12, fontFamily: "Inter_600SemiBold" }}>{baixoEstoque} produto(s) com estoque baixo</Text>
+              <Feather name="alert-triangle" size={14} color={colors.warning} />
+              <Text style={{ color: colors.warning, fontSize: 12, fontFamily: "Inter_600SemiBold" }}>{baixoEstoque} produto(s) com estoque baixo</Text>
             </View>
           )}
           {(q.data ?? []).map((p) => {
@@ -109,21 +111,21 @@ export default function ProdutosScreen() {
                   <Text style={styles.cardSub}>{formatCurrency(p.preco)}{p.custo != null ? ` · custo ${formatCurrency(p.custo)}` : ""}</Text>
                   <View style={{ flexDirection: "row", gap: 8, marginTop: 6, alignItems: "center" }}>
                     <View style={[styles.stockBadge, baixo && styles.stockBadgeBaixo]}>
-                      {baixo && <Feather name="alert-triangle" size={10} color={Colors.error} />}
-                      <Text style={[styles.stockBadgeText, baixo && { color: Colors.error }]}>{p.quantidade} em estoque</Text>
+                      {baixo && <Feather name="alert-triangle" size={10} color={colors.error} />}
+                      <Text style={[styles.stockBadgeText, baixo && { color: colors.error }]}>{p.quantidade} em estoque</Text>
                     </View>
-                    <Text style={{ color: Colors.textMuted, fontSize: 11 }}>mín: {p.quantidadeMinima}</Text>
+                    <Text style={{ color: colors.textMuted, fontSize: 11 }}>mín: {p.quantidadeMinima}</Text>
                   </View>
                 </View>
                 <View style={styles.rowActions}>
                   <TouchableOpacity style={styles.miniBtn} onPress={() => setMovProduto(p)}>
-                    <Feather name="repeat" size={15} color={Colors.accent} />
+                    <Feather name="repeat" size={15} color={colors.accent} />
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.miniBtn} onPress={() => { setEditing(p); setOpen(true); }}>
-                    <Feather name="edit-2" size={15} color={Colors.textSecondary} />
+                    <Feather name="edit-2" size={15} color={colors.textSecondary} />
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.miniBtn} onPress={() => handleDelete(p)}>
-                    <Feather name="trash-2" size={15} color={Colors.error} />
+                    <Feather name="trash-2" size={15} color={colors.error} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -139,6 +141,8 @@ export default function ProdutosScreen() {
 }
 
 function ProdutoFormModal({ visible, editing, onClose, onSave, saving }: { visible: boolean; editing: Produto | null; onClose: () => void; onSave: (d: any) => void; saving: boolean }) {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [nome, setNome] = useState("");
   const [preco, setPreco] = useState("");
   const [custo, setCusto] = useState("");
@@ -180,22 +184,22 @@ function ProdutoFormModal({ visible, editing, onClose, onSave, saving }: { visib
         <View style={styles.modalCard}>
           <View style={styles.modalHead}>
             <Text style={styles.modalTitle}>{editing ? "Editar produto" : "Novo produto"}</Text>
-            <TouchableOpacity onPress={onClose}><Feather name="x" size={22} color={Colors.text} /></TouchableOpacity>
+            <TouchableOpacity onPress={onClose}><Feather name="x" size={22} color={colors.text} /></TouchableOpacity>
           </View>
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Field label="Nome *"><TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Ex: Esmalte" placeholderTextColor={Colors.textMuted} /></Field>
+            <Field label="Nome *"><TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Ex: Esmalte" placeholderTextColor={colors.textMuted} /></Field>
             <View style={{ flexDirection: "row", gap: 10 }}>
-              <View style={{ flex: 1 }}><Field label="Preço *"><TextInput style={styles.input} value={preco} onChangeText={setPreco} keyboardType="decimal-pad" placeholder="25.00" placeholderTextColor={Colors.textMuted} /></Field></View>
-              <View style={{ flex: 1 }}><Field label="Custo"><TextInput style={styles.input} value={custo} onChangeText={setCusto} keyboardType="decimal-pad" placeholder="12.00" placeholderTextColor={Colors.textMuted} /></Field></View>
+              <View style={{ flex: 1 }}><Field label="Preço *"><TextInput style={styles.input} value={preco} onChangeText={setPreco} keyboardType="decimal-pad" placeholder="25.00" placeholderTextColor={colors.textMuted} /></Field></View>
+              <View style={{ flex: 1 }}><Field label="Custo"><TextInput style={styles.input} value={custo} onChangeText={setCusto} keyboardType="decimal-pad" placeholder="12.00" placeholderTextColor={colors.textMuted} /></Field></View>
             </View>
             <View style={{ flexDirection: "row", gap: 10 }}>
               <View style={{ flex: 1 }}><Field label="Estoque"><TextInput style={styles.input} value={quantidade} onChangeText={setQuantidade} keyboardType="number-pad" /></Field></View>
               <View style={{ flex: 1 }}><Field label="Mínimo"><TextInput style={styles.input} value={quantidadeMinima} onChangeText={setQuantidadeMinima} keyboardType="number-pad" /></Field></View>
             </View>
-            <Field label="Código de barras"><TextInput style={styles.input} value={codigoBarras} onChangeText={setCodigoBarras} placeholder="7891..." placeholderTextColor={Colors.textMuted} /></Field>
-            <Field label="Validade (AAAA-MM-DD)"><TextInput style={styles.input} value={validade} onChangeText={setValidade} placeholder="2026-12-31" placeholderTextColor={Colors.textMuted} /></Field>
+            <Field label="Código de barras"><TextInput style={styles.input} value={codigoBarras} onChangeText={setCodigoBarras} placeholder="7891..." placeholderTextColor={colors.textMuted} /></Field>
+            <Field label="Validade (AAAA-MM-DD)"><TextInput style={styles.input} value={validade} onChangeText={setValidade} placeholder="2026-12-31" placeholderTextColor={colors.textMuted} /></Field>
             <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} disabled={saving} onPress={submit}>
-              {saving ? <ActivityIndicator color="#000" /> : <Text style={styles.saveBtnText}>Salvar</Text>}
+              {saving ? <ActivityIndicator color={colors.invertedText} /> : <Text style={styles.saveBtnText}>Salvar</Text>}
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -207,6 +211,8 @@ function ProdutoFormModal({ visible, editing, onClose, onSave, saving }: { visib
 function MovimentacoesModal({ produto, onClose }: { produto: Produto | null; onClose: () => void }) {
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [tipo, setTipo] = useState<"entrada" | "saida">("entrada");
   const [quantidade, setQuantidade] = useState("");
   const [motivo, setMotivo] = useState("");
@@ -245,49 +251,49 @@ function MovimentacoesModal({ produto, onClose }: { produto: Produto | null; onC
         <View style={[styles.modalCard, { maxHeight: "85%" }]}>
           <View style={styles.modalHead}>
             <Text style={styles.modalTitle}>Estoque · {produto?.nome}</Text>
-            <TouchableOpacity onPress={onClose}><Feather name="x" size={22} color={Colors.text} /></TouchableOpacity>
+            <TouchableOpacity onPress={onClose}><Feather name="x" size={22} color={colors.text} /></TouchableOpacity>
           </View>
           <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.stockBox}>
               <View style={{ alignItems: "center" }}>
-                <Text style={{ color: Colors.text, fontSize: 22, fontFamily: "Inter_700Bold" }}>{produto?.quantidade ?? 0}</Text>
-                <Text style={{ color: Colors.textSecondary, fontSize: 11 }}>em estoque</Text>
+                <Text style={{ color: colors.text, fontSize: 22, fontFamily: "Inter_700Bold" }}>{produto?.quantidade ?? 0}</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 11 }}>em estoque</Text>
               </View>
               <View style={{ alignItems: "center" }}>
-                <Text style={{ color: Colors.textSecondary, fontSize: 18, fontFamily: "Inter_600SemiBold" }}>{produto?.quantidadeMinima ?? 0}</Text>
-                <Text style={{ color: Colors.textSecondary, fontSize: 11 }}>mínimo</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 18, fontFamily: "Inter_600SemiBold" }}>{produto?.quantidadeMinima ?? 0}</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 11 }}>mínimo</Text>
               </View>
             </View>
             <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
-              <TouchableOpacity onPress={() => setTipo("entrada")} style={[styles.tipoBtn, tipo === "entrada" && { borderColor: Colors.success, backgroundColor: Colors.success + "15" }]}>
-                <Feather name="arrow-down-circle" size={14} color={Colors.success} />
-                <Text style={{ color: Colors.text, fontSize: 12 }}>Entrada</Text>
+              <TouchableOpacity onPress={() => setTipo("entrada")} style={[styles.tipoBtn, tipo === "entrada" && { borderColor: colors.success, backgroundColor: colors.success + "15" }]}>
+                <Feather name="arrow-down-circle" size={14} color={colors.success} />
+                <Text style={{ color: colors.text, fontSize: 12 }}>Entrada</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setTipo("saida")} style={[styles.tipoBtn, tipo === "saida" && { borderColor: Colors.error, backgroundColor: Colors.error + "15" }]}>
-                <Feather name="arrow-up-circle" size={14} color={Colors.error} />
-                <Text style={{ color: Colors.text, fontSize: 12 }}>Saída</Text>
+              <TouchableOpacity onPress={() => setTipo("saida")} style={[styles.tipoBtn, tipo === "saida" && { borderColor: colors.error, backgroundColor: colors.error + "15" }]}>
+                <Feather name="arrow-up-circle" size={14} color={colors.error} />
+                <Text style={{ color: colors.text, fontSize: 12 }}>Saída</Text>
               </TouchableOpacity>
             </View>
-            <Field label="Quantidade"><TextInput style={styles.input} value={quantidade} onChangeText={setQuantidade} keyboardType="number-pad" placeholder="1" placeholderTextColor={Colors.textMuted} /></Field>
-            <Field label="Motivo"><TextInput style={styles.input} value={motivo} onChangeText={setMotivo} placeholder="Ex: Compra fornecedor" placeholderTextColor={Colors.textMuted} /></Field>
+            <Field label="Quantidade"><TextInput style={styles.input} value={quantidade} onChangeText={setQuantidade} keyboardType="number-pad" placeholder="1" placeholderTextColor={colors.textMuted} /></Field>
+            <Field label="Motivo"><TextInput style={styles.input} value={motivo} onChangeText={setMotivo} placeholder="Ex: Compra fornecedor" placeholderTextColor={colors.textMuted} /></Field>
             <TouchableOpacity style={[styles.saveBtn, addMut.isPending && { opacity: 0.6 }]} onPress={submit} disabled={addMut.isPending}>
-              {addMut.isPending ? <ActivityIndicator color="#000" /> : <Text style={styles.saveBtnText}>Registrar</Text>}
+              {addMut.isPending ? <ActivityIndicator color={colors.invertedText} /> : <Text style={styles.saveBtnText}>Registrar</Text>}
             </TouchableOpacity>
 
             <Text style={[styles.label, { marginTop: 24 }]}>Histórico</Text>
             {movQ.isLoading ? (
-              <ActivityIndicator color={Colors.accent} style={{ marginTop: 12 }} />
+              <ActivityIndicator color={colors.accent} style={{ marginTop: 12 }} />
             ) : (movQ.data ?? []).length === 0 ? (
-              <Text style={{ color: Colors.textMuted, textAlign: "center", marginTop: 12, fontSize: 13 }}>Sem movimentações</Text>
+              <Text style={{ color: colors.textMuted, textAlign: "center", marginTop: 12, fontSize: 13 }}>Sem movimentações</Text>
             ) : (
               (movQ.data ?? []).map((m) => (
                 <View key={m.id} style={styles.movRow}>
-                  <Feather name={m.tipo === "entrada" ? "arrow-down-circle" : "arrow-up-circle"} size={16} color={m.tipo === "entrada" ? Colors.success : Colors.error} />
+                  <Feather name={m.tipo === "entrada" ? "arrow-down-circle" : "arrow-up-circle"} size={16} color={m.tipo === "entrada" ? colors.success : colors.error} />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: Colors.text, fontSize: 13, fontFamily: "Inter_500Medium" }}>{m.motivo}</Text>
-                    <Text style={{ color: Colors.textMuted, fontSize: 11 }}>{new Date(m.createdAt).toLocaleString("pt-BR")}</Text>
+                    <Text style={{ color: colors.text, fontSize: 13, fontFamily: "Inter_500Medium" }}>{m.motivo}</Text>
+                    <Text style={{ color: colors.textMuted, fontSize: 11 }}>{new Date(m.createdAt).toLocaleString("pt-BR")}</Text>
                   </View>
-                  <Text style={{ color: m.tipo === "entrada" ? Colors.success : Colors.error, fontFamily: "Inter_700Bold" }}>{m.tipo === "entrada" ? "+" : "-"}{m.quantidade}</Text>
+                  <Text style={{ color: m.tipo === "entrada" ? colors.success : colors.error, fontFamily: "Inter_700Bold" }}>{m.tipo === "entrada" ? "+" : "-"}{m.quantidade}</Text>
                 </View>
               ))
             )}
@@ -299,28 +305,30 @@ function MovimentacoesModal({ produto, onClose }: { produto: Produto | null; onC
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return <View style={{ marginTop: 12 }}><Text style={styles.label}>{label}</Text>{children}</View>;
 }
 
-const styles = StyleSheet.create({
-  card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: Colors.surface, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  cardTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: Colors.text },
-  cardSub: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  stockBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: Colors.surfaceLight },
-  stockBadgeBaixo: { backgroundColor: Colors.error + "22" },
-  stockBadgeText: { fontSize: 11, color: Colors.text, fontFamily: "Inter_600SemiBold" },
-  alert: { flexDirection: "row", alignItems: "center", gap: 8, padding: 10, borderRadius: 10, backgroundColor: Colors.warning + "15", borderWidth: 1, borderColor: Colors.warning + "30", marginBottom: 10 },
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
+  card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: c.surface, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: c.surfaceBorder },
+  cardTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: c.text },
+  cardSub: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
+  stockBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: c.surfaceLight },
+  stockBadgeBaixo: { backgroundColor: c.error + "22" },
+  stockBadgeText: { fontSize: 11, color: c.text, fontFamily: "Inter_600SemiBold" },
+  alert: { flexDirection: "row", alignItems: "center", gap: 8, padding: 10, borderRadius: 10, backgroundColor: c.warning + "15", borderWidth: 1, borderColor: c.warning + "30", marginBottom: 10 },
   rowActions: { flexDirection: "row", gap: 4 },
-  miniBtn: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: Colors.surfaceLight },
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-  modalCard: { backgroundColor: Colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 32, maxHeight: "90%", borderTopWidth: 1, borderColor: Colors.surfaceBorder },
+  miniBtn: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: c.surfaceLight },
+  modalBackdrop: { flex: 1, backgroundColor: c.overlay, justifyContent: "flex-end" },
+  modalCard: { backgroundColor: c.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 32, maxHeight: "90%", borderTopWidth: 1, borderColor: c.surfaceBorder },
   modalHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: Colors.text },
-  label: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
-  input: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, height: 44, color: Colors.text, fontSize: 14 },
-  saveBtn: { marginTop: 20, backgroundColor: Colors.accent, height: 50, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  saveBtnText: { color: "#000", fontFamily: "Inter_700Bold", fontSize: 15 },
-  stockBox: { flexDirection: "row", justifyContent: "space-around", padding: 14, borderRadius: 12, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, marginTop: 10 },
-  tipoBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, padding: 10, borderRadius: 10, borderWidth: 1, borderColor: Colors.surfaceBorder, backgroundColor: Colors.surface },
-  movRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 10, borderRadius: 10, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, marginTop: 6 },
+  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: c.text },
+  label: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: c.textSecondary, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
+  input: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, height: 44, color: c.text, fontSize: 14 },
+  saveBtn: { marginTop: 20, backgroundColor: c.accent, height: 50, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  saveBtnText: { color: c.invertedText, fontFamily: "Inter_700Bold", fontSize: 15 },
+  stockBox: { flexDirection: "row", justifyContent: "space-around", padding: 14, borderRadius: 12, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, marginTop: 10 },
+  tipoBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, padding: 10, borderRadius: 10, borderWidth: 1, borderColor: c.surfaceBorder, backgroundColor: c.surface },
+  movRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 10, borderRadius: 10, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, marginTop: 6 },
 });

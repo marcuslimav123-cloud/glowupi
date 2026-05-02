@@ -3,7 +3,7 @@ import { Alert, FlatList, Modal, Platform, Pressable, RefreshControl, StyleSheet
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
@@ -33,6 +33,8 @@ export default function MembrosScreen() {
   const { barbeariaId, user } = useAuth();
   const qc = useQueryClient();
   const insets = useSafeAreaInsets();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Editing>(null);
 
@@ -77,15 +79,15 @@ export default function MembrosScreen() {
         data={filtered}
         keyExtractor={(m) => String(m.id)}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 100 + insets.bottom }}
-        refreshControl={<RefreshControl refreshing={query.isRefetching && !query.isLoading} onRefresh={() => query.refetch()} tintColor={Colors.accent} colors={[Colors.accent]} />}
+        refreshControl={<RefreshControl refreshing={query.isRefetching && !query.isLoading} onRefresh={() => query.refetch()} tintColor={colors.accent} colors={[colors.accent]} />}
         ListHeaderComponent={
           <View style={styles.searchWrap}>
-            <Feather name="search" size={14} color={Colors.textMuted} />
+            <Feather name="search" size={14} color={colors.textMuted} />
             <TextInput
               value={search}
               onChangeText={setSearch}
               placeholder="Buscar membro…"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               style={styles.search}
             />
           </View>
@@ -112,18 +114,18 @@ export default function MembrosScreen() {
                 <Text style={styles.email}>{item.email}</Text>
                 <View style={styles.badges}>
                   <View style={[styles.badge, isOwner && { backgroundColor: "rgba(196,164,106,0.18)" }]}>
-                    <Feather name="shield" size={10} color={isOwner ? Colors.accent : Colors.textSecondary} />
-                    <Text style={[styles.badgeText, isOwner && { color: Colors.accent }]}>{ROLE_LABELS[item.role]}</Text>
+                    <Feather name="shield" size={10} color={isOwner ? colors.accent : colors.textSecondary} />
+                    <Text style={[styles.badgeText, isOwner && { color: colors.accent }]}>{ROLE_LABELS[item.role]}</Text>
                   </View>
                   {item.profissionalNome ? (
                     <View style={styles.badge}>
-                      <Feather name="user" size={10} color={Colors.textSecondary} />
+                      <Feather name="user" size={10} color={colors.textSecondary} />
                       <Text style={styles.badgeText}>{item.profissionalNome}</Text>
                     </View>
                   ) : null}
                   {item.ativo === false ? (
-                    <View style={[styles.badge, { backgroundColor: Colors.error + "22" }]}>
-                      <Text style={[styles.badgeText, { color: Colors.error }]}>Inativo</Text>
+                    <View style={[styles.badge, { backgroundColor: colors.error + "22" }]}>
+                      <Text style={[styles.badgeText, { color: colors.error }]}>Inativo</Text>
                     </View>
                   ) : null}
                 </View>
@@ -142,7 +144,7 @@ export default function MembrosScreen() {
                     }
                     style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.6 }]}
                   >
-                    <Feather name="edit-2" size={14} color={Colors.text} />
+                    <Feather name="edit-2" size={14} color={colors.text} />
                   </Pressable>
                   <Pressable
                     hitSlop={8}
@@ -154,7 +156,7 @@ export default function MembrosScreen() {
                     }
                     style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.6 }]}
                   >
-                    <Feather name="trash-2" size={14} color={Colors.error} />
+                    <Feather name="trash-2" size={14} color={colors.error} />
                   </Pressable>
                 </View>
               ) : null}
@@ -176,7 +178,7 @@ export default function MembrosScreen() {
                   onPress={() => setEditing((cur) => (cur ? { ...cur, role: r } : cur))}
                   style={[styles.chip, editing?.role === r && styles.chipActive]}
                 >
-                  <Text style={[styles.chipText, editing?.role === r && { color: "#000" }]}>{ROLE_LABELS[r]}</Text>
+                  <Text style={[styles.chipText, editing?.role === r && { color: colors.invertedText }]}>{ROLE_LABELS[r]}</Text>
                 </Pressable>
               ))}
             </View>
@@ -186,7 +188,7 @@ export default function MembrosScreen() {
               <Switch
                 value={editing?.ativo ?? true}
                 onValueChange={(v) => setEditing((cur) => (cur ? { ...cur, ativo: v } : cur))}
-                trackColor={{ false: Colors.surfaceLight, true: Colors.accent }}
+                trackColor={{ false: colors.surfaceLight, true: colors.accent }}
                 thumbColor="#fff"
               />
             </View>
@@ -210,55 +212,55 @@ export default function MembrosScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
   searchWrap: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.surfaceBorder,
     paddingHorizontal: 12, paddingVertical: Platform.OS === "ios" ? 10 : 6, marginBottom: 10,
   },
-  search: { flex: 1, color: Colors.text, fontFamily: "Inter_500Medium", fontSize: 13 },
+  search: { flex: 1, color: c.text, fontFamily: "Inter_500Medium", fontSize: 13 },
   card: {
     flexDirection: "row", alignItems: "center", gap: 12,
-    backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.surfaceBorder,
     padding: 12, marginBottom: 8,
   },
   avatar: {
     width: 44, height: 44, borderRadius: 22,
     backgroundColor: "rgba(196,164,106,0.15)", alignItems: "center", justifyContent: "center",
   },
-  avatarText: { color: Colors.accent, fontFamily: "Inter_700Bold", fontSize: 14 },
+  avatarText: { color: c.accent, fontFamily: "Inter_700Bold", fontSize: 14 },
   titleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  name: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 14 },
-  youBadge: { color: Colors.accent, fontSize: 10, fontFamily: "Inter_700Bold", textTransform: "uppercase", letterSpacing: 0.5 },
-  email: { color: Colors.textSecondary, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 2 },
+  name: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 14 },
+  youBadge: { color: c.accent, fontSize: 10, fontFamily: "Inter_700Bold", textTransform: "uppercase", letterSpacing: 0.5 },
+  email: { color: c.textSecondary, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 2 },
   badges: { flexDirection: "row", gap: 6, marginTop: 6, flexWrap: "wrap" },
   badge: {
     flexDirection: "row", alignItems: "center", gap: 4,
     paddingHorizontal: 7, paddingVertical: 3, borderRadius: 999,
-    backgroundColor: Colors.surfaceLight,
+    backgroundColor: c.surfaceLight,
   },
-  badgeText: { color: Colors.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 10 },
+  badgeText: { color: c.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 10 },
   actions: { flexDirection: "row", gap: 6 },
   actionBtn: {
-    width: 32, height: 32, borderRadius: 8, backgroundColor: Colors.surfaceLight,
-    borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "center",
+    width: 32, height: 32, borderRadius: 8, backgroundColor: c.surfaceLight,
+    borderWidth: 1, borderColor: c.surfaceBorder, alignItems: "center", justifyContent: "center",
   },
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-  sheet: { backgroundColor: Colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 18, maxHeight: "80%" },
-  modalTitle: { color: Colors.text, fontFamily: "Inter_700Bold", fontSize: 15, marginBottom: 8 },
-  label: { color: Colors.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 8, marginBottom: 4 },
+  backdrop: { flex: 1, backgroundColor: c.overlay, justifyContent: "flex-end" },
+  sheet: { backgroundColor: c.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 18, maxHeight: "80%" },
+  modalTitle: { color: c.text, fontFamily: "Inter_700Bold", fontSize: 15, marginBottom: 8 },
+  label: { color: c.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 8, marginBottom: 4 },
   chips: { flexDirection: "row", gap: 6 },
   chip: {
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999,
-    backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder,
   },
-  chipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  chipText: { color: Colors.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12 },
+  chipActive: { backgroundColor: c.accent, borderColor: c.accent },
+  chipText: { color: c.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12 },
   switchRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
   modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 14 },
   btn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10 },
-  btnGhost: { backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  btnGhostText: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  btnPrimary: { backgroundColor: Colors.accent },
-  btnPrimaryText: { color: "#000", fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  btnGhost: { backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder },
+  btnGhostText: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  btnPrimary: { backgroundColor: c.accent },
+  btnPrimaryText: { color: c.invertedText, fontFamily: "Inter_600SemiBold", fontSize: 13 },
 });

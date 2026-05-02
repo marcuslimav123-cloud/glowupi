@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -13,12 +13,14 @@ import { Redirect, Link } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import * as Haptics from "expo-haptics";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppleSignInButton } from "@/components/AppleSignInButton";
 
 export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { register, loginWithApple, isAuthenticated } = useAuth();
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -85,7 +87,7 @@ export default function RegisterScreen() {
             <TextInput
               style={styles.input}
               placeholder="Seu nome"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               value={nome}
               onChangeText={setNome}
               autoCapitalize="words"
@@ -99,7 +101,7 @@ export default function RegisterScreen() {
             <TextInput
               style={styles.input}
               placeholder="seu@email.com"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -114,7 +116,7 @@ export default function RegisterScreen() {
             <TextInput
               style={styles.input}
               placeholder="Mínimo 6 caracteres"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               value={senha}
               onChangeText={setSenha}
               secureTextEntry
@@ -128,7 +130,7 @@ export default function RegisterScreen() {
             <TextInput
               style={styles.input}
               placeholder="Repita a senha"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               value={confirmarSenha}
               onChangeText={setConfirmarSenha}
               secureTextEntry
@@ -145,7 +147,7 @@ export default function RegisterScreen() {
             accessibilityLabel="Criar conta"
           >
             {loading ? (
-              <ActivityIndicator color={Colors.background} size="small" />
+              <ActivityIndicator color={colors.background} size="small" />
             ) : (
               <Text style={styles.buttonText}>Criar conta</Text>
             )}
@@ -154,9 +156,9 @@ export default function RegisterScreen() {
           {Platform.OS === "ios" && (
             <>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginVertical: 4 }}>
-                <View style={{ flex: 1, height: 1, backgroundColor: Colors.surfaceBorder }} />
-                <Text style={{ fontSize: 13, color: Colors.textMuted, fontFamily: "Inter_400Regular" }}>ou</Text>
-                <View style={{ flex: 1, height: 1, backgroundColor: Colors.surfaceBorder }} />
+                <View style={{ flex: 1, height: 1, backgroundColor: colors.surfaceBorder }} />
+                <Text style={{ fontSize: 13, color: colors.textMuted, fontFamily: "Inter_400Regular" }}>ou</Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: colors.surfaceBorder }} />
               </View>
               <AppleSignInButton
                 disabled={loading}
@@ -187,10 +189,10 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: c.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -210,7 +212,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 15,
     fontFamily: "Inter_400Regular",
-    color: Colors.textSecondary,
+    color: c.textSecondary,
   },
   form: {
     gap: 18,
@@ -223,7 +225,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(239, 68, 68, 0.3)",
   },
   errorText: {
-    color: Colors.error,
+    color: c.error,
     fontSize: 14,
     fontFamily: "Inter_500Medium",
     textAlign: "center",
@@ -234,20 +236,20 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: Colors.textSecondary,
+    color: c.textSecondary,
   },
   input: {
-    backgroundColor: Colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
     fontFamily: "Inter_400Regular",
-    color: Colors.text,
+    color: c.text,
     borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
+    borderColor: c.surfaceBorder,
   },
   button: {
-    backgroundColor: Colors.accent,
+    backgroundColor: c.accent,
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
@@ -260,7 +262,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
-    color: Colors.background,
+    color: c.background,
   },
   loginLink: {
     flexDirection: "row",
@@ -271,11 +273,11 @@ const styles = StyleSheet.create({
   loginText: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: Colors.textMuted,
+    color: c.textMuted,
   },
   loginLinkText: {
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
-    color: Colors.accent,
+    color: c.accent,
   },
 });

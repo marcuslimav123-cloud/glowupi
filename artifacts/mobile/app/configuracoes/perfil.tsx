@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Feather } from "@expo/vector-icons";
-import Colors from "@/constants/colors";
+import { useColors, useTheme, type ColorPalette, type ThemeMode } from "@/lib/theme";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { SectionHeader } from "@/components/SectionHeader";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,8 +27,17 @@ const ROLE_LABELS: Record<string, string> = {
   colaborador: "Colaborador(a)",
 };
 
+const TEMA_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Feather.glyphMap }[] = [
+  { value: "claro", label: "Claro", icon: "sun" },
+  { value: "escuro", label: "Escuro", icon: "moon" },
+  { value: "auto", label: "Auto", icon: "smartphone" },
+];
+
 export default function PerfilScreen() {
   const { user, barbearia, logout, refreshUser } = useAuth();
+  const colors = useColors();
+  const { mode, setMode } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [editing, setEditing] = useState(false);
   const [nome, setNome] = useState("");
@@ -50,15 +59,6 @@ export default function PerfilScreen() {
       { text: "Cancelar", style: "cancel" },
       { text: "Sair", style: "destructive", onPress: () => logout() },
     ]);
-  };
-
-  const handleTema = async (tema: "claro" | "escuro") => {
-    try {
-      await fetchJson(`/auth/tema`, { method: "PUT", body: { tema } });
-      await refreshUser();
-    } catch (e) {
-      Alert.alert("Erro", getErrorMessage(e));
-    }
   };
 
   const handleStartEdit = () => {
@@ -114,10 +114,7 @@ export default function PerfilScreen() {
 
       const reqRes = await fetch(apiUrl("/storage/uploads/request-url"), {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name: inferredName, size, contentType: inferredType }),
       });
       if (!reqRes.ok) {
@@ -127,11 +124,7 @@ export default function PerfilScreen() {
       const { uploadURL, objectPath } = await reqRes.json();
       if (!uploadURL || !objectPath) throw new Error("Resposta inválida do servidor");
 
-      const putRes = await fetch(uploadURL, {
-        method: "PUT",
-        headers: { "Content-Type": inferredType },
-        body: blob,
-      });
+      const putRes = await fetch(uploadURL, { method: "PUT", headers: { "Content-Type": inferredType }, body: blob });
       if (!putRes.ok) throw new Error("Falha ao enviar imagem");
 
       const path = objectPath.startsWith("/") ? objectPath : `/${objectPath}`;
@@ -187,7 +180,7 @@ export default function PerfilScreen() {
   if (!user) {
     return (
       <ScreenContainer title="Perfil">
-        <Text style={{ color: Colors.textMuted, textAlign: "center", marginTop: 40 }}>
+        <Text style={{ color: colors.textMuted, textAlign: "center", marginTop: 40 }}>
           Carregando…
         </Text>
       </ScreenContainer>
@@ -224,24 +217,20 @@ export default function PerfilScreen() {
           )}
           {editing ? (
             <View style={styles.avatarOverlay}>
-              {uploadingPhoto ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Feather name="camera" size={18} color="#fff" />
-              )}
+              {uploadingPhoto ? <ActivityIndicator color="#fff" /> : <Feather name="camera" size={18} color="#fff" />}
             </View>
           ) : null}
         </Pressable>
         {editing && fotoUrl ? (
           <Pressable onPress={handleRemovePhoto} hitSlop={8} style={styles.removePhotoBtn}>
-            <Feather name="trash-2" size={12} color={Colors.error} />
+            <Feather name="trash-2" size={12} color={colors.error} />
             <Text style={styles.removePhotoText}>Remover foto</Text>
           </Pressable>
         ) : null}
         <Text style={styles.heroName}>{editing ? (nome || "Seu nome") : user.nome}</Text>
         <Text style={styles.heroEmail}>{user.email}</Text>
         <View style={styles.heroBadge}>
-          <Feather name="shield" size={12} color={Colors.accent} />
+          <Feather name="shield" size={12} color={colors.accent} />
           <Text style={styles.heroBadgeText}>{ROLE_LABELS[user.role] ?? user.role}</Text>
         </View>
       </View>
@@ -250,24 +239,24 @@ export default function PerfilScreen() {
       <View style={styles.card}>
         {editing ? (
           <>
-            <EditRow icon="user" label="Nome">
+            <EditRow icon="user" label="Nome" colors={colors} styles={styles}>
               <TextInput
                 value={nome}
                 onChangeText={setNome}
                 placeholder="Seu nome completo"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 style={styles.input}
                 autoCapitalize="words"
                 editable={!saving}
               />
             </EditRow>
-            <InfoRow icon="mail" label="E-mail" value={user.email} />
-            <EditRow icon="phone" label="Telefone" last>
+            <InfoRow icon="mail" label="E-mail" value={user.email} colors={colors} styles={styles} />
+            <EditRow icon="phone" label="Telefone" last colors={colors} styles={styles}>
               <TextInput
                 value={telefone}
                 onChangeText={(v) => setTelefone(formatPhone(v))}
                 placeholder="(11) 99999-9999"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 style={styles.input}
                 keyboardType="phone-pad"
                 editable={!saving}
@@ -277,9 +266,9 @@ export default function PerfilScreen() {
           </>
         ) : (
           <>
-            <InfoRow icon="user" label="Nome" value={user.nome} />
-            <InfoRow icon="mail" label="E-mail" value={user.email} />
-            <InfoRow icon="phone" label="Telefone" value={user.telefone ? formatPhone(user.telefone) : "—"} last />
+            <InfoRow icon="user" label="Nome" value={user.nome} colors={colors} styles={styles} />
+            <InfoRow icon="mail" label="E-mail" value={user.email} colors={colors} styles={styles} />
+            <InfoRow icon="phone" label="Telefone" value={user.telefone ? formatPhone(user.telefone) : "—"} last colors={colors} styles={styles} />
           </>
         )}
       </View>
@@ -299,10 +288,10 @@ export default function PerfilScreen() {
             style={({ pressed }) => [styles.btn, styles.btnPrimary, (pressed || saving) && { opacity: 0.85 }]}
           >
             {saving ? (
-              <ActivityIndicator color="#000" />
+              <ActivityIndicator color={colors.invertedText} />
             ) : (
               <>
-                <Feather name="check" size={14} color="#000" />
+                <Feather name="check" size={14} color={colors.invertedText} />
                 <Text style={styles.btnPrimaryText}>Salvar</Text>
               </>
             )}
@@ -314,29 +303,29 @@ export default function PerfilScreen() {
         <>
           <SectionHeader label="Estabelecimento" />
           <View style={styles.card}>
-            <InfoRow icon="briefcase" label="Nome" value={barbearia.nome} />
-            <InfoRow icon="link" label="Slug" value={barbearia.slug} last={!barbearia.subscriptionStatus} />
+            <InfoRow icon="briefcase" label="Nome" value={barbearia.nome} colors={colors} styles={styles} />
+            <InfoRow icon="link" label="Slug" value={barbearia.slug} last={!barbearia.subscriptionStatus} colors={colors} styles={styles} />
             {barbearia.subscriptionStatus ? (
-              <InfoRow icon="award" label="Plano" value={barbearia.subscriptionStatus} last />
+              <InfoRow icon="award" label="Plano" value={barbearia.subscriptionStatus} last colors={colors} styles={styles} />
             ) : null}
           </View>
         </>
       ) : null}
 
-      <SectionHeader label="Aparência" />
+      <SectionHeader label="Aparência" description="O tema é aplicado imediatamente em todo o app." />
       <View style={styles.card}>
         <View style={styles.themeRow}>
-          {(["claro", "escuro"] as const).map((t) => {
-            const active = (user.tema || "escuro") === t;
+          {TEMA_OPTIONS.map((opt) => {
+            const active = mode === opt.value;
             return (
               <Pressable
-                key={t}
-                onPress={() => handleTema(t)}
+                key={opt.value}
+                onPress={() => setMode(opt.value)}
                 style={[styles.themeBtn, active && styles.themeBtnActive]}
               >
-                <Feather name={t === "claro" ? "sun" : "moon"} size={14} color={active ? "#000" : Colors.textSecondary} />
-                <Text style={[styles.themeText, active && { color: "#000" }]}>
-                  {t === "claro" ? "Claro" : "Escuro"}
+                <Feather name={opt.icon} size={14} color={active ? colors.invertedText : colors.textSecondary} />
+                <Text style={[styles.themeText, active && { color: colors.invertedText }]}>
+                  {opt.label}
                 </Text>
               </Pressable>
             );
@@ -350,14 +339,14 @@ export default function PerfilScreen() {
           onPress={handleLogout}
           style={({ pressed }) => [styles.row, { borderBottomWidth: 0 }, pressed && { opacity: 0.7 }]}
         >
-          <View style={[styles.iconWrap, { backgroundColor: Colors.error + "1a" }]}>
-            <Feather name="log-out" size={16} color={Colors.error} />
+          <View style={[styles.iconWrap, { backgroundColor: colors.error + "1a" }]}>
+            <Feather name="log-out" size={16} color={colors.error} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.rowLabel, { color: Colors.error }]}>Sair da conta</Text>
+            <Text style={[styles.rowLabel, { color: colors.error }]}>Sair da conta</Text>
             <Text style={styles.rowDesc}>Encerra a sessão neste aparelho</Text>
           </View>
-          <Feather name="chevron-right" size={16} color={Colors.textMuted} />
+          <Feather name="chevron-right" size={16} color={colors.textMuted} />
         </Pressable>
       </View>
     </ScreenContainer>
@@ -365,20 +354,19 @@ export default function PerfilScreen() {
 }
 
 function InfoRow({
-  icon,
-  label,
-  value,
-  last,
+  icon, label, value, last, colors, styles,
 }: {
   icon: keyof typeof Feather.glyphMap;
   label: string;
   value: string;
   last?: boolean;
+  colors: ColorPalette;
+  styles: ReturnType<typeof makeStyles>;
 }) {
   return (
     <View style={[styles.row, last && { borderBottomWidth: 0 }]}>
       <View style={styles.iconWrap}>
-        <Feather name={icon} size={16} color={Colors.accent} />
+        <Feather name={icon} size={16} color={colors.accent} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.rowLabel}>{label}</Text>
@@ -389,20 +377,19 @@ function InfoRow({
 }
 
 function EditRow({
-  icon,
-  label,
-  children,
-  last,
+  icon, label, children, last, colors, styles,
 }: {
   icon: keyof typeof Feather.glyphMap;
   label: string;
   children: React.ReactNode;
   last?: boolean;
+  colors: ColorPalette;
+  styles: ReturnType<typeof makeStyles>;
 }) {
   return (
     <View style={[styles.row, last && { borderBottomWidth: 0 }]}>
       <View style={styles.iconWrap}>
-        <Feather name={icon} size={16} color={Colors.accent} />
+        <Feather name={icon} size={16} color={colors.accent} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.rowLabel}>{label}</Text>
@@ -412,81 +399,79 @@ function EditRow({
   );
 }
 
-const styles = StyleSheet.create({
-  heroCard: {
-    alignItems: "center",
-    paddingVertical: 22,
-    paddingHorizontal: 16,
-    backgroundColor: Colors.surface,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
-    marginBottom: 4,
-  },
-  avatarPressable: { position: "relative", marginBottom: 10 },
-  avatar: { width: 84, height: 84, borderRadius: 42, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  avatarFallback: {
-    width: 84, height: 84, borderRadius: 42,
-    backgroundColor: "rgba(196,164,106,0.15)", alignItems: "center", justifyContent: "center",
-    borderWidth: 1, borderColor: Colors.surfaceBorder,
-  },
-  avatarInit: { color: Colors.accent, fontFamily: "Inter_700Bold", fontSize: 26 },
-  avatarOverlay: {
-    position: "absolute", top: 0, right: 0, bottom: 0, left: 0,
-    borderRadius: 42, backgroundColor: "rgba(0,0,0,0.45)",
-    alignItems: "center", justifyContent: "center",
-  },
-  removePhotoBtn: {
-    flexDirection: "row", alignItems: "center", gap: 4,
-    marginTop: -4, marginBottom: 6, paddingHorizontal: 8, paddingVertical: 4,
-  },
-  removePhotoText: { color: Colors.error, fontFamily: "Inter_600SemiBold", fontSize: 11 },
-  heroName: { color: Colors.text, fontFamily: "Inter_700Bold", fontSize: 17 },
-  heroEmail: { color: Colors.textSecondary, fontFamily: "Inter_500Medium", fontSize: 12, marginTop: 4 },
-  heroBadge: {
-    flexDirection: "row", alignItems: "center", gap: 5,
-    backgroundColor: "rgba(196,164,106,0.15)",
-    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, marginTop: 10,
-  },
-  heroBadgeText: { color: Colors.accent, fontFamily: "Inter_600SemiBold", fontSize: 11 },
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
-    overflow: "hidden",
-  },
-  row: {
-    flexDirection: "row", alignItems: "center", gap: 12,
-    paddingHorizontal: 14, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: Colors.surfaceBorder,
-  },
-  iconWrap: {
-    width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center",
-    backgroundColor: "rgba(196,164,106,0.15)",
-  },
-  rowLabel: { color: Colors.textMuted, fontSize: 11, fontFamily: "Inter_500Medium" },
-  rowValue: { color: Colors.text, fontSize: 13, fontFamily: "Inter_600SemiBold", marginTop: 2 },
-  rowDesc: { color: Colors.textSecondary, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 2 },
-  input: {
-    color: Colors.text, fontSize: 14, fontFamily: "Inter_600SemiBold",
-    paddingVertical: 4, paddingHorizontal: 0, marginTop: 2,
-  },
-  themeRow: { flexDirection: "row", gap: 8, padding: 12 },
-  themeBtn: {
-    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
-    paddingVertical: 11, borderRadius: 10,
-    backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder,
-  },
-  themeBtnActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  themeText: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  actionRow: { flexDirection: "row", gap: 10, marginTop: 10 },
-  btn: {
-    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    paddingVertical: 13, borderRadius: 12,
-  },
-  btnGhost: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  btnGhostText: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 14 },
-  btnPrimary: { backgroundColor: Colors.accent },
-  btnPrimaryText: { color: "#000", fontFamily: "Inter_700Bold", fontSize: 14 },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    heroCard: {
+      alignItems: "center",
+      paddingVertical: 22,
+      paddingHorizontal: 16,
+      backgroundColor: c.surface,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: c.surfaceBorder,
+      marginBottom: 4,
+    },
+    avatarPressable: { position: "relative", marginBottom: 10 },
+    avatar: { width: 84, height: 84, borderRadius: 42, borderWidth: 1, borderColor: c.surfaceBorder },
+    avatarFallback: {
+      width: 84, height: 84, borderRadius: 42,
+      backgroundColor: c.accent + "26", alignItems: "center", justifyContent: "center",
+      borderWidth: 1, borderColor: c.surfaceBorder,
+    },
+    avatarInit: { color: c.accent, fontFamily: "Inter_700Bold", fontSize: 26 },
+    avatarOverlay: {
+      position: "absolute", top: 0, right: 0, bottom: 0, left: 0,
+      borderRadius: 42, backgroundColor: c.overlay,
+      alignItems: "center", justifyContent: "center",
+    },
+    removePhotoBtn: {
+      flexDirection: "row", alignItems: "center", gap: 4,
+      marginTop: -4, marginBottom: 6, paddingHorizontal: 8, paddingVertical: 4,
+    },
+    removePhotoText: { color: c.error, fontFamily: "Inter_600SemiBold", fontSize: 11 },
+    heroName: { color: c.text, fontFamily: "Inter_700Bold", fontSize: 17 },
+    heroEmail: { color: c.textSecondary, fontFamily: "Inter_500Medium", fontSize: 12, marginTop: 4 },
+    heroBadge: {
+      flexDirection: "row", alignItems: "center", gap: 5,
+      backgroundColor: c.accent + "26",
+      paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, marginTop: 10,
+    },
+    heroBadgeText: { color: c.accent, fontFamily: "Inter_600SemiBold", fontSize: 11 },
+    card: {
+      backgroundColor: c.surface, borderRadius: 14,
+      borderWidth: 1, borderColor: c.surfaceBorder, overflow: "hidden",
+    },
+    row: {
+      flexDirection: "row", alignItems: "center", gap: 12,
+      paddingHorizontal: 14, paddingVertical: 12,
+      borderBottomWidth: 1, borderBottomColor: c.surfaceBorder,
+    },
+    iconWrap: {
+      width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center",
+      backgroundColor: c.accent + "26",
+    },
+    rowLabel: { color: c.textMuted, fontSize: 11, fontFamily: "Inter_500Medium" },
+    rowValue: { color: c.text, fontSize: 13, fontFamily: "Inter_600SemiBold", marginTop: 2 },
+    rowDesc: { color: c.textSecondary, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 2 },
+    input: {
+      color: c.text, fontSize: 14, fontFamily: "Inter_600SemiBold",
+      paddingVertical: 4, paddingHorizontal: 0, marginTop: 2,
+    },
+    themeRow: { flexDirection: "row", gap: 8, padding: 12 },
+    themeBtn: {
+      flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
+      paddingVertical: 11, borderRadius: 10,
+      backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder,
+    },
+    themeBtnActive: { backgroundColor: c.accent, borderColor: c.accent },
+    themeText: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+    actionRow: { flexDirection: "row", gap: 10, marginTop: 10 },
+    btn: {
+      flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+      paddingVertical: 13, borderRadius: 12,
+    },
+    btnGhost: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder },
+    btnGhostText: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 14 },
+    btnPrimary: { backgroundColor: c.accent },
+    btnPrimaryText: { color: c.invertedText, fontFamily: "Inter_700Bold", fontSize: 14 },
+  });

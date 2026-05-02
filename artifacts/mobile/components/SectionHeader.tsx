@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 
 export type SectionHeaderProps = {
   label: string;
@@ -9,6 +9,8 @@ export type SectionHeaderProps = {
 };
 
 export function SectionHeader({ label, description, trailing }: SectionHeaderProps) {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.container}>
       <View style={styles.row}>
@@ -20,30 +22,31 @@ export function SectionHeader({ label, description, trailing }: SectionHeaderPro
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 4,
-    marginTop: 18,
-    marginBottom: 8,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  label: {
-    fontSize: 12,
-    fontFamily: "Inter_700Bold",
-    color: Colors.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 1.1,
-  },
-  description: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textSecondary,
-    marginTop: 4,
-  },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      paddingHorizontal: 4,
+      marginTop: 18,
+      marginBottom: 8,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    label: {
+      fontSize: 12,
+      fontFamily: "Inter_700Bold",
+      color: c.textMuted,
+      textTransform: "uppercase",
+      letterSpacing: 1.1,
+    },
+    description: {
+      fontSize: 12,
+      fontFamily: "Inter_400Regular",
+      color: c.textSecondary,
+      marginTop: 4,
+    },
+  });
 
 export default SectionHeader;

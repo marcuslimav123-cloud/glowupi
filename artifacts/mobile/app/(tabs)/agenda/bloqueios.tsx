@@ -17,7 +17,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchJson, todayStr, strToDate, generateTimeSlots, getHorizontalRange, getErrorMessage } from "@/lib/api";
 import { EmptyState } from "@/components/EmptyState";
@@ -37,6 +37,8 @@ type Bloqueio = {
 type Profissional = { id: number; nomeExibicao: string; apelido?: string | null; ativo?: boolean };
 
 export default function BloqueiosScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ date?: string }>();
@@ -133,7 +135,7 @@ export default function BloqueiosScreen() {
     <View style={[styles.container, { paddingTop: webTopPad }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Feather name="chevron-left" size={22} color={Colors.text} />
+          <Feather name="chevron-left" size={22} color={colors.text} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Bloqueios de horário</Text>
@@ -156,10 +158,10 @@ export default function BloqueiosScreen() {
               style={[styles.dayChip, isSel && styles.dayChipActive]}
               onPress={() => setDate(d)}
             >
-              <Text style={[styles.dayWeek, isSel && { color: "#000" }]}>
+              <Text style={[styles.dayWeek, isSel && { color: colors.invertedText }]}>
                 {dd.toLocaleDateString("pt-BR", { weekday: "short" }).slice(0, 3)}
               </Text>
-              <Text style={[styles.dayNum, isSel && { color: "#000" }]}>{dd.getDate()}</Text>
+              <Text style={[styles.dayNum, isSel && { color: colors.invertedText }]}>{dd.getDate()}</Text>
             </TouchableOpacity>
           );
         })}
@@ -167,7 +169,7 @@ export default function BloqueiosScreen() {
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 + insets.bottom }}>
         {isLoading ? (
-          <ActivityIndicator color={Colors.accent} style={{ marginTop: 40 }} />
+          <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
         ) : isError ? (
           <ErrorView
             title="Não foi possível carregar os bloqueios"
@@ -184,7 +186,7 @@ export default function BloqueiosScreen() {
           bloqueios.map(b => (
             <View key={b.id} style={styles.blockCard}>
               <View style={styles.blockIcon}>
-                <Feather name="lock" size={16} color={Colors.textMuted} />
+                <Feather name="lock" size={16} color={colors.textMuted} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.blockTitle}>{b.horaInicio.slice(0,5)} – {b.horaFim.slice(0,5)}</Text>
@@ -193,7 +195,7 @@ export default function BloqueiosScreen() {
               </View>
               {canManage && (
                 <TouchableOpacity style={styles.removeBtn} onPress={() => remove(b)}>
-                  <Feather name="trash-2" size={16} color={Colors.error} />
+                  <Feather name="trash-2" size={16} color={colors.error} />
                 </TouchableOpacity>
               )}
             </View>
@@ -207,7 +209,7 @@ export default function BloqueiosScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Novo bloqueio</Text>
               <TouchableOpacity onPress={() => setOpen(false)}>
-                <Feather name="x" size={22} color={Colors.text} />
+                <Feather name="x" size={22} color={colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -220,7 +222,7 @@ export default function BloqueiosScreen() {
                     style={[styles.miniChip, profId === String(p.id) && styles.miniChipActive]}
                     onPress={() => setProfId(String(p.id))}
                   >
-                    <Text style={[styles.miniChipText, profId === String(p.id) && { color: "#000" }]}>
+                    <Text style={[styles.miniChipText, profId === String(p.id) && { color: colors.invertedText }]}>
                       {p.apelido || p.nomeExibicao}
                     </Text>
                   </TouchableOpacity>
@@ -235,7 +237,7 @@ export default function BloqueiosScreen() {
                     style={[styles.slot, horaInicio === t && styles.slotActive]}
                     onPress={() => setHoraInicio(t)}
                   >
-                    <Text style={[styles.slotText, horaInicio === t && { color: "#000" }]}>{t}</Text>
+                    <Text style={[styles.slotText, horaInicio === t && { color: colors.invertedText }]}>{t}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -248,16 +250,16 @@ export default function BloqueiosScreen() {
                     style={[styles.slot, horaFim === t && styles.slotActive]}
                     onPress={() => setHoraFim(t)}
                   >
-                    <Text style={[styles.slotText, horaFim === t && { color: "#000" }]}>{t}</Text>
+                    <Text style={[styles.slotText, horaFim === t && { color: colors.invertedText }]}>{t}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={styles.section}>Motivo <Text style={{ color: Colors.textMuted }}>(opcional)</Text></Text>
+              <Text style={styles.section}>Motivo <Text style={{ color: colors.textMuted }}>(opcional)</Text></Text>
               <TextInput
                 style={styles.input}
                 placeholder="Ex: almoço, folga, consulta médica"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 value={motivo}
                 onChangeText={setMotivo}
               />
@@ -268,7 +270,7 @@ export default function BloqueiosScreen() {
               disabled={submitting}
               onPress={submit}
             >
-              {submitting ? <ActivityIndicator color="#000" /> : <Text style={styles.btnPrimaryText}>Bloquear horário</Text>}
+              {submitting ? <ActivityIndicator color={colors.invertedText} /> : <Text style={styles.btnPrimaryText}>Bloquear horário</Text>}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -277,37 +279,38 @@ export default function BloqueiosScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingBottom: 8, gap: 8 },
-  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "center" },
-  addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.accent, alignItems: "center", justifyContent: "center" },
-  title: { fontSize: 20, fontFamily: "Inter_700Bold", color: Colors.text },
-  subtitle: { fontSize: 12, color: Colors.textSecondary, fontFamily: "Inter_400Regular", marginTop: 2 },
+  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, alignItems: "center", justifyContent: "center" },
+  addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: c.accent, alignItems: "center", justifyContent: "center" },
+  title: { fontSize: 20, fontFamily: "Inter_700Bold", color: c.text },
+  subtitle: { fontSize: 12, color: c.textSecondary, fontFamily: "Inter_400Regular", marginTop: 2 },
   dateStrip: { maxHeight: 80, marginTop: 8, marginBottom: 8 },
-  dayChip: { minWidth: 52, paddingVertical: 8, paddingHorizontal: 6, borderRadius: 12, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center" },
-  dayChipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  dayWeek: { fontSize: 10, fontFamily: "Inter_500Medium", color: Colors.textSecondary, textTransform: "capitalize" },
-  dayNum: { fontSize: 17, fontFamily: "Inter_700Bold", color: Colors.text, marginTop: 2 },
-  blockCard: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 12, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, marginBottom: 8 },
-  blockIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.surfaceLight, alignItems: "center", justifyContent: "center" },
-  blockTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: Colors.text },
-  blockSub: { fontSize: 12, color: Colors.textSecondary, fontFamily: "Inter_400Regular", marginTop: 2 },
-  blockMotivo: { fontSize: 11, color: Colors.textMuted, fontFamily: "Inter_400Regular", marginTop: 2, fontStyle: "italic" },
+  dayChip: { minWidth: 52, paddingVertical: 8, paddingHorizontal: 6, borderRadius: 12, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, alignItems: "center" },
+  dayChipActive: { backgroundColor: c.accent, borderColor: c.accent },
+  dayWeek: { fontSize: 10, fontFamily: "Inter_500Medium", color: c.textSecondary, textTransform: "capitalize" },
+  dayNum: { fontSize: 17, fontFamily: "Inter_700Bold", color: c.text, marginTop: 2 },
+  blockCard: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 12, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, marginBottom: 8 },
+  blockIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: c.surfaceLight, alignItems: "center", justifyContent: "center" },
+  blockTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: c.text },
+  blockSub: { fontSize: 12, color: c.textSecondary, fontFamily: "Inter_400Regular", marginTop: 2 },
+  blockMotivo: { fontSize: 11, color: c.textMuted, fontFamily: "Inter_400Regular", marginTop: 2, fontStyle: "italic" },
   removeBtn: { padding: 8 },
   modalBackdrop: { flex: 1, backgroundColor: "#000a", justifyContent: "flex-end" },
-  modalSheet: { backgroundColor: Colors.background, padding: 16, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: Colors.surfaceBorder },
+  modalSheet: { backgroundColor: c.background, padding: 16, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: c.surfaceBorder },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: Colors.text },
-  section: { fontSize: 11, fontFamily: "Inter_700Bold", color: Colors.textMuted, textTransform: "uppercase", letterSpacing: 0.8, marginTop: 14, marginBottom: 8 },
-  miniChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, marginRight: 6 },
-  miniChipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  miniChipText: { fontSize: 12, fontFamily: "Inter_500Medium", color: Colors.text },
+  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: c.text },
+  section: { fontSize: 11, fontFamily: "Inter_700Bold", color: c.textMuted, textTransform: "uppercase", letterSpacing: 0.8, marginTop: 14, marginBottom: 8 },
+  miniChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, marginRight: 6 },
+  miniChipActive: { backgroundColor: c.accent, borderColor: c.accent },
+  miniChipText: { fontSize: 12, fontFamily: "Inter_500Medium", color: c.text },
   slotsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  slot: { paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: Colors.surfaceBorder, backgroundColor: Colors.surface, minWidth: 60, alignItems: "center" },
-  slotActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  slotText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: Colors.text },
-  input: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: Colors.text, fontSize: 14, fontFamily: "Inter_400Regular" },
-  btnPrimary: { backgroundColor: Colors.accent, borderRadius: 12, paddingVertical: 14, alignItems: "center", justifyContent: "center" },
-  btnPrimaryText: { color: "#000", fontFamily: "Inter_600SemiBold", fontSize: 14 },
+  slot: { paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: c.surfaceBorder, backgroundColor: c.surface, minWidth: 60, alignItems: "center" },
+  slotActive: { backgroundColor: c.accent, borderColor: c.accent },
+  slotText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: c.text },
+  input: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: c.text, fontSize: 14, fontFamily: "Inter_400Regular" },
+  btnPrimary: { backgroundColor: c.accent, borderRadius: 12, paddingVertical: 14, alignItems: "center", justifyContent: "center" },
+  btnPrimaryText: { color: c.invertedText, fontFamily: "Inter_600SemiBold", fontSize: 14 },
 });

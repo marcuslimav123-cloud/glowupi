@@ -17,7 +17,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchJson, formatCurrency, whatsappLink, strToDate, generateTimeSlots, dateToStr, getErrorMessage } from "@/lib/api";
 
@@ -56,18 +56,20 @@ const PAYMENT_METHODS = [
 
 const requiresBandeira = (m: string) => m === "credito" || m === "debito";
 
-function statusColor(status: string, _encaixe?: boolean): { color: string; label: string; bg: string } {
+function statusColor(status: string, c: ColorPalette, _encaixe?: boolean): { color: string; label: string; bg: string } {
   switch (status) {
-    case "pago": return { color: Colors.success, label: "Pago", bg: Colors.success + "20" };
-    case "confirmado": return { color: Colors.accent, label: "Confirmado", bg: Colors.accent + "20" };
-    case "pendente_aprovacao": return { color: Colors.warning, label: "Pendente de aprovação", bg: Colors.warning + "20" };
-    case "recusado": return { color: Colors.error, label: "Recusado", bg: Colors.error + "20" };
-    case "cancelado": return { color: Colors.error, label: "Cancelado", bg: Colors.error + "20" };
-    default: return { color: Colors.textMuted, label: status, bg: Colors.surfaceLight };
+    case "pago": return { color: c.success, label: "Pago", bg: c.success + "20" };
+    case "confirmado": return { color: c.accent, label: "Confirmado", bg: c.accent + "20" };
+    case "pendente_aprovacao": return { color: c.warning, label: "Pendente de aprovação", bg: c.warning + "20" };
+    case "recusado": return { color: c.error, label: "Recusado", bg: c.error + "20" };
+    case "cancelado": return { color: c.error, label: "Cancelado", bg: c.error + "20" };
+    default: return { color: c.textMuted, label: status, bg: c.surfaceLight };
   }
 }
 
 export default function AgendamentoDetail() {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -345,7 +347,7 @@ export default function AgendamentoDetail() {
       <View style={[styles.container, { paddingTop: webTopPad }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="chevron-left" size={22} color={Colors.text} />
+            <Feather name="chevron-left" size={22} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>Detalhes</Text>
         </View>
@@ -353,14 +355,14 @@ export default function AgendamentoDetail() {
           {isError ? (
             <ErrorView title="Não foi possível carregar" onRetry={() => refetch()} />
           ) : (
-            <ActivityIndicator color={Colors.accent} />
+            <ActivityIndicator color={colors.accent} />
           )}
         </View>
       </View>
     );
   }
 
-  const info = statusColor(agend.status, agend.encaixe);
+  const info = statusColor(agend.status, colors, agend.encaixe);
   const phoneDigits = (agend.clienteTelefone || "").replace(/\D/g, "");
   const hasWa = phoneDigits.length >= 10;
   const isPending = agend.status === "pendente_aprovacao";
@@ -373,7 +375,7 @@ export default function AgendamentoDetail() {
     <View style={[styles.container, { paddingTop: webTopPad }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Feather name="chevron-left" size={22} color={Colors.text} />
+          <Feather name="chevron-left" size={22} color={colors.text} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Detalhes do agendamento</Text>
@@ -389,9 +391,9 @@ export default function AgendamentoDetail() {
             <Text style={[styles.statusText, { color: info.color }]}>{info.label}</Text>
           </View>
           {agend.encaixe && (
-            <View style={[styles.statusBadge, { backgroundColor: Colors.warning + "20", flexDirection: "row", gap: 4, alignItems: "center" }]}>
-              <Feather name="zap" size={12} color={Colors.warning} />
-              <Text style={[styles.statusText, { color: Colors.warning }]}>Encaixe</Text>
+            <View style={[styles.statusBadge, { backgroundColor: colors.warning + "20", flexDirection: "row", gap: 4, alignItems: "center" }]}>
+              <Feather name="zap" size={12} color={colors.warning} />
+              <Text style={[styles.statusText, { color: colors.warning }]}>Encaixe</Text>
             </View>
           )}
           {agend.atendimentoId && (
@@ -402,8 +404,8 @@ export default function AgendamentoDetail() {
           )}
           {agend.pacoteClienteId && (
             <View style={styles.tag}>
-              <Feather name="package" size={11} color={Colors.accent} />
-              <Text style={[styles.tagText, { color: Colors.accent }]}>Pacote</Text>
+              <Feather name="package" size={11} color={colors.accent} />
+              <Text style={[styles.tagText, { color: colors.accent }]}>Pacote</Text>
             </View>
           )}
         </View>
@@ -429,7 +431,7 @@ export default function AgendamentoDetail() {
               style={styles.waActionBtn}
               onPress={() => Linking.openURL(whatsappLink(agend.clienteTelefone))}
             >
-              <Feather name="message-circle" size={16} color={Colors.success} />
+              <Feather name="message-circle" size={16} color={colors.success} />
               <Text style={styles.waActionText}>Abrir conversa no WhatsApp</Text>
             </TouchableOpacity>
           )}
@@ -449,14 +451,14 @@ export default function AgendamentoDetail() {
               disabled={!!busy}
               onPress={doConfirm}
             >
-              {busy === "confirmar" ? <ActivityIndicator color="#000" /> : <Text style={styles.actionPrimaryText}>Confirmar</Text>}
+              {busy === "confirmar" ? <ActivityIndicator color={colors.invertedText} /> : <Text style={styles.actionPrimaryText}>Confirmar</Text>}
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionBtn, styles.actionDanger, busy === "recusar" && { opacity: 0.5 }]}
               disabled={!!busy}
               onPress={doRefuse}
             >
-              {busy === "recusar" ? <ActivityIndicator color={Colors.error} /> : <Text style={styles.actionDangerText}>Recusar</Text>}
+              {busy === "recusar" ? <ActivityIndicator color={colors.error} /> : <Text style={styles.actionDangerText}>Recusar</Text>}
             </TouchableOpacity>
           </View>
         )}
@@ -473,11 +475,11 @@ export default function AgendamentoDetail() {
 
         {canRemind && (
           <TouchableOpacity
-            style={[styles.actionBtn, styles.actionGhost, { marginTop: 12, borderColor: Colors.success + "55", backgroundColor: Colors.success + "0d" }]}
+            style={[styles.actionBtn, styles.actionGhost, { marginTop: 12, borderColor: colors.success + "55", backgroundColor: colors.success + "0d" }]}
             onPress={sendLembrete}
           >
-            <Feather name="message-circle" size={16} color={Colors.success} />
-            <Text style={[styles.actionGhostText, { color: Colors.success, marginLeft: 6 }]}>Enviar lembrete WhatsApp</Text>
+            <Feather name="message-circle" size={16} color={colors.success} />
+            <Text style={[styles.actionGhostText, { color: colors.success, marginLeft: 6 }]}>Enviar lembrete WhatsApp</Text>
           </TouchableOpacity>
         )}
 
@@ -487,8 +489,8 @@ export default function AgendamentoDetail() {
             disabled={!!busy}
             onPress={openReagendar}
           >
-            <Feather name="calendar" size={16} color={Colors.accent} />
-            <Text style={[styles.actionGhostText, { color: Colors.accent, marginLeft: 6 }]}>Reagendar</Text>
+            <Feather name="calendar" size={16} color={colors.accent} />
+            <Text style={[styles.actionGhostText, { color: colors.accent, marginLeft: 6 }]}>Reagendar</Text>
           </TouchableOpacity>
         )}
 
@@ -498,10 +500,10 @@ export default function AgendamentoDetail() {
             disabled={!!busy}
             onPress={doCancel}
           >
-            {busy === "cancelar" ? <ActivityIndicator color={Colors.error} /> : (
+            {busy === "cancelar" ? <ActivityIndicator color={colors.error} /> : (
               <>
-                <Feather name="x-circle" size={16} color={Colors.error} />
-                <Text style={[styles.actionGhostText, { color: Colors.error, marginLeft: 6 }]}>Cancelar agendamento</Text>
+                <Feather name="x-circle" size={16} color={colors.error} />
+                <Text style={[styles.actionGhostText, { color: colors.error, marginLeft: 6 }]}>Cancelar agendamento</Text>
               </>
             )}
           </TouchableOpacity>
@@ -514,7 +516,7 @@ export default function AgendamentoDetail() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Reagendar</Text>
               <TouchableOpacity onPress={() => setReagendarOpen(false)}>
-                <Feather name="x" size={22} color={Colors.text} />
+                <Feather name="x" size={22} color={colors.text} />
               </TouchableOpacity>
             </View>
             <Text style={styles.modalSection}>Nova data</Text>
@@ -529,7 +531,7 @@ export default function AgendamentoDetail() {
                 setNovaData(out);
               }}
               placeholder="AAAA-MM-DD"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               keyboardType="number-pad"
             />
             <View style={{ flexDirection: "row", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
@@ -538,7 +540,7 @@ export default function AgendamentoDetail() {
                 const ds = dateToStr(dt);
                 return (
                   <TouchableOpacity key={off} style={[styles.payChip, novaData === ds && styles.payChipActive]} onPress={() => setNovaData(ds)}>
-                    <Text style={[styles.payChipText, novaData === ds && { color: "#000" }]}>
+                    <Text style={[styles.payChipText, novaData === ds && { color: colors.invertedText }]}>
                       {off === 0 ? "Hoje" : off === 1 ? "Amanhã" : dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                     </Text>
                   </TouchableOpacity>
@@ -555,13 +557,13 @@ export default function AgendamentoDetail() {
                 setNovaHora(fmt);
               }}
               placeholder="HH:MM"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               keyboardType="number-pad"
             />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
               {generateTimeSlots("08:00", "20:00", 30).map(t => (
                 <TouchableOpacity key={t} style={[styles.payChip, { marginRight: 6 }, novaHora === t && styles.payChipActive]} onPress={() => setNovaHora(t)}>
-                  <Text style={[styles.payChipText, novaHora === t && { color: "#000" }]}>{t}</Text>
+                  <Text style={[styles.payChipText, novaHora === t && { color: colors.invertedText }]}>{t}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -570,7 +572,7 @@ export default function AgendamentoDetail() {
               disabled={busy === "reagendar"}
               onPress={sendReagendar}
             >
-              {busy === "reagendar" ? <ActivityIndicator color="#000" /> : <Text style={styles.actionPrimaryText}>Confirmar reagendamento</Text>}
+              {busy === "reagendar" ? <ActivityIndicator color={colors.invertedText} /> : <Text style={styles.actionPrimaryText}>Confirmar reagendamento</Text>}
             </TouchableOpacity>
           </View>
         </View>
@@ -582,7 +584,7 @@ export default function AgendamentoDetail() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Cancelar agendamento</Text>
               <TouchableOpacity onPress={() => setCancelOpen(false)}>
-                <Feather name="x" size={22} color={Colors.text} />
+                <Feather name="x" size={22} color={colors.text} />
               </TouchableOpacity>
             </View>
             <Text style={[styles.modalSection, { marginTop: 4 }]}>
@@ -594,13 +596,13 @@ export default function AgendamentoDetail() {
               value={cancelMotivo}
               onChangeText={setCancelMotivo}
               placeholder="Ex: imprevisto do profissional, cliente pediu remarcar…"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               multiline
             />
             <View style={{ flexDirection: "row", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
               {["Cliente desmarcou", "Imprevisto do profissional", "Sem comparecimento"].map(opt => (
                 <TouchableOpacity key={opt} style={[styles.payChip, cancelMotivo === opt && styles.payChipActive]} onPress={() => setCancelMotivo(opt)}>
-                  <Text style={[styles.payChipText, cancelMotivo === opt && { color: "#000" }]}>{opt}</Text>
+                  <Text style={[styles.payChipText, cancelMotivo === opt && { color: colors.invertedText }]}>{opt}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -609,7 +611,7 @@ export default function AgendamentoDetail() {
               disabled={busy === "cancelar"}
               onPress={sendCancel}
             >
-              {busy === "cancelar" ? <ActivityIndicator color={Colors.error} /> : <Text style={styles.actionDangerText}>Confirmar cancelamento</Text>}
+              {busy === "cancelar" ? <ActivityIndicator color={colors.error} /> : <Text style={styles.actionDangerText}>Confirmar cancelamento</Text>}
             </TouchableOpacity>
           </View>
         </View>
@@ -621,7 +623,7 @@ export default function AgendamentoDetail() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Checkout</Text>
               <TouchableOpacity onPress={() => setCheckoutOpen(false)}>
-                <Feather name="x" size={22} color={Colors.text} />
+                <Feather name="x" size={22} color={colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -634,8 +636,8 @@ export default function AgendamentoDetail() {
                     style={[styles.payChip, metodo === p.value && styles.payChipActive]}
                     onPress={() => { setMetodo(p.value); if (!requiresBandeira(p.value)) setBandeira(""); }}
                   >
-                    <Feather name={p.icon} size={14} color={metodo === p.value ? "#000" : Colors.text} />
-                    <Text style={[styles.payChipText, metodo === p.value && { color: "#000" }]}>{p.label}</Text>
+                    <Feather name={p.icon} size={14} color={metodo === p.value ? "#000" : colors.text} />
+                    <Text style={[styles.payChipText, metodo === p.value && { color: colors.invertedText }]}>{p.label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -643,10 +645,10 @@ export default function AgendamentoDetail() {
               {requiresBandeira(metodo) && (
                 <>
                   <Text style={styles.modalSection}>
-                    Bandeira do cartão {bandeiraObrigatoria ? "*" : <Text style={{ color: Colors.textMuted }}>(opcional)</Text>}
+                    Bandeira do cartão {bandeiraObrigatoria ? "*" : <Text style={{ color: colors.textMuted }}>(opcional)</Text>}
                   </Text>
                   {bandeiras.length === 0 ? (
-                    <Text style={{ color: Colors.textMuted, fontSize: 12, fontFamily: "Inter_400Regular" }}>
+                    <Text style={{ color: colors.textMuted, fontSize: 12, fontFamily: "Inter_400Regular" }}>
                       Nenhuma bandeira cadastrada. Cadastre em Configurações para registrar taxas e prazos.
                     </Text>
                   ) : (
@@ -657,7 +659,7 @@ export default function AgendamentoDetail() {
                           style={[styles.payChip, bandeira === b.nome && styles.payChipActive]}
                           onPress={() => setBandeira(b.nome)}
                         >
-                          <Text style={[styles.payChipText, bandeira === b.nome && { color: "#000" }]}>{b.nome}</Text>
+                          <Text style={[styles.payChipText, bandeira === b.nome && { color: colors.invertedText }]}>{b.nome}</Text>
                         </TouchableOpacity>
                       ))}
                     </View>
@@ -670,7 +672,7 @@ export default function AgendamentoDetail() {
                 <TextInput
                   style={[styles.input, { flex: 1 }]}
                   placeholder="0,00"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={colors.textMuted}
                   value={desconto}
                   onChangeText={setDesconto}
                   keyboardType="decimal-pad"
@@ -679,13 +681,13 @@ export default function AgendamentoDetail() {
                   style={[styles.payChip, descontoTipo === "valor" && styles.payChipActive]}
                   onPress={() => setDescontoTipo("valor")}
                 >
-                  <Text style={[styles.payChipText, descontoTipo === "valor" && { color: "#000" }]}>R$</Text>
+                  <Text style={[styles.payChipText, descontoTipo === "valor" && { color: colors.invertedText }]}>R$</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.payChip, descontoTipo === "percentual" && styles.payChipActive]}
                   onPress={() => setDescontoTipo("percentual")}
                 >
-                  <Text style={[styles.payChipText, descontoTipo === "percentual" && { color: "#000" }]}>%</Text>
+                  <Text style={[styles.payChipText, descontoTipo === "percentual" && { color: colors.invertedText }]}>%</Text>
                 </TouchableOpacity>
               </View>
 
@@ -693,7 +695,7 @@ export default function AgendamentoDetail() {
               <TextInput
                 style={[styles.input, { minHeight: 60, textAlignVertical: "top" }]}
                 placeholder="Opcional"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 value={observacao}
                 onChangeText={setObservacao}
                 multiline
@@ -710,7 +712,7 @@ export default function AgendamentoDetail() {
               disabled={busy === "checkout"}
               onPress={doCheckout}
             >
-              {busy === "checkout" ? <ActivityIndicator color="#000" /> : <Text style={styles.actionPrimaryText}>Confirmar pagamento</Text>}
+              {busy === "checkout" ? <ActivityIndicator color={colors.invertedText} /> : <Text style={styles.actionPrimaryText}>Confirmar pagamento</Text>}
             </TouchableOpacity>
           </View>
         </View>
@@ -720,59 +722,64 @@ export default function AgendamentoDetail() {
 }
 
 function SectionTitle({ label }: { label: string }) {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return <Text style={styles.sectionTitle}>{label}</Text>;
 }
 
 function Row({ label, value, icon }: { label: string; value?: string; icon?: keyof typeof Feather.glyphMap }) {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.row}>
-      {icon && <Feather name={icon} size={14} color={Colors.textMuted} style={{ marginRight: 8 }} />}
+      {icon && <Feather name={icon} size={14} color={colors.textMuted} style={{ marginRight: 8 }} />}
       <Text style={styles.rowLabel}>{label}</Text>
       {value ? <Text style={styles.rowValue}>{value}</Text> : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingBottom: 8, gap: 8 },
-  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "center" },
-  title: { fontSize: 18, fontFamily: "Inter_700Bold", color: Colors.text },
-  subtitle: { fontSize: 12, color: Colors.textSecondary, fontFamily: "Inter_400Regular", marginTop: 2, textTransform: "capitalize" },
+  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, alignItems: "center", justifyContent: "center" },
+  title: { fontSize: 18, fontFamily: "Inter_700Bold", color: c.text },
+  subtitle: { fontSize: 12, color: c.textSecondary, fontFamily: "Inter_400Regular", marginTop: 2, textTransform: "capitalize" },
   statusRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 12 },
   statusBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
   statusText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   tag: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: "#7c3aed22", borderWidth: 1, borderColor: "#a78bfa55" },
   tagText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#a78bfa" },
-  bigCard: { padding: 16, borderRadius: 14, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, marginBottom: 8 },
-  timeBig: { fontSize: 24, fontFamily: "Inter_700Bold", color: Colors.text },
-  dateLine: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginTop: 4, textTransform: "capitalize" },
-  valueBig: { fontSize: 22, fontFamily: "Inter_700Bold", color: Colors.accent },
-  sectionTitle: { fontSize: 11, fontFamily: "Inter_700Bold", color: Colors.textMuted, textTransform: "uppercase", letterSpacing: 0.8, marginTop: 18, marginBottom: 8 },
-  card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.surfaceBorder, paddingHorizontal: 14, paddingVertical: 6 },
-  row: { flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.surfaceBorder },
-  rowLabel: { flex: 1, fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.text },
-  rowValue: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary, maxWidth: "50%", textAlign: "right" },
+  bigCard: { padding: 16, borderRadius: 14, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, marginBottom: 8 },
+  timeBig: { fontSize: 24, fontFamily: "Inter_700Bold", color: c.text },
+  dateLine: { fontSize: 12, fontFamily: "Inter_400Regular", color: c.textSecondary, marginTop: 4, textTransform: "capitalize" },
+  valueBig: { fontSize: 22, fontFamily: "Inter_700Bold", color: c.accent },
+  sectionTitle: { fontSize: 11, fontFamily: "Inter_700Bold", color: c.textMuted, textTransform: "uppercase", letterSpacing: 0.8, marginTop: 18, marginBottom: 8 },
+  card: { backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.surfaceBorder, paddingHorizontal: 14, paddingVertical: 6 },
+  row: { flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.surfaceBorder },
+  rowLabel: { flex: 1, fontSize: 13, fontFamily: "Inter_500Medium", color: c.text },
+  rowValue: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: c.textSecondary, maxWidth: "50%", textAlign: "right" },
   waActionBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 12 },
-  waActionText: { color: Colors.success, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  waActionText: { color: c.success, fontFamily: "Inter_600SemiBold", fontSize: 13 },
   actions: { flexDirection: "row", gap: 10, marginTop: 18 },
   actionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 14, borderRadius: 12 },
-  actionPrimary: { backgroundColor: Colors.accent },
-  actionPrimaryText: { color: "#000", fontFamily: "Inter_600SemiBold", fontSize: 14 },
-  actionDanger: { backgroundColor: Colors.error + "12", borderWidth: 1, borderColor: Colors.error + "55" },
-  actionDangerText: { color: Colors.error, fontFamily: "Inter_600SemiBold", fontSize: 14 },
-  actionGhost: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder },
+  actionPrimary: { backgroundColor: c.accent },
+  actionPrimaryText: { color: c.invertedText, fontFamily: "Inter_600SemiBold", fontSize: 14 },
+  actionDanger: { backgroundColor: c.error + "12", borderWidth: 1, borderColor: c.error + "55" },
+  actionDangerText: { color: c.error, fontFamily: "Inter_600SemiBold", fontSize: 14 },
+  actionGhost: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder },
   actionGhostText: { fontFamily: "Inter_600SemiBold", fontSize: 14 },
   modalBackdrop: { flex: 1, backgroundColor: "#000a", justifyContent: "flex-end" },
-  modalSheet: { backgroundColor: Colors.background, padding: 16, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: Colors.surfaceBorder },
+  modalSheet: { backgroundColor: c.background, padding: 16, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: c.surfaceBorder },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: Colors.text },
-  modalSection: { fontSize: 11, fontFamily: "Inter_700Bold", color: Colors.textMuted, textTransform: "uppercase", letterSpacing: 0.8, marginTop: 16, marginBottom: 8 },
-  payChip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  payChipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  payChipText: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.text },
-  input: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: Colors.text, fontSize: 14, fontFamily: "Inter_400Regular" },
-  totalBox: { marginTop: 18, padding: 14, borderRadius: 12, backgroundColor: Colors.accent + "12", borderWidth: 1, borderColor: Colors.accent + "55", flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  totalLabel: { fontSize: 12, color: Colors.textSecondary, fontFamily: "Inter_500Medium" },
-  totalValue: { fontSize: 22, color: Colors.accent, fontFamily: "Inter_700Bold" },
+  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: c.text },
+  modalSection: { fontSize: 11, fontFamily: "Inter_700Bold", color: c.textMuted, textTransform: "uppercase", letterSpacing: 0.8, marginTop: 16, marginBottom: 8 },
+  payChip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder },
+  payChipActive: { backgroundColor: c.accent, borderColor: c.accent },
+  payChipText: { fontSize: 13, fontFamily: "Inter_500Medium", color: c.text },
+  input: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: c.text, fontSize: 14, fontFamily: "Inter_400Regular" },
+  totalBox: { marginTop: 18, padding: 14, borderRadius: 12, backgroundColor: c.accent + "12", borderWidth: 1, borderColor: c.accent + "55", flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  totalLabel: { fontSize: 12, color: c.textSecondary, fontFamily: "Inter_500Medium" },
+  totalValue: { fontSize: 22, color: c.accent, fontFamily: "Inter_700Bold" },
 });

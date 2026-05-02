@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppleSignInButton } from "@/components/AppleSignInButton";
 
@@ -24,6 +24,8 @@ const APP_SCHEME = "glowupipro";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { login, loginWithToken, loginWithApple, isAuthenticated } = useAuth();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -133,7 +135,7 @@ export default function LoginScreen() {
             <TextInput
               style={styles.input}
               placeholder="seu@email.com"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -149,7 +151,7 @@ export default function LoginScreen() {
             <TextInput
               style={styles.input}
               placeholder="Sua senha"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               value={senha}
               onChangeText={setSenha}
               secureTextEntry
@@ -167,7 +169,7 @@ export default function LoginScreen() {
             testID="login-button"
           >
             {loading ? (
-              <ActivityIndicator color={Colors.background} size="small" />
+              <ActivityIndicator color={colors.background} size="small" />
             ) : (
               <Text style={styles.buttonText}>Entrar</Text>
             )}
@@ -189,7 +191,7 @@ export default function LoginScreen() {
             testID="google-login-button"
           >
             {googleLoading ? (
-              <ActivityIndicator color={Colors.text} size="small" />
+              <ActivityIndicator color={colors.text} size="small" />
             ) : (
               <View style={styles.googleButtonContent}>
                 <Text style={styles.googleIconText}>G</Text>
@@ -227,10 +229,10 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: c.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -250,7 +252,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 15,
     fontFamily: "Inter_400Regular",
-    color: Colors.textSecondary,
+    color: c.textSecondary,
   },
   form: {
     gap: 20,
@@ -263,7 +265,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(239, 68, 68, 0.3)",
   },
   errorText: {
-    color: Colors.error,
+    color: c.error,
     fontSize: 14,
     fontFamily: "Inter_500Medium",
     textAlign: "center",
@@ -274,20 +276,20 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: Colors.textSecondary,
+    color: c.textSecondary,
   },
   input: {
-    backgroundColor: Colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
     fontFamily: "Inter_400Regular",
-    color: Colors.text,
+    color: c.text,
     borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
+    borderColor: c.surfaceBorder,
   },
   button: {
-    backgroundColor: Colors.accent,
+    backgroundColor: c.accent,
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
@@ -300,7 +302,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
-    color: Colors.background,
+    color: c.background,
   },
   dividerContainer: {
     flexDirection: "row",
@@ -310,21 +312,21 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: Colors.surfaceBorder,
+    backgroundColor: c.surfaceBorder,
   },
   dividerText: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: Colors.textMuted,
+    color: c.textMuted,
   },
   googleButton: {
-    backgroundColor: Colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
+    borderColor: c.surfaceBorder,
   },
   googleButtonContent: {
     flexDirection: "row",
@@ -339,7 +341,7 @@ const styles = StyleSheet.create({
   googleButtonText: {
     fontSize: 16,
     fontFamily: "Inter_500Medium",
-    color: Colors.text,
+    color: c.text,
   },
   registerLink: {
     flexDirection: "row",
@@ -350,11 +352,11 @@ const styles = StyleSheet.create({
   registerText: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: Colors.textMuted,
+    color: c.textMuted,
   },
   registerLinkText: {
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
-    color: Colors.accent,
+    color: c.accent,
   },
 });

@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
@@ -17,6 +17,8 @@ type Picos = { porDiaSemana?: PicoSemana[]; porHora?: PicoHora[] };
 
 export default function PicosScreen() {
   const { barbeariaId } = useAuth();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const query = useQuery<Picos>({
     queryKey: ["rel-picos", barbeariaId],
     enabled: !!barbeariaId,
@@ -90,14 +92,14 @@ export default function PicosScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
   row: {
     flexDirection: "row", alignItems: "center", gap: 10,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder,
     borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 6,
   },
-  rowLabel: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 12, width: 80 },
-  rowValue: { color: Colors.accent, fontFamily: "Inter_700Bold", fontSize: 12, width: 36, textAlign: "right" },
-  barWrap: { flex: 1, height: 8, backgroundColor: Colors.surfaceLight, borderRadius: 4, overflow: "hidden" },
-  barFill: { height: 8, backgroundColor: Colors.accent },
+  rowLabel: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 12, width: 80 },
+  rowValue: { color: c.accent, fontFamily: "Inter_700Bold", fontSize: 12, width: 36, textAlign: "right" },
+  barWrap: { flex: 1, height: 8, backgroundColor: c.surfaceLight, borderRadius: 4, overflow: "hidden" },
+  barFill: { height: 8, backgroundColor: c.accent },
 });

@@ -3,7 +3,7 @@ import { Alert, FlatList, Linking, Modal, Platform, Pressable, StyleSheet, Text,
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
@@ -35,6 +35,8 @@ export default function DocumentosScreen() {
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
   const insets = useSafeAreaInsets();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Form | null>(null);
 
@@ -98,12 +100,12 @@ export default function DocumentosScreen() {
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 100 + insets.bottom }}
         ListHeaderComponent={
           <View style={styles.searchWrap}>
-            <Feather name="search" size={14} color={Colors.textMuted} />
+            <Feather name="search" size={14} color={colors.textMuted} />
             <TextInput
               value={search}
               onChangeText={setSearch}
               placeholder="Buscar documento…"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               style={styles.search}
             />
           </View>
@@ -119,7 +121,7 @@ export default function DocumentosScreen() {
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <View style={styles.iconWrap}><Feather name="file-text" size={18} color={Colors.accent} /></View>
+            <View style={styles.iconWrap}><Feather name="file-text" size={18} color={colors.accent} /></View>
             <View style={{ flex: 1 }}>
               <Text style={styles.title}>{item.titulo}</Text>
               <Text style={styles.subtitle}>{item.tipo || "outro"}</Text>
@@ -143,7 +145,7 @@ export default function DocumentosScreen() {
                 }
                 style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.6 }]}
               >
-                <Feather name="edit-2" size={14} color={Colors.text} />
+                <Feather name="edit-2" size={14} color={colors.text} />
               </Pressable>
               <Pressable
                 hitSlop={8}
@@ -153,7 +155,7 @@ export default function DocumentosScreen() {
                 ])}
                 style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.6 }]}
               >
-                <Feather name="trash-2" size={14} color={Colors.error} />
+                <Feather name="trash-2" size={14} color={colors.error} />
               </Pressable>
             </View>
           </View>
@@ -170,7 +172,7 @@ export default function DocumentosScreen() {
               value={editing?.titulo ?? ""}
               onChangeText={(t) => setEditing((f) => (f ? { ...f, titulo: t } : f))}
               placeholder="Ex.: Termo de consentimento"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               style={styles.input}
             />
 
@@ -182,7 +184,7 @@ export default function DocumentosScreen() {
                   onPress={() => setEditing((f) => (f ? { ...f, tipo: t } : f))}
                   style={[styles.chip, editing?.tipo === t && styles.chipActive]}
                 >
-                  <Text style={[styles.chipText, editing?.tipo === t && { color: "#000" }]}>{t}</Text>
+                  <Text style={[styles.chipText, editing?.tipo === t && { color: colors.invertedText }]}>{t}</Text>
                 </Pressable>
               ))}
             </View>
@@ -192,7 +194,7 @@ export default function DocumentosScreen() {
               value={editing?.url ?? ""}
               onChangeText={(t) => setEditing((f) => (f ? { ...f, url: t } : f))}
               placeholder="https://…"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
@@ -204,7 +206,7 @@ export default function DocumentosScreen() {
               value={editing?.conteudo ?? ""}
               onChangeText={(t) => setEditing((f) => (f ? { ...f, conteudo: t } : f))}
               placeholder="Texto do documento…"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               multiline
               style={[styles.input, { minHeight: 110, textAlignVertical: "top" }]}
             />
@@ -228,52 +230,52 @@ export default function DocumentosScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
   searchWrap: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.surfaceBorder,
     paddingHorizontal: 12, paddingVertical: Platform.OS === "ios" ? 10 : 6, marginBottom: 10,
   },
-  search: { flex: 1, color: Colors.text, fontFamily: "Inter_500Medium", fontSize: 13 },
+  search: { flex: 1, color: c.text, fontFamily: "Inter_500Medium", fontSize: 13 },
   card: {
     flexDirection: "row", alignItems: "flex-start", gap: 12,
-    backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.surfaceBorder,
     padding: 12, marginBottom: 8,
   },
   iconWrap: {
     width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(196,164,106,0.15)",
     alignItems: "center", justifyContent: "center",
   },
-  title: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  subtitle: { color: Colors.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 2 },
-  link: { color: Colors.accent, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 6 },
+  title: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  subtitle: { color: c.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 2 },
+  link: { color: c.accent, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 6 },
   actions: { flexDirection: "row", gap: 6 },
   actionBtn: {
-    width: 32, height: 32, borderRadius: 8, backgroundColor: Colors.surfaceLight,
-    borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "center",
+    width: 32, height: 32, borderRadius: 8, backgroundColor: c.surfaceLight,
+    borderWidth: 1, borderColor: c.surfaceBorder, alignItems: "center", justifyContent: "center",
   },
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  backdrop: { flex: 1, backgroundColor: c.overlay, justifyContent: "flex-end" },
   sheet: {
-    backgroundColor: Colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    backgroundColor: c.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
     padding: 18, maxHeight: "92%",
   },
-  modalTitle: { color: Colors.text, fontFamily: "Inter_700Bold", fontSize: 15, marginBottom: 8 },
-  label: { color: Colors.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 10, marginBottom: 4 },
+  modalTitle: { color: c.text, fontFamily: "Inter_700Bold", fontSize: 15, marginBottom: 8 },
+  label: { color: c.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 10, marginBottom: 4 },
   input: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.surfaceBorder,
-    paddingHorizontal: 12, paddingVertical: 10, color: Colors.text, fontFamily: "Inter_500Medium", fontSize: 13,
+    backgroundColor: c.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: c.surfaceBorder,
+    paddingHorizontal: 12, paddingVertical: 10, color: c.text, fontFamily: "Inter_500Medium", fontSize: 13,
   },
   chips: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
   chip: {
     paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999,
-    backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder,
   },
-  chipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  chipText: { color: Colors.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12 },
+  chipActive: { backgroundColor: c.accent, borderColor: c.accent },
+  chipText: { color: c.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12 },
   modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 14 },
   btn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10 },
-  btnGhost: { backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  btnGhostText: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  btnPrimary: { backgroundColor: Colors.accent },
-  btnPrimaryText: { color: "#000", fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  btnGhost: { backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder },
+  btnGhostText: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  btnPrimary: { backgroundColor: c.accent },
+  btnPrimaryText: { color: c.invertedText, fontFamily: "Inter_600SemiBold", fontSize: 13 },
 });

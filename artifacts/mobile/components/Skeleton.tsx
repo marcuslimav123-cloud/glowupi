@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { Animated, DimensionValue, StyleSheet, View, ViewStyle, StyleProp } from "react-native";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 
 export type SkeletonProps = {
   width?: DimensionValue;
@@ -10,21 +10,14 @@ export type SkeletonProps = {
 };
 
 export function Skeleton({ width = "100%", height = 14, radius = 8, style }: SkeletonProps) {
+  const colors = useColors();
   const opacity = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, {
-          toValue: 0.9,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0.4,
-          duration: 700,
-          useNativeDriver: true,
-        }),
+        Animated.timing(opacity, { toValue: 0.9, duration: 700, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.4, duration: 700, useNativeDriver: true }),
       ]),
     );
     loop.start();
@@ -34,8 +27,7 @@ export function Skeleton({ width = "100%", height = 14, radius = 8, style }: Ske
   return (
     <Animated.View
       style={[
-        styles.base,
-        { width, height, borderRadius: radius, opacity },
+        { backgroundColor: colors.surfaceLight, width, height, borderRadius: radius, opacity },
         style,
       ]}
       accessible={false}
@@ -44,6 +36,8 @@ export function Skeleton({ width = "100%", height = 14, radius = 8, style }: Ske
 }
 
 export function SkeletonCard() {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.card}>
       <View style={styles.row}>
@@ -58,6 +52,8 @@ export function SkeletonCard() {
 }
 
 export function SkeletonRow() {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.rowCard}>
       <Skeleton width={44} height={44} radius={22} />
@@ -80,33 +76,31 @@ export function SkeletonList({ count = 4, variant = "card" as "card" | "row" }) 
   );
 }
 
-const styles = StyleSheet.create({
-  base: {
-    backgroundColor: Colors.surfaceLight,
-  },
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  rowCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
-  },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      padding: 14,
+      marginBottom: 10,
+      borderWidth: 1,
+      borderColor: c.surfaceBorder,
+    },
+    row: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    rowCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 12,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: c.surfaceBorder,
+    },
+  });
 
 export default Skeleton;

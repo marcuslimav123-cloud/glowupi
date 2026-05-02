@@ -3,7 +3,6 @@ import { Platform, View, ActivityIndicator, StyleSheet, TouchableOpacity, Text }
 import * as AppleAuthentication from "expo-apple-authentication";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
-import Colors from "@/constants/colors";
 
 interface Props {
   onSuccess: (identityToken: string, fullName?: { givenName?: string; familyName?: string }) => Promise<void> | void;

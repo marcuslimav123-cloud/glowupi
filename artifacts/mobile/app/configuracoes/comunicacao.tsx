@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Alert, StyleSheet, Switch, Text, View } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { SkeletonList } from "@/components/Skeleton";
 import { fetchJson, getErrorMessage } from "@/lib/api";
@@ -11,6 +11,8 @@ import { useAuth } from "@/contexts/AuthContext";
 export default function ComunicacaoScreen() {
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const query = useQuery<{ modoHumano: boolean }>({
     queryKey: ["modo-humano", barbeariaId],
@@ -36,7 +38,7 @@ export default function ComunicacaoScreen() {
           <View style={[styles.card, ativo && styles.cardActive]}>
             <View style={styles.head}>
               <View style={[styles.icon, ativo && { backgroundColor: "rgba(255,193,7,0.18)" }]}>
-                <Feather name="user-x" size={18} color={ativo ? Colors.warning : Colors.textSecondary} />
+                <Feather name="user-x" size={18} color={ativo ? colors.warning : colors.textSecondary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.title}>Modo Humano (anti-automação)</Text>
@@ -48,7 +50,7 @@ export default function ComunicacaoScreen() {
                 value={ativo}
                 onValueChange={(v) => updateMutation.mutate(v)}
                 disabled={updateMutation.isPending}
-                trackColor={{ false: Colors.surfaceLight, true: Colors.accent }}
+                trackColor={{ false: colors.surfaceLight, true: colors.accent }}
                 thumbColor="#fff"
               />
             </View>
@@ -79,27 +81,27 @@ export default function ComunicacaoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
+    borderColor: c.surfaceBorder,
     padding: 14,
     marginBottom: 12,
   },
-  cardActive: { borderColor: Colors.warning + "60", backgroundColor: "rgba(255,193,7,0.04)" },
+  cardActive: { borderColor: c.warning + "60", backgroundColor: "rgba(255,193,7,0.04)" },
   head: { flexDirection: "row", alignItems: "center", gap: 12 },
-  icon: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.surfaceLight, alignItems: "center", justifyContent: "center" },
-  title: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 14 },
-  desc: { color: Colors.textSecondary, fontFamily: "Inter_500Medium", fontSize: 12, marginTop: 4, lineHeight: 17 },
+  icon: { width: 44, height: 44, borderRadius: 12, backgroundColor: c.surfaceLight, alignItems: "center", justifyContent: "center" },
+  title: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 14 },
+  desc: { color: c.textSecondary, fontFamily: "Inter_500Medium", fontSize: 12, marginTop: 4, lineHeight: 17 },
   badge: { alignSelf: "flex-start", marginTop: 10, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: "rgba(255,193,7,0.18)" },
-  badgeText: { color: Colors.warning, fontFamily: "Inter_700Bold", fontSize: 10, letterSpacing: 0.5 },
+  badgeText: { color: c.warning, fontFamily: "Inter_700Bold", fontSize: 10, letterSpacing: 0.5 },
   infoCard: {
-    backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.surfaceBorder, padding: 14,
+    backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.surfaceBorder, padding: 14,
   },
-  infoTitle: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 13, marginBottom: 8 },
+  infoTitle: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13, marginBottom: 8 },
   bulletRow: { flexDirection: "row", gap: 8, marginBottom: 6 },
-  bullet: { width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.accent, marginTop: 7 },
-  bulletText: { color: Colors.textSecondary, fontFamily: "Inter_500Medium", fontSize: 12, flex: 1, lineHeight: 17 },
+  bullet: { width: 4, height: 4, borderRadius: 2, backgroundColor: c.accent, marginTop: 7 },
+  bulletText: { color: c.textSecondary, fontFamily: "Inter_500Medium", fontSize: 12, flex: 1, lineHeight: 17 },
 });

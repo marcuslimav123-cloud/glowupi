@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
@@ -102,6 +102,8 @@ const APP_GROUPS: { label: string; items: { key: string; label: string }[] }[] =
 export default function AcessosScreen() {
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [tab, setTab] = useState<"web" | "app">("web");
   const [editing, setEditing] = useState<Form | null>(null);
   const [permSearch, setPermSearch] = useState("");
@@ -168,7 +170,7 @@ export default function AcessosScreen() {
       <View style={styles.tabs}>
         {(["web", "app"] as const).map((t) => (
           <Pressable key={t} onPress={() => setTab(t)} style={[styles.tab, tab === t && styles.tabActive]}>
-            <Text style={[styles.tabText, tab === t && { color: "#000" }]}>
+            <Text style={[styles.tabText, tab === t && { color: colors.invertedText }]}>
               {t === "web" ? "Sistema (web)" : "App profissional"}
             </Text>
           </Pressable>
@@ -185,7 +187,7 @@ export default function AcessosScreen() {
         (query.data ?? []).map((p) => (
           <View key={p.id} style={styles.card}>
             <View style={styles.cardHead}>
-              <View style={styles.iconWrap}><Feather name="shield" size={18} color={Colors.accent} /></View>
+              <View style={styles.iconWrap}><Feather name="shield" size={18} color={colors.accent} /></View>
               <View style={{ flex: 1 }}>
                 <View style={styles.titleRow}>
                   <Text style={styles.title}>{p.nome}</Text>
@@ -205,7 +207,7 @@ export default function AcessosScreen() {
                   })}
                   style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.6 }]}
                 >
-                  <Feather name="edit-2" size={14} color={Colors.text} />
+                  <Feather name="edit-2" size={14} color={colors.text} />
                 </Pressable>
                 <Pressable
                   hitSlop={8}
@@ -217,7 +219,7 @@ export default function AcessosScreen() {
                   }
                   style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.6 }]}
                 >
-                  <Feather name="trash-2" size={14} color={Colors.error} />
+                  <Feather name="trash-2" size={14} color={colors.error} />
                 </Pressable>
               </View>
             </View>
@@ -235,7 +237,7 @@ export default function AcessosScreen() {
                 value={editing?.nome ?? ""}
                 onChangeText={(t) => setEditing((f) => (f ? { ...f, nome: t } : f))}
                 placeholder="Ex.: Recepcionista"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 style={styles.input}
               />
               <Text style={styles.label}>Descrição</Text>
@@ -243,7 +245,7 @@ export default function AcessosScreen() {
                 value={editing?.descricao ?? ""}
                 onChangeText={(t) => setEditing((f) => (f ? { ...f, descricao: t } : f))}
                 placeholder="Opcional"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 style={styles.input}
               />
               <Text style={styles.label}>Tipo</Text>
@@ -254,7 +256,7 @@ export default function AcessosScreen() {
                     onPress={() => setEditing((f) => (f ? { ...f, tipo: t } : f))}
                     style={[styles.chip, editing?.tipo === t && styles.chipActive]}
                   >
-                    <Text style={[styles.chipText, editing?.tipo === t && { color: "#000" }]}>
+                    <Text style={[styles.chipText, editing?.tipo === t && { color: colors.invertedText }]}>
                       {t === "web" ? "Sistema (web)" : "App"}
                     </Text>
                   </Pressable>
@@ -266,19 +268,19 @@ export default function AcessosScreen() {
                 <Switch
                   value={editing?.ativo ?? true}
                   onValueChange={(v) => setEditing((f) => (f ? { ...f, ativo: v } : f))}
-                  trackColor={{ false: Colors.surfaceLight, true: Colors.accent }}
+                  trackColor={{ false: colors.surfaceLight, true: colors.accent }}
                   thumbColor="#fff"
                 />
               </View>
 
               <Text style={styles.label}>Permissões ({(editing?.permissoes ?? []).length})</Text>
               <View style={styles.searchInline}>
-                <Feather name="search" size={12} color={Colors.textMuted} />
+                <Feather name="search" size={12} color={colors.textMuted} />
                 <TextInput
                   value={permSearch}
                   onChangeText={setPermSearch}
                   placeholder="Filtrar permissão…"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={colors.textMuted}
                   style={[styles.input, { flex: 1, paddingVertical: Platform.OS === "ios" ? 8 : 6, fontSize: 12 }]}
                 />
               </View>
@@ -290,8 +292,8 @@ export default function AcessosScreen() {
                     const checked = (editing?.permissoes ?? []).includes(it.key);
                     return (
                       <Pressable key={it.key} onPress={() => togglePerm(it.key)} style={styles.permRow}>
-                        <View style={[styles.checkbox, checked && { backgroundColor: Colors.accent, borderColor: Colors.accent }]}>
-                          {checked ? <Feather name="check" size={12} color="#000" /> : null}
+                        <View style={[styles.checkbox, checked && { backgroundColor: colors.accent, borderColor: colors.accent }]}>
+                          {checked ? <Feather name="check" size={12} color={colors.invertedText} /> : null}
                         </View>
                         <Text style={styles.permLabel}>{it.label}</Text>
                       </Pressable>
@@ -324,57 +326,57 @@ export default function AcessosScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
   tabs: { flexDirection: "row", gap: 6, marginBottom: 12 },
-  tab: { flex: 1, paddingVertical: 9, alignItems: "center", borderRadius: 999, backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  tabActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  tabText: { color: Colors.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12 },
+  tab: { flex: 1, paddingVertical: 9, alignItems: "center", borderRadius: 999, backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder },
+  tabActive: { backgroundColor: c.accent, borderColor: c.accent },
+  tabText: { color: c.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12 },
   card: {
-    backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.surfaceBorder,
     padding: 12, marginBottom: 8,
   },
   cardHead: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   iconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(196,164,106,0.15)", alignItems: "center", justifyContent: "center" },
   titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  title: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  subtitle: { color: Colors.textSecondary, fontFamily: "Inter_500Medium", fontSize: 12, marginTop: 2 },
-  metaText: { color: Colors.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 4 },
-  inactive: { color: Colors.warning, fontFamily: "Inter_700Bold", fontSize: 9, letterSpacing: 0.4 },
+  title: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  subtitle: { color: c.textSecondary, fontFamily: "Inter_500Medium", fontSize: 12, marginTop: 2 },
+  metaText: { color: c.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 4 },
+  inactive: { color: c.warning, fontFamily: "Inter_700Bold", fontSize: 9, letterSpacing: 0.4 },
   actions: { flexDirection: "row", gap: 6 },
   actionBtn: {
-    width: 32, height: 32, borderRadius: 8, backgroundColor: Colors.surfaceLight,
-    borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "center",
+    width: 32, height: 32, borderRadius: 8, backgroundColor: c.surfaceLight,
+    borderWidth: 1, borderColor: c.surfaceBorder, alignItems: "center", justifyContent: "center",
   },
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-  sheet: { backgroundColor: Colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 18 },
-  modalTitle: { color: Colors.text, fontFamily: "Inter_700Bold", fontSize: 15, marginBottom: 4 },
-  label: { color: Colors.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 10, marginBottom: 4 },
+  backdrop: { flex: 1, backgroundColor: c.overlay, justifyContent: "flex-end" },
+  sheet: { backgroundColor: c.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 18 },
+  modalTitle: { color: c.text, fontFamily: "Inter_700Bold", fontSize: 15, marginBottom: 4 },
+  label: { color: c.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 10, marginBottom: 4 },
   input: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.surfaceBorder,
-    paddingHorizontal: 12, paddingVertical: Platform.OS === "ios" ? 10 : 8, color: Colors.text, fontFamily: "Inter_500Medium", fontSize: 13,
+    backgroundColor: c.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: c.surfaceBorder,
+    paddingHorizontal: 12, paddingVertical: Platform.OS === "ios" ? 10 : 8, color: c.text, fontFamily: "Inter_500Medium", fontSize: 13,
   },
   chips: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
   chip: {
     paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999,
-    backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder,
   },
-  chipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  chipText: { color: Colors.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12 },
+  chipActive: { backgroundColor: c.accent, borderColor: c.accent },
+  chipText: { color: c.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12 },
   switchRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 },
   searchInline: { flexDirection: "row", alignItems: "center", gap: 6 },
-  groupLabel: { color: Colors.accent, fontFamily: "Inter_700Bold", fontSize: 11, letterSpacing: 0.4, textTransform: "uppercase", marginBottom: 4 },
+  groupLabel: { color: c.accent, fontFamily: "Inter_700Bold", fontSize: 11, letterSpacing: 0.4, textTransform: "uppercase", marginBottom: 4 },
   permRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
   checkbox: {
     width: 20, height: 20, borderRadius: 6,
-    borderWidth: 1, borderColor: Colors.surfaceBorder,
+    borderWidth: 1, borderColor: c.surfaceBorder,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: Colors.surfaceLight,
+    backgroundColor: c.surfaceLight,
   },
-  permLabel: { color: Colors.text, fontFamily: "Inter_500Medium", fontSize: 13, flex: 1 },
+  permLabel: { color: c.text, fontFamily: "Inter_500Medium", fontSize: 13, flex: 1 },
   modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 14 },
   btn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10 },
-  btnGhost: { backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  btnGhostText: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  btnPrimary: { backgroundColor: Colors.accent },
-  btnPrimaryText: { color: "#000", fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  btnGhost: { backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder },
+  btnGhostText: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  btnPrimary: { backgroundColor: c.accent },
+  btnPrimaryText: { color: c.invertedText, fontFamily: "Inter_600SemiBold", fontSize: 13 },
 });

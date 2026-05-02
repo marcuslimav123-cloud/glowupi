@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Platform,
   RefreshControl,
@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 
 export type ScreenContainerProps = {
   title: string;
@@ -43,6 +43,8 @@ export function ScreenContainer({
 }: ScreenContainerProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const isWeb = Platform.OS === "web";
   const topPadding = isWeb ? 67 + 12 : insets.top + 8;
   const bottomPadding = isWeb ? 118 : 100 + insets.bottom;
@@ -71,7 +73,7 @@ export function ScreenContainer({
             accessibilityLabel="Voltar"
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Feather name="chevron-left" size={24} color={Colors.text} />
+            <Feather name="chevron-left" size={24} color={colors.text} />
           </TouchableOpacity>
         ) : (
           <View style={styles.iconBtn} />
@@ -94,7 +96,7 @@ export function ScreenContainer({
             accessibilityLabel={rightAction.label ?? rightAction.icon}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Feather name={rightAction.icon} size={22} color={Colors.accent} />
+            <Feather name={rightAction.icon} size={22} color={colors.accent} />
           </TouchableOpacity>
         ) : (
           <View style={styles.iconBtn} />
@@ -134,8 +136,8 @@ export function ScreenContainer({
             <RefreshControl
               refreshing={!!refreshing}
               onRefresh={onRefresh}
-              tintColor={Colors.accent}
-              colors={[Colors.accent]}
+              tintColor={colors.accent}
+              colors={[colors.accent]}
             />
           ) : undefined
         }
@@ -146,51 +148,52 @@ export function ScreenContainer({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  header: {
-    paddingHorizontal: 8,
-    paddingBottom: 12,
-    backgroundColor: Colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.surfaceBorder,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    minHeight: 40,
-  },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  titleWrap: {
-    flex: 1,
-    alignItems: "center",
-    paddingHorizontal: 4,
-  },
-  title: {
-    fontSize: 17,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.text,
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textSecondary,
-    textAlign: "center",
-    marginTop: 2,
-  },
-  scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 16, paddingTop: 16 },
-  body: { flex: 1 },
-  bodyPadding: { paddingHorizontal: 16, paddingTop: 16 },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    header: {
+      paddingHorizontal: 8,
+      paddingBottom: 12,
+      backgroundColor: c.background,
+      borderBottomWidth: 1,
+      borderBottomColor: c.surfaceBorder,
+    },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      minHeight: 40,
+    },
+    iconBtn: {
+      width: 40,
+      height: 40,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    titleWrap: {
+      flex: 1,
+      alignItems: "center",
+      paddingHorizontal: 4,
+    },
+    title: {
+      fontSize: 17,
+      fontFamily: "Inter_600SemiBold",
+      color: c.text,
+      textAlign: "center",
+    },
+    subtitle: {
+      fontSize: 12,
+      fontFamily: "Inter_400Regular",
+      color: c.textSecondary,
+      textAlign: "center",
+      marginTop: 2,
+    },
+    scroll: { flex: 1 },
+    scrollContent: { paddingHorizontal: 16, paddingTop: 16 },
+    body: { flex: 1 },
+    bodyPadding: { paddingHorizontal: 16, paddingTop: 16 },
+  });
 
 export default ScreenContainer;

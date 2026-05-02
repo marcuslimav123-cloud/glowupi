@@ -3,7 +3,7 @@ import { Alert, FlatList, Modal, Platform, Pressable, StyleSheet, Text, TextInpu
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
@@ -13,16 +13,17 @@ import { useAuth } from "@/contexts/AuthContext";
 type Restricao = { id: number; clienteId: number; tipo: "bloqueio" | "alerta" | "observacao"; descricao: string };
 type Cliente = { id: number; nome: string };
 
-const TIPOS: { id: Restricao["tipo"]; label: string; color: string }[] = [
-  { id: "bloqueio", label: "Bloqueio", color: Colors.error },
-  { id: "alerta", label: "Alerta", color: Colors.warning },
-  { id: "observacao", label: "Observação", color: Colors.info },
-];
-
 export default function RestricoesClientesScreen() {
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
   const insets = useSafeAreaInsets();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const TIPOS: { id: Restricao["tipo"]; label: string; color: string }[] = [
+    { id: "bloqueio", label: "Bloqueio", color: colors.error },
+    { id: "alerta", label: "Alerta", color: colors.warning },
+    { id: "observacao", label: "Observação", color: colors.info },
+  ];
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [showClientePicker, setShowClientePicker] = useState(false);
@@ -112,12 +113,12 @@ export default function RestricoesClientesScreen() {
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 100 + insets.bottom }}
         ListHeaderComponent={
           <View style={styles.searchWrap}>
-            <Feather name="search" size={14} color={Colors.textMuted} />
+            <Feather name="search" size={14} color={colors.textMuted} />
             <TextInput
               value={search}
               onChangeText={setSearch}
               placeholder="Buscar cliente ou motivo…"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               style={styles.search}
             />
           </View>
@@ -153,7 +154,7 @@ export default function RestricoesClientesScreen() {
                 hitSlop={8}
                 style={({ pressed }) => [styles.removeBtn, pressed && { opacity: 0.6 }]}
               >
-                <Feather name="trash-2" size={16} color={Colors.error} />
+                <Feather name="trash-2" size={16} color={colors.error} />
               </Pressable>
             </View>
           );
@@ -167,12 +168,12 @@ export default function RestricoesClientesScreen() {
 
             <Text style={styles.fieldLabel}>Cliente</Text>
             <Pressable style={styles.selectField} onPress={() => setShowClientePicker(true)}>
-              <Text style={[styles.selectText, !form.clienteId && { color: Colors.textMuted }]}>
+              <Text style={[styles.selectText, !form.clienteId && { color: colors.textMuted }]}>
                 {form.clienteId
                   ? clientesById.get(parseInt(form.clienteId, 10)) ?? `Cliente #${form.clienteId}`
                   : "Selecionar cliente"}
               </Text>
-              <Feather name="chevron-down" size={16} color={Colors.textMuted} />
+              <Feather name="chevron-down" size={16} color={colors.textMuted} />
             </Pressable>
 
             <Text style={styles.fieldLabel}>Tipo</Text>
@@ -193,7 +194,7 @@ export default function RestricoesClientesScreen() {
               value={form.descricao}
               onChangeText={(t) => setForm((f) => ({ ...f, descricao: t }))}
               placeholder="Motivo da restrição…"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               style={[styles.input, { minHeight: 80, textAlignVertical: "top" }]}
               multiline
             />
@@ -219,12 +220,12 @@ export default function RestricoesClientesScreen() {
           <Pressable style={styles.sheet} onPress={() => {}}>
             <Text style={styles.modalTitle}>Selecionar cliente</Text>
             <View style={styles.searchWrap}>
-              <Feather name="search" size={14} color={Colors.textMuted} />
+              <Feather name="search" size={14} color={colors.textMuted} />
               <TextInput
                 value={clienteSearch}
                 onChangeText={setClienteSearch}
                 placeholder="Buscar…"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 style={styles.search}
                 autoFocus
               />
@@ -235,7 +236,7 @@ export default function RestricoesClientesScreen() {
               keyboardShouldPersistTaps="handled"
               style={{ maxHeight: 360 }}
               ListEmptyComponent={
-                <Text style={{ color: Colors.textMuted, padding: 16, textAlign: "center" }}>Nenhum cliente</Text>
+                <Text style={{ color: colors.textMuted, padding: 16, textAlign: "center" }}>Nenhum cliente</Text>
               }
               renderItem={({ item }) => (
                 <Pressable
@@ -244,7 +245,7 @@ export default function RestricoesClientesScreen() {
                     setShowClientePicker(false);
                     setClienteSearch("");
                   }}
-                  style={({ pressed }) => [styles.cliRow, pressed && { backgroundColor: Colors.surfaceLight }]}
+                  style={({ pressed }) => [styles.cliRow, pressed && { backgroundColor: colors.surfaceLight }]}
                 >
                   <Text style={styles.cliRowText}>{item.nome}</Text>
                 </Pressable>
@@ -257,53 +258,53 @@ export default function RestricoesClientesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
   searchWrap: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.surfaceBorder,
     paddingHorizontal: 12, paddingVertical: Platform.OS === "ios" ? 10 : 6, marginBottom: 10,
   },
-  search: { flex: 1, color: Colors.text, fontFamily: "Inter_500Medium", fontSize: 13 },
+  search: { flex: 1, color: c.text, fontFamily: "Inter_500Medium", fontSize: 13 },
   card: {
     flexDirection: "row", alignItems: "flex-start", gap: 12,
-    backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.surfaceBorder,
     padding: 12, marginBottom: 8,
   },
   tipoIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  cliName: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  cliDesc: { color: Colors.textSecondary, fontFamily: "Inter_500Medium", fontSize: 12, marginTop: 4 },
+  cliName: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  cliDesc: { color: c.textSecondary, fontFamily: "Inter_500Medium", fontSize: 12, marginTop: 4 },
   badge: { alignSelf: "flex-start", marginTop: 6, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
   badgeText: { fontSize: 10, fontFamily: "Inter_700Bold" },
   removeBtn: { padding: 6 },
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  backdrop: { flex: 1, backgroundColor: c.overlay, justifyContent: "flex-end" },
   sheet: {
-    backgroundColor: Colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    backgroundColor: c.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
     padding: 18, maxHeight: "85%",
   },
-  modalTitle: { color: Colors.text, fontFamily: "Inter_700Bold", fontSize: 15, marginBottom: 12 },
-  fieldLabel: { color: Colors.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 8, marginBottom: 4 },
+  modalTitle: { color: c.text, fontFamily: "Inter_700Bold", fontSize: 15, marginBottom: 12 },
+  fieldLabel: { color: c.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 8, marginBottom: 4 },
   selectField: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: c.surfaceBorder,
     paddingHorizontal: 12, paddingVertical: 12,
   },
-  selectText: { color: Colors.text, fontFamily: "Inter_500Medium", fontSize: 13 },
+  selectText: { color: c.text, fontFamily: "Inter_500Medium", fontSize: 13 },
   chips: { flexDirection: "row", gap: 8 },
   chip: {
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999,
-    backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder,
   },
-  chipText: { color: Colors.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12 },
+  chipText: { color: c.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12 },
   input: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.surfaceBorder,
-    paddingHorizontal: 12, paddingVertical: 10, color: Colors.text, fontFamily: "Inter_500Medium", fontSize: 13,
+    backgroundColor: c.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: c.surfaceBorder,
+    paddingHorizontal: 12, paddingVertical: 10, color: c.text, fontFamily: "Inter_500Medium", fontSize: 13,
   },
   actions: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 14 },
   btn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10 },
-  btnGhost: { backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  btnGhostText: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  btnPrimary: { backgroundColor: Colors.accent },
-  btnPrimaryText: { color: "#000", fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  btnGhost: { backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder },
+  btnGhostText: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  btnPrimary: { backgroundColor: c.accent },
+  btnPrimaryText: { color: c.invertedText, fontFamily: "Inter_600SemiBold", fontSize: 13 },
   cliRow: { paddingHorizontal: 12, paddingVertical: 12, borderRadius: 8 },
-  cliRowText: { color: Colors.text, fontFamily: "Inter_500Medium", fontSize: 13 },
+  cliRowText: { color: c.text, fontFamily: "Inter_500Medium", fontSize: 13 },
 });

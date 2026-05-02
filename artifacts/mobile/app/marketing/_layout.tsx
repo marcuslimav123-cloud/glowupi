@@ -1,15 +1,16 @@
 import { Stack } from "expo-router";
 import React from "react";
-import Colors from "@/constants/colors";
+import { useColors } from "@/lib/theme";
 import { AuthGuard } from "@/components/AuthGuard";
 
 export default function MarketingLayout() {
+  const colors = useColors();
   return (
     <AuthGuard>
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: Colors.background },
+          contentStyle: { backgroundColor: colors.background },
         }}
       />
     </AuthGuard>

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -20,7 +20,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorView } from "@/components/ErrorView";
@@ -45,6 +45,8 @@ function initials(nome: string): string {
 }
 
 export default function ClientesScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { barbeariaId, token } = useAuth();
@@ -159,7 +161,7 @@ export default function ClientesScreen() {
               }}
               accessibilityLabel="Importar Excel"
             >
-              <Feather name="upload" size={18} color={Colors.text} />
+              <Feather name="upload" size={18} color={colors.text} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.addBtn}
@@ -175,10 +177,10 @@ export default function ClientesScreen() {
         </View>
 
         <View style={styles.searchBox}>
-          <Feather name="search" size={16} color={Colors.textMuted} />
+          <Feather name="search" size={16} color={colors.textMuted} />
           <TextInput
             placeholder="Buscar por nome ou telefone"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             style={styles.searchInput}
             value={search}
             onChangeText={setSearch}
@@ -187,7 +189,7 @@ export default function ClientesScreen() {
           />
           {!!search && (
             <TouchableOpacity onPress={() => setSearch("")}>
-              <Feather name="x" size={16} color={Colors.textMuted} />
+              <Feather name="x" size={16} color={colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -200,7 +202,7 @@ export default function ClientesScreen() {
           { paddingBottom: Platform.OS === "web" ? 118 : 100 + insets.bottom },
         ]}
         keyboardShouldPersistTaps="handled"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
         {isLoading ? (
           <SkeletonList count={5} variant="row" />
@@ -223,12 +225,12 @@ export default function ClientesScreen() {
               onPress={() => router.push(`/clientes/${c.id}` as any)}
             >
               <View style={[styles.avatar, c.vip && styles.avatarVip]}>
-                <Text style={[styles.avatarText, c.vip && { color: Colors.warning }]}>{initials(c.nome)}</Text>
+                <Text style={[styles.avatarText, c.vip && { color: colors.warning }]}>{initials(c.nome)}</Text>
               </View>
               <View style={styles.info}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                   <Text style={styles.clientName} numberOfLines={1}>{c.nome}</Text>
-                  {c.vip && <Feather name="star" size={12} color={Colors.warning} />}
+                  {c.vip && <Feather name="star" size={12} color={colors.warning} />}
                 </View>
                 {c.telefone && <Text style={styles.clientLine}>{formatPhone(c.telefone)}</Text>}
                 {c.email && <Text style={styles.clientLine} numberOfLines={1}>{c.email}</Text>}
@@ -240,7 +242,7 @@ export default function ClientesScreen() {
                     onPress={() => Linking.openURL(whatsappLink(c.telefone))}
                     accessibilityLabel="WhatsApp"
                   >
-                    <Feather name="message-circle" size={16} color={Colors.success} />
+                    <Feather name="message-circle" size={16} color={colors.success} />
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
@@ -248,7 +250,7 @@ export default function ClientesScreen() {
                   onPress={() => openEdit(c)}
                   accessibilityLabel="Editar"
                 >
-                  <Feather name="edit-2" size={15} color={Colors.textSecondary} />
+                  <Feather name="edit-2" size={15} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -262,27 +264,27 @@ export default function ClientesScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{editing ? "Editar cliente" : "Novo cliente"}</Text>
               <TouchableOpacity onPress={() => setModalOpen(false)}>
-                <Feather name="x" size={22} color={Colors.text} />
+                <Feather name="x" size={22} color={colors.text} />
               </TouchableOpacity>
             </View>
             {savingError && (
               <View style={styles.errorBox}>
-                <Feather name="alert-circle" size={14} color={Colors.error} />
+                <Feather name="alert-circle" size={14} color={colors.error} />
                 <Text style={styles.errorText}>{savingError}</Text>
               </View>
             )}
             <Text style={styles.label}>Nome *</Text>
-            <TextInput style={styles.input} value={novoNome} onChangeText={setNovoNome} placeholder="Nome completo" placeholderTextColor={Colors.textMuted} autoCapitalize="words" />
+            <TextInput style={styles.input} value={novoNome} onChangeText={setNovoNome} placeholder="Nome completo" placeholderTextColor={colors.textMuted} autoCapitalize="words" />
             <Text style={styles.label}>Telefone</Text>
-            <TextInput style={styles.input} value={novoTelefone} onChangeText={(t) => setNovoTelefone(formatPhone(t))} placeholder="(11) 99999-9999" placeholderTextColor={Colors.textMuted} keyboardType="phone-pad" />
+            <TextInput style={styles.input} value={novoTelefone} onChangeText={(t) => setNovoTelefone(formatPhone(t))} placeholder="(11) 99999-9999" placeholderTextColor={colors.textMuted} keyboardType="phone-pad" />
             <Text style={styles.label}>E-mail</Text>
-            <TextInput style={styles.input} value={novoEmail} onChangeText={setNovoEmail} placeholder="email@exemplo.com" placeholderTextColor={Colors.textMuted} keyboardType="email-address" autoCapitalize="none" />
+            <TextInput style={styles.input} value={novoEmail} onChangeText={setNovoEmail} placeholder="email@exemplo.com" placeholderTextColor={colors.textMuted} keyboardType="email-address" autoCapitalize="none" />
             <TouchableOpacity
               style={[styles.saveBtn, saveMutation.isPending && { opacity: 0.6 }]}
               onPress={handleSave}
               disabled={saveMutation.isPending}
             >
-              {saveMutation.isPending ? <ActivityIndicator color="#000" /> : <Text style={styles.saveBtnText}>Salvar</Text>}
+              {saveMutation.isPending ? <ActivityIndicator color={colors.invertedText} /> : <Text style={styles.saveBtnText}>Salvar</Text>}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -294,6 +296,8 @@ export default function ClientesScreen() {
 }
 
 function ImportClientesModal({ visible, onClose, onImported }: { visible: boolean; onClose: () => void; onImported: () => void }) {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { barbeariaId, token } = useAuth();
   const [file, setFile] = useState<{ uri: string; name: string; mimeType?: string } | null>(null);
   const [preview, setPreview] = useState<{ headers: string[]; autoMapping: Record<string, string>; totalRows: number; previewRows: string[][] } | null>(null);
@@ -382,44 +386,44 @@ function ImportClientesModal({ visible, onClose, onImported }: { visible: boolea
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Importar planilha</Text>
             <TouchableOpacity onPress={handleClose}>
-              <Feather name="x" size={22} color={Colors.text} />
+              <Feather name="x" size={22} color={colors.text} />
             </TouchableOpacity>
           </View>
           <ScrollView showsVerticalScrollIndicator={false}>
             {result ? (
               <View style={{ paddingVertical: 12, alignItems: "center" }}>
-                <Feather name="check-circle" size={48} color={Colors.success} />
+                <Feather name="check-circle" size={48} color={colors.success} />
                 <Text style={[styles.modalTitle, { marginTop: 12 }]}>Importação concluída</Text>
-                <Text style={{ color: Colors.textSecondary, marginTop: 6 }}>{result.imported} importados · {result.skipped} ignorados</Text>
+                <Text style={{ color: colors.textSecondary, marginTop: 6 }}>{result.imported} importados · {result.skipped} ignorados</Text>
                 <TouchableOpacity style={[styles.saveBtn, { marginTop: 18, width: "100%" }]} onPress={handleClose}>
                   <Text style={styles.saveBtnText}>Concluir</Text>
                 </TouchableOpacity>
               </View>
             ) : !file ? (
               <>
-                <Text style={{ color: Colors.textSecondary, marginVertical: 12, fontSize: 13 }}>
+                <Text style={{ color: colors.textSecondary, marginVertical: 12, fontSize: 13 }}>
                   Envie um arquivo .xlsx, .xls ou .csv com cabeçalhos (nome, telefone, email, aniversario, observacoes).
                 </Text>
                 <TouchableOpacity style={styles.saveBtn} onPress={pickFile} disabled={loading}>
-                  {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.saveBtnText}>Escolher arquivo</Text>}
+                  {loading ? <ActivityIndicator color={colors.invertedText} /> : <Text style={styles.saveBtnText}>Escolher arquivo</Text>}
                 </TouchableOpacity>
               </>
             ) : loading ? (
               <View style={{ paddingVertical: 30, alignItems: "center" }}>
-                <ActivityIndicator color={Colors.accent} />
-                <Text style={{ color: Colors.textSecondary, marginTop: 8 }}>Analisando planilha...</Text>
+                <ActivityIndicator color={colors.accent} />
+                <Text style={{ color: colors.textSecondary, marginTop: 8 }}>Analisando planilha...</Text>
               </View>
             ) : preview ? (
               <View>
-                <Text style={{ color: Colors.text, fontFamily: "Inter_600SemiBold", marginVertical: 8 }}>{preview.totalRows} linha(s) detectadas</Text>
-                <Text style={{ color: Colors.textSecondary, fontSize: 12, marginBottom: 8 }}>Colunas detectadas:</Text>
+                <Text style={{ color: colors.text, fontFamily: "Inter_600SemiBold", marginVertical: 8 }}>{preview.totalRows} linha(s) detectadas</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 8 }}>Colunas detectadas:</Text>
                 <View style={{ gap: 4, marginBottom: 12 }}>
                   {preview.headers.map((h, i) => {
                     const mapped = preview.autoMapping[i];
                     return (
-                      <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", padding: 8, backgroundColor: Colors.surface, borderRadius: 8, borderWidth: 1, borderColor: Colors.surfaceBorder }}>
-                        <Text style={{ color: Colors.text, fontSize: 13 }}>{h || `Coluna ${i + 1}`}</Text>
-                        <Text style={{ color: mapped ? Colors.accent : Colors.textMuted, fontSize: 12, fontFamily: "Inter_600SemiBold" }}>
+                      <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", padding: 8, backgroundColor: colors.surface, borderRadius: 8, borderWidth: 1, borderColor: colors.surfaceBorder }}>
+                        <Text style={{ color: colors.text, fontSize: 13 }}>{h || `Coluna ${i + 1}`}</Text>
+                        <Text style={{ color: mapped ? colors.accent : colors.textMuted, fontSize: 12, fontFamily: "Inter_600SemiBold" }}>
                           {mapped ? `→ ${mapped}` : "ignorado"}
                         </Text>
                       </View>
@@ -427,10 +431,10 @@ function ImportClientesModal({ visible, onClose, onImported }: { visible: boolea
                   })}
                 </View>
                 <TouchableOpacity style={[styles.saveBtn, importing && { opacity: 0.6 }]} onPress={handleImport} disabled={importing}>
-                  {importing ? <ActivityIndicator color="#000" /> : <Text style={styles.saveBtnText}>Importar {preview.totalRows} clientes</Text>}
+                  {importing ? <ActivityIndicator color={colors.invertedText} /> : <Text style={styles.saveBtnText}>Importar {preview.totalRows} clientes</Text>}
                 </TouchableOpacity>
                 <TouchableOpacity style={{ marginTop: 8, padding: 8, alignItems: "center" }} onPress={() => { setFile(null); setPreview(null); }}>
-                  <Text style={{ color: Colors.textSecondary }}>Escolher outro arquivo</Text>
+                  <Text style={{ color: colors.textSecondary }}>Escolher outro arquivo</Text>
                 </TouchableOpacity>
               </View>
             ) : null}
@@ -441,34 +445,35 @@ function ImportClientesModal({ visible, onClose, onImported }: { visible: boolea
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   headerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  title: { fontSize: 26, fontFamily: "Inter_700Bold", color: Colors.text },
-  subtitle: { fontSize: 14, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginTop: 2 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "center" },
-  addBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.accent, alignItems: "center", justifyContent: "center" },
-  searchBox: { flexDirection: "row", alignItems: "center", backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, borderRadius: 12, paddingHorizontal: 12, height: 42, gap: 8 },
-  searchInput: { flex: 1, color: Colors.text, fontSize: 14, fontFamily: "Inter_400Regular" },
+  title: { fontSize: 26, fontFamily: "Inter_700Bold", color: c.text },
+  subtitle: { fontSize: 14, fontFamily: "Inter_400Regular", color: c.textSecondary, marginTop: 2 },
+  iconBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, alignItems: "center", justifyContent: "center" },
+  addBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: c.accent, alignItems: "center", justifyContent: "center" },
+  searchBox: { flexDirection: "row", alignItems: "center", backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, borderRadius: 12, paddingHorizontal: 12, height: 42, gap: 8 },
+  searchInput: { flex: 1, color: c.text, fontSize: 14, fontFamily: "Inter_400Regular" },
   list: { flex: 1 },
   listContent: { paddingHorizontal: 16, paddingTop: 8 },
-  card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: Colors.surface, borderRadius: 14, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.accent + "20", alignItems: "center", justifyContent: "center" },
-  avatarVip: { backgroundColor: Colors.warning + "22" },
-  avatarText: { fontSize: 14, fontFamily: "Inter_700Bold", color: Colors.accent },
+  card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: c.surface, borderRadius: 14, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: c.surfaceBorder },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: c.accent + "20", alignItems: "center", justifyContent: "center" },
+  avatarVip: { backgroundColor: c.warning + "22" },
+  avatarText: { fontSize: 14, fontFamily: "Inter_700Bold", color: c.accent },
   info: { flex: 1 },
-  clientName: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: Colors.text },
-  clientLine: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginTop: 2 },
-  miniBtn: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: Colors.surfaceLight },
+  clientName: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: c.text },
+  clientLine: { fontSize: 12, fontFamily: "Inter_400Regular", color: c.textSecondary, marginTop: 2 },
+  miniBtn: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: c.surfaceLight },
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-  modalCard: { backgroundColor: Colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 32, borderTopWidth: 1, borderColor: Colors.surfaceBorder },
+  modalCard: { backgroundColor: c.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 32, borderTopWidth: 1, borderColor: c.surfaceBorder },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: Colors.text },
-  errorBox: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: Colors.error + "15", borderColor: Colors.error + "40", borderWidth: 1, padding: 10, borderRadius: 10, marginBottom: 12 },
-  errorText: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.error, flex: 1 },
-  label: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary, marginTop: 12, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
-  input: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, borderRadius: 12, paddingHorizontal: 14, height: 46, color: Colors.text, fontSize: 15, fontFamily: "Inter_400Regular" },
-  saveBtn: { marginTop: 18, backgroundColor: Colors.accent, borderRadius: 12, height: 50, alignItems: "center", justifyContent: "center" },
-  saveBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#000" },
+  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: c.text },
+  errorBox: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: c.error + "15", borderColor: c.error + "40", borderWidth: 1, padding: 10, borderRadius: 10, marginBottom: 12 },
+  errorText: { fontSize: 13, fontFamily: "Inter_400Regular", color: c.error, flex: 1 },
+  label: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: c.textSecondary, marginTop: 12, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
+  input: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, borderRadius: 12, paddingHorizontal: 14, height: 46, color: c.text, fontSize: 15, fontFamily: "Inter_400Regular" },
+  saveBtn: { marginTop: 18, backgroundColor: c.accent, borderRadius: 12, height: 50, alignItems: "center", justifyContent: "center" },
+  saveBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: c.invertedText },
 });

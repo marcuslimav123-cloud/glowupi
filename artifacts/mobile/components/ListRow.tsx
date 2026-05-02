@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Platform,
   StyleSheet,
@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 
 export type ListRowProps = {
   icon?: keyof typeof Feather.glyphMap;
@@ -28,14 +28,6 @@ export type ListRowProps = {
   accessibilityHint?: string;
 };
 
-const BADGE_COLORS: Record<NonNullable<ListRowProps["badgeTone"]>, { bg: string; fg: string }> = {
-  default: { bg: Colors.surfaceLight, fg: Colors.textSecondary },
-  success: { bg: Colors.success + "22", fg: Colors.success },
-  warning: { bg: Colors.warning + "22", fg: Colors.warning },
-  error: { bg: Colors.error + "22", fg: Colors.error },
-  accent: { bg: Colors.accent + "22", fg: Colors.accent },
-};
-
 export function ListRow({
   icon,
   iconColor,
@@ -51,15 +43,26 @@ export function ListRow({
   style,
   accessibilityHint,
 }: ListRowProps) {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  const badgePalette: Record<NonNullable<ListRowProps["badgeTone"]>, { bg: string; fg: string }> = {
+    default: { bg: colors.surfaceLight, fg: colors.textSecondary },
+    success: { bg: colors.success + "22", fg: colors.success },
+    warning: { bg: colors.warning + "22", fg: colors.warning },
+    error: { bg: colors.error + "22", fg: colors.error },
+    accent: { bg: colors.accent + "22", fg: colors.accent },
+  };
+
   const handlePress = () => {
     if (!onPress || disabled) return;
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onPress();
   };
 
-  const labelColor = destructive ? Colors.error : Colors.text;
-  const ic = iconColor ?? (destructive ? Colors.error : Colors.accent);
-  const badgeStyle = BADGE_COLORS[badgeTone];
+  const labelColor = destructive ? colors.error : colors.text;
+  const ic = iconColor ?? (destructive ? colors.error : colors.accent);
+  const badgeStyle = badgePalette[badgeTone];
 
   const inner = (
     <>
@@ -87,7 +90,7 @@ export function ListRow({
         {rightLabel ? <Text style={styles.rightLabel}>{rightLabel}</Text> : null}
         {trailing}
         {onPress && !trailing ? (
-          <Feather name="chevron-right" size={18} color={Colors.textMuted} />
+          <Feather name="chevron-right" size={18} color={colors.textMuted} />
         ) : null}
       </View>
     </>
@@ -122,57 +125,58 @@ export function ListRow({
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    backgroundColor: Colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.surfaceBorder,
-    gap: 12,
-  },
-  rowDisabled: { opacity: 0.5 },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  body: { flex: 1, minWidth: 0 },
-  label: {
-    fontSize: 15,
-    fontFamily: "Inter_500Medium",
-  },
-  description: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  trailing: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontFamily: "Inter_700Bold",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  rightLabel: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    color: Colors.textSecondary,
-  },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 14,
+      paddingVertical: 14,
+      backgroundColor: c.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: c.surfaceBorder,
+      gap: 12,
+    },
+    rowDisabled: { opacity: 0.5 },
+    iconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    body: { flex: 1, minWidth: 0 },
+    label: {
+      fontSize: 15,
+      fontFamily: "Inter_500Medium",
+    },
+    description: {
+      fontSize: 12,
+      fontFamily: "Inter_400Regular",
+      color: c.textSecondary,
+      marginTop: 2,
+    },
+    trailing: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    badge: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 10,
+    },
+    badgeText: {
+      fontSize: 11,
+      fontFamily: "Inter_700Bold",
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    rightLabel: {
+      fontSize: 13,
+      fontFamily: "Inter_500Medium",
+      color: c.textSecondary,
+    },
+  });
 
 export default ListRow;

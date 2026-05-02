@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
   ActivityIndicator, Modal, KeyboardAvoidingView, Platform, Switch, Alert,
@@ -6,7 +6,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
@@ -40,6 +40,8 @@ const TIPOS = [
 const empty: FormState = { tipo: "retorno", intervaloDias: "30", mensagemTemplate: "", ativo: true };
 
 export default function LembretesScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
@@ -144,14 +146,14 @@ export default function LembretesScreen() {
           <View key={l.id} style={styles.card}>
             <View style={styles.cardTop}>
               <View style={styles.iconBox}>
-                <Feather name={tipoIcon(l.tipo)} size={16} color={Colors.accent} />
+                <Feather name={tipoIcon(l.tipo)} size={16} color={colors.accent} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.tipo}>{tipoLabel(l.tipo)}</Text>
                 <Text style={styles.meta}>A cada {l.intervaloDias} dia(s)</Text>
               </View>
-              <View style={[styles.pill, { backgroundColor: l.ativo ? Colors.success + "22" : Colors.textMuted + "22" }]}>
-                <Text style={[styles.pillText, { color: l.ativo ? Colors.success : Colors.textMuted }]}>
+              <View style={[styles.pill, { backgroundColor: l.ativo ? colors.success + "22" : colors.textMuted + "22" }]}>
+                <Text style={[styles.pillText, { color: l.ativo ? colors.success : colors.textMuted }]}>
                   {l.ativo ? "ATIVO" : "INATIVO"}
                 </Text>
               </View>
@@ -159,16 +161,16 @@ export default function LembretesScreen() {
             <Text style={styles.template} numberOfLines={3}>{l.mensagemTemplate}</Text>
             <View style={styles.actions}>
               <TouchableOpacity style={styles.actionBtn} onPress={() => toggleMut.mutate(l)}>
-                <Feather name={l.ativo ? "pause" : "play"} size={14} color={Colors.text} />
+                <Feather name={l.ativo ? "pause" : "play"} size={14} color={colors.text} />
                 <Text style={styles.actionText}>{l.ativo ? "Desativar" : "Ativar"}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={() => openEdit(l)}>
-                <Feather name="edit-2" size={14} color={Colors.text} />
+                <Feather name="edit-2" size={14} color={colors.text} />
                 <Text style={styles.actionText}>Editar</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={() => onDelete(l)}>
-                <Feather name="trash-2" size={14} color={Colors.error} />
-                <Text style={[styles.actionText, { color: Colors.error }]}>Excluir</Text>
+                <Feather name="trash-2" size={14} color={colors.error} />
+                <Text style={[styles.actionText, { color: colors.error }]}>Excluir</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -185,13 +187,13 @@ export default function LembretesScreen() {
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>{editing ? "Editar lembrete" : "Novo lembrete"}</Text>
                 <TouchableOpacity onPress={() => setModalOpen(false)} accessibilityLabel="Fechar">
-                  <Feather name="x" size={22} color={Colors.text} />
+                  <Feather name="x" size={22} color={colors.text} />
                 </TouchableOpacity>
               </View>
 
               {formError ? (
                 <View style={styles.errorBox}>
-                  <Feather name="alert-circle" size={14} color={Colors.error} />
+                  <Feather name="alert-circle" size={14} color={colors.error} />
                   <Text style={styles.errorText}>{formError}</Text>
                 </View>
               ) : null}
@@ -204,7 +206,7 @@ export default function LembretesScreen() {
                     style={[styles.tipoBtn, form.tipo === t.value && styles.tipoBtnActive]}
                     onPress={() => setForm({ ...form, tipo: t.value })}
                   >
-                    <Feather name={t.icon} size={14} color={form.tipo === t.value ? Colors.accent : Colors.textSecondary} />
+                    <Feather name={t.icon} size={14} color={form.tipo === t.value ? colors.accent : colors.textSecondary} />
                     <Text style={[styles.tipoText, form.tipo === t.value && styles.tipoTextActive]}>{t.label}</Text>
                   </TouchableOpacity>
                 ))}
@@ -216,7 +218,7 @@ export default function LembretesScreen() {
                 value={form.intervaloDias}
                 onChangeText={(v) => setForm({ ...form, intervaloDias: v.replace(/\D/g, "") })}
                 placeholder="30"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 keyboardType="number-pad"
               />
 
@@ -226,7 +228,7 @@ export default function LembretesScreen() {
                 value={form.mensagemTemplate}
                 onChangeText={(v) => setForm({ ...form, mensagemTemplate: v })}
                 placeholder="Olá {cliente}, faz tempo que não nos vemos! Que tal agendar?"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 multiline
                 textAlignVertical="top"
               />
@@ -237,8 +239,8 @@ export default function LembretesScreen() {
                 <Switch
                   value={form.ativo}
                   onValueChange={(v) => setForm({ ...form, ativo: v })}
-                  trackColor={{ false: Colors.surfaceLight, true: Colors.accent + "80" }}
-                  thumbColor={form.ativo ? Colors.accent : "#888"}
+                  trackColor={{ false: colors.surfaceLight, true: colors.accent + "80" }}
+                  thumbColor={form.ativo ? colors.accent : "#888"}
                 />
               </View>
 
@@ -247,7 +249,7 @@ export default function LembretesScreen() {
                 onPress={() => { setFormError(null); saveMut.mutate(); }}
                 disabled={saveMut.isPending}
               >
-                {saveMut.isPending ? <ActivityIndicator color="#000" /> : (
+                {saveMut.isPending ? <ActivityIndicator color={colors.invertedText} /> : (
                   <Text style={styles.saveBtnText}>{editing ? "Salvar alterações" : "Criar lembrete"}</Text>
                 )}
               </TouchableOpacity>
@@ -259,72 +261,73 @@ export default function LembretesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
-    marginBottom: 10, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderRadius: 14, padding: 14,
+    marginBottom: 10, borderWidth: 1, borderColor: c.surfaceBorder,
   },
   cardTop: { flexDirection: "row", alignItems: "center", marginBottom: 10, gap: 10 },
   iconBox: {
     width: 36, height: 36, borderRadius: 10,
-    backgroundColor: Colors.accent + "22", alignItems: "center", justifyContent: "center",
+    backgroundColor: c.accent + "22", alignItems: "center", justifyContent: "center",
   },
-  tipo: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: Colors.text },
-  meta: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginTop: 2 },
-  template: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.textSecondary, lineHeight: 18, marginBottom: 10 },
+  tipo: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: c.text },
+  meta: { fontSize: 12, fontFamily: "Inter_400Regular", color: c.textSecondary, marginTop: 2 },
+  template: { fontSize: 13, fontFamily: "Inter_400Regular", color: c.textSecondary, lineHeight: 18, marginBottom: 10 },
   pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   pillText: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
-  actions: { flexDirection: "row", gap: 8, borderTopWidth: 1, borderTopColor: Colors.surfaceBorder, paddingTop: 10 },
+  actions: { flexDirection: "row", gap: 8, borderTopWidth: 1, borderTopColor: c.surfaceBorder, paddingTop: 10 },
   actionBtn: {
     flexDirection: "row", alignItems: "center", gap: 6,
     paddingHorizontal: 10, paddingVertical: 6,
-    backgroundColor: Colors.surfaceLight, borderRadius: 8,
+    backgroundColor: c.surfaceLight, borderRadius: 8,
   },
-  actionText: { fontSize: 12, fontFamily: "Inter_500Medium", color: Colors.text },
+  actionText: { fontSize: 12, fontFamily: "Inter_500Medium", color: c.text },
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
   modalCard: {
-    backgroundColor: Colors.background,
+    backgroundColor: c.background,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 20, paddingBottom: 32, maxHeight: "92%",
-    borderTopWidth: 1, borderColor: Colors.surfaceBorder,
+    borderTopWidth: 1, borderColor: c.surfaceBorder,
   },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: Colors.text },
+  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: c.text },
   errorBox: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: Colors.error + "15", borderColor: Colors.error + "40",
+    backgroundColor: c.error + "15", borderColor: c.error + "40",
     borderWidth: 1, padding: 10, borderRadius: 10, marginBottom: 12,
   },
-  errorText: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.error, flex: 1 },
+  errorText: { fontSize: 13, fontFamily: "Inter_400Regular", color: c.error, flex: 1 },
   label: {
-    fontSize: 12, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary,
+    fontSize: 12, fontFamily: "Inter_600SemiBold", color: c.textSecondary,
     marginTop: 12, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder,
     borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
-    color: Colors.text, fontSize: 15, fontFamily: "Inter_400Regular",
+    color: c.text, fontSize: 15, fontFamily: "Inter_400Regular",
     minHeight: 46,
   },
   textarea: { minHeight: 110 },
-  hint: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.textMuted, marginTop: 6 },
+  hint: { fontSize: 11, fontFamily: "Inter_400Regular", color: c.textMuted, marginTop: 6 },
   tiposGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   tipoBtn: {
     flexDirection: "row", alignItems: "center", gap: 6,
     paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder,
   },
-  tipoBtnActive: { backgroundColor: Colors.accent + "22", borderColor: Colors.accent },
-  tipoText: { fontSize: 12, fontFamily: "Inter_500Medium", color: Colors.textSecondary },
-  tipoTextActive: { color: Colors.accent },
+  tipoBtnActive: { backgroundColor: c.accent + "22", borderColor: c.accent },
+  tipoText: { fontSize: 12, fontFamily: "Inter_500Medium", color: c.textSecondary },
+  tipoTextActive: { color: c.accent },
   switchRow: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     marginTop: 14, paddingVertical: 4,
   },
-  switchLabel: { fontSize: 14, fontFamily: "Inter_500Medium", color: Colors.text },
+  switchLabel: { fontSize: 14, fontFamily: "Inter_500Medium", color: c.text },
   saveBtn: {
-    marginTop: 18, backgroundColor: Colors.accent, borderRadius: 12,
+    marginTop: 18, backgroundColor: c.accent, borderRadius: 12,
     height: 50, alignItems: "center", justifyContent: "center",
   },
-  saveBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#000" },
+  saveBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: c.invertedText },
 });

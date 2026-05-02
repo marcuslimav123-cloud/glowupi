@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from "react";
 import { Alert, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
@@ -35,6 +35,8 @@ const TABS: { id: Tab; label: string }[] = [
 export default function RankingsScreen() {
   const { barbeariaId } = useAuth();
   const insets = useSafeAreaInsets();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const initial = useMemo(() => {
     const t = new Date();
@@ -118,7 +120,7 @@ export default function RankingsScreen() {
           <Text style={styles.name} numberOfLines={2}>{name}</Text>
           <View style={styles.metricsRow}>
             <View><Text style={styles.metricLabel}>{v1Label}</Text><Text style={styles.metricValue}>{v1Value}</Text></View>
-            <View><Text style={styles.metricLabel}>{v2Label}</Text><Text style={[styles.metricValue, { color: Colors.accent }]}>{v2Value}</Text></View>
+            <View><Text style={styles.metricLabel}>{v2Label}</Text><Text style={[styles.metricValue, { color: colors.accent }]}>{v2Value}</Text></View>
           </View>
         </View>
       </View>
@@ -131,7 +133,7 @@ export default function RankingsScreen() {
         data={list}
         keyExtractor={(item, idx) => `${tab}-${idx}-${(item as any).profissionalId ?? (item as any).servicoId ?? (item as any).clienteId ?? (item as any).produtoId ?? idx}`}
         contentContainerStyle={[styles.content, { paddingBottom: 120 + insets.bottom }]}
-        refreshControl={<RefreshControl refreshing={query.isRefetching && !query.isLoading} onRefresh={() => query.refetch()} tintColor={Colors.accent} colors={[Colors.accent]} />}
+        refreshControl={<RefreshControl refreshing={query.isRefetching && !query.isLoading} onRefresh={() => query.refetch()} tintColor={colors.accent} colors={[colors.accent]} />}
         ListHeaderComponent={
           <View>
             <DateRangeBar inicio={di} fim={df} onInicioChange={setDi} onFimChange={setDf} onApply={apply} onExport={exportCsv} exportDisabled={!list.length} loading={query.isLoading || query.isRefetching} />
@@ -163,26 +165,26 @@ export default function RankingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 16 },
   tabs: { flexDirection: "row", gap: 6, marginBottom: 8, flexWrap: "wrap" },
   tab: {
     paddingHorizontal: 14, paddingVertical: 8,
-    borderRadius: 999, backgroundColor: Colors.surfaceLight,
-    color: Colors.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12,
-    borderWidth: 1, borderColor: Colors.surfaceBorder,
+    borderRadius: 999, backgroundColor: c.surfaceLight,
+    color: c.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12,
+    borderWidth: 1, borderColor: c.surfaceBorder,
     overflow: "hidden",
   },
-  tabActive: { backgroundColor: Colors.accent, color: "#000", borderColor: Colors.accent },
+  tabActive: { backgroundColor: c.accent, color: c.invertedText, borderColor: c.accent },
   card: {
     flexDirection: "row", alignItems: "center", gap: 12,
-    backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.surfaceBorder,
     padding: 14, marginBottom: 8,
   },
-  rank: { width: 38, height: 38, borderRadius: 12, backgroundColor: Colors.surfaceLight, alignItems: "center", justifyContent: "center" },
-  rankText: { color: Colors.accent, fontFamily: "Inter_700Bold", fontSize: 13 },
-  name: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 14, marginBottom: 6 },
+  rank: { width: 38, height: 38, borderRadius: 12, backgroundColor: c.surfaceLight, alignItems: "center", justifyContent: "center" },
+  rankText: { color: c.accent, fontFamily: "Inter_700Bold", fontSize: 13 },
+  name: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 14, marginBottom: 6 },
   metricsRow: { flexDirection: "row", justifyContent: "space-between" },
-  metricLabel: { color: Colors.textMuted, fontSize: 11, fontFamily: "Inter_500Medium" },
-  metricValue: { color: Colors.text, fontSize: 13, fontFamily: "Inter_600SemiBold", marginTop: 1 },
+  metricLabel: { color: c.textMuted, fontSize: 11, fontFamily: "Inter_500Medium" },
+  metricValue: { color: c.text, fontSize: 13, fontFamily: "Inter_600SemiBold", marginTop: 1 },
 });

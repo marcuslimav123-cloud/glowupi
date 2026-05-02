@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from "react";
 import { Alert, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
@@ -25,6 +25,8 @@ type CupomRow = {
 export default function CuponsRelatorioScreen() {
   const { barbeariaId } = useAuth();
   const insets = useSafeAreaInsets();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const initial = useMemo(() => {
     const t = new Date();
     const s = new Date();
@@ -75,7 +77,7 @@ export default function CuponsRelatorioScreen() {
         data={data}
         keyExtractor={(r) => String(r.id)}
         contentContainerStyle={[{ paddingHorizontal: 16, paddingTop: 16 }, { paddingBottom: 120 + insets.bottom }]}
-        refreshControl={<RefreshControl refreshing={query.isRefetching && !query.isLoading} onRefresh={() => query.refetch()} tintColor={Colors.accent} colors={[Colors.accent]} />}
+        refreshControl={<RefreshControl refreshing={query.isRefetching && !query.isLoading} onRefresh={() => query.refetch()} tintColor={colors.accent} colors={[colors.accent]} />}
         ListHeaderComponent={
           <DateRangeBar inicio={di} fim={df} onInicioChange={setDi} onFimChange={setDf} onApply={apply} onExport={exportCsv} exportDisabled={!data.length} loading={query.isLoading || query.isRefetching} />
         }
@@ -95,7 +97,7 @@ export default function CuponsRelatorioScreen() {
             {item.descricao ? <Text style={styles.desc}>{item.descricao}</Text> : null}
             <View style={styles.metrics}>
               <View style={styles.metricItem}><Text style={styles.metricLabel}>Usos</Text><Text style={styles.metricValue}>{item.usos}</Text></View>
-              <View style={styles.metricItem}><Text style={styles.metricLabel}>Receita</Text><Text style={[styles.metricValue, { color: Colors.accent }]}>{formatCurrency(item.receitaGerada)}</Text></View>
+              <View style={styles.metricItem}><Text style={styles.metricLabel}>Receita</Text><Text style={[styles.metricValue, { color: colors.accent }]}>{formatCurrency(item.receitaGerada)}</Text></View>
               <View style={styles.metricItem}><Text style={styles.metricLabel}>Descontos</Text><Text style={styles.metricValue}>{formatCurrency(item.descontoTotal)}</Text></View>
             </View>
           </View>
@@ -105,17 +107,17 @@ export default function CuponsRelatorioScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.surfaceBorder,
     padding: 14, marginBottom: 8, gap: 6,
   },
   head: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  codigo: { color: Colors.text, fontSize: 15, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
-  tipo: { color: Colors.accent, fontSize: 13, fontFamily: "Inter_600SemiBold" },
-  desc: { color: Colors.textSecondary, fontSize: 12, fontFamily: "Inter_500Medium" },
-  metrics: { flexDirection: "row", justifyContent: "space-between", marginTop: 6, paddingTop: 8, borderTopWidth: 1, borderTopColor: Colors.surfaceBorder },
+  codigo: { color: c.text, fontSize: 15, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
+  tipo: { color: c.accent, fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  desc: { color: c.textSecondary, fontSize: 12, fontFamily: "Inter_500Medium" },
+  metrics: { flexDirection: "row", justifyContent: "space-between", marginTop: 6, paddingTop: 8, borderTopWidth: 1, borderTopColor: c.surfaceBorder },
   metricItem: { alignItems: "flex-start" },
-  metricLabel: { color: Colors.textMuted, fontSize: 11, fontFamily: "Inter_500Medium" },
-  metricValue: { color: Colors.text, fontSize: 13, fontFamily: "Inter_600SemiBold", marginTop: 2 },
+  metricLabel: { color: c.textMuted, fontSize: 11, fontFamily: "Inter_500Medium" },
+  metricValue: { color: c.text, fontSize: 13, fontFamily: "Inter_600SemiBold", marginTop: 2 },
 });

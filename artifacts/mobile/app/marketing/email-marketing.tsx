@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
   ActivityIndicator, Modal, KeyboardAvoidingView, Platform,
@@ -6,7 +6,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
@@ -51,13 +51,15 @@ const FILTROS = [
   { value: "inativos_120", label: "Inativos 120+ dias" },
 ];
 
-const STATUS_LABEL: Record<string, { text: string; color: string }> = {
-  rascunho: { text: "RASCUNHO", color: Colors.textMuted },
-  enviando: { text: "ENVIANDO", color: Colors.warning },
-  concluida: { text: "CONCLUÍDA", color: Colors.success },
-};
+const makeStatusLabel = (c: ColorPalette): Record<string, { text: string; color: string }> => ({
+  rascunho: { text: "RASCUNHO", color: c.textMuted },
+  enviando: { text: "ENVIANDO", color: c.warning },
+  concluida: { text: "CONCLUÍDA", color: c.success },
+});
 
 export default function EmailMarketingScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
@@ -173,7 +175,8 @@ export default function EmailMarketingScreen() {
         />
       ) : (
         campanhas.map((c) => {
-          const st = STATUS_LABEL[c.status] || { text: c.status.toUpperCase(), color: Colors.textMuted };
+          const STATUS_LABEL = makeStatusLabel(colors);
+          const st = STATUS_LABEL[c.status] || { text: c.status.toUpperCase(), color: colors.textMuted };
           return (
             <View key={c.id} style={styles.card}>
               <View style={styles.cardTop}>
@@ -199,7 +202,7 @@ export default function EmailMarketingScreen() {
                   <Text style={styles.statLabel}>abertos</Text>
                 </View>
                 <View style={styles.statBox}>
-                  <Text style={[styles.statValue, c.totalFalhas > 0 && { color: Colors.error }]}>{c.totalFalhas}</Text>
+                  <Text style={[styles.statValue, c.totalFalhas > 0 && { color: colors.error }]}>{c.totalFalhas}</Text>
                   <Text style={styles.statLabel}>falhas</Text>
                 </View>
               </View>
@@ -218,13 +221,13 @@ export default function EmailMarketingScreen() {
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Nova campanha</Text>
                 <TouchableOpacity onPress={() => setModalOpen(false)} accessibilityLabel="Fechar">
-                  <Feather name="x" size={22} color={Colors.text} />
+                  <Feather name="x" size={22} color={colors.text} />
                 </TouchableOpacity>
               </View>
 
               {formError ? (
                 <View style={styles.errorBox}>
-                  <Feather name="alert-circle" size={14} color={Colors.error} />
+                  <Feather name="alert-circle" size={14} color={colors.error} />
                   <Text style={styles.errorText}>{formError}</Text>
                 </View>
               ) : null}
@@ -235,7 +238,7 @@ export default function EmailMarketingScreen() {
                 value={assunto}
                 onChangeText={setAssunto}
                 placeholder="Olá {{nome_cliente}}, novidade!"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
 
               <Text style={styles.label}>Corpo do e-mail *</Text>
@@ -244,7 +247,7 @@ export default function EmailMarketingScreen() {
                 value={corpo}
                 onChangeText={setCorpo}
                 placeholder={"Olá {{nome_cliente}},\n\nGostaríamos de convidar você..."}
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 multiline
                 textAlignVertical="top"
               />
@@ -269,7 +272,7 @@ export default function EmailMarketingScreen() {
 
               <View style={styles.previewBox}>
                 {preview.isLoading ? (
-                  <ActivityIndicator color={Colors.accent} />
+                  <ActivityIndicator color={colors.accent} />
                 ) : (
                   <Text style={styles.previewText}>
                     {preview.data?.total ?? 0} destinatário(s) com e-mail válido
@@ -283,7 +286,7 @@ export default function EmailMarketingScreen() {
                 disabled={createSendMut.isPending}
               >
                 {createSendMut.isPending ? (
-                  <ActivityIndicator color="#000" />
+                  <ActivityIndicator color={colors.invertedText} />
                 ) : (
                   <Text style={styles.saveBtnText}>Criar e enviar</Text>
                 )}
@@ -296,80 +299,81 @@ export default function EmailMarketingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
   statusCard: {
     flexDirection: "row", alignItems: "center",
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
-    borderWidth: 1, borderColor: Colors.surfaceBorder, marginBottom: 12,
+    backgroundColor: c.surface, borderRadius: 14, padding: 14,
+    borderWidth: 1, borderColor: c.surfaceBorder, marginBottom: 12,
   },
-  statusTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: Colors.text },
-  statusDesc: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginTop: 4 },
+  statusTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: c.text },
+  statusDesc: { fontSize: 12, fontFamily: "Inter_400Regular", color: c.textSecondary, marginTop: 4 },
   toggleBtn: {
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
-    backgroundColor: Colors.accent + "22", borderWidth: 1, borderColor: Colors.accent + "44",
+    backgroundColor: c.accent + "22", borderWidth: 1, borderColor: c.accent + "44",
   },
-  toggleBtnActive: { backgroundColor: Colors.error + "22", borderColor: Colors.error + "44" },
-  toggleText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: Colors.accent },
-  toggleTextActive: { color: Colors.error },
+  toggleBtnActive: { backgroundColor: c.error + "22", borderColor: c.error + "44" },
+  toggleText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: c.accent },
+  toggleTextActive: { color: c.error },
   card: {
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
-    marginBottom: 10, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderRadius: 14, padding: 14,
+    marginBottom: 10, borderWidth: 1, borderColor: c.surfaceBorder,
   },
   cardTop: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 6 },
-  cardTitle: { flex: 1, fontSize: 15, fontFamily: "Inter_600SemiBold", color: Colors.text },
-  cardMeta: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginBottom: 10 },
+  cardTitle: { flex: 1, fontSize: 15, fontFamily: "Inter_600SemiBold", color: c.text },
+  cardMeta: { fontSize: 12, fontFamily: "Inter_400Regular", color: c.textSecondary, marginBottom: 10 },
   pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   pillText: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
   statsRow: {
     flexDirection: "row", gap: 8,
-    backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 8,
+    backgroundColor: c.surfaceLight, borderRadius: 10, padding: 8,
   },
   statBox: { flex: 1, alignItems: "center" },
-  statValue: { fontSize: 16, fontFamily: "Inter_700Bold", color: Colors.text },
-  statLabel: { fontSize: 10, fontFamily: "Inter_400Regular", color: Colors.textMuted, marginTop: 2 },
+  statValue: { fontSize: 16, fontFamily: "Inter_700Bold", color: c.text },
+  statLabel: { fontSize: 10, fontFamily: "Inter_400Regular", color: c.textMuted, marginTop: 2 },
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
   modalCard: {
-    backgroundColor: Colors.background,
+    backgroundColor: c.background,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 20, paddingBottom: 32, maxHeight: "92%",
-    borderTopWidth: 1, borderColor: Colors.surfaceBorder,
+    borderTopWidth: 1, borderColor: c.surfaceBorder,
   },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: Colors.text },
+  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: c.text },
   errorBox: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: Colors.error + "15", borderColor: Colors.error + "40",
+    backgroundColor: c.error + "15", borderColor: c.error + "40",
     borderWidth: 1, padding: 10, borderRadius: 10, marginBottom: 12,
   },
-  errorText: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.error, flex: 1 },
+  errorText: { fontSize: 13, fontFamily: "Inter_400Regular", color: c.error, flex: 1 },
   label: {
-    fontSize: 12, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary,
+    fontSize: 12, fontFamily: "Inter_600SemiBold", color: c.textSecondary,
     marginTop: 12, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder,
     borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
-    color: Colors.text, fontSize: 15, fontFamily: "Inter_400Regular",
+    color: c.text, fontSize: 15, fontFamily: "Inter_400Regular",
     minHeight: 46,
   },
   textarea: { minHeight: 140 },
-  hint: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.textMuted, marginTop: 6 },
+  hint: { fontSize: 11, fontFamily: "Inter_400Regular", color: c.textMuted, marginTop: 6 },
   filterGroup: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   filterChip: {
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 18,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder,
   },
-  filterChipActive: { backgroundColor: Colors.accent + "22", borderColor: Colors.accent },
-  filterText: { fontSize: 12, fontFamily: "Inter_500Medium", color: Colors.textSecondary },
-  filterTextActive: { color: Colors.accent },
+  filterChipActive: { backgroundColor: c.accent + "22", borderColor: c.accent },
+  filterText: { fontSize: 12, fontFamily: "Inter_500Medium", color: c.textSecondary },
+  filterTextActive: { color: c.accent },
   previewBox: {
-    marginTop: 12, padding: 12, backgroundColor: Colors.surfaceLight,
+    marginTop: 12, padding: 12, backgroundColor: c.surfaceLight,
     borderRadius: 10, alignItems: "center",
   },
-  previewText: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.text },
+  previewText: { fontSize: 13, fontFamily: "Inter_500Medium", color: c.text },
   saveBtn: {
-    marginTop: 18, backgroundColor: Colors.accent, borderRadius: 12,
+    marginTop: 18, backgroundColor: c.accent, borderRadius: 12,
     height: 50, alignItems: "center", justifyContent: "center",
   },
-  saveBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#000" },
+  saveBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: c.invertedText },
 });

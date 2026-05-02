@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -18,7 +18,7 @@ import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchJson, formatPhone, stripPhone, todayStr, whatsappLink, getErrorMessage } from "@/lib/api";
 import { EmptyState } from "@/components/EmptyState";
@@ -37,6 +37,8 @@ type Item = {
 };
 
 export default function ListaEsperaScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { barbeariaId } = useAuth();
@@ -133,7 +135,7 @@ export default function ListaEsperaScreen() {
     <View style={[styles.container, { paddingTop: webTopPad }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Feather name="chevron-left" size={22} color={Colors.text} />
+          <Feather name="chevron-left" size={22} color={colors.text} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Lista de espera</Text>
@@ -146,24 +148,24 @@ export default function ListaEsperaScreen() {
 
       <View style={styles.statRow}>
         <View style={styles.statBox}>
-          <Text style={[styles.statValue, { color: Colors.warning }]}>{pendentes.length}</Text>
+          <Text style={[styles.statValue, { color: colors.warning }]}>{pendentes.length}</Text>
           <Text style={styles.statLabel}>Aguardando</Text>
         </View>
         <View style={styles.statBox}>
-          <Text style={[styles.statValue, { color: Colors.success }]}>
+          <Text style={[styles.statValue, { color: colors.success }]}>
             {(itens as Item[]).filter(i => i.status === "atendido").length}
           </Text>
           <Text style={styles.statLabel}>Atendidos</Text>
         </View>
         <View style={styles.statBox}>
-          <Text style={[styles.statValue, { color: Colors.accent }]}>{(itens as Item[]).length}</Text>
+          <Text style={[styles.statValue, { color: colors.accent }]}>{(itens as Item[]).length}</Text>
           <Text style={styles.statLabel}>Total</Text>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 + insets.bottom }}>
         {isLoading ? (
-          <ActivityIndicator color={Colors.accent} style={{ marginTop: 40 }} />
+          <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
         ) : isError ? (
           <ErrorView
             title="Não foi possível carregar a lista de espera"
@@ -184,8 +186,8 @@ export default function ListaEsperaScreen() {
                 {pendentes.map(item => (
                   <View key={item.id} style={styles.card}>
                     <View style={styles.cardLeft}>
-                      <View style={[styles.avatar, { backgroundColor: Colors.warning + "22" }]}>
-                        <Text style={[styles.avatarText, { color: Colors.warning }]}>
+                      <View style={[styles.avatar, { backgroundColor: colors.warning + "22" }]}>
+                        <Text style={[styles.avatarText, { color: colors.warning }]}>
                           {item.clienteNome.charAt(0).toUpperCase()}
                         </Text>
                       </View>
@@ -202,23 +204,23 @@ export default function ListaEsperaScreen() {
                     </View>
                     <View style={styles.cardActions}>
                       <TouchableOpacity
-                        style={[styles.actionBtn, { backgroundColor: Colors.success + "20", borderColor: Colors.success + "55" }]}
+                        style={[styles.actionBtn, { backgroundColor: colors.success + "20", borderColor: colors.success + "55" }]}
                         onPress={() => setStatus(item, "atendido")}
                         accessibilityLabel="Marcar como atendido"
                       >
-                        <Feather name="check" size={14} color={Colors.success} />
+                        <Feather name="check" size={14} color={colors.success} />
                       </TouchableOpacity>
                       {item.clienteTelefone && (
                         <TouchableOpacity
-                          style={[styles.actionBtn, { backgroundColor: Colors.success + "10" }]}
+                          style={[styles.actionBtn, { backgroundColor: colors.success + "10" }]}
                           onPress={() => Linking.openURL(whatsappLink(item.clienteTelefone))}
                           accessibilityLabel="Avisar pelo WhatsApp"
                         >
-                          <Feather name="message-circle" size={14} color={Colors.success} />
+                          <Feather name="message-circle" size={14} color={colors.success} />
                         </TouchableOpacity>
                       )}
                       <TouchableOpacity style={styles.actionBtn} onPress={() => remove(item)} accessibilityLabel="Remover da lista">
-                        <Feather name="trash-2" size={14} color={Colors.error} />
+                        <Feather name="trash-2" size={14} color={colors.error} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -236,7 +238,7 @@ export default function ListaEsperaScreen() {
                       <Text style={styles.cardSub}>{item.data} · {item.status}</Text>
                     </View>
                     <TouchableOpacity onPress={() => remove(item)}>
-                      <Feather name="trash-2" size={16} color={Colors.textMuted} />
+                      <Feather name="trash-2" size={16} color={colors.textMuted} />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -252,14 +254,14 @@ export default function ListaEsperaScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Adicionar à lista</Text>
               <TouchableOpacity onPress={() => setOpen(false)}>
-                <Feather name="x" size={22} color={Colors.text} />
+                <Feather name="x" size={22} color={colors.text} />
               </TouchableOpacity>
             </View>
 
             <View style={{ gap: 12 }}>
               <View>
                 <Text style={styles.fieldLabel}>Nome do cliente *</Text>
-                <TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Ex: Mariana" placeholderTextColor={Colors.textMuted} />
+                <TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Ex: Mariana" placeholderTextColor={colors.textMuted} />
               </View>
               <View>
                 <Text style={styles.fieldLabel}>WhatsApp *</Text>
@@ -268,17 +270,17 @@ export default function ListaEsperaScreen() {
                   value={tel}
                   onChangeText={(v) => setTel(formatPhone(v))}
                   placeholder="(11) 99999-9999"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={colors.textMuted}
                   keyboardType="phone-pad"
                 />
               </View>
               <View>
                 <Text style={styles.fieldLabel}>Data desejada</Text>
-                <TextInput style={styles.input} value={data} onChangeText={setData} placeholder="AAAA-MM-DD" placeholderTextColor={Colors.textMuted} />
+                <TextInput style={styles.input} value={data} onChangeText={setData} placeholder="AAAA-MM-DD" placeholderTextColor={colors.textMuted} />
               </View>
               <View>
                 <Text style={styles.fieldLabel}>Observação</Text>
-                <TextInput style={[styles.input, { minHeight: 60, textAlignVertical: "top" }]} value={obs} onChangeText={setObs} multiline placeholder="Preferência de horário, etc." placeholderTextColor={Colors.textMuted} />
+                <TextInput style={[styles.input, { minHeight: 60, textAlignVertical: "top" }]} value={obs} onChangeText={setObs} multiline placeholder="Preferência de horário, etc." placeholderTextColor={colors.textMuted} />
               </View>
             </View>
 
@@ -287,7 +289,7 @@ export default function ListaEsperaScreen() {
               disabled={submitting}
               onPress={submit}
             >
-              {submitting ? <ActivityIndicator color="#000" /> : <Text style={styles.btnPrimaryText}>Adicionar</Text>}
+              {submitting ? <ActivityIndicator color={colors.invertedText} /> : <Text style={styles.btnPrimaryText}>Adicionar</Text>}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -296,33 +298,34 @@ export default function ListaEsperaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingBottom: 8, gap: 8 },
-  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "center" },
-  addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.accent, alignItems: "center", justifyContent: "center" },
-  title: { fontSize: 20, fontFamily: "Inter_700Bold", color: Colors.text },
-  subtitle: { fontSize: 12, color: Colors.textSecondary, fontFamily: "Inter_400Regular", marginTop: 2 },
+  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, alignItems: "center", justifyContent: "center" },
+  addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: c.accent, alignItems: "center", justifyContent: "center" },
+  title: { fontSize: 20, fontFamily: "Inter_700Bold", color: c.text },
+  subtitle: { fontSize: 12, color: c.textSecondary, fontFamily: "Inter_400Regular", marginTop: 2 },
   statRow: { flexDirection: "row", paddingHorizontal: 16, gap: 8, marginVertical: 12 },
-  statBox: { flex: 1, padding: 12, borderRadius: 12, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center" },
+  statBox: { flex: 1, padding: 12, borderRadius: 12, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, alignItems: "center" },
   statValue: { fontSize: 22, fontFamily: "Inter_700Bold" },
-  statLabel: { fontSize: 11, fontFamily: "Inter_500Medium", color: Colors.textSecondary, marginTop: 4 },
-  sectionTitle: { fontSize: 12, fontFamily: "Inter_700Bold", color: Colors.textMuted, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 },
-  card: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, marginBottom: 8 },
+  statLabel: { fontSize: 11, fontFamily: "Inter_500Medium", color: c.textSecondary, marginTop: 4 },
+  sectionTitle: { fontSize: 12, fontFamily: "Inter_700Bold", color: c.textMuted, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 },
+  card: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, marginBottom: 8 },
   cardLeft: {},
   avatar: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   avatarText: { fontSize: 14, fontFamily: "Inter_700Bold" },
-  cardName: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: Colors.text },
-  cardSub: { fontSize: 11, color: Colors.textSecondary, fontFamily: "Inter_400Regular", marginTop: 2 },
-  cardObs: { fontSize: 11, color: Colors.textMuted, fontFamily: "Inter_400Regular", marginTop: 4, fontStyle: "italic" },
+  cardName: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: c.text },
+  cardSub: { fontSize: 11, color: c.textSecondary, fontFamily: "Inter_400Regular", marginTop: 2 },
+  cardObs: { fontSize: 11, color: c.textMuted, fontFamily: "Inter_400Regular", marginTop: 4, fontStyle: "italic" },
   cardActions: { flexDirection: "row", gap: 6 },
-  actionBtn: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder },
+  actionBtn: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder },
   modalBackdrop: { flex: 1, backgroundColor: "#000a", justifyContent: "flex-end" },
-  modalSheet: { backgroundColor: Colors.background, padding: 16, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: Colors.surfaceBorder },
+  modalSheet: { backgroundColor: c.background, padding: 16, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: c.surfaceBorder },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: Colors.text },
-  fieldLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
-  input: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: Colors.text, fontSize: 14, fontFamily: "Inter_400Regular" },
-  btnPrimary: { backgroundColor: Colors.accent, borderRadius: 12, paddingVertical: 14, alignItems: "center", justifyContent: "center" },
-  btnPrimaryText: { color: "#000", fontFamily: "Inter_600SemiBold", fontSize: 14 },
+  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: c.text },
+  fieldLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: c.textSecondary, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
+  input: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: c.text, fontSize: 14, fontFamily: "Inter_400Regular" },
+  btnPrimary: { backgroundColor: c.accent, borderRadius: 12, paddingVertical: 14, alignItems: "center", justifyContent: "center" },
+  btnPrimaryText: { color: c.invertedText, fontFamily: "Inter_600SemiBold", fontSize: 14 },
 });

@@ -3,7 +3,7 @@ import { Alert, FlatList, RefreshControl, StyleSheet, Text, View } from "react-n
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
@@ -59,6 +59,8 @@ export function ReportListScreen<T>({
 }: Props<T>) {
   const { barbeariaId } = useAuth();
   const insets = useSafeAreaInsets();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const initial = useMemo(() => initialRange ?? defaultDates(initialDays), [initialDays, initialRange?.di, initialRange?.df]);
   const [di, setDi] = useState(initial.di);
   const [df, setDf] = useState(initial.df);
@@ -110,8 +112,8 @@ export function ReportListScreen<T>({
           <RefreshControl
             refreshing={query.isRefetching && !query.isLoading}
             onRefresh={() => query.refetch()}
-            tintColor={Colors.accent}
-            colors={[Colors.accent]}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
           />
         }
         ListHeaderComponent={
@@ -169,60 +171,61 @@ export function ReportListScreen<T>({
   );
 }
 
-const styles = StyleSheet.create({
-  content: { paddingHorizontal: 16, paddingTop: 16 },
-  countRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-    paddingHorizontal: 4,
-  },
-  count: {
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.textSecondary,
-  },
-  range: {
-    fontSize: 11,
-    fontFamily: "Inter_500Medium",
-    color: Colors.textMuted,
-  },
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
-    gap: 4,
-  },
-  line: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 12,
-    paddingVertical: 2,
-  },
-  lineLabel: {
-    fontSize: 12,
-    fontFamily: "Inter_500Medium",
-    color: Colors.textMuted,
-    flexShrink: 0,
-    maxWidth: "45%",
-  },
-  lineValue: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    color: Colors.text,
-    flex: 1,
-    textAlign: "right",
-  },
-  lineValueProminent: {
-    fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.accent,
-  },
-});
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+    content: { paddingHorizontal: 16, paddingTop: 16 },
+    countRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 8,
+      paddingHorizontal: 4,
+    },
+    count: {
+      fontSize: 12,
+      fontFamily: "Inter_600SemiBold",
+      color: c.textSecondary,
+    },
+    range: {
+      fontSize: 11,
+      fontFamily: "Inter_500Medium",
+      color: c.textMuted,
+    },
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 14,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: c.surfaceBorder,
+      gap: 4,
+    },
+    line: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      gap: 12,
+      paddingVertical: 2,
+    },
+    lineLabel: {
+      fontSize: 12,
+      fontFamily: "Inter_500Medium",
+      color: c.textMuted,
+      flexShrink: 0,
+      maxWidth: "45%",
+    },
+    lineValue: {
+      fontSize: 13,
+      fontFamily: "Inter_500Medium",
+      color: c.text,
+      flex: 1,
+      textAlign: "right",
+    },
+    lineValueProminent: {
+      fontSize: 14,
+      fontFamily: "Inter_600SemiBold",
+      color: c.accent,
+    },
+  });
 
 export default ReportListScreen;

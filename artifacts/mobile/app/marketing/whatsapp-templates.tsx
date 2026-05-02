@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
   ActivityIndicator, Modal, KeyboardAvoidingView, Platform, Alert,
@@ -6,7 +6,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
@@ -40,6 +40,8 @@ const CATEGORIAS: Array<{ value: string; label: string; icon: keyof typeof Feath
 const PLACEHOLDERS = ["{cliente}", "{servico}", "{data}", "{hora}", "{profissional}", "{salao}", "{valor}"];
 
 export default function WhatsappTemplatesScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
@@ -135,7 +137,7 @@ export default function WhatsappTemplatesScreen() {
             style={[styles.tab, categoria === c.value && styles.tabActive]}
             onPress={() => setCategoria(c.value)}
           >
-            <Feather name={c.icon} size={13} color={categoria === c.value ? Colors.accent : Colors.textSecondary} />
+            <Feather name={c.icon} size={13} color={categoria === c.value ? colors.accent : colors.textSecondary} />
             <Text style={[styles.tabText, categoria === c.value && styles.tabTextActive]}>{c.label}</Text>
           </TouchableOpacity>
         ))}
@@ -158,17 +160,17 @@ export default function WhatsappTemplatesScreen() {
           <View key={t.id} style={styles.card}>
             <View style={styles.cardTop}>
               <Text style={styles.titulo} numberOfLines={1}>{t.titulo}</Text>
-              {t.favorito ? <Feather name="star" size={14} color={Colors.accent} /> : null}
+              {t.favorito ? <Feather name="star" size={14} color={colors.accent} /> : null}
             </View>
             <Text style={styles.conteudo} numberOfLines={4}>{t.conteudo}</Text>
             <View style={styles.actions}>
               <TouchableOpacity style={styles.actionBtn} onPress={() => openEdit(t)}>
-                <Feather name="edit-2" size={14} color={Colors.text} />
+                <Feather name="edit-2" size={14} color={colors.text} />
                 <Text style={styles.actionText}>Editar</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={() => onDelete(t)}>
-                <Feather name="trash-2" size={14} color={Colors.error} />
-                <Text style={[styles.actionText, { color: Colors.error }]}>Excluir</Text>
+                <Feather name="trash-2" size={14} color={colors.error} />
+                <Text style={[styles.actionText, { color: colors.error }]}>Excluir</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -185,13 +187,13 @@ export default function WhatsappTemplatesScreen() {
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>{editing ? "Editar template" : "Novo template"}</Text>
                 <TouchableOpacity onPress={() => setModalOpen(false)} accessibilityLabel="Fechar">
-                  <Feather name="x" size={22} color={Colors.text} />
+                  <Feather name="x" size={22} color={colors.text} />
                 </TouchableOpacity>
               </View>
 
               {formError ? (
                 <View style={styles.errorBox}>
-                  <Feather name="alert-circle" size={14} color={Colors.error} />
+                  <Feather name="alert-circle" size={14} color={colors.error} />
                   <Text style={styles.errorText}>{formError}</Text>
                 </View>
               ) : null}
@@ -202,7 +204,7 @@ export default function WhatsappTemplatesScreen() {
                 value={titulo}
                 onChangeText={setTitulo}
                 placeholder="Ex: Confirmação amistosa"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
 
               <Text style={styles.label}>Conteúdo *</Text>
@@ -211,7 +213,7 @@ export default function WhatsappTemplatesScreen() {
                 value={conteudo}
                 onChangeText={setConteudo}
                 placeholder="Olá {cliente}! Confirma seu horário às {hora}?"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 multiline
                 textAlignVertical="top"
               />
@@ -239,7 +241,7 @@ export default function WhatsappTemplatesScreen() {
                 onPress={() => { setFormError(null); saveMut.mutate(); }}
                 disabled={saveMut.isPending}
               >
-                {saveMut.isPending ? <ActivityIndicator color="#000" /> : (
+                {saveMut.isPending ? <ActivityIndicator color={colors.invertedText} /> : (
                   <Text style={styles.saveBtnText}>{editing ? "Salvar alterações" : "Criar template"}</Text>
                 )}
               </TouchableOpacity>
@@ -251,71 +253,72 @@ export default function WhatsappTemplatesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
   tabsRow: { gap: 8, paddingBottom: 12 },
   tab: {
     flexDirection: "row", alignItems: "center", gap: 6,
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 18,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder,
   },
-  tabActive: { backgroundColor: Colors.accent + "22", borderColor: Colors.accent },
-  tabText: { fontSize: 12, fontFamily: "Inter_500Medium", color: Colors.textSecondary },
-  tabTextActive: { color: Colors.accent },
+  tabActive: { backgroundColor: c.accent + "22", borderColor: c.accent },
+  tabText: { fontSize: 12, fontFamily: "Inter_500Medium", color: c.textSecondary },
+  tabTextActive: { color: c.accent },
   card: {
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
-    marginBottom: 10, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderRadius: 14, padding: 14,
+    marginBottom: 10, borderWidth: 1, borderColor: c.surfaceBorder,
   },
   cardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
-  titulo: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: Colors.text, flex: 1 },
-  conteudo: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.textSecondary, lineHeight: 19 },
-  actions: { flexDirection: "row", gap: 8, marginTop: 12, borderTopWidth: 1, borderTopColor: Colors.surfaceBorder, paddingTop: 10 },
+  titulo: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: c.text, flex: 1 },
+  conteudo: { fontSize: 13, fontFamily: "Inter_400Regular", color: c.textSecondary, lineHeight: 19 },
+  actions: { flexDirection: "row", gap: 8, marginTop: 12, borderTopWidth: 1, borderTopColor: c.surfaceBorder, paddingTop: 10 },
   actionBtn: {
     flexDirection: "row", alignItems: "center", gap: 6,
     paddingHorizontal: 10, paddingVertical: 6,
-    backgroundColor: Colors.surfaceLight, borderRadius: 8,
+    backgroundColor: c.surfaceLight, borderRadius: 8,
   },
-  actionText: { fontSize: 12, fontFamily: "Inter_500Medium", color: Colors.text },
+  actionText: { fontSize: 12, fontFamily: "Inter_500Medium", color: c.text },
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
   modalCard: {
-    backgroundColor: Colors.background,
+    backgroundColor: c.background,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 20, paddingBottom: 32, maxHeight: "92%",
-    borderTopWidth: 1, borderColor: Colors.surfaceBorder,
+    borderTopWidth: 1, borderColor: c.surfaceBorder,
   },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: Colors.text },
+  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: c.text },
   errorBox: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: Colors.error + "15", borderColor: Colors.error + "40",
+    backgroundColor: c.error + "15", borderColor: c.error + "40",
     borderWidth: 1, padding: 10, borderRadius: 10, marginBottom: 12,
   },
-  errorText: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.error, flex: 1 },
+  errorText: { fontSize: 13, fontFamily: "Inter_400Regular", color: c.error, flex: 1 },
   label: {
-    fontSize: 12, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary,
+    fontSize: 12, fontFamily: "Inter_600SemiBold", color: c.textSecondary,
     marginTop: 12, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder,
     borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
-    color: Colors.text, fontSize: 15, fontFamily: "Inter_400Regular",
+    color: c.text, fontSize: 15, fontFamily: "Inter_400Regular",
     minHeight: 46,
   },
   textarea: { minHeight: 140 },
-  hint: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.textMuted, marginTop: 10, marginBottom: 6 },
+  hint: { fontSize: 11, fontFamily: "Inter_400Regular", color: c.textMuted, marginTop: 10, marginBottom: 6 },
   placeholderRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   placeholderChip: {
     paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8,
-    backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder,
   },
-  placeholderText: { fontSize: 11, fontFamily: "Inter_500Medium", color: Colors.accent },
+  placeholderText: { fontSize: 11, fontFamily: "Inter_500Medium", color: c.accent },
   previewBubble: {
     backgroundColor: "#1f3b2c", borderRadius: 12, padding: 12,
-    borderWidth: 1, borderColor: Colors.success + "44",
+    borderWidth: 1, borderColor: c.success + "44",
   },
-  previewBubbleText: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.text, lineHeight: 19 },
+  previewBubbleText: { fontSize: 13, fontFamily: "Inter_400Regular", color: c.text, lineHeight: 19 },
   saveBtn: {
-    marginTop: 18, backgroundColor: Colors.accent, borderRadius: 12,
+    marginTop: 18, backgroundColor: c.accent, borderRadius: 12,
     height: 50, alignItems: "center", justifyContent: "center",
   },
-  saveBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#000" },
+  saveBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: c.invertedText },
 });

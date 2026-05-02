@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
   ActivityIndicator, Modal, KeyboardAvoidingView, Platform, Switch, Alert,
@@ -6,7 +6,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { EmptyState } from "@/components/EmptyState";
@@ -42,6 +42,8 @@ const TIPOS = [
 ] as const;
 
 export default function PesquisasScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
@@ -145,8 +147,8 @@ export default function PesquisasScreen() {
           <View key={p.id} style={styles.card}>
             <View style={styles.cardTop}>
               <Text style={styles.titulo} numberOfLines={1}>{p.titulo}</Text>
-              <View style={[styles.pill, { backgroundColor: p.ativo ? Colors.success + "22" : Colors.textMuted + "22" }]}>
-                <Text style={[styles.pillText, { color: p.ativo ? Colors.success : Colors.textMuted }]}>
+              <View style={[styles.pill, { backgroundColor: p.ativo ? colors.success + "22" : colors.textMuted + "22" }]}>
+                <Text style={[styles.pillText, { color: p.ativo ? colors.success : colors.textMuted }]}>
                   {p.ativo ? "ATIVO" : "INATIVO"}
                 </Text>
               </View>
@@ -157,16 +159,16 @@ export default function PesquisasScreen() {
             </Text>
             <View style={styles.actions}>
               <TouchableOpacity style={styles.actionBtn} onPress={() => setStatsOpen(p)}>
-                <Feather name="bar-chart-2" size={14} color={Colors.text} />
+                <Feather name="bar-chart-2" size={14} color={colors.text} />
                 <Text style={styles.actionText}>Respostas</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={() => toggleMut.mutate(p)}>
-                <Feather name={p.ativo ? "pause" : "play"} size={14} color={Colors.text} />
+                <Feather name={p.ativo ? "pause" : "play"} size={14} color={colors.text} />
                 <Text style={styles.actionText}>{p.ativo ? "Desativar" : "Ativar"}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={() => onDelete(p)}>
-                <Feather name="trash-2" size={14} color={Colors.error} />
-                <Text style={[styles.actionText, { color: Colors.error }]}>Excluir</Text>
+                <Feather name="trash-2" size={14} color={colors.error} />
+                <Text style={[styles.actionText, { color: colors.error }]}>Excluir</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -183,13 +185,13 @@ export default function PesquisasScreen() {
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Nova pesquisa</Text>
                 <TouchableOpacity onPress={() => setModalOpen(false)} accessibilityLabel="Fechar">
-                  <Feather name="x" size={22} color={Colors.text} />
+                  <Feather name="x" size={22} color={colors.text} />
                 </TouchableOpacity>
               </View>
 
               {formError ? (
                 <View style={styles.errorBox}>
-                  <Feather name="alert-circle" size={14} color={Colors.error} />
+                  <Feather name="alert-circle" size={14} color={colors.error} />
                   <Text style={styles.errorText}>{formError}</Text>
                 </View>
               ) : null}
@@ -200,7 +202,7 @@ export default function PesquisasScreen() {
                 value={titulo}
                 onChangeText={setTitulo}
                 placeholder="Ex: Pesquisa pós-atendimento"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
 
               <Text style={styles.label}>Perguntas</Text>
@@ -210,7 +212,7 @@ export default function PesquisasScreen() {
                     <Text style={styles.pIdx}>#{idx + 1}</Text>
                     {perguntas.length > 1 ? (
                       <TouchableOpacity onPress={() => removeP(idx)}>
-                        <Feather name="x" size={16} color={Colors.error} />
+                        <Feather name="x" size={16} color={colors.error} />
                       </TouchableOpacity>
                     ) : null}
                   </View>
@@ -219,7 +221,7 @@ export default function PesquisasScreen() {
                     value={p.texto}
                     onChangeText={(v) => updateP(idx, { texto: v })}
                     placeholder="Texto da pergunta"
-                    placeholderTextColor={Colors.textMuted}
+                    placeholderTextColor={colors.textMuted}
                   />
                   <View style={[styles.segGroup, { marginTop: 8 }]}>
                     {TIPOS.map((t) => (
@@ -235,7 +237,7 @@ export default function PesquisasScreen() {
                 </View>
               ))}
               <TouchableOpacity style={styles.addPBtn} onPress={addP}>
-                <Feather name="plus" size={14} color={Colors.accent} />
+                <Feather name="plus" size={14} color={colors.accent} />
                 <Text style={styles.addPText}>Adicionar pergunta</Text>
               </TouchableOpacity>
 
@@ -244,8 +246,8 @@ export default function PesquisasScreen() {
                 <Switch
                   value={ativo}
                   onValueChange={setAtivo}
-                  trackColor={{ false: Colors.surfaceLight, true: Colors.accent + "80" }}
-                  thumbColor={ativo ? Colors.accent : "#888"}
+                  trackColor={{ false: colors.surfaceLight, true: colors.accent + "80" }}
+                  thumbColor={ativo ? colors.accent : "#888"}
                 />
               </View>
               <View style={styles.switchRow}>
@@ -253,8 +255,8 @@ export default function PesquisasScreen() {
                 <Switch
                   value={envioAutomatico}
                   onValueChange={setEnvioAutomatico}
-                  trackColor={{ false: Colors.surfaceLight, true: Colors.accent + "80" }}
-                  thumbColor={envioAutomatico ? Colors.accent : "#888"}
+                  trackColor={{ false: colors.surfaceLight, true: colors.accent + "80" }}
+                  thumbColor={envioAutomatico ? colors.accent : "#888"}
                 />
               </View>
 
@@ -263,7 +265,7 @@ export default function PesquisasScreen() {
                 onPress={() => { setFormError(null); saveMut.mutate(); }}
                 disabled={saveMut.isPending}
               >
-                {saveMut.isPending ? <ActivityIndicator color="#000" /> : <Text style={styles.saveBtnText}>Criar pesquisa</Text>}
+                {saveMut.isPending ? <ActivityIndicator color={colors.invertedText} /> : <Text style={styles.saveBtnText}>Criar pesquisa</Text>}
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -276,12 +278,12 @@ export default function PesquisasScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle} numberOfLines={1}>{statsOpen?.titulo}</Text>
               <TouchableOpacity onPress={() => setStatsOpen(null)} accessibilityLabel="Fechar">
-                <Feather name="x" size={22} color={Colors.text} />
+                <Feather name="x" size={22} color={colors.text} />
               </TouchableOpacity>
             </View>
             {stats.isLoading ? (
               <View style={{ paddingVertical: 30, alignItems: "center" }}>
-                <ActivityIndicator color={Colors.accent} />
+                <ActivityIndicator color={colors.accent} />
               </View>
             ) : stats.isError ? (
               <ErrorView error={stats.error} onRetry={() => stats.refetch()} />
@@ -321,88 +323,89 @@ export default function PesquisasScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
-    marginBottom: 10, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderRadius: 14, padding: 14,
+    marginBottom: 10, borderWidth: 1, borderColor: c.surfaceBorder,
   },
   cardTop: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
-  titulo: { flex: 1, fontSize: 15, fontFamily: "Inter_600SemiBold", color: Colors.text },
-  meta: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginBottom: 10 },
+  titulo: { flex: 1, fontSize: 15, fontFamily: "Inter_600SemiBold", color: c.text },
+  meta: { fontSize: 12, fontFamily: "Inter_400Regular", color: c.textSecondary, marginBottom: 10 },
   pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   pillText: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
-  actions: { flexDirection: "row", gap: 8, borderTopWidth: 1, borderTopColor: Colors.surfaceBorder, paddingTop: 10 },
+  actions: { flexDirection: "row", gap: 8, borderTopWidth: 1, borderTopColor: c.surfaceBorder, paddingTop: 10 },
   actionBtn: {
     flexDirection: "row", alignItems: "center", gap: 6,
     paddingHorizontal: 10, paddingVertical: 6,
-    backgroundColor: Colors.surfaceLight, borderRadius: 8,
+    backgroundColor: c.surfaceLight, borderRadius: 8,
   },
-  actionText: { fontSize: 12, fontFamily: "Inter_500Medium", color: Colors.text },
+  actionText: { fontSize: 12, fontFamily: "Inter_500Medium", color: c.text },
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
   modalCard: {
-    backgroundColor: Colors.background,
+    backgroundColor: c.background,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 20, paddingBottom: 32, maxHeight: "92%",
-    borderTopWidth: 1, borderColor: Colors.surfaceBorder,
+    borderTopWidth: 1, borderColor: c.surfaceBorder,
   },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: Colors.text, flex: 1 },
+  modalTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: c.text, flex: 1 },
   errorBox: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: Colors.error + "15", borderColor: Colors.error + "40",
+    backgroundColor: c.error + "15", borderColor: c.error + "40",
     borderWidth: 1, padding: 10, borderRadius: 10, marginBottom: 12,
   },
-  errorText: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.error, flex: 1 },
+  errorText: { fontSize: 13, fontFamily: "Inter_400Regular", color: c.error, flex: 1 },
   label: {
-    fontSize: 12, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary,
+    fontSize: 12, fontFamily: "Inter_600SemiBold", color: c.textSecondary,
     marginTop: 12, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder,
     borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
-    color: Colors.text, fontSize: 15, fontFamily: "Inter_400Regular",
+    color: c.text, fontSize: 15, fontFamily: "Inter_400Regular",
     minHeight: 46,
   },
   pBox: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 12, padding: 12, marginBottom: 8,
-    borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surfaceLight, borderRadius: 12, padding: 12, marginBottom: 8,
+    borderWidth: 1, borderColor: c.surfaceBorder,
   },
   pHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  pIdx: { fontSize: 12, fontFamily: "Inter_700Bold", color: Colors.accent },
+  pIdx: { fontSize: 12, fontFamily: "Inter_700Bold", color: c.accent },
   segGroup: { flexDirection: "row", gap: 6 },
   segBtn: {
     flex: 1, paddingVertical: 8, borderRadius: 8,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder,
     alignItems: "center",
   },
-  segBtnActive: { backgroundColor: Colors.accent + "22", borderColor: Colors.accent },
-  segText: { fontSize: 11, fontFamily: "Inter_500Medium", color: Colors.textSecondary },
-  segTextActive: { color: Colors.accent },
+  segBtnActive: { backgroundColor: c.accent + "22", borderColor: c.accent },
+  segText: { fontSize: 11, fontFamily: "Inter_500Medium", color: c.textSecondary },
+  segTextActive: { color: c.accent },
   addPBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
     paddingVertical: 10, borderRadius: 10,
-    borderWidth: 1, borderStyle: "dashed", borderColor: Colors.accent,
+    borderWidth: 1, borderStyle: "dashed", borderColor: c.accent,
   },
-  addPText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: Colors.accent },
+  addPText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: c.accent },
   switchRow: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     marginTop: 14, paddingVertical: 4,
   },
-  switchLabel: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium", color: Colors.text },
+  switchLabel: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium", color: c.text },
   saveBtn: {
-    marginTop: 18, backgroundColor: Colors.accent, borderRadius: 12,
+    marginTop: 18, backgroundColor: c.accent, borderRadius: 12,
     height: 50, alignItems: "center", justifyContent: "center",
   },
-  saveBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#000" },
+  saveBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: c.invertedText },
   statsRow: { flexDirection: "row", gap: 10 },
   statBox: {
-    flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 12, padding: 14, alignItems: "center",
+    flex: 1, backgroundColor: c.surfaceLight, borderRadius: 12, padding: 14, alignItems: "center",
   },
-  statValue: { fontSize: 26, fontFamily: "Inter_700Bold", color: Colors.text },
-  statLabel: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.textMuted, marginTop: 4 },
+  statValue: { fontSize: 26, fontFamily: "Inter_700Bold", color: c.text },
+  statLabel: { fontSize: 11, fontFamily: "Inter_400Regular", color: c.textMuted, marginTop: 4 },
   distRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 },
-  distLabel: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.text, width: 28 },
-  distBarBg: { flex: 1, height: 10, borderRadius: 5, backgroundColor: Colors.surfaceLight },
-  distBarFill: { height: 10, borderRadius: 5, backgroundColor: Colors.accent },
-  distCount: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.textSecondary, width: 30, textAlign: "right" },
+  distLabel: { fontSize: 13, fontFamily: "Inter_500Medium", color: c.text, width: 28 },
+  distBarBg: { flex: 1, height: 10, borderRadius: 5, backgroundColor: c.surfaceLight },
+  distBarFill: { height: 10, borderRadius: 5, backgroundColor: c.accent },
+  distCount: { fontSize: 13, fontFamily: "Inter_500Medium", color: c.textSecondary, width: 30, textAlign: "right" },
 });

@@ -1,9 +1,10 @@
 import { Stack } from "expo-router";
-import Colors from "@/constants/colors";
+import { useColors } from "@/lib/theme";
 
 export default function ComandasLayout() {
+  const colors = useColors();
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.background } }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
       <Stack.Screen name="[id]" />
     </Stack>
   );

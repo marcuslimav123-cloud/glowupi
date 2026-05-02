@@ -13,7 +13,7 @@ import { Feather } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorView } from "@/components/ErrorView";
@@ -62,6 +62,8 @@ function periodoRange(p: Periodo): { dataInicio: string; dataFim: string } {
 }
 
 export default function ComandasScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { barbeariaId } = useAuth();
@@ -169,7 +171,7 @@ export default function ComandasScreen() {
             <Text style={styles.summaryLabel}>Pendente hoje</Text>
             <Text style={styles.summarySub}>{abertas.length} comanda{abertas.length !== 1 ? "s" : ""}</Text>
           </View>
-          <Text style={[styles.summaryValue, { color: Colors.warning }]}>{formatCurrency(totalAbertas)}</Text>
+          <Text style={[styles.summaryValue, { color: colors.warning }]}>{formatCurrency(totalAbertas)}</Text>
         </View>
       )}
 
@@ -196,7 +198,7 @@ export default function ComandasScreen() {
         <View style={styles.summaryCards}>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabelSm}>Faturamento</Text>
-            <Text style={[styles.summaryValueSm, { color: Colors.success }]}>{formatCurrency(totalFechadas)}</Text>
+            <Text style={[styles.summaryValueSm, { color: colors.success }]}>{formatCurrency(totalFechadas)}</Text>
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabelSm}>Comandas</Text>
@@ -204,7 +206,7 @@ export default function ComandasScreen() {
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabelSm}>Comissões</Text>
-            <Text style={[styles.summaryValueSm, { color: Colors.accent }]}>{formatCurrency(totalComissoes)}</Text>
+            <Text style={[styles.summaryValueSm, { color: colors.accent }]}>{formatCurrency(totalComissoes)}</Text>
           </View>
         </View>
       )}
@@ -216,7 +218,7 @@ export default function ComandasScreen() {
           { paddingBottom: Platform.OS === "web" ? 118 : 100 + insets.bottom },
         ]}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
         }
       >
         {isLoading ? (
@@ -240,23 +242,23 @@ export default function ComandasScreen() {
               <TouchableOpacity key={a.id} style={styles.card} onPress={() => goAberta(a)} activeOpacity={0.85}>
                 <View style={styles.cardHeader}>
                   <View style={styles.timeBadge}>
-                    <Feather name="clock" size={12} color={Colors.accent} />
+                    <Feather name="clock" size={12} color={colors.accent} />
                     <Text style={styles.timeText}>{a.horaInicio?.slice(0, 5)}</Text>
                   </View>
-                  <View style={[styles.statusBadge, { backgroundColor: Colors.warning + "20" }]}>
-                    <Text style={[styles.statusText, { color: Colors.warning }]}>Aberta</Text>
+                  <View style={[styles.statusBadge, { backgroundColor: colors.warning + "20" }]}>
+                    <Text style={[styles.statusText, { color: colors.warning }]}>Aberta</Text>
                   </View>
                 </View>
                 <Text style={styles.clientName}>{a.clienteNome}</Text>
                 {a.servicoNome && (
                   <View style={styles.lineRow}>
-                    <Feather name="scissors" size={12} color={Colors.textSecondary} />
+                    <Feather name="scissors" size={12} color={colors.textSecondary} />
                     <Text style={styles.line}>{a.servicoNome}</Text>
                   </View>
                 )}
                 {a.profissionalNome && (
                   <View style={styles.lineRow}>
-                    <Feather name="user" size={12} color={Colors.textSecondary} />
+                    <Feather name="user" size={12} color={colors.textSecondary} />
                     <Text style={styles.line}>{a.profissionalNome}</Text>
                   </View>
                 )}
@@ -282,20 +284,20 @@ export default function ComandasScreen() {
               <TouchableOpacity key={c.id} style={styles.card} onPress={() => goFechada(c)} activeOpacity={0.85}>
                 <View style={styles.cardHeader}>
                   <Text style={styles.numero}>#{c.id}</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: Colors.success + "20" }]}>
-                    <Text style={[styles.statusText, { color: Colors.success }]}>Paga</Text>
+                  <View style={[styles.statusBadge, { backgroundColor: colors.success + "20" }]}>
+                    <Text style={[styles.statusText, { color: colors.success }]}>Paga</Text>
                   </View>
                 </View>
                 <Text style={styles.clientName}>{c.clienteNome ?? "Sem cliente"}</Text>
                 {c.profissionalNome && (
                   <View style={styles.lineRow}>
-                    <Feather name="user" size={12} color={Colors.textSecondary} />
+                    <Feather name="user" size={12} color={colors.textSecondary} />
                     <Text style={styles.line}>{c.profissionalNome}</Text>
                   </View>
                 )}
                 {c.dataFechamento && (
                   <View style={styles.lineRow}>
-                    <Feather name="calendar" size={12} color={Colors.textSecondary} />
+                    <Feather name="calendar" size={12} color={colors.textSecondary} />
                     <Text style={styles.line}>
                       {new Date(c.dataFechamento).toLocaleDateString("pt-BR")} •{" "}
                       {new Date(c.dataFechamento).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
@@ -303,7 +305,7 @@ export default function ComandasScreen() {
                   </View>
                 )}
                 <View style={styles.cardFooter}>
-                  <Text style={[styles.value, { color: Colors.success }]}>{formatCurrency(c.valorTotal)}</Text>
+                  <Text style={[styles.value, { color: colors.success }]}>{formatCurrency(c.valorTotal)}</Text>
                   {c.pagamentos && c.pagamentos.length > 0 && (
                     <View style={styles.pagsRow}>
                       {c.pagamentos.slice(0, 3).map((p, i) => (
@@ -323,65 +325,66 @@ export default function ComandasScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+const makeStyles = (c: ColorPalette) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
-  title: { fontSize: 26, fontFamily: "Inter_700Bold", color: Colors.text },
-  subtitle: { fontSize: 14, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginTop: 2 },
+  title: { fontSize: 26, fontFamily: "Inter_700Bold", color: c.text },
+  subtitle: { fontSize: 14, fontFamily: "Inter_400Regular", color: c.textSecondary, marginTop: 2 },
   tabs: { flexDirection: "row", paddingHorizontal: 16, paddingTop: 12, gap: 8 },
   tabBtn: {
     flex: 1, paddingVertical: 10, borderRadius: 10,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center",
+    backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, alignItems: "center",
   },
-  tabBtnActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  tabText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary },
-  tabTextActive: { color: "#000" },
+  tabBtnActive: { backgroundColor: c.accent, borderColor: c.accent },
+  tabText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: c.textSecondary },
+  tabTextActive: { color: c.invertedText },
   periodoRow: { flexDirection: "row", paddingHorizontal: 16, paddingTop: 12, gap: 6 },
   chip: {
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder,
   },
-  chipActive: { backgroundColor: Colors.accent + "30", borderColor: Colors.accent },
-  chipText: { fontSize: 12, fontFamily: "Inter_500Medium", color: Colors.textSecondary },
-  chipTextActive: { color: Colors.accent, fontFamily: "Inter_600SemiBold" },
+  chipActive: { backgroundColor: c.accent + "30", borderColor: c.accent },
+  chipText: { fontSize: 12, fontFamily: "Inter_500Medium", color: c.textSecondary },
+  chipTextActive: { color: c.accent, fontFamily: "Inter_600SemiBold" },
   summary: {
     marginHorizontal: 16, marginTop: 12, padding: 14, borderRadius: 14,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder,
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
   },
-  summaryLabel: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.textSecondary },
-  summarySub: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.textMuted, marginTop: 2 },
-  summaryValue: { fontSize: 18, fontFamily: "Inter_700Bold", color: Colors.success },
+  summaryLabel: { fontSize: 13, fontFamily: "Inter_500Medium", color: c.textSecondary },
+  summarySub: { fontSize: 11, fontFamily: "Inter_400Regular", color: c.textMuted, marginTop: 2 },
+  summaryValue: { fontSize: 18, fontFamily: "Inter_700Bold", color: c.success },
   summaryCards: { flexDirection: "row", paddingHorizontal: 16, paddingTop: 12, gap: 8 },
   summaryCard: {
     flex: 1, padding: 12, borderRadius: 12,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder,
   },
-  summaryLabelSm: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.textMuted, marginBottom: 4 },
-  summaryValueSm: { fontSize: 15, fontFamily: "Inter_700Bold", color: Colors.text },
+  summaryLabelSm: { fontSize: 11, fontFamily: "Inter_400Regular", color: c.textMuted, marginBottom: 4 },
+  summaryValueSm: { fontSize: 15, fontFamily: "Inter_700Bold", color: c.text },
   list: { flex: 1 },
   listContent: { paddingHorizontal: 16, paddingTop: 12 },
   card: {
-    backgroundColor: Colors.surface, borderRadius: 16, padding: 14, marginBottom: 10,
-    borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderRadius: 16, padding: 14, marginBottom: 10,
+    borderWidth: 1, borderColor: c.surfaceBorder,
   },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  timeBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: Colors.accent + "20", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  timeText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: Colors.accent },
-  numero: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: Colors.text },
+  timeBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: c.accent + "20", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  timeText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: c.accent },
+  numero: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: c.text },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
   statusText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  clientName: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: Colors.text, marginBottom: 6 },
+  clientName: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: c.text, marginBottom: 6 },
   lineRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 3 },
-  line: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.textSecondary },
+  line: { fontSize: 13, fontFamily: "Inter_400Regular", color: c.textSecondary },
   cardFooter: {
-    marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: Colors.surfaceBorder,
+    marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: c.surfaceBorder,
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
   },
-  value: { fontSize: 16, fontFamily: "Inter_700Bold", color: Colors.accent },
-  cta: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: Colors.accent, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 9 },
-  ctaText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#000" },
+  value: { fontSize: 16, fontFamily: "Inter_700Bold", color: c.accent },
+  cta: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: c.accent, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 9 },
+  ctaText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: c.invertedText },
   pagsRow: { flexDirection: "row", gap: 4 },
-  pagBadge: { backgroundColor: Colors.surfaceLight, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  pagBadgeText: { fontSize: 10, fontFamily: "Inter_500Medium", color: Colors.textSecondary, textTransform: "capitalize" },
+  pagBadge: { backgroundColor: c.surfaceLight, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  pagBadgeText: { fontSize: 10, fontFamily: "Inter_500Medium", color: c.textSecondary, textTransform: "capitalize" },
 });

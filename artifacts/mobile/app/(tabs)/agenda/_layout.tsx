@@ -1,13 +1,14 @@
 import { Stack } from "expo-router";
 import React from "react";
-import Colors from "@/constants/colors";
+import { useColors } from "@/lib/theme";
 
 export default function AgendaLayout() {
+  const colors = useColors();
   return (
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: Colors.background },
+        contentStyle: { backgroundColor: colors.background },
       }}
     />
   );

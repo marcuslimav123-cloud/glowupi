@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -21,7 +21,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorView } from "@/components/ErrorView";
 import { SkeletonList } from "@/components/Skeleton";
 import { useAuth } from "@/contexts/AuthContext";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { fetchJson, formatCurrency } from "@/lib/api";
 
 type Servico = {
@@ -39,6 +39,8 @@ type Servico = {
 export default function ServicosScreen() {
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [editing, setEditing] = useState<Servico | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -110,13 +112,13 @@ export default function ServicosScreen() {
               </View>
               <View style={styles.rowActions}>
                 <TouchableOpacity style={styles.miniBtn} onPress={() => toggleMut.mutate(s)}>
-                  <Feather name={s.ativo ? "toggle-right" : "toggle-left"} size={20} color={s.ativo ? Colors.success : Colors.textSecondary} />
+                  <Feather name={s.ativo ? "toggle-right" : "toggle-left"} size={20} color={s.ativo ? colors.success : colors.textSecondary} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.miniBtn} onPress={() => { setEditing(s); setModalOpen(true); }}>
-                  <Feather name="edit-2" size={16} color={Colors.textSecondary} />
+                  <Feather name="edit-2" size={16} color={colors.textSecondary} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.miniBtn} onPress={() => handleDelete(s)}>
-                  <Feather name="trash-2" size={16} color={Colors.error} />
+                  <Feather name="trash-2" size={16} color={colors.error} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -136,6 +138,8 @@ export default function ServicosScreen() {
 }
 
 function ServicoFormModal({ visible, editing, onClose, onSave, saving }: { visible: boolean; editing: Servico | null; onClose: () => void; onSave: (d: any) => void; saving: boolean }) {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [nome, setNome] = useState("");
   const [descricao, setDescricao] = useState("");
   const [preco, setPreco] = useState("");
@@ -177,24 +181,24 @@ function ServicoFormModal({ visible, editing, onClose, onSave, saving }: { visib
         <View style={styles.modalCard}>
           <View style={styles.modalHead}>
             <Text style={styles.modalTitle}>{editing ? "Editar serviço" : "Novo serviço"}</Text>
-            <TouchableOpacity onPress={onClose}><Feather name="x" size={22} color={Colors.text} /></TouchableOpacity>
+            <TouchableOpacity onPress={onClose}><Feather name="x" size={22} color={colors.text} /></TouchableOpacity>
           </View>
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Field label="Nome *"><TextInput style={styles.input} value={nome} onChangeText={setNome} placeholderTextColor={Colors.textMuted} placeholder="Ex: Corte feminino" /></Field>
-            <Field label="Descrição"><TextInput style={[styles.input, { height: 60, textAlignVertical: "top" }]} value={descricao} onChangeText={setDescricao} multiline placeholderTextColor={Colors.textMuted} /></Field>
+            <Field label="Nome *"><TextInput style={styles.input} value={nome} onChangeText={setNome} placeholderTextColor={colors.textMuted} placeholder="Ex: Corte feminino" /></Field>
+            <Field label="Descrição"><TextInput style={[styles.input, { height: 60, textAlignVertical: "top" }]} value={descricao} onChangeText={setDescricao} multiline placeholderTextColor={colors.textMuted} /></Field>
             <View style={{ flexDirection: "row", gap: 10 }}>
               <View style={{ flex: 1 }}>
-                <Field label="Preço (R$) *"><TextInput style={styles.input} value={preco} onChangeText={setPreco} keyboardType="decimal-pad" placeholder="35.00" placeholderTextColor={Colors.textMuted} /></Field>
+                <Field label="Preço (R$) *"><TextInput style={styles.input} value={preco} onChangeText={setPreco} keyboardType="decimal-pad" placeholder="35.00" placeholderTextColor={colors.textMuted} /></Field>
               </View>
               <View style={{ flex: 1 }}>
                 <Field label="Duração (min)"><TextInput style={styles.input} value={duracao} onChangeText={setDuracao} keyboardType="number-pad" /></Field>
               </View>
             </View>
-            <Field label="Comissão (%)"><TextInput style={styles.input} value={comissao} onChangeText={setComissao} keyboardType="decimal-pad" placeholder="30" placeholderTextColor={Colors.textMuted} /></Field>
+            <Field label="Comissão (%)"><TextInput style={styles.input} value={comissao} onChangeText={setComissao} keyboardType="decimal-pad" placeholder="30" placeholderTextColor={colors.textMuted} /></Field>
             <SwitchRow label="Disponível para agendamento online" value={disponivelOnline} onChange={setDisponivelOnline} />
             <SwitchRow label="Incluir no programa de fidelidade" value={fidelidadeAtiva} onChange={setFidelidadeAtiva} />
             <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} disabled={saving} onPress={handleSubmit}>
-              {saving ? <ActivityIndicator color="#000" /> : <Text style={styles.saveBtnText}>Salvar</Text>}
+              {saving ? <ActivityIndicator color={colors.invertedText} /> : <Text style={styles.saveBtnText}>Salvar</Text>}
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -204,32 +208,36 @@ function ServicoFormModal({ visible, editing, onClose, onSave, saving }: { visib
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return <View style={{ marginTop: 12 }}><Text style={styles.label}>{label}</Text>{children}</View>;
 }
 function SwitchRow({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.switchRow}>
-      <Text style={{ color: Colors.text, flex: 1, fontSize: 13 }}>{label}</Text>
-      <Switch value={value} onValueChange={onChange} trackColor={{ true: Colors.accent, false: Colors.surfaceLight }} thumbColor={value ? "#000" : "#fff"} />
+      <Text style={{ color: colors.text, flex: 1, fontSize: 13 }}>{label}</Text>
+      <Switch value={value} onValueChange={onChange} trackColor={{ true: colors.accent, false: colors.surfaceLight }} thumbColor={value ? "#000" : "#fff"} />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: Colors.surface, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  cardTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: Colors.text },
-  cardSub: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  cardDesc: { fontSize: 12, color: Colors.textMuted, marginTop: 4 },
-  tagMuted: { fontSize: 10, color: Colors.textMuted, fontFamily: "Inter_700Bold", textTransform: "uppercase" },
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
+  card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: c.surface, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: c.surfaceBorder },
+  cardTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: c.text },
+  cardSub: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
+  cardDesc: { fontSize: 12, color: c.textMuted, marginTop: 4 },
+  tagMuted: { fontSize: 10, color: c.textMuted, fontFamily: "Inter_700Bold", textTransform: "uppercase" },
   rowActions: { flexDirection: "row", gap: 4 },
-  miniBtn: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: Colors.surfaceLight },
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-  modalCard: { backgroundColor: Colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 32, maxHeight: "90%", borderTopWidth: 1, borderColor: Colors.surfaceBorder },
+  miniBtn: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: c.surfaceLight },
+  modalBackdrop: { flex: 1, backgroundColor: c.overlay, justifyContent: "flex-end" },
+  modalCard: { backgroundColor: c.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 32, maxHeight: "90%", borderTopWidth: 1, borderColor: c.surfaceBorder },
   modalHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: Colors.text },
-  label: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
-  input: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, height: 44, color: Colors.text, fontSize: 14 },
-  switchRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 16, padding: 12, borderRadius: 10, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  saveBtn: { marginTop: 20, backgroundColor: Colors.accent, height: 50, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  saveBtnText: { color: "#000", fontFamily: "Inter_700Bold", fontSize: 15 },
+  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: c.text },
+  label: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: c.textSecondary, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
+  input: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, height: 44, color: c.text, fontSize: 14 },
+  switchRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 16, padding: 12, borderRadius: 10, backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder },
+  saveBtn: { marginTop: 20, backgroundColor: c.accent, height: 50, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  saveBtnText: { color: c.invertedText, fontFamily: "Inter_700Bold", fontSize: 15 },
 });

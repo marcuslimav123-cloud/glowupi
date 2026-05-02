@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
-import Colors from "@/constants/colors";
+import { useColors, type ColorPalette } from "@/lib/theme";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { SkeletonList } from "@/components/Skeleton";
 import { EmptyState } from "@/components/EmptyState";
@@ -28,6 +28,8 @@ type Editing = { tipo: string; assunto: string; corpo: string; label: string; va
 
 export default function EmailTemplatesScreen() {
   const qc = useQueryClient();
+  const colors = useColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [editing, setEditing] = useState<Editing>(null);
 
   const listQuery = useQuery<TemplateRow[]>({
@@ -75,7 +77,7 @@ export default function EmailTemplatesScreen() {
             style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
           >
             <View style={styles.cardHead}>
-              <View style={styles.iconWrap}><Feather name="mail" size={18} color={Colors.accent} /></View>
+              <View style={styles.iconWrap}><Feather name="mail" size={18} color={colors.accent} /></View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.title}>{t.label}</Text>
                 <Text style={styles.subject} numberOfLines={1}>{t.assunto || "—"}</Text>
@@ -83,8 +85,8 @@ export default function EmailTemplatesScreen() {
               {t.isCustom ? (
                 <View style={styles.badge}><Text style={styles.badgeText}>Personalizado</Text></View>
               ) : (
-                <View style={[styles.badge, { backgroundColor: Colors.surfaceLight }]}>
-                  <Text style={[styles.badgeText, { color: Colors.textMuted }]}>Padrão</Text>
+                <View style={[styles.badge, { backgroundColor: colors.surfaceLight }]}>
+                  <Text style={[styles.badgeText, { color: colors.textMuted }]}>Padrão</Text>
                 </View>
               )}
             </View>
@@ -110,7 +112,7 @@ export default function EmailTemplatesScreen() {
                 value={editing?.assunto ?? ""}
                 onChangeText={(t) => setEditing((cur) => (cur ? { ...cur, assunto: t } : cur))}
                 style={styles.input}
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
 
               <Text style={styles.label}>Variáveis disponíveis</Text>
@@ -126,7 +128,7 @@ export default function EmailTemplatesScreen() {
                 onChangeText={(t) => setEditing((cur) => (cur ? { ...cur, corpo: t } : cur))}
                 multiline
                 style={[styles.input, { minHeight: 220, textAlignVertical: "top", fontFamily: Platform.select({ ios: "Menlo", android: "monospace" }), fontSize: 11 }]}
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
             </ScrollView>
 
@@ -151,9 +153,9 @@ export default function EmailTemplatesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorPalette) => StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.surfaceBorder,
     padding: 12, marginBottom: 8,
   },
   cardHead: { flexDirection: "row", alignItems: "center", gap: 12 },
@@ -161,33 +163,33 @@ const styles = StyleSheet.create({
     width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(196,164,106,0.15)",
     alignItems: "center", justifyContent: "center",
   },
-  title: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  subject: { color: Colors.textSecondary, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 2 },
+  title: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  subject: { color: c.textSecondary, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 2 },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: "rgba(196,164,106,0.18)" },
-  badgeText: { color: Colors.accent, fontFamily: "Inter_700Bold", fontSize: 9, letterSpacing: 0.4, textTransform: "uppercase" },
+  badgeText: { color: c.accent, fontFamily: "Inter_700Bold", fontSize: 9, letterSpacing: 0.4, textTransform: "uppercase" },
   chips: { flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 8 },
   varChip: {
-    backgroundColor: Colors.surfaceLight,
-    borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: c.surfaceLight,
+    borderWidth: 1, borderColor: c.surfaceBorder,
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6,
-    color: Colors.textSecondary, fontFamily: Platform.select({ ios: "Menlo", android: "monospace" }), fontSize: 11,
+    color: c.textSecondary, fontFamily: Platform.select({ ios: "Menlo", android: "monospace" }), fontSize: 11,
     overflow: "hidden",
   },
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  backdrop: { flex: 1, backgroundColor: c.overlay, justifyContent: "flex-end" },
   sheet: {
-    backgroundColor: Colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    backgroundColor: c.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
     padding: 18, maxHeight: "92%",
   },
-  modalTitle: { color: Colors.text, fontFamily: "Inter_700Bold", fontSize: 15, marginBottom: 4 },
-  label: { color: Colors.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 10, marginBottom: 4 },
+  modalTitle: { color: c.text, fontFamily: "Inter_700Bold", fontSize: 15, marginBottom: 4 },
+  label: { color: c.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 10, marginBottom: 4 },
   input: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.surfaceBorder,
-    paddingHorizontal: 12, paddingVertical: 10, color: Colors.text, fontFamily: "Inter_500Medium", fontSize: 13,
+    backgroundColor: c.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: c.surfaceBorder,
+    paddingHorizontal: 12, paddingVertical: 10, color: c.text, fontFamily: "Inter_500Medium", fontSize: 13,
   },
   modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 14 },
   btn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10 },
-  btnGhost: { backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  btnGhostText: { color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  btnPrimary: { backgroundColor: Colors.accent },
-  btnPrimaryText: { color: "#000", fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  btnGhost: { backgroundColor: c.surfaceLight, borderWidth: 1, borderColor: c.surfaceBorder },
+  btnGhostText: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  btnPrimary: { backgroundColor: c.accent },
+  btnPrimaryText: { color: c.invertedText, fontFamily: "Inter_600SemiBold", fontSize: 13 },
 });
