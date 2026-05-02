@@ -81,7 +81,8 @@ function statusInfo(status: string, encaixe?: boolean): { color: string; label: 
 export default function AgendaIndex() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { barbeariaId } = useAuth();
+  const { barbeariaId, user } = useAuth();
+  const canManage = user?.role === "dono" || user?.role === "gerente";
   const qc = useQueryClient();
 
   const [date, setDate] = useState(() => todayStr());
@@ -214,20 +215,24 @@ export default function AgendaIndex() {
         >
           <Feather name="trending-up" size={20} color={Colors.text} />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.iconBtn}
-          onPress={() => router.push("/(tabs)/agenda/lista-espera")}
-          accessibilityLabel="Lista de espera"
-        >
-          <Feather name="clipboard" size={20} color={Colors.text} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.iconBtn}
-          onPress={() => setBlockOpen(true)}
-          accessibilityLabel="Bloquear horário"
-        >
-          <Feather name="lock" size={20} color={Colors.text} />
-        </TouchableOpacity>
+        {canManage && (
+          <>
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={() => router.push("/(tabs)/agenda/lista-espera")}
+              accessibilityLabel="Lista de espera"
+            >
+              <Feather name="clipboard" size={20} color={Colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={() => setBlockOpen(true)}
+              accessibilityLabel="Bloquear horário"
+            >
+              <Feather name="lock" size={20} color={Colors.text} />
+            </TouchableOpacity>
+          </>
+        )}
       </View>
 
       <View style={styles.viewToggle}>
@@ -516,30 +521,34 @@ export default function AgendaIndex() {
               </View>
               <Text style={styles.fabItemText}>Encaixe</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.fabItem}
-              onPress={() => {
-                setFabOpen(false);
-                router.push(`/(tabs)/agenda/bloqueios?date=${date}`);
-              }}
-            >
-              <View style={[styles.fabItemIcon, { backgroundColor: Colors.surfaceLight }]}>
-                <Feather name="lock" size={18} color={Colors.text} />
-              </View>
-              <Text style={styles.fabItemText}>Bloquear horário</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.fabItem}
-              onPress={() => {
-                setFabOpen(false);
-                router.push("/(tabs)/agenda/lista-espera");
-              }}
-            >
-              <View style={[styles.fabItemIcon, { backgroundColor: Colors.info }]}>
-                <Feather name="clipboard" size={18} color="#fff" />
-              </View>
-              <Text style={styles.fabItemText}>Lista de espera</Text>
-            </TouchableOpacity>
+            {canManage && (
+              <>
+                <TouchableOpacity
+                  style={styles.fabItem}
+                  onPress={() => {
+                    setFabOpen(false);
+                    router.push(`/(tabs)/agenda/bloqueios?date=${date}`);
+                  }}
+                >
+                  <View style={[styles.fabItemIcon, { backgroundColor: Colors.surfaceLight }]}>
+                    <Feather name="lock" size={18} color={Colors.text} />
+                  </View>
+                  <Text style={styles.fabItemText}>Bloquear horário</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.fabItem}
+                  onPress={() => {
+                    setFabOpen(false);
+                    router.push("/(tabs)/agenda/lista-espera");
+                  }}
+                >
+                  <View style={[styles.fabItemIcon, { backgroundColor: Colors.info }]}>
+                    <Feather name="clipboard" size={18} color="#fff" />
+                  </View>
+                  <Text style={styles.fabItemText}>Lista de espera</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         )}
         <TouchableOpacity
