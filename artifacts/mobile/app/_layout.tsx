@@ -6,7 +6,7 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack, router } from "expo-router";
+import { Stack, router, type Href } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
 import React, { useEffect } from "react";
@@ -70,7 +70,7 @@ export default function RootLayout() {
         Notifications.setBadgeCountAsync(0).catch(() => {});
         const route = data.route || data.deeplink;
         if (typeof route === "string" && route.length > 0) {
-          router.push(route as any);
+          router.push(route as Href);
           return;
         }
         if (data.type === "agendamento" || data.tipo === "agendamento") {

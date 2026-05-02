@@ -1,5 +1,5 @@
 import React from "react";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { View, StyleSheet } from "react-native";
 import Colors from "@/constants/colors";
 import { ScreenContainer } from "@/components/ScreenContainer";
@@ -8,7 +8,7 @@ import { SectionHeader } from "@/components/SectionHeader";
 
 export default function MarketingIndex() {
   const router = useRouter();
-  const go = (p: string) => () => router.push(p as any);
+  const go = (p: Href) => () => router.push(p);
 
   return (
     <ScreenContainer title="Marketing" subtitle="Comunicação e fidelização">

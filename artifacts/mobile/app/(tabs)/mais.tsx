@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
 import { Feather } from "@expo/vector-icons";
@@ -29,7 +29,7 @@ type ItemDef = {
   icon: Parameters<typeof ListRow>[0]["icon"];
   label: string;
   description?: string;
-  to?: string;
+  to?: Href;
   onPress?: () => void;
   badge?: string;
   badgeTone?: Parameters<typeof ListRow>[0]["badgeTone"];
@@ -54,9 +54,9 @@ export default function MaisScreen() {
     if (Platform.OS !== "web") Haptics.impactAsync(style);
   };
 
-  const go = (path: string) => () => {
+  const go = (path: Href) => () => {
     haptic();
-    router.push(path as any);
+    router.push(path);
   };
 
   const openUrl = async (url: string) => {
@@ -199,6 +199,12 @@ export default function MaisScreen() {
     {
       label: "Conta",
       items: [
+        {
+          icon: "user",
+          label: "Perfil",
+          description: "Dados pessoais e preferências",
+          to: "/configuracoes/perfil",
+        },
         {
           icon: "award",
           label: "Plano e assinatura",
