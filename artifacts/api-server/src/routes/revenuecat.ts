@@ -123,14 +123,33 @@ router.post("/sync", requireAuth, async (req: any, res) => {
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ error: "não autenticado" });
 
+  const appUserId = `user_${userId}`;
+  const clientEntitlements = (req.body?.entitlements ?? {}) as Record<string, { isActive?: boolean }>;
+  const clientClaimsPro = !!clientEntitlements?.pro?.isActive;
+
+  const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, userId)).limit(1);
+  if (!barbearia) return res.status(404).json({ error: "barbearia não encontrada" });
+
   if (!RC_SECRET_KEY) {
-    return res.status(503).json({
-      error: "RevenueCat secret key não configurada",
-      ok: false,
+    const isProd = process.env.NODE_ENV === "production";
+    if (isProd) {
+      console.warn(
+        `[RevenueCat] sync sem REVENUECAT_SECRET_KEY em produção (userId=${userId}, clientClaimsPro=${clientClaimsPro}). Aguardando webhook autoritativo — sync ignorado.`,
+      );
+    } else {
+      console.warn(
+        `[RevenueCat] sync sem REVENUECAT_SECRET_KEY (dev). Não é possível verificar entitlement contra a Apple/RevenueCat — sync ignorado.`,
+      );
+    }
+    const currentIsPro = barbearia.iapStatus === "active";
+    return res.json({
+      ok: true,
+      isPro: currentIsPro,
+      verified: false,
+      reason: "secret_key_unavailable",
     });
   }
 
-  const appUserId = `user_${userId}`;
   let isPro = false;
   let productId: string | undefined;
   let expiresMs: number | undefined;
@@ -140,6 +159,7 @@ router.post("/sync", requireAuth, async (req: any, res) => {
       headers: { Authorization: `Bearer ${RC_SECRET_KEY}` },
     });
     if (!rcRes.ok) {
+      console.error(`[RevenueCat] sync REST API HTTP ${rcRes.status} para ${appUserId}`);
       return res.status(502).json({ error: "RevenueCat indisponível", ok: false });
     }
     const data: any = await rcRes.json();
@@ -154,8 +174,15 @@ router.post("/sync", requireAuth, async (req: any, res) => {
     return res.status(502).json({ error: "verificação falhou", ok: false });
   }
 
-  const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, userId)).limit(1);
-  if (!barbearia) return res.status(404).json({ error: "barbearia não encontrada" });
+  if (clientClaimsPro && !isPro) {
+    console.warn(
+      `[RevenueCat][FRAUD?] userId=${userId} appUserId=${appUserId} reivindicou pro=ativo mas RevenueCat retornou inativo (expiresMs=${expiresMs ?? "n/a"}). Sync rejeitado.`,
+    );
+  } else if (!clientClaimsPro && isPro) {
+    console.info(
+      `[RevenueCat] userId=${userId} não reivindicou pro mas RevenueCat confirma ativo (expiresMs=${expiresMs}). Ativando via sync.`,
+    );
+  }
 
   if (isPro) {
     await db.update(barbeariasTable).set({
@@ -170,7 +197,7 @@ router.post("/sync", requireAuth, async (req: any, res) => {
     }).where(eq(barbeariasTable.id, barbearia.id));
   }
 
-  return res.json({ ok: true, isPro });
+  return res.json({ ok: true, isPro, verified: true });
 });
 
 export default router;
