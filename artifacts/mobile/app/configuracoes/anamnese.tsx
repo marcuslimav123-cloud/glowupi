@@ -19,17 +19,29 @@ type FormularioAnamnese = {
   campos: Array<{ label: string; tipo: string; obrigatorio?: boolean; opcoes?: string[] }>;
 };
 
+type CampoForm = { label: string; tipo: string; obrigatorio: boolean; opcoes: string[] };
 type TipoForm = { id?: number; nome: string; descricao: string; ativo: boolean };
-type FormForm = { id?: number; titulo: string; tipoId: string; ativo: boolean };
+type FormForm = { id?: number; titulo: string; tipoId: string; ativo: boolean; campos: CampoForm[] };
 
-const FIELD_TYPE_LABEL: Record<string, string> = {
-  texto: "Texto curto", textarea: "Texto longo", boolean: "Sim/Não",
-  select: "Seleção única", multiselect: "Seleção múltipla", numero: "Número",
-  data: "Data", escala: "Escala 1-10",
-};
+const FIELD_TYPES: Array<{ value: string; label: string }> = [
+  { value: "texto", label: "Texto curto" },
+  { value: "textarea", label: "Texto longo" },
+  { value: "boolean", label: "Sim/Não" },
+  { value: "select", label: "Seleção única" },
+  { value: "multiselect", label: "Seleção múltipla" },
+  { value: "numero", label: "Número" },
+  { value: "data", label: "Data" },
+  { value: "escala", label: "Escala 1-10" },
+];
+
+const FIELD_TYPE_LABEL: Record<string, string> = FIELD_TYPES.reduce(
+  (acc, ft) => ({ ...acc, [ft.value]: ft.label }),
+  {} as Record<string, string>,
+);
 
 const EMPTY_TIPO: TipoForm = { nome: "", descricao: "", ativo: true };
-const EMPTY_FORM: FormForm = { titulo: "", tipoId: "", ativo: true };
+const EMPTY_FORM: FormForm = { titulo: "", tipoId: "", ativo: true, campos: [] };
+const EMPTY_CAMPO: CampoForm = { label: "", tipo: "texto", obrigatorio: false, opcoes: [] };
 
 export default function AnamneseScreen() {
   const { barbeariaId } = useAuth();
@@ -78,11 +90,24 @@ export default function AnamneseScreen() {
 
   const formMutation = useMutation({
     mutationFn: (f: FormForm) => {
+      const campos = f.campos
+        .filter((c) => c.label.trim())
+        .map((c) => {
+          const base: { label: string; tipo: string; obrigatorio: boolean; opcoes?: string[] } = {
+            label: c.label.trim(),
+            tipo: c.tipo,
+            obrigatorio: !!c.obrigatorio,
+          };
+          if (c.tipo === "select" || c.tipo === "multiselect") {
+            base.opcoes = (c.opcoes || []).map((o) => o.trim()).filter(Boolean);
+          }
+          return base;
+        });
       const body = {
         titulo: f.titulo,
         tipoId: parseInt(f.tipoId, 10),
         ativo: f.ativo,
-        campos: [],
+        campos,
       };
       return f.id
         ? fetchJson(`/barbearias/${barbeariaId}/anamnese/formularios/${f.id}`, { method: "PUT", body })
@@ -114,7 +139,10 @@ export default function AnamneseScreen() {
       rightAction={{
         icon: "plus",
         label: tab === "tipos" ? "Novo tipo" : "Novo formulário",
-        onPress: () => (tab === "tipos" ? setEditTipo({ ...EMPTY_TIPO }) : setEditForm({ ...EMPTY_FORM })),
+        onPress: () =>
+          tab === "tipos"
+            ? setEditTipo({ ...EMPTY_TIPO })
+            : setEditForm({ ...EMPTY_FORM, campos: [] }),
       }}
     >
       <View style={styles.tabs}>
@@ -205,7 +233,20 @@ export default function AnamneseScreen() {
                 <View style={styles.actions}>
                   <Pressable
                     hitSlop={8}
-                    onPress={() => setEditForm({ id: f.id, titulo: f.titulo, tipoId: String(f.tipoId), ativo: f.ativo })}
+                    onPress={() =>
+                      setEditForm({
+                        id: f.id,
+                        titulo: f.titulo,
+                        tipoId: String(f.tipoId),
+                        ativo: f.ativo,
+                        campos: (f.campos ?? []).map((c) => ({
+                          label: c.label ?? "",
+                          tipo: c.tipo ?? "texto",
+                          obrigatorio: !!c.obrigatorio,
+                          opcoes: Array.isArray(c.opcoes) ? c.opcoes : [],
+                        })),
+                      })
+                    }
                     style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.6 }]}
                   >
                     <Feather name="edit-2" size={14} color={Colors.text} />
@@ -226,9 +267,6 @@ export default function AnamneseScreen() {
               </View>
             ))
           )}
-          <Text style={styles.note}>
-            Para adicionar perguntas aos formulários, use o app web — esta versão lista e edita o cabeçalho.
-          </Text>
         </>
       )}
 
@@ -289,40 +327,227 @@ export default function AnamneseScreen() {
           <Pressable style={styles.sheet} onPress={() => {}}>
             <Text style={styles.modalTitle}>{editForm?.id ? "Editar formulário" : "Novo formulário"}</Text>
 
-            <Text style={styles.label}>Título</Text>
-            <TextInput
-              value={editForm?.titulo ?? ""}
-              onChangeText={(t) => setEditForm((f) => (f ? { ...f, titulo: t } : f))}
-              placeholder="Ex.: Avaliação inicial"
-              placeholderTextColor={Colors.textMuted}
-              style={styles.input}
-            />
-
-            <Text style={styles.label}>Tipo</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-              {(tiposQuery.data ?? []).map((t) => {
-                const active = editForm?.tipoId === String(t.id);
-                return (
-                  <Pressable
-                    key={t.id}
-                    onPress={() => setEditForm((f) => (f ? { ...f, tipoId: String(t.id) } : f))}
-                    style={[styles.chip, active && styles.chipActive]}
-                  >
-                    <Text style={[styles.chipText, active && { color: "#000" }]}>{t.nome}</Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-
-            <View style={styles.switchRow}>
-              <Text style={styles.label}>Ativo</Text>
-              <Switch
-                value={editForm?.ativo ?? true}
-                onValueChange={(v) => setEditForm((f) => (f ? { ...f, ativo: v } : f))}
-                trackColor={{ false: Colors.surfaceLight, true: Colors.accent }}
-                thumbColor="#fff"
+            <ScrollView
+              style={{ flexGrow: 0 }}
+              contentContainerStyle={{ paddingBottom: 4 }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <Text style={styles.label}>Título</Text>
+              <TextInput
+                value={editForm?.titulo ?? ""}
+                onChangeText={(t) => setEditForm((f) => (f ? { ...f, titulo: t } : f))}
+                placeholder="Ex.: Avaliação inicial"
+                placeholderTextColor={Colors.textMuted}
+                style={styles.input}
               />
-            </View>
+
+              <Text style={styles.label}>Tipo</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+                {(tiposQuery.data ?? []).map((t) => {
+                  const active = editForm?.tipoId === String(t.id);
+                  return (
+                    <Pressable
+                      key={t.id}
+                      onPress={() => setEditForm((f) => (f ? { ...f, tipoId: String(t.id) } : f))}
+                      style={[styles.chip, active && styles.chipActive]}
+                    >
+                      <Text style={[styles.chipText, active && { color: "#000" }]}>{t.nome}</Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+
+              <View style={styles.switchRow}>
+                <Text style={styles.label}>Ativo</Text>
+                <Switch
+                  value={editForm?.ativo ?? true}
+                  onValueChange={(v) => setEditForm((f) => (f ? { ...f, ativo: v } : f))}
+                  trackColor={{ false: Colors.surfaceLight, true: Colors.accent }}
+                  thumbColor="#fff"
+                />
+              </View>
+
+              <View style={styles.fieldsHeader}>
+                <Text style={styles.fieldsHeaderText}>
+                  Campos ({editForm?.campos?.length ?? 0})
+                </Text>
+                <Pressable
+                  onPress={() =>
+                    setEditForm((f) =>
+                      f ? { ...f, campos: [...f.campos, { ...EMPTY_CAMPO, opcoes: [] }] } : f,
+                    )
+                  }
+                  style={({ pressed }) => [styles.addFieldBtn, pressed && { opacity: 0.6 }]}
+                >
+                  <Feather name="plus" size={12} color="#000" />
+                  <Text style={styles.addFieldText}>Adicionar</Text>
+                </Pressable>
+              </View>
+
+              {(!editForm?.campos || editForm.campos.length === 0) ? (
+                <View style={styles.fieldsEmpty}>
+                  <Feather name="list" size={20} color={Colors.textMuted} />
+                  <Text style={styles.fieldsEmptyText}>Nenhum campo adicionado</Text>
+                </View>
+              ) : (
+                editForm.campos.map((campo, i) => {
+                  const showOpcoes = campo.tipo === "select" || campo.tipo === "multiselect";
+                  return (
+                    <View key={i} style={styles.fieldCard}>
+                      <View style={styles.fieldCardHeader}>
+                        <Text style={styles.fieldIndex}>#{i + 1}</Text>
+                        <View style={{ flex: 1 }} />
+                        <Pressable
+                          hitSlop={6}
+                          disabled={i === 0}
+                          onPress={() =>
+                            setEditForm((f) => {
+                              if (!f) return f;
+                              const campos = [...f.campos];
+                              [campos[i - 1], campos[i]] = [campos[i], campos[i - 1]];
+                              return { ...f, campos };
+                            })
+                          }
+                          style={({ pressed }) => [
+                            styles.fieldIconBtn,
+                            (pressed || i === 0) && { opacity: 0.4 },
+                          ]}
+                        >
+                          <Feather name="chevron-up" size={14} color={Colors.text} />
+                        </Pressable>
+                        <Pressable
+                          hitSlop={6}
+                          disabled={i === editForm.campos.length - 1}
+                          onPress={() =>
+                            setEditForm((f) => {
+                              if (!f) return f;
+                              const campos = [...f.campos];
+                              [campos[i + 1], campos[i]] = [campos[i], campos[i + 1]];
+                              return { ...f, campos };
+                            })
+                          }
+                          style={({ pressed }) => [
+                            styles.fieldIconBtn,
+                            (pressed || i === editForm.campos.length - 1) && { opacity: 0.4 },
+                          ]}
+                        >
+                          <Feather name="chevron-down" size={14} color={Colors.text} />
+                        </Pressable>
+                        <Pressable
+                          hitSlop={6}
+                          onPress={() =>
+                            setEditForm((f) =>
+                              f ? { ...f, campos: f.campos.filter((_, j) => j !== i) } : f,
+                            )
+                          }
+                          style={({ pressed }) => [styles.fieldIconBtn, pressed && { opacity: 0.6 }]}
+                        >
+                          <Feather name="trash-2" size={14} color={Colors.error} />
+                        </Pressable>
+                      </View>
+
+                      <Text style={styles.label}>Pergunta</Text>
+                      <TextInput
+                        value={campo.label}
+                        onChangeText={(t) =>
+                          setEditForm((f) =>
+                            f
+                              ? {
+                                  ...f,
+                                  campos: f.campos.map((c, j) => (j === i ? { ...c, label: t } : c)),
+                                }
+                              : f,
+                          )
+                        }
+                        placeholder="Ex.: Possui alergia?"
+                        placeholderTextColor={Colors.textMuted}
+                        style={styles.input}
+                      />
+
+                      <Text style={styles.label}>Tipo</Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ gap: 6 }}
+                      >
+                        {FIELD_TYPES.map((ft) => {
+                          const active = campo.tipo === ft.value;
+                          return (
+                            <Pressable
+                              key={ft.value}
+                              onPress={() =>
+                                setEditForm((f) =>
+                                  f
+                                    ? {
+                                        ...f,
+                                        campos: f.campos.map((c, j) =>
+                                          j === i ? { ...c, tipo: ft.value } : c,
+                                        ),
+                                      }
+                                    : f,
+                                )
+                              }
+                              style={[styles.chip, active && styles.chipActive]}
+                            >
+                              <Text style={[styles.chipText, active && { color: "#000" }]}>
+                                {ft.label}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </ScrollView>
+
+                      {showOpcoes && (
+                        <>
+                          <Text style={styles.label}>Opções (uma por linha)</Text>
+                          <TextInput
+                            value={(campo.opcoes || []).join("\n")}
+                            onChangeText={(t) =>
+                              setEditForm((f) =>
+                                f
+                                  ? {
+                                      ...f,
+                                      campos: f.campos.map((c, j) =>
+                                        j === i ? { ...c, opcoes: t.split("\n") } : c,
+                                      ),
+                                    }
+                                  : f,
+                              )
+                            }
+                            placeholder={"Opção 1\nOpção 2"}
+                            placeholderTextColor={Colors.textMuted}
+                            style={[styles.input, { minHeight: 70, textAlignVertical: "top" }]}
+                            multiline
+                          />
+                        </>
+                      )}
+
+                      <View style={styles.switchRow}>
+                        <Text style={styles.label}>Obrigatório</Text>
+                        <Switch
+                          value={!!campo.obrigatorio}
+                          onValueChange={(v) =>
+                            setEditForm((f) =>
+                              f
+                                ? {
+                                    ...f,
+                                    campos: f.campos.map((c, j) =>
+                                      j === i ? { ...c, obrigatorio: v } : c,
+                                    ),
+                                  }
+                                : f,
+                            )
+                          }
+                          trackColor={{ false: Colors.surfaceLight, true: Colors.accent }}
+                          thumbColor="#fff"
+                        />
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </ScrollView>
 
             <View style={styles.modalActions}>
               <Pressable style={[styles.btn, styles.btnGhost]} onPress={() => setEditForm(null)}>
@@ -332,9 +557,17 @@ export default function AnamneseScreen() {
                 style={[
                   styles.btn,
                   styles.btnPrimary,
-                  (!editForm?.titulo?.trim() || !editForm?.tipoId || formMutation.isPending) && { opacity: 0.5 },
+                  (!editForm?.titulo?.trim() ||
+                    !editForm?.tipoId ||
+                    !(editForm?.campos ?? []).some((c) => c.label.trim()) ||
+                    formMutation.isPending) && { opacity: 0.5 },
                 ]}
-                disabled={!editForm?.titulo?.trim() || !editForm?.tipoId || formMutation.isPending}
+                disabled={
+                  !editForm?.titulo?.trim() ||
+                  !editForm?.tipoId ||
+                  !(editForm?.campos ?? []).some((c) => c.label.trim()) ||
+                  formMutation.isPending
+                }
                 onPress={() => editForm && formMutation.mutate(editForm)}
               >
                 <Text style={styles.btnPrimaryText}>{formMutation.isPending ? "Salvando…" : "Salvar"}</Text>
@@ -375,6 +608,28 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "center",
   },
   note: { color: Colors.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, textAlign: "center", marginTop: 12 },
+  fieldsHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 16, marginBottom: 6 },
+  fieldsHeaderText: { color: Colors.text, fontFamily: "Inter_700Bold", fontSize: 13 },
+  addFieldBtn: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    backgroundColor: Colors.accent, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8,
+  },
+  addFieldText: { color: "#000", fontFamily: "Inter_600SemiBold", fontSize: 11 },
+  fieldsEmpty: {
+    alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 20,
+    backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.surfaceBorder, borderStyle: "dashed",
+  },
+  fieldsEmptyText: { color: Colors.textMuted, fontFamily: "Inter_500Medium", fontSize: 11 },
+  fieldCard: {
+    backgroundColor: Colors.surfaceLight, borderRadius: 12, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    padding: 12, marginTop: 8,
+  },
+  fieldCardHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
+  fieldIndex: { color: Colors.textMuted, fontFamily: "Inter_700Bold", fontSize: 11 },
+  fieldIconBtn: {
+    width: 28, height: 28, borderRadius: 8, backgroundColor: Colors.surface,
+    borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "center",
+  },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
   sheet: { backgroundColor: Colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 18, maxHeight: "85%" },
   modalTitle: { color: Colors.text, fontFamily: "Inter_700Bold", fontSize: 15, marginBottom: 4 },
