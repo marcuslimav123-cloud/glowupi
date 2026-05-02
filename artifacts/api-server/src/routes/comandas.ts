@@ -74,6 +74,24 @@ router.get("/", requireAuth, async (req, res) => {
   return res.json(comandas.map(formatComanda));
 });
 
+router.get("/:comandaId", requireAuth, async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const user = (req as any).user;
+  const params = await getParametros(barbeariaId);
+  const id = parseInt(req.params.comandaId);
+  const [comanda] = await db.select().from(comandasTable).where(
+    and(eq(comandasTable.id, id), eq(comandasTable.barbeariaId, barbeariaId))
+  ).limit(1);
+  if (!comanda) return res.status(404).json({ error: "Comanda não encontrada" });
+  if (user.role === "colaborador" && params["comanda_somente_envolvidos"] === "Sim") {
+    if (!user.profissionalId || comanda.profissionalId !== user.profissionalId) {
+      return res.status(403).json({ error: "Acesso negado a esta comanda" });
+    }
+  }
+  return res.json(formatComanda(comanda));
+});
+
 router.put("/:comandaId/reabrir", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
