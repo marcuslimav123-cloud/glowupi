@@ -171,7 +171,18 @@ export default function AgendamentoDetail() {
           "plain-text",
           "Horário indisponível"
         )
-      : await sendRefuse("Horário indisponível");
+      : Alert.alert(
+          "Recusar agendamento",
+          "Deseja recusar este agendamento? O cliente será notificado.",
+          [
+            { text: "Cancelar", style: "cancel" },
+            {
+              text: "Recusar",
+              style: "destructive",
+              onPress: () => sendRefuse("Horário indisponível"),
+            },
+          ],
+        );
   };
 
   const sendRefuse = async (motivo: string) => {
