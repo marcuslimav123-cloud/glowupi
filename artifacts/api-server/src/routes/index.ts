@@ -156,6 +156,43 @@ router.use("/barbearias/:barbeariaId/mensagens-padrao", mensagensPadraoRouter);
 router.use("/barbearias/:barbeariaId/mensagens-sugeridas", mensagensSugeridasRouter);
 router.use("/barbearias/:barbeariaId/modo-humano", modoHumanoRouter);
 router.use("/checkout", checkoutRouter);
+
+router.post("/support/contact", async (req, res) => {
+  try {
+    const { nome, email, assunto, mensagem } = req.body || {};
+    if (!nome || !email || !mensagem) {
+      return res.status(400).json({ error: "Nome, email e mensagem são obrigatórios" });
+    }
+    if (!/^\S+@\S+\.\S+$/.test(String(email))) {
+      return res.status(400).json({ error: "Email inválido" });
+    }
+    if (String(mensagem).length > 5000 || String(nome).length > 200) {
+      return res.status(400).json({ error: "Conteúdo muito longo" });
+    }
+
+    const { sendEmail } = await import("../lib/brevo.js");
+    const subj = `[Suporte Glow Upi] ${assunto || "Contato pelo site"} — ${nome}`;
+    const html = `
+      <h3>Novo contato pelo site</h3>
+      <p><strong>Nome:</strong> ${String(nome).replace(/</g, "&lt;")}</p>
+      <p><strong>Email:</strong> ${String(email).replace(/</g, "&lt;")}</p>
+      <p><strong>Assunto:</strong> ${String(assunto || "(sem assunto)").replace(/</g, "&lt;")}</p>
+      <p><strong>Mensagem:</strong></p>
+      <pre style="white-space:pre-wrap;font-family:inherit">${String(mensagem).replace(/</g, "&lt;")}</pre>
+    `;
+    await sendEmail({
+      to: "suporte@glowupi.com",
+      subject: subj,
+      html,
+      replyTo: email,
+    });
+    return res.json({ ok: true });
+  } catch (e: any) {
+    console.error("[support/contact] erro:", e?.message || e);
+    return res.status(500).json({ error: "Erro ao enviar mensagem" });
+  }
+});
+
 router.use("/public", publicRouter);
 router.use("/convites", convitesRouter);
 router.use("/trial-link", trialLinksRouter);

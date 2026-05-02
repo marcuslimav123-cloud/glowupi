@@ -14,9 +14,10 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ATTExplainer } from "@/components/ATTExplainer";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Colors from "@/constants/colors";
-import { maybeRequestTrackingPermission } from "@/lib/tracking";
+import { hasAskedATT, requestTrackingPermissionNow, markATTAsked } from "@/lib/tracking";
 
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 
@@ -41,11 +42,17 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
+  const [attVisible, setAttVisible] = React.useState(false);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
-      maybeRequestTrackingPermission();
+      (async () => {
+        const asked = await hasAskedATT();
+        if (!asked) {
+          setTimeout(() => setAttVisible(true), 1200);
+        }
+      })();
     }
   }, [fontsLoaded, fontError]);
 
@@ -58,6 +65,17 @@ export default function RootLayout() {
           <GestureHandlerRootView>
             <AuthProvider>
               <RootLayoutNav />
+              <ATTExplainer
+                visible={attVisible}
+                onContinue={async () => {
+                  setAttVisible(false);
+                  await requestTrackingPermissionNow();
+                }}
+                onSkip={async () => {
+                  setAttVisible(false);
+                  await markATTAsked();
+                }}
+              />
             </AuthProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>

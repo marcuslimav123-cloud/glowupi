@@ -117,25 +117,55 @@ router.get("/config", requireAuth, async (req: any, res) => {
   });
 });
 
+const RC_SECRET_KEY = process.env.REVENUECAT_SECRET_KEY || "";
+
 router.post("/sync", requireAuth, async (req: any, res) => {
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ error: "não autenticado" });
 
-  const { entitlements, productId, expiresAtMs } = req.body || {};
-  const isPro = !!entitlements?.pro?.isActive || !!entitlements?.includes?.("pro");
+  if (!RC_SECRET_KEY) {
+    return res.status(503).json({
+      error: "RevenueCat secret key não configurada",
+      ok: false,
+    });
+  }
+
+  const appUserId = `user_${userId}`;
+  let isPro = false;
+  let productId: string | undefined;
+  let expiresMs: number | undefined;
+
+  try {
+    const rcRes = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(appUserId)}`, {
+      headers: { Authorization: `Bearer ${RC_SECRET_KEY}` },
+    });
+    if (!rcRes.ok) {
+      return res.status(502).json({ error: "RevenueCat indisponível", ok: false });
+    }
+    const data: any = await rcRes.json();
+    const proEnt = data?.subscriber?.entitlements?.pro;
+    if (proEnt && proEnt.expires_date) {
+      expiresMs = new Date(proEnt.expires_date).getTime();
+      isPro = expiresMs > Date.now();
+      productId = proEnt.product_identifier;
+    }
+  } catch (err) {
+    console.error("[RevenueCat] sync verification falhou:", err);
+    return res.status(502).json({ error: "verificação falhou", ok: false });
+  }
 
   const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, userId)).limit(1);
   if (!barbearia) return res.status(404).json({ error: "barbearia não encontrada" });
 
   if (isPro) {
     await db.update(barbeariasTable).set({
-      revenuecatCustomerId: `user_${userId}`,
+      revenuecatCustomerId: appUserId,
       iapStatus: "active",
       iapProductId: productId || barbearia.iapProductId,
-      iapExpiresAt: expiresAtMs ? new Date(expiresAtMs) : barbearia.iapExpiresAt,
+      iapExpiresAt: expiresMs ? new Date(expiresMs) : barbearia.iapExpiresAt,
       subscriptionStatus: "active",
       planoStatus: "ativo",
-      planoVencimento: expiresAtMs ? new Date(expiresAtMs) : barbearia.planoVencimento,
+      planoVencimento: expiresMs ? new Date(expiresMs) : barbearia.planoVencimento,
       updatedAt: new Date(),
     }).where(eq(barbeariasTable.id, barbearia.id));
   }
