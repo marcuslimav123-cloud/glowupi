@@ -1,0 +1,150 @@
+1. Conta e dinheiro
+1.1. Apple Developer Program
+
+Conta paga: US$ 99/ano por pessoa física ou US$ 99/ano por empresa
+Renovação automática anual — se atrasar, app sai do ar
+Acesso por: developer.apple.com
+1.2. Apple ID com autenticação de dois fatores (2FA) obrigatória
+
+Telefone confiável + e-mail
+1.3. Se for empresa (recomendado)
+
+D-U-N-S Number — código mundial de identificação de empresa (gratuito, mas demora 5-30 dias). Solicitação em dnb.com.br
+CNPJ ativo
+Documentos da empresa
+Comprovante de endereço comercial
+Quem assina precisa ter autoridade legal pela empresa
+A Apple liga ou manda e-mail pra confirmar a empresa
+1.4. Contratos legais (assinados eletronicamente no App Store Connect)
+
+Apple Developer Program License Agreement
+Paid Applications Agreement (se for vender qualquer coisa)
+Free Applications Agreement
+Atualização desses contratos sai 2-3x por ano — se você não aceitar, o app não atualiza nem fatura
+1.5. Configuração financeira (se vender qualquer coisa)
+
+Banking Information — conta bancária PJ pra receber repasses
+Tax Forms — formulários fiscais por país onde vende (W-8BEN-E pro Brasil)
+Tax ID (CNPJ)
+Apple repassa em ciclos mensais, descontando 15% ou 30% de comissão (ver bloco 9)
+2. Identidade técnica do app
+2.1. Bundle ID único (ex: com.glowupi.barberpro) — registrado no Apple Developer
+2.2. App ID vinculado ao Bundle ID
+2.3. Certificados de assinatura
+
+Apple Development Certificate (pra rodar no simulador e device de teste)
+Apple Distribution Certificate (pra publicar)
+2.4. Provisioning Profiles
+Development Profile
+Ad Hoc Profile (testes em dispositivos reais)
+App Store Profile (publicação)
+2.5. Push Notification Certificate (se usar notificações)
+2.6. Capabilities habilitadas (cada feature precisa ser ligada explicitamente: Push, In-App Purchase, Sign in with Apple, HealthKit, Camera, etc.)
+3. Requisitos técnicos do build
+3.1. Xcode versão atual (Apple exige a versão mais nova publicada — geralmente atualiza a regra a cada 6 meses)
+3.2. iOS SDK alvo: o mais recente disponível (em 2026, iOS 18 SDK)
+3.3. iOS mínimo suportado: sua escolha, mas a Apple recomenda suportar pelo menos as 3 últimas versões maiores (hoje: iOS 16, 17, 18)
+3.4. Dispositivos suportados: iPhone obrigatório, iPad opcional (se marcar "Universal", precisa funcionar bem nos dois)
+3.5. Arquitetura: arm64 obrigatória (chips Apple)
+3.6. App tamanho máximo: 4 GB pra download via App Store
+3.7. Build com Bitcode: descontinuado pela Apple desde 2022, não usar mais
+3.8. Symbol Files (dSYM): envia junto pra ter relatórios de crash legíveis
+
+4. Ícones e imagens obrigatórias
+4.1. App Icon
+
+1024×1024 px, PNG sem transparência, sem cantos arredondados (Apple arredonda)
+Ícones internos em vários tamanhos (Xcode gera automático a partir do mestre)
+4.2. Screenshots (obrigatório pelo menos 1 conjunto)
+
+iPhone 6.9" (iPhone 16 Pro Max) — 1320×2868 px — OBRIGATÓRIO
+iPhone 6.5" (iPhone 11 Pro Max / XS Max) — 1242×2688 px ou 1284×2778 px
+iPad Pro 13" (se app for Universal) — 2064×2752 px
+Mínimo 3 screenshots por tamanho, máximo 10
+Pode adicionar moldura, texto promocional, etc.
+4.3. App Preview Videos (opcional mas recomendado)
+
+Vídeo de 15 a 30 segundos
+Mesmas resoluções dos screenshots
+Mostra o app em uso real, sem narração externa
+5. Metadados de loja (preenchidos no App Store Connect)
+5.1. Nome do app — até 30 caracteres
+5.2. Subtítulo — até 30 caracteres (aparece embaixo do nome)
+5.3. Descrição — até 4.000 caracteres
+5.4. Palavras-chave (keywords) — até 100 caracteres total, separadas por vírgula
+5.5. URL de marketing (opcional)
+5.6. URL de suporte — OBRIGATÓRIA (página com forma de contato)
+5.7. URL de Política de Privacidade — OBRIGATÓRIA
+5.8. Categoria primária e secundária (ex: Estilo de Vida, Negócios)
+5.9. Classificação etária (questionário de conteúdo: violência, álcool, jogos, etc.)
+5.10. Copyright (ex: "© 2026 Glow Upi")
+5.11. Idiomas suportados — qual idioma o app fala (português, inglês, etc.)
+5.12. Localização da loja — em quais países vai vender (pode escolher só Brasil)
+5.13. Preço — Free, Tier 1, Tier 2... (faixas pré-definidas pela Apple)
+5.14. What's New in This Version — changelog a cada update, até 4.000 caracteres
+
+6. Privacidade — bloco mais sensível
+6.1. Política de Privacidade obrigatória
+
+URL pública, em todos os idiomas declarados
+Descreve o que coleta, por que, com quem compartilha, como apaga
+6.2. Privacy Nutrition Labels ("Selo Nutricional de Privacidade")
+
+Questionário no App Store Connect declarando todos os dados coletados:
+Localização
+Contatos
+Identificadores (Device ID, e-mail)
+Histórico de uso
+Dados financeiros
+Saúde
+etc.
+Pra cada item: usado pra rastreamento? linkado à identidade do usuário?
+6.3. Privacy Manifest (PrivacyInfo.xcprivacy) — obrigatório desde maio/2024
+
+Arquivo XML dentro do app
+Declara APIs sensíveis usadas (UserDefaults, FileTimestamp, BootTime, DiskSpace, etc.)
+Declara SDKs de terceiros e o que eles coletam
+Apple rejeita o app se faltar
+6.4. App Tracking Transparency (ATT)
+
+Se rastrear o usuário entre apps/sites pra publicidade, OBRIGATÓRIO mostrar o popup pedindo permissão (ATTrackingManager.requestTrackingAuthorization)
+Mensagem do popup precisa ser clara, em pt-BR
+6.5. Sign in with Apple — OBRIGATÓRIO se você oferece outros logins sociais
+
+Se tem "Login com Google" ou "Login com Facebook", tem que ter "Login com Apple" também
+Mesmo nível de destaque (botão do mesmo tamanho)
+6.6. Permissões com texto explicativo (Usage Descriptions)
+
+Cada permissão pedida precisa de texto curto explicando por quê, no Info.plist:
+NSCameraUsageDescription — câmera
+NSPhotoLibraryUsageDescription — fotos
+NSLocationWhenInUseUsageDescription — localização
+NSContactsUsageDescription — contatos
+NSMicrophoneUsageDescription — microfone
+NSCalendarsUsageDescription — calendário
+NSFaceIDUsageDescription — Face ID
+NSUserTrackingUsageDescription — rastreamento (ATT)
+NSBluetoothAlwaysUsageDescription — bluetooth
+…e dezenas de outras conforme a feature
+Texto vago = rejeição ("para melhor experiência" não passa)
+7. Pagamentos — atenção máxima aqui pra Glow Upi
+7.1. Regra de ouro da Apple: se vende bem ou serviço digital consumido dentro do app (assinatura premium, créditos, desbloqueio de feature), OBRIGATÓRIO usar In-App Purchase (IAP) da Apple. Apple fica com 30% (ou 15% no primeiro ano de assinatura e pra quem fatura menos de US$ 1M/ano via Small Business Program).
+
+7.2. Pode usar pagamento externo (Stripe/Asaas/etc.) só se:
+
+For pagamento por bem ou serviço físico (corte de cabelo no salão, entrega física, ingresso de evento presencial)
+Compras de assinatura SaaS feitas fora do app (ex: pelo site) e o app só consome o login
+7.3. Implicação direta pra Glow Upi:
+
+Cliente paga corte de cabelo no salão pelo app → pode ser Stripe (serviço físico)
+Lojista paga mensalidade Glow Upi pelo app → TEM que ser IAP, ou cobrar fora do app (web)
+7.4. Se usar IAP:
+
+Configurar produtos no App Store Connect (Consumível, Não-consumível, Assinatura Auto-renovável, Assinatura Não-renovável)
+Implementar StoreKit 2
+Tela com termos da assinatura visível antes da compra
+Botão "Restaurar Compras" obrigatório
+Política de cancelamento e reembolso clara
+7.5. Linkar pro pagamento externo é regulado
+
+Desde 2024 (decisão judicial Epic), pode mostrar link pro site
