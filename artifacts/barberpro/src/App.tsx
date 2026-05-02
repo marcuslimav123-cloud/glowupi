@@ -10,6 +10,7 @@ import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 
 import DirectSales from "@/pages/DirectSales";
 import Landing from "@/pages/Landing";
+import BarbaUpi from "@/pages/BarbaUpi";
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
 
@@ -142,6 +143,7 @@ function Router() {
     <Suspense fallback={<LazyFallback />}>
     <Switch>
       <Route path="/" component={DirectSales} />
+      <Route path="/barba-upi" component={BarbaUpi} />
       <Route path="/sucesso" component={DirectSalesSuccess} />
       <Route path="/pdvd" component={Landing} />
       <Route path="/login" component={Login} />

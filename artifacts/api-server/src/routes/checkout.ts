@@ -266,11 +266,14 @@ router.post("/cancel-subscription", requireAuth, requireBarbearia, async (req: a
   }
 });
 
+const VALID_DIRECT_SOURCES = ["pdvd", "barba-upi"];
+
 router.post("/create-direct-session", requireAuth, async (req: any, res) => {
   try {
-    const { priceId, billingPeriod } = req.body;
+    const { priceId, billingPeriod, utmSource, utmMedium, utmCampaign } = req.body;
     const user = req.user;
-    console.log("[create-direct-session] userId:", user.id, "email:", user.email, "priceId:", priceId, "billingPeriod:", billingPeriod);
+    const source = VALID_DIRECT_SOURCES.includes(utmSource) ? utmSource : "pdvd";
+    console.log("[create-direct-session] userId:", user.id, "email:", user.email, "priceId:", priceId, "billingPeriod:", billingPeriod, "source:", source);
 
     if (!priceId) {
       return res.status(400).json({ error: "priceId is required" });
@@ -320,7 +323,7 @@ router.post("/create-direct-session", requireAuth, async (req: any, res) => {
         const newCustomer = await stripeClient.customers.create({
           email: customerEmail,
           name: user.nome,
-          metadata: { userId: String(user.id), source: "pdvd" },
+          metadata: { userId: String(user.id), source },
         });
         customerId = newCustomer.id;
       }
@@ -352,13 +355,16 @@ router.post("/create-direct-session", requireAuth, async (req: any, res) => {
       metadata: {
         userId: String(user.id),
         billingPeriod: resolvedPeriod,
-        source: "pdvd",
+        source,
+        utmSource: utmSource || null,
+        utmMedium: utmMedium || null,
+        utmCampaign: utmCampaign || null,
       },
       subscription_data: {
         metadata: {
           userId: String(user.id),
           billingPeriod: resolvedPeriod,
-          source: "pdvd",
+          source,
         },
       },
       locale: 'auto',
@@ -388,7 +394,7 @@ router.post("/verify-direct-session", requireAuth, async (req: any, res) => {
       return res.status(403).json({ error: "Sessão não pertence a este usuário" });
     }
 
-    if (session.metadata?.source !== "pdvd") {
+    if (!VALID_DIRECT_SOURCES.includes(session.metadata?.source || "")) {
       return res.status(400).json({ error: "Sessão inválida para venda direta" });
     }
 
@@ -482,7 +488,7 @@ router.post("/complete-direct-onboarding", requireAuth, async (req: any, res) =>
       return res.status(403).json({ error: "Sessão não pertence a este usuário" });
     }
 
-    if (session.metadata?.source !== "pdvd") {
+    if (!VALID_DIRECT_SOURCES.includes(session.metadata?.source || "")) {
       return res.status(400).json({ error: "Sessão inválida para venda direta" });
     }
 
