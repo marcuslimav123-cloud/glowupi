@@ -12,14 +12,24 @@ export default function MarketingIndex() {
 
   return (
     <ScreenContainer title="Marketing" subtitle="Comunicação e fidelização">
-      <SectionHeader label="Comunicação" />
+      <SectionHeader label="Campanhas" />
       <View style={styles.card}>
+        <ListRow
+          icon="send"
+          label="Nova campanha"
+          description="Criação guiada por canal"
+          onPress={go("/marketing/nova-campanha")}
+        />
         <ListRow
           icon="mail"
           label="E-mail marketing"
           description="Campanhas e estatísticas"
           onPress={go("/marketing/email-marketing")}
         />
+      </View>
+
+      <SectionHeader label="Comunicação" />
+      <View style={styles.card}>
         <ListRow
           icon="message-square"
           label="Inbox de mensagens"
@@ -29,6 +39,18 @@ export default function MarketingIndex() {
           icon="send"
           label="Templates do WhatsApp"
           onPress={go("/marketing/whatsapp-templates")}
+        />
+        <ListRow
+          icon="bell"
+          label="Lembretes"
+          description="Envios automáticos por evento"
+          onPress={go("/marketing/lembretes")}
+        />
+        <ListRow
+          icon="rss"
+          label="Notícias"
+          description="Comunicados a clientes"
+          onPress={go("/marketing/noticias")}
         />
       </View>
 

@@ -43,6 +43,28 @@ export default function CadastrosIndex() {
           onPress={go("/cadastros/filiais")}
         />
       </View>
+
+      <SectionHeader label="Clientes e fidelização" />
+      <View style={styles.card}>
+        <ListRow
+          icon="users"
+          label="Grupos de clientes"
+          description="Segmentação para campanhas"
+          onPress={go("/cadastros/grupos-clientes")}
+        />
+        <ListRow
+          icon="award"
+          label="Clube de vantagens"
+          description="Programa de fidelidade"
+          onPress={go("/cadastros/clube-vantagens")}
+        />
+        <ListRow
+          icon="layers"
+          label="Tipos"
+          description="Categorias de receita e despesa"
+          onPress={go("/cadastros/tipos")}
+        />
+      </View>
     </ScreenContainer>
   );
 }

@@ -12,6 +12,16 @@ export default function ConfiguracoesIndex() {
 
   return (
     <ScreenContainer title="Configurações" subtitle="Ajustes do estabelecimento">
+      <SectionHeader label="Conta" />
+      <View style={styles.card}>
+        <ListRow
+          icon="user"
+          label="Perfil"
+          description="Dados pessoais e preferências"
+          onPress={go("/configuracoes/perfil")}
+        />
+      </View>
+
       <SectionHeader label="Operação" />
       <View style={styles.card}>
         <ListRow
@@ -47,6 +57,32 @@ export default function ConfiguracoesIndex() {
           label="Documentos"
           description="Modelos de contratos e termos"
           onPress={go("/configuracoes/documentos")}
+        />
+      </View>
+
+      <SectionHeader label="Comunicação" />
+      <View style={styles.card}>
+        <ListRow
+          icon="message-circle"
+          label="Comunicação"
+          description="Envios automáticos por canal"
+          onPress={go("/configuracoes/comunicacao")}
+        />
+        <ListRow
+          icon="mail"
+          label="Templates de e-mail"
+          description="Modelos de e-mails do sistema"
+          onPress={go("/configuracoes/email-templates")}
+        />
+      </View>
+
+      <SectionHeader label="Clientes" />
+      <View style={styles.card}>
+        <ListRow
+          icon="user-x"
+          label="Restrições de clientes"
+          description="Bloqueios para agendamento online"
+          onPress={go("/configuracoes/restricoes-clientes")}
         />
       </View>
     </ScreenContainer>

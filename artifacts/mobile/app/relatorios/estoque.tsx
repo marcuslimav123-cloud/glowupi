@@ -1,12 +1,12 @@
 import React from "react";
 import { PlaceholderScreen } from "@/components/PlaceholderScreen";
 
-export default function Estoque() {
+export default function RelatorioEstoqueScreen() {
   return (
     <PlaceholderScreen
-      title="Relatórios de estoque"
+      title="Estoque"
       icon="box"
-      description="Posição atual de estoque e necessidade de reposição em breve."
+      description="Posição atual e reposição sugerida do estoque em breve."
     />
   );
 }

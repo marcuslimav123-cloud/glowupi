@@ -61,20 +61,8 @@ export function ListRow({
   const ic = iconColor ?? (destructive ? Colors.error : Colors.accent);
   const badgeStyle = BADGE_COLORS[badgeTone];
 
-  const Wrapper: React.ComponentType<any> = onPress ? TouchableOpacity : View;
-  const wrapperProps = onPress
-    ? {
-        onPress: handlePress,
-        activeOpacity: 0.7,
-        accessibilityRole: "button" as const,
-        accessibilityLabel: label,
-        accessibilityHint,
-        accessibilityState: { disabled },
-      }
-    : { accessibilityLabel: label };
-
-  return (
-    <Wrapper style={[styles.row, disabled ? styles.rowDisabled : null, style]} {...wrapperProps}>
+  const inner = (
+    <>
       {icon ? (
         <View style={[styles.iconWrap, { backgroundColor: ic + "1a" }]}>
           <Feather name={icon} size={18} color={ic} />
@@ -102,7 +90,35 @@ export function ListRow({
           <Feather name="chevron-right" size={18} color={Colors.textMuted} />
         ) : null}
       </View>
-    </Wrapper>
+    </>
+  );
+
+  const containerStyle: StyleProp<ViewStyle> = [
+    styles.row,
+    disabled ? styles.rowDisabled : null,
+    style,
+  ];
+
+  if (onPress) {
+    return (
+      <TouchableOpacity
+        style={containerStyle}
+        onPress={handlePress}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityHint={accessibilityHint}
+        accessibilityState={{ disabled }}
+      >
+        {inner}
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <View style={containerStyle} accessibilityLabel={label}>
+      {inner}
+    </View>
   );
 }
 

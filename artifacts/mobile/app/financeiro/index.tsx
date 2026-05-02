@@ -48,7 +48,7 @@ export default function FinanceiroIndex() {
         />
       </View>
 
-      <SectionHeader label="Operação" />
+      <SectionHeader label="Caixa" />
       <View style={styles.card}>
         <ListRow
           icon="dollar-sign"
@@ -57,10 +57,38 @@ export default function FinanceiroIndex() {
           onPress={go("/financeiro/caixa-diario")}
         />
         <ListRow
+          icon="archive"
+          label="Histórico de caixa"
+          description="Caixas fechados anteriores"
+          onPress={go("/financeiro/historico")}
+        />
+        <ListRow
+          icon="dollar-sign"
+          label="Caixinha"
+          description="Gorjetas por profissional"
+          onPress={go("/financeiro/caixinha")}
+        />
+      </View>
+
+      <SectionHeader label="Comissões e contas" />
+      <View style={styles.card}>
+        <ListRow
           icon="percent"
           label="Comissões"
           description="Por profissional e período"
           onPress={go("/financeiro/comissoes")}
+        />
+        <ListRow
+          icon="user-check"
+          label="Conta do profissional"
+          description="Saldos e adiantamentos"
+          onPress={go("/financeiro/conta-profissional")}
+        />
+        <ListRow
+          icon="user"
+          label="Conta do cliente"
+          description="Saldos e quitação"
+          onPress={go("/financeiro/conta-cliente")}
         />
       </View>
     </ScreenContainer>
