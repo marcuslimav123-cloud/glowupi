@@ -149,18 +149,18 @@ export function useTemaLayoutSync(): {
   const appliedRef = useRef<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const { data } = useQuery<ParamRow[]>({
+  const { data } = useQuery<{ chave: string; valor: string } | null>({
     queryKey: ["parametros-tema-layout", barbeariaId],
     queryFn: async () => {
-      if (!barbeariaId) return [];
-      const raw = await fetchJson<unknown>(`/barbearias/${barbeariaId}/parametros`);
-      return Array.isArray(raw) ? (raw as ParamRow[]) : [];
+      if (!barbeariaId) return null;
+      const raw = await fetchJson<unknown>(`/barbearias/${barbeariaId}/parametros/tema-layout`);
+      return raw as { chave: string; valor: string } | null;
     },
     enabled: !!barbeariaId && isAuthenticated,
     staleTime: 5 * 60 * 1000,
   });
 
-  const remoteValor = data?.find((r) => r.chave === "tema_layout")?.valor || null;
+  const remoteValor = data?.valor || null;
   const remoteMode = temaLayoutToMode(remoteValor);
 
   useEffect(() => {

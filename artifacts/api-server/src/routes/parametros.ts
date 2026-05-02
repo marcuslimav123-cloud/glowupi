@@ -127,6 +127,19 @@ async function ensureDefaults(barbeariaId: number) {
   await db.insert(parametrosConfigTable).values(rows);
 }
 
+router.get("/tema-layout", requireAuth, async (req, res) => {
+  const barbeariaId = parseInt(req.params.barbeariaId);
+  if (isNaN(barbeariaId)) return res.status(400).json({ error: "ID inválido" });
+  const user = (req as any).user;
+  const userBarbId = await resolveUserBarbeariaId(user);
+  if (userBarbId !== barbeariaId) return res.status(403).json({ error: "Sem permissão" });
+  const [row] = await db.select().from(parametrosConfigTable).where(
+    and(eq(parametrosConfigTable.barbeariaId, barbeariaId), eq(parametrosConfigTable.chave, "tema_layout"))
+  ).limit(1);
+  const def = PARAMETROS_DEFAULTS.find(d => d.chave === "tema_layout");
+  return res.json({ chave: "tema_layout", valor: row?.valor ?? def?.valorPadrao ?? "Claro" });
+});
+
 router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = parseInt(req.params.barbeariaId);
   if (isNaN(barbeariaId)) return res.status(400).json({ error: "ID inválido" });
