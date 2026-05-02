@@ -198,7 +198,7 @@ export default function PacotesVendasScreen() {
 
               <Text style={styles.label}>Pacote</Text>
               <View style={{ gap: 6 }}>
-                {(pacotesQ.data || []).filter((p: any) => p.ativo !== false).map((p) => {
+                {(pacotesQ.data || []).filter((p) => (p as Pacote & { ativo?: boolean }).ativo !== false).map((p) => {
                   const sel = pacoteSel === p.id;
                   return (
                     <Pressable key={p.id} onPress={() => setPacoteSel(p.id)} style={[styles.opt, sel && styles.optActive]}>

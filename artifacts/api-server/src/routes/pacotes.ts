@@ -44,16 +44,17 @@ router.put("/:pacoteId", requireAuth, requireRole("dono", "gerente"), async (req
   res.json(formatPacote(pacote));
 });
 
-router.delete("/:pacoteId", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
+router.delete("/:pacoteId", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const pacoteId = parseInt(req.params.pacoteId);
+  if (isNaN(pacoteId)) return res.status(400).json({ error: "ID inválido" });
   const [vendido] = await db.select().from(pacotesClienteTable).where(eq(pacotesClienteTable.pacoteId, pacoteId)).limit(1);
   if (vendido) {
     return res.status(409).json({ error: "Pacote já vendido — desative ao invés de excluir." });
   }
   await db.delete(pacotesTable).where(and(eq(pacotesTable.id, pacoteId), eq(pacotesTable.barbeariaId, barbeariaId)));
-  res.json({ success: true });
+  return res.json({ success: true });
 });
 
 export default router;

@@ -163,11 +163,17 @@ const CLIENT_NOTIF_CHAVES = [
   "notif_cliente_mensagem",
 ];
 
-router.put("/:chave", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+const SELF_SERVE_CHAVES = new Set(["tema_layout"]);
+
+router.put("/:chave", requireAuth, async (req, res) => {
   const barbeariaId = parseInt(req.params.barbeariaId);
   if (isNaN(barbeariaId)) return res.status(400).json({ error: "ID inválido" });
 
   const user = (req as any).user;
+  const isManager = user?.role === "dono" || user?.role === "gerente";
+  if (!isManager && !SELF_SERVE_CHAVES.has(req.params.chave)) {
+    return res.status(403).json({ error: "Sem permissão" });
+  }
   const userBarbId = await resolveUserBarbeariaId(user);
   if (userBarbId !== barbeariaId) return res.status(403).json({ error: "Sem permissão" });
 
