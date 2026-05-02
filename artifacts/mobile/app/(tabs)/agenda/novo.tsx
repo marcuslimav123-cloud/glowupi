@@ -173,7 +173,9 @@ export default function NovoAgendamentoScreen() {
     const slotInfo = !useFallback ? slotsData.find(s => s.horaInicio === formHora) : undefined;
     const isOutsideGrid = !useFallback && slotsData.length > 0 && !slotInfo;
     const isUnavailable = !!(slotInfo && !slotInfo.disponivel);
-    const needsConfirm = isEncaixe || isOutsideGrid || isUnavailable;
+    // Custom time entered manually is always treated as encaixe (matches UI copy "será registrado como encaixe")
+    const isCustom = showCustom && customTime === formHora;
+    const needsConfirm = isEncaixe || isOutsideGrid || isUnavailable || isCustom;
 
     if (needsConfirm) {
       const motivo = isUnavailable
@@ -194,7 +196,7 @@ export default function NovoAgendamentoScreen() {
       if (!proceed) return;
     }
 
-    const finalEncaixe = isEncaixe || isOutsideGrid || isUnavailable;
+    const finalEncaixe = isEncaixe || isOutsideGrid || isUnavailable || isCustom;
 
     setSubmitting(true);
     try {
