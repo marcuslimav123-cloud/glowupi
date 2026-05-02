@@ -56,8 +56,7 @@ const PAYMENT_METHODS = [
 
 const requiresBandeira = (m: string) => m === "credito" || m === "debito";
 
-function statusColor(status: string, encaixe?: boolean): { color: string; label: string; bg: string } {
-  if (encaixe) return { color: Colors.warning, label: "Encaixe", bg: Colors.warning + "20" };
+function statusColor(status: string, _encaixe?: boolean): { color: string; label: string; bg: string } {
   switch (status) {
     case "pago": return { color: Colors.success, label: "Pago", bg: Colors.success + "20" };
     case "confirmado": return { color: Colors.accent, label: "Confirmado", bg: Colors.accent + "20" };
@@ -387,9 +386,14 @@ export default function AgendamentoDetail() {
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 140 + insets.bottom }}>
         <View style={styles.statusRow}>
           <View style={[styles.statusBadge, { backgroundColor: info.bg }]}>
-            {agend.encaixe && <Feather name="zap" size={12} color={info.color} />}
             <Text style={[styles.statusText, { color: info.color }]}>{info.label}</Text>
           </View>
+          {agend.encaixe && (
+            <View style={[styles.statusBadge, { backgroundColor: Colors.warning + "20", flexDirection: "row", gap: 4, alignItems: "center" }]}>
+              <Feather name="zap" size={12} color={Colors.warning} />
+              <Text style={[styles.statusText, { color: Colors.warning }]}>Encaixe</Text>
+            </View>
+          )}
           {agend.atendimentoId && (
             <View style={styles.tag}>
               <Feather name="users" size={11} color="#a78bfa" />

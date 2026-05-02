@@ -63,8 +63,7 @@ type Profissional = {
   ordem?: number;
 };
 
-function statusInfo(status: string, encaixe?: boolean): { color: string; label: string; bg: string } {
-  if (encaixe) return { color: Colors.warning, label: "Encaixe", bg: Colors.warning + "20" };
+function statusInfo(status: string, _encaixe?: boolean): { color: string; label: string; bg: string } {
   switch (status) {
     case "pago": return { color: Colors.success, label: "Pago", bg: Colors.success + "20" };
     case "confirmado": return { color: Colors.accent, label: "Confirmado", bg: Colors.accent + "20" };
@@ -474,6 +473,12 @@ export default function AgendaIndex() {
                     Alert.alert("Campos obrigatórios", "Selecione profissional e informe horários no formato HH:MM.");
                     return;
                   }
+                  const [hi, mi] = blockHoraInicio.split(":").map(Number);
+                  const [hf, mf] = blockHoraFim.split(":").map(Number);
+                  if (hi < 0 || hi > 23 || mi < 0 || mi > 59 || hf < 0 || hf > 23 || mf < 0 || mf > 59) {
+                    Alert.alert("Horário inválido", "Use horas entre 00 e 23 e minutos entre 00 e 59.");
+                    return;
+                  }
                   if (blockHoraFim <= blockHoraInicio) {
                     Alert.alert("Período inválido", "O fim deve ser após o início.");
                     return;
@@ -579,9 +584,16 @@ function AgendamentoCard({ a, router, compact }: { a: Agendamento; router: Retur
           <Text style={[styles.cardTime, compact && { fontSize: 14 }]}>{a.horaInicio.slice(0, 5)}</Text>
           <Text style={styles.cardTimeUntil}>até {a.horaFim.slice(0, 5)}</Text>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: info.bg }]}>
-          {a.encaixe && <Feather name="zap" size={11} color={info.color} />}
-          <Text style={[styles.statusText, { color: info.color }]}>{info.label}</Text>
+        <View style={{ flexDirection: "row", gap: 4, alignItems: "center" }}>
+          <View style={[styles.statusBadge, { backgroundColor: info.bg }]}>
+            <Text style={[styles.statusText, { color: info.color }]}>{info.label}</Text>
+          </View>
+          {a.encaixe && (
+            <View style={[styles.statusBadge, { backgroundColor: Colors.warning + "20", flexDirection: "row", gap: 3, alignItems: "center" }]}>
+              <Feather name="zap" size={11} color={Colors.warning} />
+              <Text style={[styles.statusText, { color: Colors.warning }]}>Encaixe</Text>
+            </View>
+          )}
         </View>
       </View>
       <View style={styles.cardBody}>
