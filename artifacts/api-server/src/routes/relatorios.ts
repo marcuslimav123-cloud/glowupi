@@ -68,12 +68,22 @@ router.get("/faturamento", requireAuth, requireRole("dono", "gerente"), async (r
 router.get("/comissoes", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
-  const { mes } = req.query;
-  if (!mes) return res.status(400).json({ error: "mes é obrigatório" });
+  const { mes, dataInicio, dataFim } = req.query;
+  if (!mes && !(dataInicio && dataFim)) {
+    return res.status(400).json({ error: "mes ou (dataInicio e dataFim) são obrigatórios" });
+  }
+
+  const comandasWhere = mes
+    ? and(eq(comandasTable.barbeariaId, barbeariaId), eq(comandasTable.mesAno, mes as string))
+    : and(
+        eq(comandasTable.barbeariaId, barbeariaId),
+        sql`DATE(${comandasTable.dataFechamento}) >= ${dataInicio}`,
+        sql`DATE(${comandasTable.dataFechamento}) <= ${dataFim}`,
+      );
 
   const [profissionais, comandas] = await Promise.all([
     db.select().from(profissionaisTable).where(eq(profissionaisTable.barbeariaId, barbeariaId)),
-    db.select().from(comandasTable).where(and(eq(comandasTable.barbeariaId, barbeariaId), eq(comandasTable.mesAno, mes as string))),
+    db.select().from(comandasTable).where(comandasWhere),
   ]);
 
   const profMap: Record<number, { profissionalId: number; nome: string; totalAtendimentos: number; faturamentoBruto: number; comissaoTotal: number }> = {};
