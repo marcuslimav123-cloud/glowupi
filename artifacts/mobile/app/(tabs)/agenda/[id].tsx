@@ -19,7 +19,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchJson, formatCurrency, whatsappLink, strToDate, generateTimeSlots, dateToStr, todayStr, getErrorMessage } from "@/lib/api";
+import { fetchJson, formatCurrency, whatsappLink, strToDate, generateTimeSlots, dateToStr, getErrorMessage } from "@/lib/api";
 
 type Parametro = { chave: string; valor: string };
 type AgendamentoDetail = {

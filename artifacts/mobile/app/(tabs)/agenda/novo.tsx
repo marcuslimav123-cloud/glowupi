@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -21,7 +21,7 @@ import Colors from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   fetchJson, formatCurrency, formatPhone, stripPhone, todayStr,
-  generateTimeSlots, timeToMinutes, addMinutesToTime, strToDate, dateToStr, getErrorMessage,
+  generateTimeSlots, timeToMinutes, strToDate, dateToStr, getErrorMessage,
 } from "@/lib/api";
 
 type Step = "client" | "service" | "professional" | "time";

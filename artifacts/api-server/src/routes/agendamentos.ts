@@ -14,7 +14,7 @@ import { getParametros } from "../lib/parametros.js";
 import { sendEmail } from "../lib/brevo.js";
 import { sendPushToBarbearia, sendPushToClienteUser } from "../lib/pushNotifications.js";
 import { clienteUsersTable } from "@workspace/db/schema";
-import { validateAgendamentoEmHorario, validateAgendamentoEmJornadaProf } from "../lib/horarioValidation.js";
+import { validateAgendamentoEmHorario, validateAgendamentoEmJornadaProf, type HorarioDia } from "../lib/horarioValidation.js";
 import { buildWhatsappUrl, renderWhatsappTemplate, formatDateBR } from "../lib/whatsappLink.js";
 
 async function notificarAgendamento(barbeariaId: number, params: Record<string, string>, agendData: { clienteNome: string; clienteTelefone?: string; profissionalNome: string; servicoNome: string; data: string; horaInicio: string; clienteId?: number | null; agendamentoId?: number }, tipo: "criado" | "cancelado") {
@@ -670,11 +670,11 @@ router.put("/:agendamentoId", requireAuth, async (req, res) => {
 
     if (!existing.encaixe) {
       const [barb] = await db.select({ horarioFuncionamento: barbeariasTable.horarioFuncionamento }).from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
-      const horarioErr = validateAgendamentoEmHorario(nextData, nextHoraInicio, nextHoraFim, (barb?.horarioFuncionamento as any));
+      const horarioErr = validateAgendamentoEmHorario(nextData, nextHoraInicio, nextHoraFim, barb?.horarioFuncionamento as HorarioDia[] | null | undefined);
       if (horarioErr) return res.status(400).json({ error: horarioErr });
       const [profCheck] = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, nextProfissionalId), eq(profissionaisTable.barbeariaId, barbeariaId))).limit(1);
       if (profCheck?.horarios) {
-        const jornadaErr = validateAgendamentoEmJornadaProf(nextData, nextHoraInicio, nextHoraFim, profCheck.horarios as any);
+        const jornadaErr = validateAgendamentoEmJornadaProf(nextData, nextHoraInicio, nextHoraFim, profCheck.horarios);
         if (jornadaErr) return res.status(400).json({ error: jornadaErr });
       }
       const bloqueios = await db.select().from(bloqueiosHorarioTable).where(

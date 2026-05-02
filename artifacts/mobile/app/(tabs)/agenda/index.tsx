@@ -1,12 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Linking,
   Modal,
   Platform,
-  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -25,9 +23,9 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorView } from "@/components/ErrorView";
 import { SkeletonList } from "@/components/Skeleton";
 import {
-  apiUrl, fetchJson, formatCurrency, todayStr, dateToStr, strToDate,
+  fetchJson, formatCurrency, todayStr, dateToStr, strToDate,
   shortDateLabel, getHorizontalRange, getWeekDates, WEEKDAYS_PT, MONTHS_PT,
-  whatsappLink, generateTimeSlots,
+  whatsappLink,
 } from "@/lib/api";
 import { TextInput, KeyboardAvoidingView } from "react-native";
 
