@@ -21,7 +21,7 @@ import Colors from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   fetchJson, formatCurrency, formatPhone, stripPhone, todayStr,
-  generateTimeSlots, timeToMinutes, addMinutesToTime, strToDate, dateToStr,
+  generateTimeSlots, timeToMinutes, addMinutesToTime, strToDate, dateToStr, getErrorMessage,
 } from "@/lib/api";
 
 type Step = "client" | "service" | "professional" | "time";
@@ -207,8 +207,8 @@ export default function NovoAgendamentoScreen() {
             body: { nome: formNome, telefone: telDigits },
           });
           if (created?.id) clienteIdToUse = created.id;
-        } catch (e: any) {
-          const msg = String(e?.message || "");
+        } catch (e: unknown) {
+          const msg = getErrorMessage(e, "");
           if (/já existe|exists|409|duplic/i.test(msg)) {
             try {
               const existing = await fetchJson<Array<{ id: number; telefone?: string | null; nome?: string }>>(
@@ -218,7 +218,10 @@ export default function NovoAgendamentoScreen() {
                 ? existing.find(c => stripPhone(c.telefone || "") === telDigits)
                 : null;
               if (match?.id) clienteIdToUse = match.id;
-            } catch {}
+              else console.warn("[novo] cliente duplicado mas não encontrado por telefone:", telDigits);
+            } catch (lookupErr: unknown) {
+              console.warn("[novo] falha ao buscar cliente duplicado:", getErrorMessage(lookupErr));
+            }
           } else {
             Alert.alert("Erro ao cadastrar cliente", msg || "Tente novamente.");
             setSubmitting(false);
@@ -265,8 +268,8 @@ export default function NovoAgendamentoScreen() {
       qc.invalidateQueries({ queryKey: ["agendamentos"] });
       qc.invalidateQueries({ queryKey: ["agendamentos-pendentes-count"] });
       router.back();
-    } catch (err: any) {
-      Alert.alert("Erro ao agendar", err?.message || "Tente novamente.");
+    } catch (err: unknown) {
+      Alert.alert("Erro ao agendar", getErrorMessage(err, "Tente novamente."));
     } finally {
       setSubmitting(false);
     }

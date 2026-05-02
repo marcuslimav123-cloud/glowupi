@@ -20,7 +20,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchJson, formatPhone, stripPhone, todayStr, whatsappLink } from "@/lib/api";
+import { fetchJson, formatPhone, stripPhone, todayStr, whatsappLink, getErrorMessage } from "@/lib/api";
 import { EmptyState } from "@/components/EmptyState";
 
 type Item = {
@@ -83,8 +83,8 @@ export default function ListaEsperaScreen() {
       setOpen(false);
       setNome(""); setTel(""); setObs(""); setData(todayStr());
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (e: any) {
-      Alert.alert("Erro", e?.message || "");
+    } catch (e: unknown) {
+      Alert.alert("Erro", getErrorMessage(e, "Tente novamente."));
     } finally {
       setSubmitting(false);
     }
@@ -97,8 +97,8 @@ export default function ListaEsperaScreen() {
         body: { status },
       });
       invalidate();
-    } catch (e: any) {
-      Alert.alert("Erro", e?.message || "");
+    } catch (e: unknown) {
+      Alert.alert("Erro", getErrorMessage(e, "Tente novamente."));
     }
   };
 
@@ -112,8 +112,8 @@ export default function ListaEsperaScreen() {
           try {
             await fetchJson(`/barbearias/${barbeariaId}/lista-espera/${item.id}`, { method: "DELETE" });
             invalidate();
-          } catch (e: any) {
-            Alert.alert("Erro", e?.message || "");
+          } catch (e: unknown) {
+            Alert.alert("Erro", getErrorMessage(e, "Tente novamente."));
           }
         },
       },

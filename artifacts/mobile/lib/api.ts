@@ -25,7 +25,24 @@ export type FetchOptions = {
   headers?: Record<string, string>;
 };
 
-export async function fetchJson<T = any>(path: string, opts: FetchOptions = {}): Promise<T> {
+export class ApiError extends Error {
+  status: number;
+  data: unknown;
+  constructor(message: string, status: number, data: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.data = data;
+  }
+}
+
+export function getErrorMessage(e: unknown, fallback = "Erro inesperado"): string {
+  if (e instanceof Error) return e.message || fallback;
+  if (typeof e === "string") return e;
+  return fallback;
+}
+
+export async function fetchJson<T = unknown>(path: string, opts: FetchOptions = {}): Promise<T> {
   const token = await getToken();
   const url = apiUrl(path);
   const headers: Record<string, string> = {
@@ -41,7 +58,7 @@ export async function fetchJson<T = any>(path: string, opts: FetchOptions = {}):
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });
   const text = await res.text();
-  let data: any = null;
+  let data: unknown = null;
   if (text) {
     try {
       data = JSON.parse(text);
@@ -50,11 +67,13 @@ export async function fetchJson<T = any>(path: string, opts: FetchOptions = {}):
     }
   }
   if (!res.ok) {
-    const msg = (data && typeof data === "object" && (data.error || data.message)) || `Erro ${res.status}`;
-    const err = new Error(msg) as any;
-    err.status = res.status;
-    err.data = data;
-    throw err;
+    let msg = `Erro ${res.status}`;
+    if (data && typeof data === "object") {
+      const obj = data as { error?: unknown; message?: unknown };
+      if (typeof obj.error === "string") msg = obj.error;
+      else if (typeof obj.message === "string") msg = obj.message;
+    }
+    throw new ApiError(msg, res.status, data);
   }
   return data as T;
 }

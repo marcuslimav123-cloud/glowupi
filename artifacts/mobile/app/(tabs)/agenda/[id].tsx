@@ -19,7 +19,30 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchJson, formatCurrency, whatsappLink, strToDate, generateTimeSlots, dateToStr, todayStr } from "@/lib/api";
+import { fetchJson, formatCurrency, whatsappLink, strToDate, generateTimeSlots, dateToStr, todayStr, getErrorMessage } from "@/lib/api";
+
+type Parametro = { chave: string; valor: string };
+type AgendamentoDetail = {
+  id: number;
+  clienteId?: number | null;
+  clienteNome: string;
+  clienteTelefone?: string | null;
+  profissionalId: number;
+  profissionalNome: string;
+  servicoId: number;
+  servicoNome: string;
+  data: string;
+  horaInicio: string;
+  horaFim: string;
+  status: string;
+  valor: number | string;
+  pago: boolean;
+  encaixe?: boolean;
+  observacao?: string | null;
+  atendimentoId?: number | null;
+  pacoteClienteId?: number | null;
+};
+type PagamentoPayload = { metodo: string; valor: number; bandeira?: string };
 import { ErrorView } from "@/components/ErrorView";
 
 type Bandeira = { id: number; nome: string; categoria: string; ativo?: boolean };
@@ -69,7 +92,7 @@ export default function AgendamentoDetail() {
     queryKey: ["parametros", barbeariaId],
     queryFn: async () => {
       if (!barbeariaId) return {};
-      const arr = await fetchJson<any[]>(`/barbearias/${barbeariaId}/parametros`);
+      const arr = await fetchJson<Parametro[]>(`/barbearias/${barbeariaId}/parametros`);
       const map: Record<string, string> = {};
       if (Array.isArray(arr)) for (const p of arr) if (p?.chave) map[p.chave] = p.valor;
       return map;
@@ -89,11 +112,11 @@ export default function AgendamentoDetail() {
 
   const bandeiraObrigatoria = parametros["comanda_obrigatoriedade_bandeira"] === "Sim";
 
-  const { data: agend, isLoading, isError, refetch } = useQuery<any>({
+  const { data: agend, isLoading, isError, refetch } = useQuery<AgendamentoDetail | null>({
     queryKey: ["agendamento", barbeariaId, id],
     queryFn: async () => {
       if (!barbeariaId || !id) return null;
-      return await fetchJson(`/barbearias/${barbeariaId}/agendamentos/${id}`);
+      return await fetchJson<AgendamentoDetail>(`/barbearias/${barbeariaId}/agendamentos/${id}`);
     },
     enabled: !!barbeariaId && !!id,
   });
@@ -129,8 +152,8 @@ export default function AgendamentoDetail() {
         ]);
       }
       router.back();
-    } catch (e: any) {
-      Alert.alert("Erro ao confirmar", e?.message || "");
+    } catch (e: unknown) {
+      Alert.alert("Erro ao confirmar", getErrorMessage(e, "Tente novamente."));
     } finally {
       setBusy(null);
     }
@@ -152,6 +175,7 @@ export default function AgendamentoDetail() {
   };
 
   const sendRefuse = async (motivo: string) => {
+    if (!agend) return;
     setBusy("recusar");
     try {
       const res = await fetchJson<{ waUrl?: string }>(
@@ -166,8 +190,8 @@ export default function AgendamentoDetail() {
         ]);
       }
       router.back();
-    } catch (e: any) {
-      Alert.alert("Erro ao recusar", e?.message || "");
+    } catch (e: unknown) {
+      Alert.alert("Erro ao recusar", getErrorMessage(e, "Tente novamente."));
     } finally {
       setBusy(null);
     }
@@ -209,8 +233,8 @@ export default function AgendamentoDetail() {
         }
       }
       router.back();
-    } catch (e: any) {
-      Alert.alert("Erro ao cancelar", e?.message || "");
+    } catch (e: unknown) {
+      Alert.alert("Erro ao cancelar", getErrorMessage(e, "Tente novamente."));
     } finally {
       setBusy(null);
     }
@@ -255,8 +279,8 @@ export default function AgendamentoDetail() {
       } else {
         router.back();
       }
-    } catch (e: any) {
-      Alert.alert("Erro ao reagendar", e?.message || "");
+    } catch (e: unknown) {
+      Alert.alert("Erro ao reagendar", getErrorMessage(e, "Tente novamente."));
     } finally {
       setBusy(null);
     }
@@ -279,9 +303,10 @@ export default function AgendamentoDetail() {
       Alert.alert("Bandeira obrigatória", "Selecione a bandeira do cartão para concluir o checkout.");
       return;
     }
+    if (!agend) return;
     setBusy("checkout");
     try {
-      const pagamento: any = { metodo, valor: valorFinal };
+      const pagamento: PagamentoPayload = { metodo, valor: valorFinal };
       if (requiresBandeira(metodo) && bandeira) pagamento.bandeira = bandeira;
       await fetchJson(`/barbearias/${barbeariaId}/agendamentos/${agend.id}/checkout`, {
         method: "POST",
@@ -296,8 +321,8 @@ export default function AgendamentoDetail() {
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setCheckoutOpen(false);
       router.back();
-    } catch (e: any) {
-      Alert.alert("Erro no checkout", e?.message || "");
+    } catch (e: unknown) {
+      Alert.alert("Erro no checkout", getErrorMessage(e, "Tente novamente."));
     } finally {
       setBusy(null);
     }

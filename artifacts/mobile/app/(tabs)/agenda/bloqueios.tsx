@@ -19,7 +19,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchJson, todayStr, strToDate, generateTimeSlots, getHorizontalRange } from "@/lib/api";
+import { fetchJson, todayStr, strToDate, generateTimeSlots, getHorizontalRange, getErrorMessage } from "@/lib/api";
 import { EmptyState } from "@/components/EmptyState";
 
 const MANAGER_ROLES = new Set(["dono", "gerente", "admin", "owner"]);
@@ -100,8 +100,8 @@ export default function BloqueiosScreen() {
       setOpen(false);
       setProfId(""); setHoraInicio(""); setHoraFim(""); setMotivo("");
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (e: any) {
-      Alert.alert("Erro", e?.message || "");
+    } catch (e: unknown) {
+      Alert.alert("Erro", getErrorMessage(e, "Tente novamente."));
     } finally {
       setSubmitting(false);
     }
@@ -118,8 +118,8 @@ export default function BloqueiosScreen() {
             await fetchJson(`/barbearias/${barbeariaId}/bloqueios/${b.id}`, { method: "DELETE" });
             qc.invalidateQueries({ queryKey: ["bloqueios"] });
             qc.invalidateQueries({ queryKey: ["agendamentos"] });
-          } catch (e: any) {
-            Alert.alert("Erro", e?.message || "");
+          } catch (e: unknown) {
+            Alert.alert("Erro", getErrorMessage(e, "Tente novamente."));
           }
         },
       },
