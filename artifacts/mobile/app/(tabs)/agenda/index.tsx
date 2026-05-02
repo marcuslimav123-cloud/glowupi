@@ -144,7 +144,7 @@ export default function AgendaIndex() {
   }, [refetch, qc, barbeariaId]));
 
   const sortedProfs = useMemo(() => {
-    return [...profissionais].sort((a, b) => {
+    return [...profissionais].filter(p => p.ativo !== false).sort((a, b) => {
       const oa = typeof a.ordem === "number" ? a.ordem : 999;
       const ob = typeof b.ordem === "number" ? b.ordem : 999;
       if (oa !== ob) return oa - ob;
@@ -273,7 +273,7 @@ export default function AgendaIndex() {
               <Text style={[styles.dayNum, isSel && styles.dayChipTextActive]}>{dd.getDate()}</Text>
               {dayAgends.length > 0 && (
                 <View style={[styles.dayDot, isSel && { backgroundColor: "#000" }]}>
-                  <Text style={[styles.dayDotText, isSel && { color: "#000" }]}>{dayAgends.length}</Text>
+                  <Text style={[styles.dayDotText, isSel && { color: Colors.accent }]}>{dayAgends.length}</Text>
                 </View>
               )}
             </TouchableOpacity>

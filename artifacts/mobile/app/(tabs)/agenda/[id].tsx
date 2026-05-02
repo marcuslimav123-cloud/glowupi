@@ -259,8 +259,8 @@ export default function AgendamentoDetail() {
 
   const sendReagendar = async () => {
     if (!agend) return;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(novaData) || !/^\d{2}:\d{2}$/.test(novaHora)) {
-      Alert.alert("Dados inválidos", "Informe data (AAAA-MM-DD) e horário (HH:MM).");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(novaData) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(novaHora)) {
+      Alert.alert("Dados inválidos", "Informe data (AAAA-MM-DD) e horário (HH:MM, 00:00 a 23:59).");
       return;
     }
     setBusy("reagendar");
