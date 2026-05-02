@@ -59,7 +59,7 @@ router.post("/webhook", async (req: any, res) => {
       case "PRODUCT_CHANGE":
       case "UNCANCELLATION":
         iapStatus = "active";
-        subscriptionStatus = "active";
+        subscriptionStatus = "ativo";
         planoStatus = "ativo";
         break;
       case "CANCELLATION":
@@ -67,12 +67,12 @@ router.post("/webhook", async (req: any, res) => {
         break;
       case "EXPIRATION":
         iapStatus = "expired";
-        subscriptionStatus = "canceled";
+        subscriptionStatus = "cancelado";
         planoStatus = "vencido";
         break;
       case "BILLING_ISSUE":
         iapStatus = "billing_issue";
-        subscriptionStatus = "past_due";
+        subscriptionStatus = "pendente";
         break;
       case "SUBSCRIBER_ALIAS":
       case "TRANSFER":
@@ -163,7 +163,7 @@ router.post("/sync", requireAuth, async (req: any, res) => {
       iapStatus: "active",
       iapProductId: productId || barbearia.iapProductId,
       iapExpiresAt: expiresMs ? new Date(expiresMs) : barbearia.iapExpiresAt,
-      subscriptionStatus: "active",
+      subscriptionStatus: "ativo",
       planoStatus: "ativo",
       planoVencimento: expiresMs ? new Date(expiresMs) : barbearia.planoVencimento,
       updatedAt: new Date(),

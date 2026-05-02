@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Platform, View, ActivityIndicator, StyleSheet, TouchableOpacity, Text } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
 import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
 import Colors from "@/constants/colors";
 
 interface Props {
@@ -60,7 +61,7 @@ export function AppleSignInButton({ onSuccess, onError, disabled }: Props) {
         <ActivityIndicator color="#fff" size="small" />
       ) : (
         <View style={styles.content}>
-          <Text style={styles.appleLogo}></Text>
+          <Ionicons name="logo-apple" size={20} color="#fff" style={styles.appleLogo} />
           <Text style={styles.text}>Continuar com Apple</Text>
         </View>
       )}
@@ -85,8 +86,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   appleLogo: {
-    fontSize: 18,
-    color: "#fff",
     marginTop: -2,
   },
   text: {

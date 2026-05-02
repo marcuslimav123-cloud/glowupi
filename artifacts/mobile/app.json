@@ -24,14 +24,7 @@
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSCameraUsageDescription": "O Glow Upi Pro usa a câmera para você adicionar fotos do seu salão, fotos dos serviços e fotos dos clientes (com consentimento) para o portfólio.",
-        "NSPhotoLibraryUsageDescription": "O Glow Upi Pro acessa suas fotos para você selecionar imagens do salão, fotos de serviços e logo da sua barbearia.",
-        "NSPhotoLibraryAddUsageDescription": "O Glow Upi Pro pode salvar comprovantes de pagamento e fotos do antes/depois na sua galeria quando você solicitar.",
-        "NSLocationWhenInUseUsageDescription": "O Glow Upi Pro usa sua localização para sugerir o endereço da sua barbearia no cadastro e mostrar a distância até clientes em raio configurável.",
-        "NSContactsUsageDescription": "O Glow Upi Pro pode importar contatos do seu telefone para criar a base de clientes da barbearia mais rapidamente.",
         "NSUserTrackingUsageDescription": "Permite que o Glow Upi Pro envie eventos anônimos para entender como o app é usado e melhorar funcionalidades. Nenhum dado pessoal é compartilhado.",
-        "NSFaceIDUsageDescription": "Use Face ID para acessar o Glow Upi Pro de forma rápida e segura.",
-        "NSMicrophoneUsageDescription": "O Glow Upi Pro pode usar o microfone caso você queira gravar áudios em mensagens para clientes.",
         "LSApplicationQueriesSchemes": [
           "whatsapp",
           "tel",

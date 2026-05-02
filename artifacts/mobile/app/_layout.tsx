@@ -6,8 +6,9 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import * as Notifications from "expo-notifications";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -55,6 +56,30 @@ export default function RootLayout() {
       })();
     }
   }, [fontsLoaded, fontError]);
+
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      try {
+        const data: any = response.notification.request.content.data || {};
+        Notifications.setBadgeCountAsync(0).catch(() => {});
+        const route = data.route || data.deeplink;
+        if (typeof route === "string" && route.length > 0) {
+          router.push(route as any);
+          return;
+        }
+        if (data.type === "agendamento" || data.tipo === "agendamento") {
+          router.push("/(tabs)/agenda");
+        } else if (data.type === "comanda" || data.tipo === "comanda") {
+          router.push("/(tabs)/comandas");
+        } else if (data.type === "cliente" || data.tipo === "cliente") {
+          router.push("/(tabs)/clientes");
+        }
+      } catch (err) {
+        console.warn("[Push] erro ao processar tap de notificação:", err);
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   if (!fontsLoaded && !fontError) return null;
 

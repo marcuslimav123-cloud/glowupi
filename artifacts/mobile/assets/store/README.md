@@ -8,28 +8,35 @@ Esta pasta deve conter os ativos finais exigidos pela Apple App Store Connect e 
 - 1024x1024 PNG, sem alpha, sem cantos arredondados
 - Arquivo: `app-icon-1024.png`
 
-### Screenshots (mínimo 3 por tamanho)
-Capturar pelo simulador iOS (Xcode) ou dispositivo real:
-- **6.7"** (iPhone 15/14/13 Pro Max) — 1290 x 2796
-- **6.5"** (iPhone 11 Pro Max / XS Max) — 1242 x 2688 *ou* 1284 x 2778
-- **5.5"** (iPhone 8 Plus) — 1242 x 2208 (opcional, mas recomendado)
-- **iPad Pro 12.9"** (3ª geração+) — 2048 x 2732 (somente se app universal)
+### Screenshots iOS (mínimo 5 por tamanho exigido em 2024+)
 
-Telas sugeridas para captura:
-1. Login (com Sign in with Apple visível)
-2. Dashboard / Agenda do dia
+A Apple exige obrigatoriamente os dois tamanhos a seguir, com **no mínimo 5 screenshots** cada:
+
+- **6.9"** (iPhone 16 Pro Max / 15 Pro Max) — 1290 x 2796 pixels (portrait)
+- **6.5"** (iPhone 11 Pro Max / XS Max) — 1242 x 2688 ou 1284 x 2778 pixels (portrait)
+
+Tamanhos opcionais (recomendados):
+- **6.7"** (iPhone 14 Pro Max) — 1290 x 2796 (idêntico ao 6.9", App Store usa o mesmo arquivo)
+- **iPad Pro 12.9"** (3ª geração+) — 2048 x 2732 (somente se o app for marcado como universal)
+
+Cinco telas sugeridas (numerar 01..05):
+
+1. Login (com botão Sign in with Apple visível)
+2. Agenda do dia (visão profissional)
 3. Comandas (aba "Abertas")
-4. Clientes
-5. Paywall (Plano e assinatura)
-6. Menu (mostrando itens legais e Excluir conta)
+4. Clientes (lista + busca)
+5. Paywall / Plano (preços, restaurar compras, termos)
 
 Salvar como:
 ```
-assets/store/ios/6.7/01-login.png
-assets/store/ios/6.7/02-agenda.png
-...
+assets/store/ios/6.9/01-login.png
+assets/store/ios/6.9/02-agenda.png
+assets/store/ios/6.9/03-comandas.png
+assets/store/ios/6.9/04-clientes.png
+assets/store/ios/6.9/05-paywall.png
+
 assets/store/ios/6.5/01-login.png
-...
+... (mesmo padrão, 5 arquivos)
 ```
 
 ## Google Play
@@ -40,10 +47,8 @@ assets/store/ios/6.5/01-login.png
 ### Feature Graphic
 - 1024 x 500 PNG/JPG
 
-### Screenshots (mínimo 2)
+### Screenshots (mínimo 2, recomendado 4-8)
 - Telefone: 16:9 ou 9:16, mínimo 320px
-- Tablet 7": opcional
-- Tablet 10": opcional
 
 ## Texto da listagem (App Store Connect)
 
@@ -56,6 +61,14 @@ Recomendamos preparar (em pt-BR e en-US):
 - **Support URL**: `https://glowupi.com/suporte`
 - **Marketing URL**: `https://glowupi.com`
 - **Privacy Policy URL**: `https://glowupi.com/legal/privacidade`
+
+## Como capturar (sem dispositivo físico)
+
+```bash
+# Abrir no simulador iPhone 16 Pro Max:
+pnpm --filter @workspace/mobile exec expo start --ios
+# Dentro do simulador: Cmd+S salva PNG na área de trabalho do macOS.
+```
 
 ## Próximos passos para envio
 
