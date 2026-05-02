@@ -623,12 +623,16 @@ router.put("/:agendamentoId", requireAuth, async (req, res) => {
       return res.status(403).json({ error: "Edição de agendamento bloqueada para profissionais não-gestores" });
     }
   }
-  const updates: any = {
+
+  type AgendamentoUpdate = Partial<typeof existing> & { updatedAt: Date };
+  const updates: AgendamentoUpdate = {
     status: status ?? existing.status,
     observacao: observacao ?? existing.observacao,
     pago: pago !== undefined ? pago : existing.pago,
     updatedAt: new Date(),
   };
+
+  let nextProfissionalId = existing.profissionalId;
   if (profissionalId && profissionalId !== existing.profissionalId) {
     if (user.role === "colaborador") {
       const paramsEdit = await getParametros(barbeariaId);
@@ -637,10 +641,72 @@ router.put("/:agendamentoId", requireAuth, async (req, res) => {
       }
     }
     const [prof] = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, profissionalId), eq(profissionaisTable.barbeariaId, barbeariaId))).limit(1);
-    if (prof) { updates.profissionalId = profissionalId; updates.profissionalNome = prof.apelido || prof.nomeExibicao; }
+    if (prof) {
+      updates.profissionalId = profissionalId;
+      updates.profissionalNome = prof.apelido || prof.nomeExibicao;
+      nextProfissionalId = profissionalId;
+    }
   }
-  if (data) updates.data = data;
-  if (horaInicio) updates.horaInicio = horaInicio;
+
+  const isReschedule = (data && data !== existing.data) || (horaInicio && horaInicio !== existing.horaInicio) || nextProfissionalId !== existing.profissionalId;
+  const nextData = data || existing.data;
+  const nextHoraInicio = horaInicio || existing.horaInicio;
+
+  if (isReschedule && nextHoraInicio) {
+    // Recompute horaFim from servico duration to avoid persisting stale interval
+    const params = await getParametros(barbeariaId);
+    const [servico] = await db.select().from(servicosTable).where(and(eq(servicosTable.id, existing.servicoId), eq(servicosTable.barbeariaId, barbeariaId))).limit(1);
+    const [profServicoOverride] = await db.select().from(profissionalServicosTable).where(
+      and(
+        eq(profissionalServicosTable.profissionalId, nextProfissionalId),
+        eq(profissionalServicosTable.servicoId, existing.servicoId),
+        eq(profissionalServicosTable.barbeariaId, barbeariaId),
+      )
+    ).limit(1);
+    const tempoPadraoStr = params["agenda_tempo_padrao"] || "30min";
+    const tempoPadrao = tempoPadraoStr === "1h" ? 60 : (parseInt(tempoPadraoStr) || 30);
+    const duracaoFinal = profServicoOverride?.tempoOverride ?? servico?.duracaoMinutos ?? tempoPadrao;
+    const nextHoraFim = addMinutesToTime(nextHoraInicio, duracaoFinal);
+
+    if (!existing.encaixe) {
+      const [barb] = await db.select({ horarioFuncionamento: barbeariasTable.horarioFuncionamento }).from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
+      const horarioErr = validateAgendamentoEmHorario(nextData, nextHoraInicio, nextHoraFim, (barb?.horarioFuncionamento as any));
+      if (horarioErr) return res.status(400).json({ error: horarioErr });
+      const [profCheck] = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, nextProfissionalId), eq(profissionaisTable.barbeariaId, barbeariaId))).limit(1);
+      if (profCheck?.horarios) {
+        const jornadaErr = validateAgendamentoEmJornadaProf(nextData, nextHoraInicio, nextHoraFim, profCheck.horarios as any);
+        if (jornadaErr) return res.status(400).json({ error: jornadaErr });
+      }
+      const bloqueios = await db.select().from(bloqueiosHorarioTable).where(
+        and(
+          eq(bloqueiosHorarioTable.barbeariaId, barbeariaId),
+          eq(bloqueiosHorarioTable.profissionalId, nextProfissionalId),
+          eq(bloqueiosHorarioTable.data, nextData),
+        )
+      );
+      const bloqueiosOverlap = bloqueios.some(b => nextHoraInicio < b.horaFim && nextHoraFim > b.horaInicio);
+      if (bloqueiosOverlap) {
+        return res.status(409).json({ error: "Este horário está bloqueado para o profissional selecionado" });
+      }
+      const others = await db.select().from(agendamentosTable).where(
+        and(
+          eq(agendamentosTable.barbeariaId, barbeariaId),
+          eq(agendamentosTable.profissionalId, nextProfissionalId),
+          eq(agendamentosTable.data, nextData),
+          inArray(agendamentosTable.status, ["confirmado", "pendente_aprovacao"]),
+        )
+      );
+      const conflict = others.some(a => a.id !== id && nextHoraInicio < a.horaFim && nextHoraFim > a.horaInicio);
+      if (conflict) {
+        return res.status(409).json({ error: "Já existe um agendamento neste horário para o profissional selecionado" });
+      }
+    }
+
+    updates.data = nextData;
+    updates.horaInicio = nextHoraInicio;
+    updates.horaFim = nextHoraFim;
+  }
+
   const [updated] = await db.update(agendamentosTable).set(updates).where(eq(agendamentosTable.id, id)).returning();
   return res.json(formatAgend(updated));
 });
