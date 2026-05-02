@@ -255,7 +255,7 @@ export default function ListaEsperaScreen() {
                 <TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Ex: Mariana" placeholderTextColor={Colors.textMuted} />
               </View>
               <View>
-                <Text style={styles.fieldLabel}>Telefone</Text>
+                <Text style={styles.fieldLabel}>WhatsApp *</Text>
                 <TextInput
                   style={styles.input}
                   value={tel}
