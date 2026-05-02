@@ -68,14 +68,20 @@ export default function ListaEsperaScreen() {
       Alert.alert("Campo obrigatório", "Informe o nome do cliente.");
       return;
     }
+    const telDigits = stripPhone(tel);
+    if (!telDigits || telDigits.length < 10) {
+      Alert.alert("Campo obrigatório", "Informe o WhatsApp do cliente (com DDD).");
+      return;
+    }
     setSubmitting(true);
     try {
       await fetchJson(`/barbearias/${barbeariaId}/lista-espera`, {
         method: "POST",
         body: {
           clienteNome: nome.trim(),
-          clienteTelefone: stripPhone(tel) || null,
+          clienteTelefone: telDigits,
           data,
+          status: "esperando",
           observacao: obs.trim() || null,
         },
       });

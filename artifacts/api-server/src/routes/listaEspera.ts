@@ -20,9 +20,20 @@ router.get("/", requireAuth, requireRole("dono", "gerente"), async (req: any, re
 router.post("/", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
-  const { clienteNome, clienteTelefone, data, servicoId, profissionalId, observacao } = req.body;
+  const { clienteNome, clienteTelefone, data, servicoId, profissionalId, observacao, status } = req.body;
+  if (!clienteNome || !clienteTelefone || !data) {
+    return res.status(400).json({ error: "clienteNome, clienteTelefone e data são obrigatórios" });
+  }
   const [item] = await db.insert(listaEsperaTable).values({
-    barbeariaId, clienteNome, clienteTelefone, data, servicoId, profissionalId, observacao
+    barbeariaId,
+    clienteNome,
+    clienteTelefone,
+    data,
+    servicoId,
+    profissionalId,
+    observacao,
+    // Default to "esperando" so new items appear in pendentes (matches both web and mobile UI filters)
+    status: status || "esperando",
   }).returning();
   res.status(201).json(formatItem(item));
 });
