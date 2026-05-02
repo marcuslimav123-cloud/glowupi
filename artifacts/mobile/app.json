@@ -5,18 +5,136 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
-    "userInterfaceStyle": "dark",
+    "scheme": "glowupipro",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "primaryColor": "#c4a46a",
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#0f0f0f"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.glowupi.pro",
+      "buildNumber": "1",
+      "usesAppleSignIn": true,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "O Glow Upi Pro usa a câmera para você adicionar fotos do seu salão, fotos dos serviços e fotos dos clientes (com consentimento) para o portfólio.",
+        "NSPhotoLibraryUsageDescription": "O Glow Upi Pro acessa suas fotos para você selecionar imagens do salão, fotos de serviços e logo da sua barbearia.",
+        "NSPhotoLibraryAddUsageDescription": "O Glow Upi Pro pode salvar comprovantes de pagamento e fotos do antes/depois na sua galeria quando você solicitar.",
+        "NSLocationWhenInUseUsageDescription": "O Glow Upi Pro usa sua localização para sugerir o endereço da sua barbearia no cadastro e mostrar a distância até clientes em raio configurável.",
+        "NSContactsUsageDescription": "O Glow Upi Pro pode importar contatos do seu telefone para criar a base de clientes da barbearia mais rapidamente.",
+        "NSUserTrackingUsageDescription": "Permite que o Glow Upi Pro envie eventos anônimos para entender como o app é usado e melhorar funcionalidades. Nenhum dado pessoal é compartilhado.",
+        "NSFaceIDUsageDescription": "Use Face ID para acessar o Glow Upi Pro de forma rápida e segura.",
+        "NSMicrophoneUsageDescription": "O Glow Upi Pro pode usar o microfone caso você queira gravar áudios em mensagens para clientes.",
+        "LSApplicationQueriesSchemes": [
+          "whatsapp",
+          "tel",
+          "mailto"
+        ],
+        "CFBundleAllowMixedLocalizations": true,
+        "CFBundleLocalizations": [
+          "pt-BR",
+          "en"
+        ],
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      },
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+          },
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryFileTimestamp",
+            "NSPrivacyAccessedAPITypeReasons": ["C617.1"]
+          },
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategorySystemBootTime",
+            "NSPrivacyAccessedAPITypeReasons": ["35F9.1"]
+          },
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryDiskSpace",
+            "NSPrivacyAccessedAPITypeReasons": ["E174.1"]
+          }
+        ],
+        "NSPrivacyTracking": false,
+        "NSPrivacyCollectedDataTypes": [
+          {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeEmailAddress",
+            "NSPrivacyCollectedDataTypeLinked": true,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
+          },
+          {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeName",
+            "NSPrivacyCollectedDataTypeLinked": true,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
+          },
+          {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypePhoneNumber",
+            "NSPrivacyCollectedDataTypeLinked": true,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
+          },
+          {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypePaymentInfo",
+            "NSPrivacyCollectedDataTypeLinked": true,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
+          },
+          {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeUserID",
+            "NSPrivacyCollectedDataTypeLinked": true,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality",
+              "NSPrivacyCollectedDataTypePurposeAuthentication"
+            ]
+          },
+          {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeCrashData",
+            "NSPrivacyCollectedDataTypeLinked": false,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
+          },
+          {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypePerformanceData",
+            "NSPrivacyCollectedDataTypeLinked": false,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAnalytics"
+            ]
+          }
+        ]
+      }
     },
-    "android": {},
+    "android": {
+      "package": "com.glowupi.pro",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#0f0f0f"
+      }
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
@@ -29,11 +147,35 @@
       ],
       "expo-font",
       "expo-web-browser",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-apple-authentication",
+      "expo-tracking-transparency",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#c4a46a",
+          "defaultChannel": "default"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.0"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "supportEmail": "suporte@glowupi.com",
+      "privacyUrl": "https://glowupi.com/legal/privacidade",
+      "termsUrl": "https://glowupi.com/legal/termos",
+      "supportUrl": "https://glowupi.com/suporte"
     }
   }
 }
