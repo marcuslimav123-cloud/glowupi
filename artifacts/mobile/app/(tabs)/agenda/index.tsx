@@ -90,6 +90,7 @@ export default function AgendaIndex() {
   const [fabOpen, setFabOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
   const [blockProfId, setBlockProfId] = useState<string>("");
+  const [blockData, setBlockData] = useState<string>("");
   const [blockHoraInicio, setBlockHoraInicio] = useState<string>("");
   const [blockHoraFim, setBlockHoraFim] = useState<string>("");
   const [blockMotivo, setBlockMotivo] = useState<string>("");
@@ -395,7 +396,26 @@ export default function AgendaIndex() {
                 <Feather name="x" size={22} color={Colors.text} />
               </TouchableOpacity>
             </View>
-            <Text style={styles.blockSubtitle}>Data: {strToDate(date).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}</Text>
+            <View style={styles.blockField}>
+              <Text style={styles.blockLabel}>Data *</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.blockChips}>
+                {getHorizontalRange(blockData || date, 3, 14).map(d => {
+                  const active = (blockData || date) === d;
+                  const dt = strToDate(d);
+                  return (
+                    <TouchableOpacity
+                      key={d}
+                      style={[styles.blockChip, active && styles.blockChipActive]}
+                      onPress={() => setBlockData(d)}
+                    >
+                      <Text style={[styles.blockChipText, active && styles.blockChipTextActive]}>
+                        {dt.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
 
             <View style={styles.blockField}>
               <Text style={styles.blockLabel}>Profissional *</Text>
@@ -487,12 +507,12 @@ export default function AgendaIndex() {
                   try {
                     await fetchJson(`/barbearias/${barbeariaId}/bloqueios`, {
                       method: "POST",
-                      body: { profissionalId: Number(blockProfId), data: date, horaInicio: blockHoraInicio, horaFim: blockHoraFim, motivo: blockMotivo || null },
+                      body: { profissionalId: Number(blockProfId), data: blockData || date, horaInicio: blockHoraInicio, horaFim: blockHoraFim, motivo: blockMotivo || null },
                     });
                     qc.invalidateQueries({ queryKey: ["agendamentos"] });
                     qc.invalidateQueries({ queryKey: ["bloqueios"] });
                     setBlockOpen(false);
-                    setBlockProfId(""); setBlockHoraInicio(""); setBlockHoraFim(""); setBlockMotivo("");
+                    setBlockProfId(""); setBlockData(""); setBlockHoraInicio(""); setBlockHoraFim(""); setBlockMotivo("");
                     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   } catch (e: unknown) {
                     const msg = e instanceof Error ? e.message : String(e);
