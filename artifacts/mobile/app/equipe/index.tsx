@@ -1,12 +1,15 @@
 import React from "react";
+import { useRouter, type Href } from "expo-router";
 import { View, StyleSheet } from "react-native";
 import Colors from "@/constants/colors";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { ListRow } from "@/components/ListRow";
 import { SectionHeader } from "@/components/SectionHeader";
-import { EmptyState } from "@/components/EmptyState";
 
 export default function EquipeIndex() {
+  const router = useRouter();
+  const go = (p: Href) => () => router.push(p);
+
   return (
     <ScreenContainer title="Equipe" subtitle="Membros, convites e perfis de acesso">
       <SectionHeader label="Gestão" />
@@ -15,27 +18,19 @@ export default function EquipeIndex() {
           icon="users"
           label="Membros"
           description="Lista, status e funções"
-          disabled
+          onPress={go("/equipe/membros")}
         />
         <ListRow
           icon="user-plus"
-          label="Convites pendentes"
-          description="Gerencie convites por e-mail"
-          disabled
+          label="Convites"
+          description="Envie e gerencie convites"
+          onPress={go("/equipe/convites")}
         />
         <ListRow
           icon="shield"
           label="Perfis de acesso"
           description="Permissões granulares por cargo"
-          disabled
-        />
-      </View>
-
-      <View style={styles.empty}>
-        <EmptyState
-          icon="users"
-          title="Em breve"
-          description="A gestão completa da equipe estará disponível em breve."
+          onPress={go("/configuracoes/acessos")}
         />
       </View>
     </ScreenContainer>
@@ -50,5 +45,4 @@ const styles = StyleSheet.create({
     borderColor: Colors.surfaceBorder,
     overflow: "hidden",
   },
-  empty: { marginTop: 32 },
 });
