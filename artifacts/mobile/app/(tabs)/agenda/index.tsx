@@ -202,6 +202,13 @@ export default function AgendaIndex() {
         </View>
         <TouchableOpacity
           style={styles.iconBtn}
+          onPress={() => router.push("/(tabs)/agenda/picos")}
+          accessibilityLabel="Horários de pico"
+        >
+          <Feather name="trending-up" size={20} color={Colors.text} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.iconBtn}
           onPress={() => router.push("/(tabs)/agenda/lista-espera")}
           accessibilityLabel="Lista de espera"
         >
@@ -319,93 +326,56 @@ export default function AgendaIndex() {
         </TouchableOpacity>
       )}
 
-      <FlatList
-        style={styles.list}
-        contentContainerStyle={[
-          styles.listContent,
-          { paddingBottom: Platform.OS === "web" ? 140 : 110 + insets.bottom },
-        ]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
-        data={filtered}
-        keyExtractor={(item) => String(item.id)}
-        ListEmptyComponent={
-          isLoading ? (
-            <SkeletonList count={4} variant="card" />
-          ) : isError ? (
-            <ErrorView title="Não foi possível carregar a agenda" error={error} onRetry={() => refetch()} />
-          ) : (
-            <EmptyState
-              icon="calendar"
-              title="Nenhum agendamento"
-              description={
-                viewMode === "dia"
-                  ? `Você não tem atendimentos para ${shortDateLabel(date).toLowerCase()}.`
-                  : "Nenhum atendimento no período selecionado."
-              }
-            />
-          )
-        }
-        renderItem={({ item: a }) => {
-          const info = statusInfo(a.status, a.encaixe);
-          const phoneDigits = (a.clienteTelefone || "").replace(/\D/g, "");
-          const hasWa = phoneDigits.length >= 10;
-          return (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() => router.push(`/(tabs)/agenda/${a.id}`)}
-              activeOpacity={0.85}
-            >
-              <View style={styles.cardHeader}>
-                <View style={styles.cardLeft}>
-                  <Text style={styles.cardTime}>{a.horaInicio.slice(0, 5)}</Text>
-                  <Text style={styles.cardTimeUntil}>até {a.horaFim.slice(0, 5)}</Text>
-                </View>
-                <View style={[styles.statusBadge, { backgroundColor: info.bg }]}>
-                  {a.encaixe && <Feather name="zap" size={11} color={info.color} />}
-                  <Text style={[styles.statusText, { color: info.color }]}>{info.label}</Text>
-                </View>
-              </View>
-              <View style={styles.cardBody}>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    {a.aniversario && <Feather name="gift" size={12} color={Colors.warning} />}
-                    {a.vip && <Feather name="star" size={12} color={Colors.warning} />}
-                    <Text style={styles.clientName} numberOfLines={1}>{a.clienteNome}</Text>
-                  </View>
-                  <Text style={styles.serviceLine} numberOfLines={1}>
-                    {a.servicoNome} · {a.profissionalNome}
-                  </Text>
-                  {viewMode !== "dia" && (
-                    <Text style={styles.dateLine}>
-                      {strToDate(a.data).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })}
-                    </Text>
-                  )}
-                </View>
-                <View style={styles.cardRight}>
-                  <Text style={styles.valueText}>{formatCurrency(Number(a.valor))}</Text>
-                  {hasWa && (
-                    <TouchableOpacity
-                      style={styles.waBtn}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        Linking.openURL(whatsappLink(a.clienteTelefone || undefined));
-                      }}
-                    >
-                      <Feather name="phone" size={14} color={Colors.success} />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-              {a.atendimentoId && (
-                <View style={styles.conjuntoTag}>
-                  <Feather name="users" size={10} color="#a78bfa" />
-                  <Text style={styles.conjuntoText}>Atendimento conjunto</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        }}
-      />
+      {viewMode === "dia" && (
+        <DayTimeline
+          agendamentos={filtered}
+          isLoading={isLoading}
+          isError={isError}
+          error={error}
+          refetch={refetch}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          insets={insets}
+          router={router}
+          dateLabel={shortDateLabel(date)}
+        />
+      )}
+
+      {viewMode === "semana" && (
+        <WeekGrid
+          agendamentos={filtered}
+          weekDates={weekDates}
+          isLoading={isLoading}
+          isError={isError}
+          error={error}
+          refetch={refetch}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          insets={insets}
+          router={router}
+          onSelectDate={(d) => { setDate(d); setViewMode("dia"); }}
+        />
+      )}
+
+      {viewMode === "mes" && (
+        <MonthCalendar
+          agendamentos={filtered}
+          dateStr={date}
+          isLoading={isLoading}
+          isError={isError}
+          error={error}
+          refetch={refetch}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          insets={insets}
+          onSelectDate={(d) => { setDate(d); setViewMode("dia"); }}
+          onChangeMonth={(delta) => {
+            const dd = strToDate(date);
+            const nd = new Date(dd.getFullYear(), dd.getMonth() + delta, 1);
+            setDate(dateToStr(nd));
+          }}
+        />
+      )}
 
       <View style={[styles.fabContainer, { bottom: (Platform.OS === "web" ? 84 : 76 + insets.bottom) }]}>
         {fabOpen && (
@@ -463,8 +433,305 @@ export default function AgendaIndex() {
   );
 }
 
+function AgendamentoCard({ a, router, compact }: { a: Agendamento; router: any; compact?: boolean }) {
+  const info = statusInfo(a.status, a.encaixe);
+  const phoneDigits = (a.clienteTelefone || "").replace(/\D/g, "");
+  const hasWa = phoneDigits.length >= 10;
+  return (
+    <TouchableOpacity
+      style={[styles.card, compact && { padding: 10, marginBottom: 6 }]}
+      onPress={() => router.push(`/(tabs)/agenda/${a.id}`)}
+      activeOpacity={0.85}
+    >
+      <View style={styles.cardHeader}>
+        <View style={styles.cardLeft}>
+          <Text style={[styles.cardTime, compact && { fontSize: 14 }]}>{a.horaInicio.slice(0, 5)}</Text>
+          <Text style={styles.cardTimeUntil}>até {a.horaFim.slice(0, 5)}</Text>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: info.bg }]}>
+          {a.encaixe && <Feather name="zap" size={11} color={info.color} />}
+          <Text style={[styles.statusText, { color: info.color }]}>{info.label}</Text>
+        </View>
+      </View>
+      <View style={styles.cardBody}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            {a.aniversario && <Feather name="gift" size={12} color={Colors.warning} />}
+            {a.vip && <Feather name="star" size={12} color={Colors.warning} />}
+            <Text style={styles.clientName} numberOfLines={1}>{a.clienteNome}</Text>
+          </View>
+          <Text style={styles.serviceLine} numberOfLines={1}>
+            {a.servicoNome} · {a.profissionalNome}
+          </Text>
+        </View>
+        <View style={styles.cardRight}>
+          <Text style={styles.valueText}>{formatCurrency(Number(a.valor))}</Text>
+          {hasWa && (
+            <TouchableOpacity
+              style={styles.waBtn}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                Linking.openURL(whatsappLink(a.clienteTelefone || undefined));
+              }}
+            >
+              <Feather name="phone" size={14} color={Colors.success} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+      {a.atendimentoId && (
+        <View style={styles.conjuntoTag}>
+          <Feather name="users" size={10} color="#a78bfa" />
+          <Text style={styles.conjuntoText}>Atendimento conjunto</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
+
+function DayTimeline(props: {
+  agendamentos: Agendamento[]; isLoading: boolean; isError: boolean; error: any;
+  refetch: () => void; refreshing: boolean; onRefresh: () => void; insets: any; router: any;
+  dateLabel: string;
+}) {
+  const { agendamentos, isLoading, isError, error, refetch, refreshing, onRefresh, insets, router, dateLabel } = props;
+  const HORAS = useMemo(() => {
+    const arr: number[] = [];
+    let minH = 8, maxH = 20;
+    for (const a of agendamentos) {
+      const h = parseInt(a.horaInicio.slice(0, 2));
+      if (h < minH) minH = h;
+      if (h > maxH) maxH = h;
+    }
+    for (let h = minH; h <= Math.max(maxH, 20); h++) arr.push(h);
+    return arr;
+  }, [agendamentos]);
+
+  if (isLoading) {
+    return (
+      <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
+        <SkeletonList count={4} variant="card" />
+      </ScrollView>
+    );
+  }
+  if (isError) {
+    return (
+      <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
+        <ErrorView title="Não foi possível carregar a agenda" error={error} onRetry={() => refetch()} />
+      </ScrollView>
+    );
+  }
+  if (agendamentos.length === 0) {
+    return (
+      <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
+        <EmptyState
+          icon="calendar"
+          title="Nenhum agendamento"
+          description={`Você não tem atendimentos para ${dateLabel.toLowerCase()}.`}
+        />
+      </ScrollView>
+    );
+  }
+
+  return (
+    <ScrollView
+      style={styles.list}
+      contentContainerStyle={[styles.listContent, { paddingBottom: Platform.OS === "web" ? 140 : 110 + insets.bottom }]}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+    >
+      {HORAS.map(h => {
+        const hourLabel = `${String(h).padStart(2, "0")}:00`;
+        const items = agendamentos.filter(a => parseInt(a.horaInicio.slice(0, 2)) === h);
+        return (
+          <View key={h} style={styles.hourRow}>
+            <View style={styles.hourCol}>
+              <Text style={styles.hourLabel}>{hourLabel}</Text>
+              <View style={styles.hourLine} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              {items.length === 0 ? (
+                <View style={styles.emptyHourSlot} />
+              ) : (
+                items.map(a => <AgendamentoCard key={a.id} a={a} router={router} />)
+              )}
+            </View>
+          </View>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+function WeekGrid(props: {
+  agendamentos: Agendamento[]; weekDates: string[]; isLoading: boolean; isError: boolean; error: any;
+  refetch: () => void; refreshing: boolean; onRefresh: () => void; insets: any; router: any;
+  onSelectDate: (d: string) => void;
+}) {
+  const { agendamentos, weekDates, isLoading, isError, error, refetch, refreshing, onRefresh, insets, router, onSelectDate } = props;
+  if (isLoading) return <ScrollView style={styles.list} contentContainerStyle={styles.listContent}><SkeletonList count={4} variant="card" /></ScrollView>;
+  if (isError) return <ScrollView style={styles.list} contentContainerStyle={styles.listContent}><ErrorView title="Não foi possível carregar a agenda" error={error} onRetry={() => refetch()} /></ScrollView>;
+  return (
+    <ScrollView
+      style={styles.list}
+      contentContainerStyle={[styles.listContent, { paddingBottom: Platform.OS === "web" ? 140 : 110 + insets.bottom }]}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+    >
+      {weekDates.map(d => {
+        const day = strToDate(d);
+        const items = agendamentos.filter(a => a.data === d).sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
+        const isToday = d === todayStr();
+        return (
+          <View key={d} style={styles.weekDayBlock}>
+            <TouchableOpacity onPress={() => onSelectDate(d)} style={styles.weekDayHeader}>
+              <View style={[styles.weekDayBadge, isToday && { backgroundColor: Colors.accent }]}>
+                <Text style={[styles.weekDayWeek, isToday && { color: "#000" }]}>
+                  {day.toLocaleDateString("pt-BR", { weekday: "short" }).slice(0, 3)}
+                </Text>
+                <Text style={[styles.weekDayNum, isToday && { color: "#000" }]}>{day.getDate()}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.weekDayTitle}>
+                  {day.toLocaleDateString("pt-BR", { weekday: "long" })}
+                </Text>
+                <Text style={styles.weekDayCount}>
+                  {items.length === 0 ? "Sem atendimentos" : `${items.length} atendimento${items.length > 1 ? "s" : ""}`}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={Colors.textMuted} />
+            </TouchableOpacity>
+            {items.length > 0 && (
+              <View style={{ paddingLeft: 12 }}>
+                {items.map(a => <AgendamentoCard key={a.id} a={a} router={router} compact />)}
+              </View>
+            )}
+          </View>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+function MonthCalendar(props: {
+  agendamentos: Agendamento[]; dateStr: string; isLoading: boolean; isError: boolean; error: any;
+  refetch: () => void; refreshing: boolean; onRefresh: () => void; insets: any;
+  onSelectDate: (d: string) => void; onChangeMonth: (delta: number) => void;
+}) {
+  const { agendamentos, dateStr, isLoading, isError, error, refetch, refreshing, onRefresh, insets, onSelectDate, onChangeMonth } = props;
+  const d = strToDate(dateStr);
+  const year = d.getFullYear();
+  const month = d.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startOffset = (firstDay.getDay() + 6) % 7;
+  const cells: (string | null)[] = [];
+  for (let i = 0; i < startOffset; i++) cells.push(null);
+  for (let day = 1; day <= lastDay.getDate(); day++) cells.push(dateToStr(new Date(year, month, day)));
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const countsByDate: Record<string, { total: number; pendentes: number; encaixes: number }> = {};
+  for (const a of agendamentos) {
+    if (!countsByDate[a.data]) countsByDate[a.data] = { total: 0, pendentes: 0, encaixes: 0 };
+    countsByDate[a.data].total++;
+    if (a.status === "pendente_aprovacao") countsByDate[a.data].pendentes++;
+    if (a.encaixe) countsByDate[a.data].encaixes++;
+  }
+
+  const today = todayStr();
+
+  if (isLoading) return <ScrollView style={styles.list} contentContainerStyle={styles.listContent}><SkeletonList count={4} variant="card" /></ScrollView>;
+  if (isError) return <ScrollView style={styles.list} contentContainerStyle={styles.listContent}><ErrorView title="Não foi possível carregar a agenda" error={error} onRetry={() => refetch()} /></ScrollView>;
+
+  return (
+    <ScrollView
+      style={styles.list}
+      contentContainerStyle={[styles.listContent, { paddingBottom: Platform.OS === "web" ? 140 : 110 + insets.bottom }]}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+    >
+      <View style={styles.monthHeader}>
+        <TouchableOpacity onPress={() => onChangeMonth(-1)} style={styles.monthNavBtn}>
+          <Feather name="chevron-left" size={20} color={Colors.text} />
+        </TouchableOpacity>
+        <Text style={styles.monthTitle}>
+          {MONTHS_PT[month]} {year}
+        </Text>
+        <TouchableOpacity onPress={() => onChangeMonth(1)} style={styles.monthNavBtn}>
+          <Feather name="chevron-right" size={20} color={Colors.text} />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.calendarGrid}>
+        {WEEKDAYS_PT.map(w => (
+          <Text key={w} style={styles.calWeekHeader}>{w}</Text>
+        ))}
+        {cells.map((cd, idx) => {
+          if (!cd) return <View key={`empty-${idx}`} style={[styles.calCell, { backgroundColor: "transparent" }]} />;
+          const info = countsByDate[cd];
+          const dayN = parseInt(cd.slice(8, 10));
+          const isToday = cd === today;
+          return (
+            <TouchableOpacity
+              key={cd}
+              style={[styles.calCell, isToday && styles.calCellToday]}
+              onPress={() => onSelectDate(cd)}
+            >
+              <Text style={[styles.calDayNum, isToday && { color: Colors.accent }]}>{dayN}</Text>
+              {info && info.total > 0 && (
+                <View style={styles.calBadgeRow}>
+                  <View style={styles.calBadge}>
+                    <Text style={styles.calBadgeText}>{info.total}</Text>
+                  </View>
+                  {info.pendentes > 0 && <View style={[styles.calDotMini, { backgroundColor: Colors.warning }]} />}
+                  {info.encaixes > 0 && <View style={[styles.calDotMini, { backgroundColor: "#fb923c" }]} />}
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <View style={styles.calLegend}>
+        <View style={styles.calLegendItem}>
+          <View style={[styles.calDotMini, { backgroundColor: Colors.warning }]} />
+          <Text style={styles.calLegendText}>Pendentes</Text>
+        </View>
+        <View style={styles.calLegendItem}>
+          <View style={[styles.calDotMini, { backgroundColor: "#fb923c" }]} />
+          <Text style={styles.calLegendText}>Encaixes</Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  hourRow: { flexDirection: "row", marginBottom: 4, alignItems: "stretch" },
+  hourCol: { width: 56, alignItems: "center" },
+  hourLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: Colors.textMuted, marginTop: 2 },
+  hourLine: { flex: 1, width: 1, backgroundColor: Colors.surfaceBorder, marginTop: 4 },
+  emptyHourSlot: { height: 28, borderTopWidth: 1, borderTopColor: Colors.surfaceBorder, opacity: 0.4 },
+  weekDayBlock: { marginBottom: 14 },
+  weekDayHeader: { flexDirection: "row", alignItems: "center", gap: 12, padding: 10, borderRadius: 12, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, marginBottom: 6 },
+  weekDayBadge: { width: 48, height: 56, borderRadius: 10, backgroundColor: Colors.surfaceLight, alignItems: "center", justifyContent: "center" },
+  weekDayWeek: { fontSize: 10, fontFamily: "Inter_500Medium", color: Colors.textSecondary, textTransform: "uppercase" },
+  weekDayNum: { fontSize: 20, fontFamily: "Inter_700Bold", color: Colors.text, marginTop: 1 },
+  weekDayTitle: { fontSize: 14, fontFamily: "Inter_700Bold", color: Colors.text, textTransform: "capitalize" },
+  weekDayCount: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginTop: 2 },
+  monthHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10, paddingHorizontal: 4 },
+  monthNavBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "center" },
+  monthTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: Colors.text, textTransform: "capitalize" },
+  calendarGrid: { flexDirection: "row", flexWrap: "wrap" },
+  calWeekHeader: { width: `${100 / 7}%`, textAlign: "center", paddingVertical: 6, fontSize: 11, fontFamily: "Inter_600SemiBold", color: Colors.textMuted, textTransform: "uppercase" },
+  calCell: { width: `${100 / 7}%`, aspectRatio: 0.85, padding: 4, borderWidth: 0.5, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "flex-start" },
+  calCellToday: { backgroundColor: Colors.accent + "15", borderColor: Colors.accent + "60" },
+  calDayNum: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: Colors.text },
+  calBadgeRow: { marginTop: 4, flexDirection: "row", alignItems: "center", gap: 3, flexWrap: "wrap", justifyContent: "center" },
+  calBadge: { paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6, backgroundColor: Colors.accent + "33" },
+  calBadgeText: { fontSize: 10, fontFamily: "Inter_700Bold", color: Colors.accent },
+  calDotMini: { width: 5, height: 5, borderRadius: 3 },
+  calLegend: { flexDirection: "row", gap: 14, marginTop: 12, justifyContent: "center" },
+  calLegendItem: { flexDirection: "row", alignItems: "center", gap: 5 },
+  calLegendText: { fontSize: 11, fontFamily: "Inter_500Medium", color: Colors.textSecondary },
   headerRow: {
     flexDirection: "row", alignItems: "flex-start", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, gap: 8,
   },

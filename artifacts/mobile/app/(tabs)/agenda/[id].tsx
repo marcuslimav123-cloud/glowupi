@@ -19,7 +19,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchJson, formatCurrency, whatsappLink, strToDate } from "@/lib/api";
+import { fetchJson, formatCurrency, whatsappLink, strToDate, generateTimeSlots, dateToStr, todayStr } from "@/lib/api";
 import { ErrorView } from "@/components/ErrorView";
 
 type Bandeira = { id: number; nome: string; categoria: string; ativo?: boolean };
@@ -59,6 +59,11 @@ export default function AgendamentoDetail() {
   const [observacao, setObservacao] = useState("");
   const [desconto, setDesconto] = useState("");
   const [descontoTipo, setDescontoTipo] = useState<"valor" | "percentual">("valor");
+  const [reagendarOpen, setReagendarOpen] = useState(false);
+  const [novaData, setNovaData] = useState("");
+  const [novaHora, setNovaHora] = useState("");
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelMotivo, setCancelMotivo] = useState("");
 
   const { data: parametros = {} } = useQuery<Record<string, string>>({
     queryKey: ["parametros", barbeariaId],
@@ -170,29 +175,103 @@ export default function AgendamentoDetail() {
 
   const doCancel = () => {
     if (!agend) return;
-    Alert.alert(
-      "Cancelar agendamento",
-      `Cancelar o atendimento de ${agend.clienteNome}?`,
-      [
-        { text: "Voltar", style: "cancel" },
-        {
-          text: "Cancelar agendamento",
-          style: "destructive",
-          onPress: async () => {
-            setBusy("cancelar");
-            try {
-              await fetchJson(`/barbearias/${barbeariaId}/agendamentos/${agend.id}`, { method: "DELETE" });
-              invalidate();
+    setCancelMotivo("");
+    setCancelOpen(true);
+  };
+
+  const sendCancel = async () => {
+    if (!agend) return;
+    setBusy("cancelar");
+    try {
+      await fetchJson(`/barbearias/${barbeariaId}/agendamentos/${agend.id}`, {
+        method: "DELETE",
+        body: cancelMotivo ? { motivo: cancelMotivo } : undefined,
+      });
+      invalidate();
+      setCancelOpen(false);
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      if (cancelMotivo && agend.clienteTelefone) {
+        const phoneDigits = (agend.clienteTelefone || "").replace(/\D/g, "");
+        if (phoneDigits.length >= 10) {
+          const dt = strToDate(agend.data).toLocaleDateString("pt-BR", { day: "2-digit", month: "long" });
+          const tpl = `Olá ${agend.clienteNome.split(" ")[0]}, infelizmente precisamos cancelar seu agendamento de ${agend.servicoNome} em ${dt} às ${agend.horaInicio.slice(0,5)}.\n\nMotivo: ${cancelMotivo}\n\nPara reagendar, entre em contato.`;
+          Alert.alert("Cancelado", "Avisar o cliente pelo WhatsApp?", [
+            { text: "Não", style: "cancel", onPress: () => router.back() },
+            {
+              text: "Abrir WhatsApp",
+              onPress: () => {
+                Linking.openURL(whatsappLink(agend.clienteTelefone, tpl));
+                router.back();
+              },
+            },
+          ]);
+          return;
+        }
+      }
+      router.back();
+    } catch (e: any) {
+      Alert.alert("Erro ao cancelar", e?.message || "");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const openReagendar = () => {
+    if (!agend) return;
+    setNovaData(agend.data);
+    setNovaHora(agend.horaInicio.slice(0, 5));
+    setReagendarOpen(true);
+  };
+
+  const sendReagendar = async () => {
+    if (!agend) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(novaData) || !/^\d{2}:\d{2}$/.test(novaHora)) {
+      Alert.alert("Dados inválidos", "Informe data (AAAA-MM-DD) e horário (HH:MM).");
+      return;
+    }
+    setBusy("reagendar");
+    try {
+      await fetchJson(`/barbearias/${barbeariaId}/agendamentos/${agend.id}`, {
+        method: "PUT",
+        body: { data: novaData, horaInicio: novaHora, profissionalId: agend.profissionalId },
+      });
+      invalidate();
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setReagendarOpen(false);
+      const phoneDigits = (agend.clienteTelefone || "").replace(/\D/g, "");
+      if (phoneDigits.length >= 10) {
+        const dt = strToDate(novaData).toLocaleDateString("pt-BR", { day: "2-digit", month: "long" });
+        const tpl = `Olá ${agend.clienteNome.split(" ")[0]}, seu agendamento de ${agend.servicoNome} foi reagendado para ${dt} às ${novaHora}. Confirma?`;
+        Alert.alert("Reagendado", "Avisar o cliente pelo WhatsApp?", [
+          { text: "Não", style: "cancel", onPress: () => router.back() },
+          {
+            text: "Abrir WhatsApp",
+            onPress: () => {
+              Linking.openURL(whatsappLink(agend.clienteTelefone, tpl));
               router.back();
-            } catch (e: any) {
-              Alert.alert("Erro", e?.message || "");
-            } finally {
-              setBusy(null);
-            }
+            },
           },
-        },
-      ]
-    );
+        ]);
+      } else {
+        router.back();
+      }
+    } catch (e: any) {
+      Alert.alert("Erro ao reagendar", e?.message || "");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const sendLembrete = () => {
+    if (!agend) return;
+    const phoneDigits = (agend.clienteTelefone || "").replace(/\D/g, "");
+    if (phoneDigits.length < 10) {
+      Alert.alert("WhatsApp ausente", "Cliente sem WhatsApp cadastrado.");
+      return;
+    }
+    const dt = strToDate(agend.data).toLocaleDateString("pt-BR", { day: "2-digit", month: "long" });
+    const tpl = `Olá ${agend.clienteNome.split(" ")[0]}, lembrando do seu agendamento de ${agend.servicoNome} com ${agend.profissionalNome} em ${dt} às ${agend.horaInicio.slice(0,5)}. Aguardamos você!`;
+    Linking.openURL(whatsappLink(agend.clienteTelefone, tpl));
   };
 
   const doCheckout = async () => {
@@ -252,6 +331,8 @@ export default function AgendamentoDetail() {
   const isPending = agend.status === "pendente_aprovacao";
   const isCancellable = ["confirmado", "pendente_aprovacao"].includes(agend.status);
   const canCheckout = agend.status === "confirmado" && !agend.pago;
+  const canReschedule = ["confirmado", "pendente_aprovacao"].includes(agend.status);
+  const canRemind = agend.status === "confirmado" && hasWa;
 
   return (
     <View style={[styles.container, { paddingTop: webTopPad }]}>
@@ -350,6 +431,27 @@ export default function AgendamentoDetail() {
           </TouchableOpacity>
         )}
 
+        {canRemind && (
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.actionGhost, { marginTop: 12, borderColor: Colors.success + "55", backgroundColor: Colors.success + "0d" }]}
+            onPress={sendLembrete}
+          >
+            <Feather name="message-circle" size={16} color={Colors.success} />
+            <Text style={[styles.actionGhostText, { color: Colors.success, marginLeft: 6 }]}>Enviar lembrete WhatsApp</Text>
+          </TouchableOpacity>
+        )}
+
+        {canReschedule && (
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.actionGhost, { marginTop: 12 }]}
+            disabled={!!busy}
+            onPress={openReagendar}
+          >
+            <Feather name="calendar" size={16} color={Colors.accent} />
+            <Text style={[styles.actionGhostText, { color: Colors.accent, marginLeft: 6 }]}>Reagendar</Text>
+          </TouchableOpacity>
+        )}
+
         {isCancellable && (
           <TouchableOpacity
             style={[styles.actionBtn, styles.actionGhost, { marginTop: 12 }]}
@@ -365,6 +467,113 @@ export default function AgendamentoDetail() {
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      <Modal visible={reagendarOpen} animationType="slide" transparent onRequestClose={() => setReagendarOpen(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalSheet, { paddingBottom: 24 + insets.bottom }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Reagendar</Text>
+              <TouchableOpacity onPress={() => setReagendarOpen(false)}>
+                <Feather name="x" size={22} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.modalSection}>Nova data</Text>
+            <TextInput
+              style={styles.input}
+              value={novaData}
+              onChangeText={(v) => {
+                const digits = v.replace(/\D/g, "").slice(0, 8);
+                let out = digits;
+                if (digits.length > 4) out = `${digits.slice(0, 4)}-${digits.slice(4, 6)}${digits.length > 6 ? "-" + digits.slice(6) : ""}`;
+                else if (digits.length > 0) out = digits;
+                setNovaData(out);
+              }}
+              placeholder="AAAA-MM-DD"
+              placeholderTextColor={Colors.textMuted}
+              keyboardType="number-pad"
+            />
+            <View style={{ flexDirection: "row", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+              {[0, 1, 2, 7, 14].map(off => {
+                const dt = new Date(); dt.setDate(dt.getDate() + off);
+                const ds = dateToStr(dt);
+                return (
+                  <TouchableOpacity key={off} style={[styles.payChip, novaData === ds && styles.payChipActive]} onPress={() => setNovaData(ds)}>
+                    <Text style={[styles.payChipText, novaData === ds && { color: "#000" }]}>
+                      {off === 0 ? "Hoje" : off === 1 ? "Amanhã" : dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <Text style={styles.modalSection}>Novo horário</Text>
+            <TextInput
+              style={styles.input}
+              value={novaHora}
+              onChangeText={(v) => {
+                const digits = v.replace(/\D/g, "").slice(0, 4);
+                const fmt = digits.length >= 3 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits;
+                setNovaHora(fmt);
+              }}
+              placeholder="HH:MM"
+              placeholderTextColor={Colors.textMuted}
+              keyboardType="number-pad"
+            />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+              {generateTimeSlots("08:00", "20:00", 30).map(t => (
+                <TouchableOpacity key={t} style={[styles.payChip, { marginRight: 6 }, novaHora === t && styles.payChipActive]} onPress={() => setNovaHora(t)}>
+                  <Text style={[styles.payChipText, novaHora === t && { color: "#000" }]}>{t}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.actionPrimary, { marginTop: 16 }, busy === "reagendar" && { opacity: 0.6 }]}
+              disabled={busy === "reagendar"}
+              onPress={sendReagendar}
+            >
+              {busy === "reagendar" ? <ActivityIndicator color="#000" /> : <Text style={styles.actionPrimaryText}>Confirmar reagendamento</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={cancelOpen} animationType="slide" transparent onRequestClose={() => setCancelOpen(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalSheet, { paddingBottom: 24 + insets.bottom }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Cancelar agendamento</Text>
+              <TouchableOpacity onPress={() => setCancelOpen(false)}>
+                <Feather name="x" size={22} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
+            <Text style={[styles.modalSection, { marginTop: 4 }]}>
+              Cancelar o atendimento de {agend.clienteNome} em {agend.data} às {agend.horaInicio.slice(0,5)}?
+            </Text>
+            <Text style={styles.modalSection}>Motivo (opcional)</Text>
+            <TextInput
+              style={[styles.input, { minHeight: 80, textAlignVertical: "top" }]}
+              value={cancelMotivo}
+              onChangeText={setCancelMotivo}
+              placeholder="Ex: imprevisto do profissional, cliente pediu remarcar…"
+              placeholderTextColor={Colors.textMuted}
+              multiline
+            />
+            <View style={{ flexDirection: "row", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+              {["Cliente desmarcou", "Imprevisto do profissional", "Sem comparecimento"].map(opt => (
+                <TouchableOpacity key={opt} style={[styles.payChip, cancelMotivo === opt && styles.payChipActive]} onPress={() => setCancelMotivo(opt)}>
+                  <Text style={[styles.payChipText, cancelMotivo === opt && { color: "#000" }]}>{opt}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.actionDanger, { marginTop: 16 }, busy === "cancelar" && { opacity: 0.6 }]}
+              disabled={busy === "cancelar"}
+              onPress={sendCancel}
+            >
+              {busy === "cancelar" ? <ActivityIndicator color={Colors.error} /> : <Text style={styles.actionDangerText}>Confirmar cancelamento</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={checkoutOpen} animationType="slide" transparent onRequestClose={() => setCheckoutOpen(false)}>
         <View style={styles.modalBackdrop}>

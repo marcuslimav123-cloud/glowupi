@@ -26,6 +26,8 @@ import {
 
 type Step = "client" | "service" | "professional" | "time";
 
+type Slot = { horaInicio: string; horaFim: string; profissionalId: number; profissionalNome: string; disponivel: boolean };
+
 type Cliente = { id: number; nome: string; telefone?: string | null; vip?: boolean; aniversario?: string | null };
 type Servico = { id: number; nome: string; preco: number | string; duracaoMinutos?: number; ativo?: boolean };
 type Profissional = { id: number; nomeExibicao: string; apelido?: string | null; ativo?: boolean; especialidade?: string | null };
@@ -53,6 +55,8 @@ export default function NovoAgendamentoScreen() {
   const [formObs, setFormObs] = useState("");
   const [extraItems, setExtraItems] = useState<{ servicoId: string; profissionalId: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [customTime, setCustomTime] = useState("");
+  const [showCustom, setShowCustom] = useState(false);
 
   const { data: clientes = [] } = useQuery<Cliente[]>({
     queryKey: ["clientes", barbeariaId, clientSearch],
@@ -106,7 +110,19 @@ export default function NovoAgendamentoScreen() {
   const selectedServico = useMemo(() => (servicos as Servico[]).find(s => String(s.id) === formServId), [servicos, formServId]);
   const selectedProf = useMemo(() => (profissionais as Profissional[]).find(p => String(p.id) === formProfId), [profissionais, formProfId]);
 
-  const timeSlots = useMemo(() => {
+  const slotsEnabled = !!barbeariaId && !!formServId && !!formProfId && step === "time";
+  const { data: slotsData = [], isLoading: slotsLoading, isFetched: slotsFetched } = useQuery<Slot[]>({
+    queryKey: ["slots-disponiveis", barbeariaId, dateStr, formServId, formProfId],
+    queryFn: async () => {
+      if (!barbeariaId || !formServId || !formProfId) return [];
+      const url = `/barbearias/${barbeariaId}/slots-disponiveis?data=${dateStr}&servicoId=${formServId}&profissionalId=${formProfId}`;
+      const data = await fetchJson<Slot[]>(url);
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: slotsEnabled,
+  });
+
+  const fallbackSlots = useMemo(() => {
     const slots = generateTimeSlots("06:00", "23:30", 30);
     if (dateStr === todayStr() && !isEncaixe) {
       const now = new Date();
@@ -115,6 +131,22 @@ export default function NovoAgendamentoScreen() {
     }
     return slots;
   }, [dateStr, isEncaixe]);
+
+  const useFallback = !slotsEnabled || (!slotsFetched && slotsData.length === 0);
+
+  const visibleSlots = useMemo(() => {
+    if (useFallback) {
+      return fallbackSlots.map(t => ({ horaInicio: t, disponivel: true }));
+    }
+    return slotsData.map(s => ({ horaInicio: s.horaInicio, disponivel: s.disponivel }));
+  }, [slotsData, fallbackSlots, useFallback]);
+
+  const isSlotAvailable = (t: string): boolean => {
+    if (useFallback) return true;
+    const found = slotsData.find(s => s.horaInicio === t);
+    if (found) return found.disponivel;
+    return false;
+  };
 
   const handleSubmit = async () => {
     if (!formProfId || !formServId || !formHora) {
@@ -138,6 +170,32 @@ export default function NovoAgendamentoScreen() {
       return;
     }
 
+    const slotInfo = !useFallback ? slotsData.find(s => s.horaInicio === formHora) : undefined;
+    const isOutsideGrid = !useFallback && slotsData.length > 0 && !slotInfo;
+    const isUnavailable = !!(slotInfo && !slotInfo.disponivel);
+    const needsConfirm = isEncaixe || isOutsideGrid || isUnavailable;
+
+    if (needsConfirm) {
+      const motivo = isUnavailable
+        ? "Este horário está ocupado, bloqueado ou fora da grade do profissional."
+        : isOutsideGrid
+          ? "Este horário está fora da grade padrão do profissional."
+          : "Confirma o encaixe neste horário?";
+      const proceed = await new Promise<boolean>((resolve) => {
+        Alert.alert(
+          isEncaixe ? "Confirmar encaixe" : "Confirmar horário",
+          `${motivo}\n\nDeseja registrar mesmo assim como encaixe?`,
+          [
+            { text: "Voltar", style: "cancel", onPress: () => resolve(false) },
+            { text: "Confirmar", onPress: () => resolve(true) },
+          ],
+        );
+      });
+      if (!proceed) return;
+    }
+
+    const finalEncaixe = isEncaixe || isOutsideGrid || isUnavailable;
+
     setSubmitting(true);
     try {
       if (validExtras.length === 0) {
@@ -152,7 +210,7 @@ export default function NovoAgendamentoScreen() {
             data: dateStr,
             horaInicio: formHora,
             observacao: formObs || undefined,
-            encaixe: isEncaixe || undefined,
+            encaixe: finalEncaixe || undefined,
           },
         });
       } else {
@@ -169,7 +227,7 @@ export default function NovoAgendamentoScreen() {
             data: dateStr,
             horaInicio: formHora,
             observacao: formObs || null,
-            encaixe: isEncaixe || null,
+            encaixe: finalEncaixe || null,
             itens,
           },
         });
@@ -385,18 +443,99 @@ export default function NovoAgendamentoScreen() {
               {selectedProf && <SummaryRow label="Profissional" value={selectedProf.nomeExibicao} />}
             </View>
 
-            <Text style={styles.sectionLabel}>Horário *</Text>
-            <View style={styles.slotsGrid}>
-              {timeSlots.map(t => (
-                <TouchableOpacity
-                  key={t}
-                  style={[styles.slot, formHora === t && styles.slotActive]}
-                  onPress={() => { setFormHora(t); if (Platform.OS !== "web") Haptics.selectionAsync(); }}
-                >
-                  <Text style={[styles.slotText, formHora === t && { color: "#000" }]}>{t}</Text>
-                </TouchableOpacity>
-              ))}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 14, marginBottom: 4 }}>
+              <Text style={styles.sectionLabel}>
+                Horário * {slotsLoading ? <Text style={{ color: Colors.textMuted, fontSize: 11 }}> (carregando…)</Text> : null}
+              </Text>
+              <TouchableOpacity onPress={() => setShowCustom(v => !v)}>
+                <Text style={styles.linkText}>{showCustom ? "Usar grade" : "Horário customizado"}</Text>
+              </TouchableOpacity>
             </View>
+            {showCustom ? (
+              <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="HH:MM (ex: 14:30)"
+                  placeholderTextColor={Colors.textMuted}
+                  value={customTime}
+                  onChangeText={(v) => {
+                    const digits = v.replace(/[^\d]/g, "").slice(0, 4);
+                    const fmt = digits.length >= 3 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits;
+                    setCustomTime(fmt);
+                  }}
+                  keyboardType="number-pad"
+                />
+                <TouchableOpacity
+                  style={styles.btnPrimary}
+                  onPress={() => {
+                    if (!/^\d{2}:\d{2}$/.test(customTime)) {
+                      Alert.alert("Horário inválido", "Use o formato HH:MM, ex: 14:30.");
+                      return;
+                    }
+                    const [h, m] = customTime.split(":").map(Number);
+                    if (h > 23 || m > 59) {
+                      Alert.alert("Horário inválido", "Hora fora dos limites.");
+                      return;
+                    }
+                    setFormHora(customTime);
+                    if (Platform.OS !== "web") Haptics.selectionAsync();
+                  }}
+                >
+                  <Text style={styles.btnPrimaryText}>Aplicar</Text>
+                </TouchableOpacity>
+              </View>
+            ) : visibleSlots.length === 0 && slotsFetched && !slotsLoading ? (
+              <View style={[styles.warnBox, { backgroundColor: Colors.surface, borderColor: Colors.surfaceBorder }]}>
+                <Feather name="alert-circle" size={14} color={Colors.textSecondary} />
+                <Text style={[styles.warnText, { color: Colors.textSecondary }]}>
+                  Sem horários disponíveis para esse profissional/serviço/data. Use "Horário customizado" para registrar como encaixe.
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.slotsGrid}>
+                {visibleSlots.map(({ horaInicio: t, disponivel }) => {
+                  const sel = formHora === t;
+                  const allowSelect = isEncaixe || disponivel;
+                  return (
+                    <TouchableOpacity
+                      key={t}
+                      style={[
+                        styles.slot,
+                        sel && styles.slotActive,
+                        !allowSelect && !sel && styles.slotDisabled,
+                      ]}
+                      onPress={() => {
+                        if (!allowSelect && !isEncaixe) {
+                          Alert.alert(
+                            "Horário ocupado",
+                            "Esse horário não está disponível. Use 'Horário customizado' ou ative encaixe pelo botão flutuante para sobrepor.",
+                          );
+                          return;
+                        }
+                        setFormHora(t);
+                        if (Platform.OS !== "web") Haptics.selectionAsync();
+                      }}
+                    >
+                      <Text style={[
+                        styles.slotText,
+                        sel && { color: "#000" },
+                        !allowSelect && !sel && { color: Colors.textMuted, textDecorationLine: "line-through" },
+                      ]}>{t}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+            {formHora && !useFallback && !isSlotAvailable(formHora) && (
+              <View style={styles.warnBox}>
+                <Feather name="alert-triangle" size={14} color={Colors.warning} />
+                <Text style={styles.warnText}>
+                  {slotsData.find(s => s.horaInicio === formHora)
+                    ? "Horário ocupado/bloqueado — será registrado como encaixe."
+                    : "Horário fora da grade — será registrado como encaixe."}
+                </Text>
+              </View>
+            )}
 
             <Text style={styles.sectionLabel}>Itens adicionais (atendimento conjunto)</Text>
             {extraItems.map((it, idx) => (
@@ -502,6 +641,9 @@ const styles = StyleSheet.create({
   optionSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginTop: 2 },
   servicePrice: { fontSize: 14, fontFamily: "Inter_700Bold", color: Colors.accent },
   empty: { textAlign: "center", color: Colors.textMuted, paddingVertical: 24, fontSize: 13 },
+  slotDisabled: { opacity: 0.45 },
+  warnBox: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10, padding: 10, borderRadius: 10, backgroundColor: Colors.warning + "12", borderWidth: 1, borderColor: Colors.warning + "55" },
+  warnText: { flex: 1, fontSize: 12, color: Colors.warning, fontFamily: "Inter_500Medium" },
   linkBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 12, marginTop: 4 },
   linkText: { color: Colors.accent, fontFamily: "Inter_600SemiBold", fontSize: 13 },
   fieldLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary, marginBottom: 6, marginTop: 8, textTransform: "uppercase", letterSpacing: 0.5 },
