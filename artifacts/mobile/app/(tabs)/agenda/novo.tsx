@@ -212,7 +212,7 @@ export default function NovoAgendamentoScreen() {
           if (/já existe|exists|409|duplic/i.test(msg)) {
             try {
               const existing = await fetchJson<Array<{ id: number; telefone?: string | null; nome?: string }>>(
-                `/barbearias/${barbeariaId}/clientes?busca=${encodeURIComponent(telDigits || formNome)}`,
+                `/barbearias/${barbeariaId}/clientes?search=${encodeURIComponent(telDigits || formNome)}`,
               );
               const match = Array.isArray(existing) && telDigits
                 ? existing.find(c => stripPhone(c.telefone || "") === telDigits)
