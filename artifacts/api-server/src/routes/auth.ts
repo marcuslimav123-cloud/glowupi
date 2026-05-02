@@ -508,6 +508,75 @@ router.put("/tema", requireAuth, async (req, res) => {
   }
 });
 
+router.put("/me", requireAuth, async (req, res) => {
+  try {
+    const user = (req as any).user;
+    const { nome, telefone, fotoUrl } = req.body ?? {};
+
+    const updates: { nome?: string; telefone?: string | null; fotoUrl?: string | null; updatedAt?: Date } = {};
+
+    if (nome !== undefined) {
+      if (typeof nome !== "string") {
+        return res.status(400).json({ error: "Nome inválido" });
+      }
+      const trimmed = nome.trim();
+      if (trimmed.length < 2) {
+        return res.status(400).json({ error: "Nome deve ter pelo menos 2 caracteres" });
+      }
+      if (trimmed.length > 120) {
+        return res.status(400).json({ error: "Nome muito longo" });
+      }
+      updates.nome = trimmed;
+    }
+
+    if (telefone !== undefined) {
+      if (telefone === null || telefone === "") {
+        updates.telefone = null;
+      } else if (typeof telefone === "string") {
+        const digits = telefone.replace(/\D/g, "");
+        if (digits.length < 10 || digits.length > 11) {
+          return res.status(400).json({ error: "Telefone inválido. Use DDD + número." });
+        }
+        updates.telefone = telefone;
+      } else {
+        return res.status(400).json({ error: "Telefone inválido" });
+      }
+    }
+
+    if (fotoUrl !== undefined) {
+      if (fotoUrl === null || fotoUrl === "") {
+        updates.fotoUrl = null;
+      } else if (typeof fotoUrl === "string") {
+        if (fotoUrl.length > 2048) {
+          return res.status(400).json({ error: "URL da foto muito longa" });
+        }
+        if (!/^https?:\/\//i.test(fotoUrl)) {
+          return res.status(400).json({ error: "URL da foto inválida" });
+        }
+        updates.fotoUrl = fotoUrl;
+      } else {
+        return res.status(400).json({ error: "Foto inválida" });
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: "Nenhum campo para atualizar" });
+    }
+
+    updates.updatedAt = new Date();
+
+    const [updated] = await db.update(usersTable).set(updates).where(eq(usersTable.id, user.id)).returning();
+    const { senhaHash: _, ...userWithoutPass } = updated;
+    return res.json({
+      ...userWithoutPass,
+      createdAt: updated.createdAt.toISOString(),
+    });
+  } catch (e) {
+    console.error("update profile error:", e);
+    return res.status(500).json({ error: "Erro ao atualizar perfil" });
+  }
+});
+
 router.get("/me", requireAuth, async (req, res) => {
   try {
     const user = (req as any).user;
