@@ -1,375 +1,514 @@
 import React, { useMemo, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useColors, type ColorPalette } from "@/lib/theme";
+import * as Haptics from "expo-haptics";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import Colors from "@/constants/colors";
 import { ScreenContainer } from "@/components/ScreenContainer";
-import { ListRow } from "@/components/ListRow";
-import { EmptyState } from "@/components/EmptyState";
 import { ErrorView } from "@/components/ErrorView";
+import { EmptyState } from "@/components/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchJson, getErrorMessage } from "@/lib/api";
+import { fetchJson, formatCurrency, getErrorMessage } from "@/lib/api";
 
 type Movimentacao = {
   id: number;
-  tipo: "entrada" | "saida" | "sangria" | "vale" | string;
-  valor: number | string;
-  descricao?: string | null;
-  createdAt?: string | null;
+  caixaId: number;
+  tipo: "entrada" | "saida";
+  categoria: string | null;
+  descricao: string;
+  valor: number;
+  formaPagamento: string | null;
+  createdAt: string;
 };
 
 type Caixa = {
   id: number;
-  status: "aberto" | "fechado" | string;
-  valorAbertura: number | string;
-  totalEntradas?: number | string | null;
-  totalSaidas?: number | string | null;
-  saldoFinal?: number | string | null;
-  dataAbertura?: string | null;
-  dataFechamento?: string | null;
-  abertoPor?: string | null;
-  fechadoPor?: string | null;
-  observacao?: string | null;
+  status: "aberto" | "fechado";
+  dataAbertura: string;
+  dataFechamento: string | null;
+  abertoPor: string | null;
+  fechadoPor: string | null;
+  observacao: string | null;
+  valorAbertura: number;
+  totalEntradas: number;
+  totalSaidas: number;
+  saldoFinal: number | null;
   movimentacoes?: Movimentacao[];
 };
 
-function toNum(v: number | string | null | undefined): number {
-  if (v == null) return 0;
-  const n = typeof v === "string" ? Number(v) : v;
-  return isFinite(n) ? n : 0;
-}
+type Profissional = { id: number; nomeExibicao: string; apelido?: string | null };
 
-function formatBRL(v: number | string | null | undefined) {
-  return `R$ ${toNum(v).toFixed(2).replace(".", ",")}`;
-}
-
-function formatDateTime(s?: string | null) {
-  if (!s) return "—";
-  try {
-    return new Date(s).toLocaleString("pt-BR");
-  } catch {
-    return "—";
-  }
-}
+const FORMAS = ["dinheiro", "pix", "credito", "debito", "transferencia"];
 
 export default function CaixaDiarioScreen() {
+  const insets = useSafeAreaInsets();
   const { barbeariaId } = useAuth();
-  const router = useRouter();
-  const colors = useColors();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
   const qc = useQueryClient();
 
-  const [abrirModal, setAbrirModal] = useState(false);
-  const [valorAbertura, setValorAbertura] = useState("");
+  const [showAbrir, setShowAbrir] = useState(false);
+  const [showFechar, setShowFechar] = useState(false);
+  const [showMov, setShowMov] = useState(false);
+  const [showSangria, setShowSangria] = useState(false);
+  const [showVale, setShowVale] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [valorAbertura, setValorAbertura] = useState("0");
   const [obsAbertura, setObsAbertura] = useState("");
-
-  const [fecharModal, setFecharModal] = useState(false);
   const [valorFechamento, setValorFechamento] = useState("");
-  const [obsFechamento, setObsFechamento] = useState("");
 
-  const [movModal, setMovModal] = useState<null | "entrada" | "saida" | "sangria" | "vale">(null);
-  const [movValor, setMovValor] = useState("");
+  const [movTipo, setMovTipo] = useState<"entrada" | "saida">("entrada");
   const [movDescricao, setMovDescricao] = useState("");
+  const [movValor, setMovValor] = useState("");
+  const [movCategoria, setMovCategoria] = useState("");
+  const [movForma, setMovForma] = useState("dinheiro");
 
-  const atualQ = useQuery<Caixa | null>({
+  const [sangriaValor, setSangriaValor] = useState("");
+  const [sangriaMotivo, setSangriaMotivo] = useState("");
+
+  const [valeValor, setValeValor] = useState("");
+  const [valeProfId, setValeProfId] = useState<string>("");
+  const [valeObs, setValeObs] = useState("");
+
+  const caixaQ = useQuery<Caixa | null>({
     queryKey: ["caixa-atual", barbeariaId],
-    queryFn: async () => {
-      if (!barbeariaId) return null;
-      const raw = await fetchJson<unknown>(`/barbearias/${barbeariaId}/caixa-diario/atual`);
-      return raw as Caixa | null;
-    },
     enabled: !!barbeariaId,
+    queryFn: () => fetchJson<Caixa | null>(`/barbearias/${barbeariaId}/caixa-diario/atual`),
   });
 
-  const caixa = atualQ.data;
+  const profQ = useQuery<Profissional[]>({
+    queryKey: ["profissionais", barbeariaId],
+    enabled: !!barbeariaId,
+    queryFn: async () => {
+      const r = await fetchJson<Profissional[]>(`/barbearias/${barbeariaId}/profissionais`);
+      return Array.isArray(r) ? r : [];
+    },
+  });
 
-  const abrirMutation = useMutation({
-    mutationFn: async () => {
-      if (!barbeariaId) throw new Error("Barbearia não encontrada");
-      const valor = Number(valorAbertura.replace(",", "."));
-      if (!isFinite(valor) || valor < 0) throw new Error("Valor de abertura inválido");
-      return fetchJson(`/barbearias/${barbeariaId}/caixa-diario/abrir`, {
+  const caixa = caixaQ.data ?? null;
+
+  const saldoEsperado = useMemo(() => {
+    if (!caixa) return 0;
+    return (caixa.valorAbertura || 0) + (caixa.totalEntradas || 0) - (caixa.totalSaidas || 0);
+  }, [caixa]);
+
+  const diferenca = useMemo(() => {
+    const v = parseFloat((valorFechamento || "0").replace(",", "."));
+    return (Number.isFinite(v) ? v : 0) - saldoEsperado;
+  }, [valorFechamento, saldoEsperado]);
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["caixa-atual", barbeariaId] });
+
+  const abrir = async () => {
+    setSubmitting(true);
+    try {
+      await fetchJson(`/barbearias/${barbeariaId}/caixa-diario/abrir`, {
         method: "POST",
-        body: { valorAbertura: valor, observacao: obsAbertura.trim() || null },
+        body: { valorAbertura: parseFloat(valorAbertura.replace(",", ".")) || 0, observacao: obsAbertura.trim() || null },
       });
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["caixa-atual", barbeariaId] });
-      setAbrirModal(false);
-      setValorAbertura("");
-      setObsAbertura("");
-    },
-    onError: (e) => Alert.alert("Erro ao abrir caixa", getErrorMessage(e)),
-  });
+      setShowAbrir(false); setValorAbertura("0"); setObsAbertura("");
+      invalidate();
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      Alert.alert("Erro", getErrorMessage(e, "Não foi possível abrir."));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-  const fecharMutation = useMutation({
-    mutationFn: async () => {
-      if (!barbeariaId || !caixa) throw new Error("Caixa não encontrado");
-      const valor = valorFechamento.trim() ? Number(valorFechamento.replace(",", ".")) : undefined;
-      return fetchJson(`/barbearias/${barbeariaId}/caixa-diario/${caixa.id}/fechar`, {
+  const fechar = async () => {
+    if (!caixa) return;
+    setSubmitting(true);
+    try {
+      await fetchJson(`/barbearias/${barbeariaId}/caixa-diario/${caixa.id}/fechar`, {
         method: "PUT",
-        body: { valorFechamento: valor, observacao: obsFechamento.trim() || undefined },
+        body: { valorFechamento: parseFloat(valorFechamento.replace(",", ".")) || 0 },
       });
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["caixa-atual", barbeariaId] });
-      setFecharModal(false);
-      setValorFechamento("");
-      setObsFechamento("");
-    },
-    onError: (e) => Alert.alert("Erro ao fechar caixa", getErrorMessage(e)),
-  });
+      setShowFechar(false); setValorFechamento("");
+      invalidate();
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      Alert.alert("Erro", getErrorMessage(e, "Não foi possível fechar."));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-  const movMutation = useMutation({
-    mutationFn: async () => {
-      if (!barbeariaId || !caixa || !movModal) throw new Error("Caixa não encontrado");
-      const valor = Number(movValor.replace(",", "."));
-      if (!isFinite(valor) || valor <= 0) throw new Error("Valor inválido");
-      const path =
-        movModal === "sangria" ? "sangria" : movModal === "vale" ? "vale" : "movimentacoes";
-      const body: Record<string, unknown> = { valor, descricao: movDescricao.trim() || null };
-      if (movModal === "entrada" || movModal === "saida") body.tipo = movModal;
-      return fetchJson(`/barbearias/${barbeariaId}/caixa-diario/${caixa.id}/${path}`, {
+  const addMov = async () => {
+    if (!caixa) return;
+    if (!movDescricao.trim()) return Alert.alert("Campo obrigatório", "Informe a descrição.");
+    const v = parseFloat(movValor.replace(",", "."));
+    if (!v || v <= 0) return Alert.alert("Valor inválido", "Informe um valor maior que zero.");
+    setSubmitting(true);
+    try {
+      await fetchJson(`/barbearias/${barbeariaId}/caixa-diario/${caixa.id}/movimentacoes`, {
         method: "POST",
-        body,
+        body: { tipo: movTipo, descricao: movDescricao.trim(), valor: v, categoria: movCategoria.trim() || null, formaPagamento: movForma },
       });
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["caixa-atual", barbeariaId] });
-      setMovModal(null);
-      setMovValor("");
-      setMovDescricao("");
-    },
-    onError: (e) => Alert.alert("Erro", getErrorMessage(e)),
-  });
+      setShowMov(false); setMovDescricao(""); setMovValor(""); setMovCategoria(""); setMovTipo("entrada"); setMovForma("dinheiro");
+      invalidate();
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      Alert.alert("Erro", getErrorMessage(e, "Tente novamente."));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-  const saldoEsperado = caixa
-    ? toNum(caixa.valorAbertura) + toNum(caixa.totalEntradas) - toNum(caixa.totalSaidas)
-    : 0;
+  const sangria = async () => {
+    if (!caixa) return;
+    const v = parseFloat(sangriaValor.replace(",", "."));
+    if (!v || v <= 0) return Alert.alert("Valor inválido", "Informe um valor maior que zero.");
+    setSubmitting(true);
+    try {
+      await fetchJson(`/barbearias/${barbeariaId}/caixa-diario/${caixa.id}/sangria`, {
+        method: "POST",
+        body: { valor: v, motivo: sangriaMotivo.trim() || "Sangria" },
+      });
+      setShowSangria(false); setSangriaValor(""); setSangriaMotivo("");
+      invalidate();
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      Alert.alert("Erro", getErrorMessage(e, "Tente novamente."));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const vale = async () => {
+    if (!caixa) return;
+    const v = parseFloat(valeValor.replace(",", "."));
+    const profId = parseInt(valeProfId);
+    if (!profId) return Alert.alert("Campo obrigatório", "Selecione um profissional.");
+    if (!v || v <= 0) return Alert.alert("Valor inválido", "Informe um valor maior que zero.");
+    setSubmitting(true);
+    try {
+      await fetchJson(`/barbearias/${barbeariaId}/caixa-diario/${caixa.id}/vale`, {
+        method: "POST",
+        body: { valor: v, profissionalId: profId, observacao: valeObs.trim() || null },
+      });
+      setShowVale(false); setValeValor(""); setValeProfId(""); setValeObs("");
+      invalidate();
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      Alert.alert("Erro", getErrorMessage(e, "Tente novamente."));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const action = caixa
+    ? { icon: "lock" as const, label: "Fechar caixa", onPress: () => { setValorFechamento(saldoEsperado.toFixed(2)); setShowFechar(true); } }
+    : { icon: "unlock" as const, label: "Abrir caixa", onPress: () => setShowAbrir(true) };
 
   return (
     <ScreenContainer
       title="Caixa diário"
-      subtitle="Abertura, movimentações e fechamento"
-      refreshing={atualQ.isRefetching}
-      onRefresh={atualQ.refetch}
-      rightAction={{ icon: "list", label: "Comandas do caixa", onPress: () => router.push("/caixa") }}
+      subtitle={caixa ? `Aberto por ${caixa.abertoPor || "—"}` : "Nenhum caixa aberto"}
+      refreshing={caixaQ.isFetching && !caixaQ.isLoading}
+      onRefresh={() => caixaQ.refetch()}
+      rightAction={action}
     >
-      {atualQ.isLoading ? (
-        <SkeletonList count={3} variant="card" />
-      ) : atualQ.isError ? (
-        <ErrorView error={atualQ.error} onRetry={atualQ.refetch} />
+      {caixaQ.isLoading ? (
+        <SkeletonList count={3} />
+      ) : caixaQ.isError ? (
+        <ErrorView error={caixaQ.error} onRetry={() => caixaQ.refetch()} />
       ) : !caixa ? (
         <EmptyState
           icon="dollar-sign"
           title="Nenhum caixa aberto"
-          description="Abra um caixa para começar a registrar movimentações do dia."
+          description="Abra um caixa para começar a registrar entradas e saídas."
           ctaLabel="Abrir caixa"
-          onCtaPress={() => setAbrirModal(true)}
+          onCtaPress={() => setShowAbrir(true)}
         />
       ) : (
         <>
-          <View style={styles.statusCard}>
-            <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>Status</Text>
-              <View style={[styles.badge, { backgroundColor: caixa.status === "aberto" ? colors.success + "22" : colors.surfaceLight }]}>
-                <Text style={[styles.badgeText, { color: caixa.status === "aberto" ? colors.success : colors.textSecondary }]}>
-                  {caixa.status === "aberto" ? "Aberto" : "Fechado"}
-                </Text>
-              </View>
+          <View style={styles.kpiGrid}>
+            <View style={styles.kpiCard}>
+              <Text style={styles.kpiLabel}>Abertura</Text>
+              <Text style={styles.kpiValue}>{formatCurrency(caixa.valorAbertura)}</Text>
             </View>
-            <Text style={styles.statusMeta}>Aberto por {caixa.abertoPor || "—"} em {formatDateTime(caixa.dataAbertura)}</Text>
-            {caixa.fechadoPor ? (
-              <Text style={styles.statusMeta}>Fechado por {caixa.fechadoPor} em {formatDateTime(caixa.dataFechamento)}</Text>
-            ) : null}
-          </View>
-
-          <View style={styles.totalsCard}>
-            <View style={styles.totalRow}>
-              <View style={styles.totalCell}>
-                <Text style={styles.totalLabel}>Abertura</Text>
-                <Text style={styles.totalValue}>{formatBRL(caixa.valorAbertura)}</Text>
-              </View>
-              <View style={styles.totalCell}>
-                <Text style={styles.totalLabel}>Entradas</Text>
-                <Text style={[styles.totalValue, { color: colors.success }]}>{formatBRL(caixa.totalEntradas)}</Text>
-              </View>
-              <View style={styles.totalCell}>
-                <Text style={styles.totalLabel}>Saídas</Text>
-                <Text style={[styles.totalValue, { color: colors.error }]}>{formatBRL(caixa.totalSaidas)}</Text>
-              </View>
+            <View style={styles.kpiCard}>
+              <Text style={[styles.kpiLabel, { color: Colors.success }]}>Entradas</Text>
+              <Text style={[styles.kpiValue, { color: Colors.success }]}>{formatCurrency(caixa.totalEntradas)}</Text>
             </View>
-            <View style={styles.divider} />
-            <View style={styles.totalRow}>
-              <View style={styles.totalCell}>
-                <Text style={styles.totalLabel}>Saldo esperado</Text>
-                <Text style={[styles.totalValueBig, { color: colors.accent }]}>{formatBRL(saldoEsperado)}</Text>
-              </View>
+            <View style={styles.kpiCard}>
+              <Text style={[styles.kpiLabel, { color: Colors.error }]}>Saídas</Text>
+              <Text style={[styles.kpiValue, { color: Colors.error }]}>{formatCurrency(caixa.totalSaidas)}</Text>
+            </View>
+            <View style={styles.kpiCard}>
+              <Text style={[styles.kpiLabel, { color: Colors.accent }]}>Saldo atual</Text>
+              <Text style={[styles.kpiValue, { color: Colors.accent }]}>{formatCurrency(saldoEsperado)}</Text>
             </View>
           </View>
 
-          {caixa.status === "aberto" ? (
-            <View style={styles.actionsRow}>
-              <Pressable onPress={() => setMovModal("entrada")} style={[styles.actionBtn, { backgroundColor: colors.success + "22" }]}>
-                <Feather name="plus-circle" size={16} color={colors.success} />
-                <Text style={[styles.actionText, { color: colors.success }]}>Entrada</Text>
-              </Pressable>
-              <Pressable onPress={() => setMovModal("saida")} style={[styles.actionBtn, { backgroundColor: colors.error + "22" }]}>
-                <Feather name="minus-circle" size={16} color={colors.error} />
-                <Text style={[styles.actionText, { color: colors.error }]}>Saída</Text>
-              </Pressable>
-              <Pressable onPress={() => setMovModal("sangria")} style={[styles.actionBtn, { backgroundColor: colors.surfaceLight }]}>
-                <Feather name="arrow-up-right" size={16} color={colors.text} />
-                <Text style={[styles.actionText, { color: colors.text }]}>Sangria</Text>
-              </Pressable>
-              <Pressable onPress={() => setMovModal("vale")} style={[styles.actionBtn, { backgroundColor: colors.surfaceLight }]}>
-                <Feather name="user" size={16} color={colors.text} />
-                <Text style={[styles.actionText, { color: colors.text }]}>Vale</Text>
-              </Pressable>
-            </View>
-          ) : null}
+          <View style={styles.actionsRow}>
+            <ActionPill icon="plus" label="Movimentação" onPress={() => setShowMov(true)} />
+            <ActionPill icon="minus-circle" label="Sangria" onPress={() => setShowSangria(true)} tone={Colors.warning} />
+            <ActionPill icon="user" label="Vale" onPress={() => setShowVale(true)} tone={Colors.info} />
+          </View>
 
-          {caixa.movimentacoes && caixa.movimentacoes.length > 0 ? (
-            <View style={styles.card}>
-              {caixa.movimentacoes.map((m) => {
-                const isOut = m.tipo === "saida" || m.tipo === "sangria" || m.tipo === "vale";
-                return (
-                  <ListRow
-                    key={m.id}
-                    icon={isOut ? "arrow-down-circle" : "arrow-up-circle"}
-                    label={m.descricao || m.tipo}
-                    description={`${m.tipo} • ${formatDateTime(m.createdAt)}`}
-                    rightLabel={`${isOut ? "−" : "+"} ${formatBRL(m.valor)}`}
-                  />
-                );
-              })}
-            </View>
-          ) : null}
-
-          {caixa.status === "aberto" ? (
-            <Pressable
-              onPress={() => { setValorFechamento(saldoEsperado.toFixed(2)); setFecharModal(true); }}
-              style={[styles.bigBtn, { backgroundColor: colors.error }]}
-            >
-              <Feather name="lock" size={16} color={colors.invertedText} />
-              <Text style={styles.bigBtnText}>Fechar caixa</Text>
-            </Pressable>
+          <Text style={styles.sectionTitle}>Movimentações ({(caixa.movimentacoes ?? []).length})</Text>
+          {(caixa.movimentacoes ?? []).length === 0 ? (
+            <EmptyState icon="list" title="Nenhuma movimentação" description="As entradas e saídas do caixa aparecem aqui." />
           ) : (
-            <Pressable onPress={() => setAbrirModal(true)} style={[styles.bigBtn, { backgroundColor: colors.accent }]}>
-              <Feather name="unlock" size={16} color={colors.invertedText} />
-              <Text style={styles.bigBtnText}>Abrir novo caixa</Text>
-            </Pressable>
+            <View style={{ gap: 6 }}>
+              {(caixa.movimentacoes ?? []).map(m => (
+                <View key={m.id} style={styles.movRow}>
+                  <View style={[styles.movIcon, { backgroundColor: (m.tipo === "entrada" ? Colors.success : Colors.error) + "1f" }]}>
+                    <Feather
+                      name={m.tipo === "entrada" ? "arrow-up-circle" : "arrow-down-circle"}
+                      size={16}
+                      color={m.tipo === "entrada" ? Colors.success : Colors.error}
+                    />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.movDesc} numberOfLines={1}>{m.descricao}</Text>
+                    <Text style={styles.movMeta} numberOfLines={1}>
+                      {(m.categoria || m.formaPagamento || "—")} · {new Date(m.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                    </Text>
+                  </View>
+                  <Text style={[styles.movValue, { color: m.tipo === "entrada" ? Colors.success : Colors.error }]}>
+                    {m.tipo === "entrada" ? "+" : "−"}{formatCurrency(m.valor)}
+                  </Text>
+                </View>
+              ))}
+            </View>
           )}
         </>
       )}
 
-      <Modal visible={abrirModal} transparent animationType="slide" onRequestClose={() => setAbrirModal(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.modalTitle}>Abrir caixa</Text>
-              <Text style={styles.label}>Valor de abertura (R$)</Text>
-              <TextInput value={valorAbertura} onChangeText={setValorAbertura} placeholder="0,00" placeholderTextColor={colors.textMuted} keyboardType="decimal-pad" style={styles.input} autoFocus />
-              <Text style={styles.label}>Observação</Text>
-              <TextInput value={obsAbertura} onChangeText={setObsAbertura} placeholder="Opcional" placeholderTextColor={colors.textMuted} style={[styles.input, { height: 60, textAlignVertical: "top" }]} multiline />
-              <View style={styles.actions}>
-                <Pressable onPress={() => setAbrirModal(false)} style={[styles.btn, styles.btnGhost]}>
-                  <Text style={styles.btnGhostText}>Cancelar</Text>
-                </Pressable>
-                <Pressable onPress={() => abrirMutation.mutate()} disabled={abrirMutation.isPending} style={[styles.btn, styles.btnPrimary, abrirMutation.isPending && { opacity: 0.7 }]}>
-                  <Text style={styles.btnPrimaryText}>{abrirMutation.isPending ? "Abrindo…" : "Abrir caixa"}</Text>
-                </Pressable>
-              </View>
-            </ScrollView>
+      {/* Modal Abrir */}
+      <Modal visible={showAbrir} animationType="slide" transparent onRequestClose={() => setShowAbrir(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.modalBackdrop}>
+          <View style={[styles.modalSheet, { paddingBottom: 24 + insets.bottom }]}>
+            <ModalHeader title="Abrir caixa" onClose={() => setShowAbrir(false)} />
+            <Field label="Valor de abertura (R$)">
+              <TextInput style={styles.input} value={valorAbertura} onChangeText={setValorAbertura} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor={Colors.textMuted} />
+            </Field>
+            <Field label="Observação">
+              <TextInput style={styles.input} value={obsAbertura} onChangeText={setObsAbertura} placeholder="Opcional" placeholderTextColor={Colors.textMuted} />
+            </Field>
+            <PrimaryBtn onPress={abrir} disabled={submitting} label={submitting ? "Abrindo..." : "Confirmar abertura"} />
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
-      <Modal visible={fecharModal} transparent animationType="slide" onRequestClose={() => setFecharModal(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.modalTitle}>Fechar caixa</Text>
-              <Text style={styles.hint}>Saldo esperado: {formatBRL(saldoEsperado)}</Text>
-              <Text style={styles.label}>Valor informado (R$)</Text>
-              <TextInput value={valorFechamento} onChangeText={setValorFechamento} placeholder="0,00" placeholderTextColor={colors.textMuted} keyboardType="decimal-pad" style={styles.input} autoFocus />
-              <Text style={styles.label}>Observação</Text>
-              <TextInput value={obsFechamento} onChangeText={setObsFechamento} placeholder="Opcional" placeholderTextColor={colors.textMuted} style={[styles.input, { height: 60, textAlignVertical: "top" }]} multiline />
-              <View style={styles.actions}>
-                <Pressable onPress={() => setFecharModal(false)} style={[styles.btn, styles.btnGhost]}>
-                  <Text style={styles.btnGhostText}>Cancelar</Text>
-                </Pressable>
-                <Pressable onPress={() => fecharMutation.mutate()} disabled={fecharMutation.isPending} style={[styles.btn, styles.btnPrimary, fecharMutation.isPending && { opacity: 0.7 }]}>
-                  <Text style={styles.btnPrimaryText}>{fecharMutation.isPending ? "Fechando…" : "Confirmar fechamento"}</Text>
-                </Pressable>
+      {/* Modal Fechar */}
+      <Modal visible={showFechar} animationType="slide" transparent onRequestClose={() => setShowFechar(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.modalBackdrop}>
+          <View style={[styles.modalSheet, { paddingBottom: 24 + insets.bottom }]}>
+            <ModalHeader title="Fechar caixa" onClose={() => setShowFechar(false)} />
+            <View style={styles.fecharResumo}>
+              <View style={styles.fecharCol}><Text style={styles.fecharLabel}>Abertura</Text><Text style={styles.fecharValue}>{formatCurrency(caixa?.valorAbertura ?? 0)}</Text></View>
+              <View style={styles.fecharCol}><Text style={[styles.fecharLabel, { color: Colors.success }]}>Entradas</Text><Text style={[styles.fecharValue, { color: Colors.success }]}>{formatCurrency(caixa?.totalEntradas ?? 0)}</Text></View>
+              <View style={styles.fecharCol}><Text style={[styles.fecharLabel, { color: Colors.error }]}>Saídas</Text><Text style={[styles.fecharValue, { color: Colors.error }]}>{formatCurrency(caixa?.totalSaidas ?? 0)}</Text></View>
+            </View>
+            <View style={styles.fecharBlock}>
+              <Text style={styles.fecharBlockLabel}>Valor esperado em caixa</Text>
+              <Text style={styles.fecharBlockValue}>{formatCurrency(saldoEsperado)}</Text>
+            </View>
+            <Field label="Valor informado (R$)">
+              <TextInput style={[styles.input, { textAlign: "center", fontSize: 20, fontFamily: "Inter_700Bold" }]} value={valorFechamento} onChangeText={setValorFechamento} keyboardType="decimal-pad" placeholderTextColor={Colors.textMuted} />
+            </Field>
+            {valorFechamento ? (
+              <View style={[styles.diffBlock, { backgroundColor: (diferenca === 0 ? Colors.success : diferenca > 0 ? Colors.warning : Colors.error) + "22" }]}>
+                <Text style={styles.diffLabel}>Diferença</Text>
+                <Text style={[styles.diffValue, { color: diferenca === 0 ? Colors.success : diferenca > 0 ? Colors.warning : Colors.error }]}>
+                  {diferenca > 0 ? "+" : ""}{formatCurrency(diferenca)}
+                  {diferenca === 0 ? "  ✓" : diferenca > 0 ? "  (sobra)" : "  (falta)"}
+                </Text>
               </View>
-            </ScrollView>
+            ) : null}
+            <PrimaryBtn onPress={fechar} disabled={submitting} label={submitting ? "Fechando..." : "Confirmar fechamento"} />
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
-      <Modal visible={!!movModal} transparent animationType="slide" onRequestClose={() => setMovModal(null)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.modalTitle}>
-                {movModal === "entrada" ? "Nova entrada" :
-                 movModal === "saida" ? "Nova saída" :
-                 movModal === "sangria" ? "Sangria" : "Vale"}
-              </Text>
-              <Text style={styles.label}>Valor (R$)</Text>
-              <TextInput value={movValor} onChangeText={setMovValor} placeholder="0,00" placeholderTextColor={colors.textMuted} keyboardType="decimal-pad" style={styles.input} autoFocus />
-              <Text style={styles.label}>Descrição</Text>
-              <TextInput value={movDescricao} onChangeText={setMovDescricao} placeholder="Detalhes da movimentação" placeholderTextColor={colors.textMuted} style={styles.input} />
-              <View style={styles.actions}>
-                <Pressable onPress={() => setMovModal(null)} style={[styles.btn, styles.btnGhost]}>
-                  <Text style={styles.btnGhostText}>Cancelar</Text>
-                </Pressable>
-                <Pressable onPress={() => movMutation.mutate()} disabled={movMutation.isPending} style={[styles.btn, styles.btnPrimary, movMutation.isPending && { opacity: 0.7 }]}>
-                  <Text style={styles.btnPrimaryText}>{movMutation.isPending ? "Salvando…" : "Registrar"}</Text>
-                </Pressable>
+      {/* Modal Movimentação */}
+      <Modal visible={showMov} animationType="slide" transparent onRequestClose={() => setShowMov(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.modalBackdrop}>
+          <View style={[styles.modalSheet, { paddingBottom: 24 + insets.bottom }]}>
+            <ModalHeader title="Nova movimentação" onClose={() => setShowMov(false)} />
+            <ScrollView style={{ maxHeight: 460 }} contentContainerStyle={{ gap: 12 }}>
+              <Text style={styles.fieldLabel}>Tipo</Text>
+              <View style={styles.segmentRow}>
+                {(["entrada", "saida"] as const).map(t => (
+                  <TouchableOpacity key={t} style={[styles.segmentBtn, movTipo === t && styles.segmentBtnActive]} onPress={() => setMovTipo(t)}>
+                    <Text style={[styles.segmentText, movTipo === t && styles.segmentTextActive]}>{t === "entrada" ? "Entrada" : "Saída"}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Field label="Descrição">
+                <TextInput style={styles.input} value={movDescricao} onChangeText={setMovDescricao} placeholder="Ex: Venda de produto" placeholderTextColor={Colors.textMuted} />
+              </Field>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <Field label="Valor (R$)" style={{ flex: 1 }}>
+                  <TextInput style={styles.input} value={movValor} onChangeText={setMovValor} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor={Colors.textMuted} />
+                </Field>
+                <Field label="Categoria" style={{ flex: 1 }}>
+                  <TextInput style={styles.input} value={movCategoria} onChangeText={setMovCategoria} placeholder="Opcional" placeholderTextColor={Colors.textMuted} />
+                </Field>
+              </View>
+              <Text style={styles.fieldLabel}>Forma de pagamento</Text>
+              <View style={styles.formasRow}>
+                {FORMAS.map(f => (
+                  <TouchableOpacity key={f} style={[styles.formaChip, movForma === f && styles.formaChipActive]} onPress={() => setMovForma(f)}>
+                    <Text style={[styles.formaChipText, movForma === f && styles.formaChipTextActive]}>{f}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             </ScrollView>
+            <PrimaryBtn onPress={addMov} disabled={submitting} label={submitting ? "Registrando..." : "Registrar"} />
           </View>
-        </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Modal Sangria */}
+      <Modal visible={showSangria} animationType="slide" transparent onRequestClose={() => setShowSangria(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.modalBackdrop}>
+          <View style={[styles.modalSheet, { paddingBottom: 24 + insets.bottom }]}>
+            <ModalHeader title="Sangria de caixa" onClose={() => setShowSangria(false)} />
+            <Text style={styles.helpText}>Retirar dinheiro do caixa durante o expediente.</Text>
+            <Field label="Valor (R$)">
+              <TextInput style={styles.input} value={sangriaValor} onChangeText={setSangriaValor} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor={Colors.textMuted} />
+            </Field>
+            <Field label="Motivo">
+              <TextInput style={styles.input} value={sangriaMotivo} onChangeText={setSangriaMotivo} placeholder="Ex: pagamento de fornecedor" placeholderTextColor={Colors.textMuted} />
+            </Field>
+            <PrimaryBtn onPress={sangria} disabled={submitting} label={submitting ? "Registrando..." : "Registrar sangria"} />
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Modal Vale */}
+      <Modal visible={showVale} animationType="slide" transparent onRequestClose={() => setShowVale(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.modalBackdrop}>
+          <View style={[styles.modalSheet, { paddingBottom: 24 + insets.bottom }]}>
+            <ModalHeader title="Vale para profissional" onClose={() => setShowVale(false)} />
+            <Text style={styles.helpText}>Saída do caixa + débito na conta do profissional.</Text>
+            <Text style={styles.fieldLabel}>Profissional</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+              {(profQ.data ?? []).map(p => (
+                <TouchableOpacity
+                  key={p.id}
+                  style={[styles.profChip, valeProfId === String(p.id) && styles.profChipActive]}
+                  onPress={() => setValeProfId(String(p.id))}
+                >
+                  <Text style={[styles.profChipText, valeProfId === String(p.id) && styles.profChipTextActive]} numberOfLines={1}>
+                    {p.apelido || p.nomeExibicao}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <Field label="Valor (R$)" style={{ marginTop: 12 }}>
+              <TextInput style={styles.input} value={valeValor} onChangeText={setValeValor} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor={Colors.textMuted} />
+            </Field>
+            <Field label="Observação">
+              <TextInput style={styles.input} value={valeObs} onChangeText={setValeObs} placeholder="Opcional" placeholderTextColor={Colors.textMuted} />
+            </Field>
+            <PrimaryBtn onPress={vale} disabled={submitting} label={submitting ? "Registrando..." : "Registrar vale"} />
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </ScreenContainer>
   );
 }
 
-const makeStyles = (c: ColorPalette) =>
-  StyleSheet.create({
-    statusCard: { backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.surfaceBorder, padding: 14, marginBottom: 10 },
-    statusRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
-    statusLabel: { color: c.textSecondary, fontFamily: "Inter_600SemiBold", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5 },
-    statusMeta: { color: c.textMuted, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 2 },
-    badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
-    badgeText: { fontFamily: "Inter_700Bold", fontSize: 11 },
-    totalsCard: { backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.surfaceBorder, padding: 14, marginBottom: 10 },
-    totalRow: { flexDirection: "row", justifyContent: "space-between" },
-    totalCell: { flex: 1, alignItems: "flex-start" },
-    totalLabel: { color: c.textSecondary, fontFamily: "Inter_500Medium", fontSize: 11, marginBottom: 4 },
-    totalValue: { color: c.text, fontFamily: "Inter_700Bold", fontSize: 14 },
-    totalValueBig: { fontFamily: "Inter_700Bold", fontSize: 22 },
-    divider: { height: 1, backgroundColor: c.surfaceBorder, marginVertical: 10 },
-    actionsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 },
-    actionBtn: { flexGrow: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 10, borderRadius: 10 },
-    actionText: { fontFamily: "Inter_600SemiBold", fontSize: 13 },
-    card: { backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.surfaceBorder, overflow: "hidden", marginBottom: 10 },
-    bigBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, borderRadius: 12, marginTop: 8 },
-    bigBtnText: { color: c.invertedText, fontFamily: "Inter_700Bold", fontSize: 14 },
-    modalBackdrop: { flex: 1, backgroundColor: c.overlay, justifyContent: "flex-end" },
-    modalCard: { backgroundColor: c.background, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 32, borderTopWidth: 1, borderColor: c.surfaceBorder, maxHeight: "85%" },
-    modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: c.text, marginBottom: 12 },
-    label: { fontSize: 12, fontFamily: "Inter_500Medium", color: c.textSecondary, marginBottom: 6, marginTop: 8 },
-    input: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: c.text, fontFamily: "Inter_500Medium", fontSize: 14 },
-    actions: { flexDirection: "row", gap: 10, marginTop: 18 },
-    btn: { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 12, borderRadius: 10 },
-    btnGhost: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.surfaceBorder },
-    btnGhostText: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 14 },
-    btnPrimary: { backgroundColor: c.accent },
-    btnPrimaryText: { color: c.invertedText, fontFamily: "Inter_700Bold", fontSize: 14 },
-    hint: { color: c.textMuted, fontFamily: "Inter_500Medium", fontSize: 12, marginBottom: 4 },
-  });
+function ActionPill({ icon, label, onPress, tone }: { icon: keyof typeof Feather.glyphMap; label: string; onPress: () => void; tone?: string }) {
+  const c = tone || Colors.accent;
+  return (
+    <TouchableOpacity style={[styles.actionPill, { backgroundColor: c + "1a", borderColor: c + "55" }]} onPress={onPress}>
+      <Feather name={icon} size={14} color={c} />
+      <Text style={[styles.actionPillText, { color: c }]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function Field({ label, children, style }: { label: string; children: React.ReactNode; style?: any }) {
+  return (
+    <View style={style}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      {children}
+    </View>
+  );
+}
+
+function ModalHeader({ title, onClose }: { title: string; onClose: () => void }) {
+  return (
+    <View style={styles.modalHeader}>
+      <Text style={styles.modalTitle}>{title}</Text>
+      <TouchableOpacity onPress={onClose}><Feather name="x" size={22} color={Colors.text} /></TouchableOpacity>
+    </View>
+  );
+}
+
+function PrimaryBtn({ onPress, label, disabled }: { onPress: () => void; label: string; disabled?: boolean }) {
+  return (
+    <TouchableOpacity style={[styles.btnPrimary, { marginTop: 14, opacity: disabled ? 0.5 : 1 }]} disabled={disabled} onPress={onPress}>
+      {disabled ? <ActivityIndicator color="#000" /> : <Text style={styles.btnPrimaryText}>{label}</Text>}
+    </TouchableOpacity>
+  );
+}
+
+const styles = StyleSheet.create({
+  kpiGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  kpiCard: { flexBasis: "48%", flexGrow: 1, padding: 12, borderRadius: 12, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder },
+  kpiLabel: { fontSize: 11, fontFamily: "Inter_500Medium", color: Colors.textSecondary, textTransform: "uppercase", letterSpacing: 0.5 },
+  kpiValue: { fontSize: 17, fontFamily: "Inter_700Bold", color: Colors.text, marginTop: 4 },
+  actionsRow: { flexDirection: "row", gap: 8, marginTop: 12, marginBottom: 4, flexWrap: "wrap" },
+  actionPill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 999, borderWidth: 1 },
+  actionPillText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  sectionTitle: { fontSize: 12, fontFamily: "Inter_700Bold", color: Colors.textMuted, textTransform: "uppercase", letterSpacing: 1.1, marginTop: 18, marginBottom: 8, paddingHorizontal: 4 },
+  movRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 10, borderRadius: 12, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder },
+  movIcon: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  movDesc: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.text },
+  movMeta: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginTop: 2 },
+  movValue: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  modalBackdrop: { flex: 1, backgroundColor: "#000a", justifyContent: "flex-end" },
+  modalSheet: { backgroundColor: Colors.background, padding: 16, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: Colors.surfaceBorder },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: Colors.text },
+  fieldLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 6 },
+  helpText: { fontSize: 12, color: Colors.textMuted, fontFamily: "Inter_400Regular", marginBottom: 6 },
+  input: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: Colors.text, fontSize: 14, fontFamily: "Inter_400Regular" },
+  segmentRow: { flexDirection: "row", gap: 6 },
+  segmentBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center" },
+  segmentBtnActive: { backgroundColor: Colors.accent + "22", borderColor: Colors.accent + "55" },
+  segmentText: { fontSize: 13, color: Colors.textSecondary, fontFamily: "Inter_500Medium" },
+  segmentTextActive: { color: Colors.accent, fontFamily: "Inter_600SemiBold" },
+  formasRow: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
+  formaChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder },
+  formaChipActive: { backgroundColor: Colors.accent + "22", borderColor: Colors.accent + "55" },
+  formaChipText: { fontSize: 12, fontFamily: "Inter_500Medium", color: Colors.textSecondary, textTransform: "capitalize" },
+  formaChipTextActive: { color: Colors.accent },
+  profChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.surfaceBorder },
+  profChipActive: { backgroundColor: Colors.accent + "22", borderColor: Colors.accent + "55" },
+  profChipText: { fontSize: 12, fontFamily: "Inter_500Medium", color: Colors.textSecondary },
+  profChipTextActive: { color: Colors.accent, fontFamily: "Inter_600SemiBold" },
+  fecharResumo: { flexDirection: "row", gap: 8, marginBottom: 12 },
+  fecharCol: { flex: 1, padding: 10, backgroundColor: Colors.surface, borderRadius: 10, borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center" },
+  fecharLabel: { fontSize: 10, fontFamily: "Inter_500Medium", color: Colors.textSecondary, textTransform: "uppercase", letterSpacing: 0.5 },
+  fecharValue: { fontSize: 14, fontFamily: "Inter_700Bold", color: Colors.text, marginTop: 4 },
+  fecharBlock: { padding: 14, backgroundColor: Colors.accent + "1a", borderRadius: 12, borderWidth: 1, borderColor: Colors.accent + "44", alignItems: "center", marginBottom: 4 },
+  fecharBlockLabel: { fontSize: 11, color: Colors.accent, fontFamily: "Inter_600SemiBold", textTransform: "uppercase", letterSpacing: 0.5 },
+  fecharBlockValue: { fontSize: 22, fontFamily: "Inter_700Bold", color: Colors.accent, marginTop: 4 },
+  diffBlock: { padding: 12, borderRadius: 12, alignItems: "center", marginTop: 4 },
+  diffLabel: { fontSize: 11, fontFamily: "Inter_500Medium", color: Colors.textSecondary, textTransform: "uppercase", letterSpacing: 0.5 },
+  diffValue: { fontSize: 16, fontFamily: "Inter_700Bold", marginTop: 4 },
+  btnPrimary: { backgroundColor: Colors.accent, borderRadius: 12, paddingVertical: 14, alignItems: "center", justifyContent: "center" },
+  btnPrimaryText: { color: "#000", fontFamily: "Inter_600SemiBold", fontSize: 14 },
+});

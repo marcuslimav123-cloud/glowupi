@@ -1,108 +1,44 @@
-import React, { useMemo } from "react";
-import { useRouter, type Href } from "expo-router";
-import { View, StyleSheet } from "react-native";
-import { useColors, type ColorPalette } from "@/lib/theme";
-import { ScreenContainer } from "@/components/ScreenContainer";
-import { ListRow } from "@/components/ListRow";
-import { SectionHeader } from "@/components/SectionHeader";
+import React from "react";
+import { useRouter } from "expo-router";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Feather } from "@expo/vector-icons";
+import Colors from "@/constants/colors";
+import Dashboard from "./dashboard";
 
 export default function FinanceiroIndex() {
   const router = useRouter();
-  const colors = useColors();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const go = (p: Href) => () => router.push(p);
-
   return (
-    <ScreenContainer title="Financeiro" subtitle="Gestão financeira da barbearia">
-      <SectionHeader label="Visão geral" />
-      <View style={styles.card}>
-        <ListRow
-          icon="pie-chart"
-          label="Painel financeiro"
-          description="Faturamento, despesas e indicadores"
-          onPress={go("/financeiro/dashboard")}
-        />
-        <ListRow
-          icon="trending-up"
-          label="Fluxo de caixa"
-          description="Entradas e saídas com filtros"
-          onPress={go("/financeiro/fluxo")}
-        />
-      </View>
-
-      <SectionHeader label="Contas e movimentações" />
-      <View style={styles.card}>
-        <ListRow
-          icon="arrow-down-circle"
-          label="Contas a pagar"
-          onPress={go("/financeiro/contas-pagar")}
-        />
-        <ListRow
-          icon="arrow-up-circle"
-          label="Contas a receber"
-          onPress={go("/financeiro/contas-receber")}
-        />
-        <ListRow
-          icon="list"
-          label="Movimentações"
-          description="Log de todas as transações"
-          onPress={go("/financeiro/movimentacoes")}
-        />
-      </View>
-
-      <SectionHeader label="Caixa" />
-      <View style={styles.card}>
-        <ListRow
-          icon="dollar-sign"
-          label="Caixa diário"
-          description="Abertura, sangria e fechamento"
-          onPress={go("/financeiro/caixa-diario")}
-        />
-        <ListRow
-          icon="archive"
-          label="Histórico de caixa"
-          description="Caixas fechados anteriores"
-          onPress={go("/financeiro/historico")}
-        />
-        <ListRow
-          icon="dollar-sign"
-          label="Caixinha"
-          description="Gorjetas por profissional"
-          onPress={go("/financeiro/caixinha")}
-        />
-      </View>
-
-      <SectionHeader label="Comissões e contas" />
-      <View style={styles.card}>
-        <ListRow
-          icon="percent"
-          label="Comissões"
-          description="Por profissional e período"
-          onPress={go("/financeiro/comissoes")}
-        />
-        <ListRow
-          icon="user-check"
-          label="Conta do profissional"
-          description="Saldos e adiantamentos"
-          onPress={go("/financeiro/conta-profissional")}
-        />
-        <ListRow
-          icon="user"
-          label="Conta do cliente"
-          description="Saldos e quitação"
-          onPress={go("/financeiro/conta-cliente")}
-        />
-      </View>
-    </ScreenContainer>
+    <View style={{ flex: 1 }}>
+      <Dashboard />
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push("/financeiro/menu")}
+        activeOpacity={0.8}
+      >
+        <Feather name="menu" size={20} color="#000" />
+        <Text style={styles.fabText}>Mais</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
-const makeStyles = (c: ColorPalette) => StyleSheet.create({
-  card: {
-    backgroundColor: c.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: c.surfaceBorder,
-    overflow: "hidden",
+const styles = StyleSheet.create({
+  fab: {
+    position: "absolute",
+    right: 16,
+    bottom: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: Colors.accent,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
+  fabText: { fontFamily: "Inter_700Bold", fontSize: 13, color: "#000" },
 });

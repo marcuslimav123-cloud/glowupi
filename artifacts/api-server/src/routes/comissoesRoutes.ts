@@ -25,12 +25,14 @@ router.get("/", requireAuth, async (req: any, res) => {
 router.post("/", requireAuth, async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
-  const { profissionalId, profissionalNome, comandaId, mesAno, valorBase, percentual, valorComissao, status } = req.body;
-  const [row] = await db.insert(comissoesTable).values({
+  const { profissionalId, profissionalNome, comandaId, mesAno, valorBase, percentual, valorComissao, status, dataPagamento } = req.body;
+  const insertVals: any = {
     barbeariaId, profissionalId, profissionalNome, comandaId, mesAno,
     valorBase: String(valorBase), percentual: String(percentual), valorComissao: String(valorComissao),
     status: status || "pendente",
-  }).returning();
+  };
+  if (dataPagamento) insertVals.dataPagamento = dataPagamento;
+  const [row] = await db.insert(comissoesTable).values(insertVals).returning();
   res.status(201).json(fmt(row));
 });
 

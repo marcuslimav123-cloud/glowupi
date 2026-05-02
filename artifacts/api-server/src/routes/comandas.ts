@@ -120,6 +120,47 @@ router.put("/:comandaId/reabrir", requireAuth, async (req, res) => {
   return res.json({ message: "Comanda reaberta com sucesso", agendamentoId: comanda.agendamentoId });
 });
 
+router.put("/:comandaId/pagar", requireAuth, async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const user = (req as any).user;
+  const params = await getParametros(barbeariaId);
+
+  if (user.role !== "dono" && user.role !== "gerente") {
+    if (params["comanda_fechamento_nao_gestor"] !== "Sim") {
+      return res.status(403).json({ error: "Pagamento de comanda não permitido para seu perfil" });
+    }
+  }
+
+  const comandaId = parseInt(req.params.comandaId);
+  const [comanda] = await db.select().from(comandasTable).where(
+    and(eq(comandasTable.id, comandaId), eq(comandasTable.barbeariaId, barbeariaId))
+  ).limit(1);
+  if (!comanda) return res.status(404).json({ error: "Comanda não encontrada" });
+
+  if (user.role === "colaborador" && params["comanda_somente_envolvidos"] === "Sim") {
+    if (!user.profissionalId || comanda.profissionalId !== user.profissionalId) {
+      return res.status(403).json({ error: "Acesso negado a esta comanda" });
+    }
+  }
+
+  const { dataPagamento, formaPagamento } = req.body || {};
+  const existingPags: any[] = Array.isArray(comanda.pagamentos) ? (comanda.pagamentos as any[]) : [];
+  const novoPag = {
+    metodo: formaPagamento || "dinheiro",
+    valor: Number(comanda.valorTotal) || 0,
+    dataPagamento: dataPagamento || new Date().toISOString().slice(0, 10),
+    registradoVia: "baixa-conta-receber",
+  };
+  const novosPagamentos = existingPags.length === 0 ? [novoPag] : [...existingPags, novoPag];
+
+  const [updated] = await db.update(comandasTable)
+    .set({ status: "paga", pagamentos: novosPagamentos })
+    .where(and(eq(comandasTable.id, comandaId), eq(comandasTable.barbeariaId, barbeariaId)))
+    .returning();
+  return res.json(updated);
+});
+
 router.get("/:comandaId/dia", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
