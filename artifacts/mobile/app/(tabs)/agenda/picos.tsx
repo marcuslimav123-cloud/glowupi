@@ -80,6 +80,24 @@ export default function PicosScreen() {
     return map;
   }, [agendamentos, allDays]);
 
+  const barsByHora = useMemo(() => {
+    return HORAS.map((hora) => {
+      let total = 0; let ocupados = 0;
+      for (const dia of DIAS_SEMANA) {
+        total += heatmap[dia][hora].total;
+        ocupados += heatmap[dia][hora].ocupados;
+      }
+      const pct = total > 0 ? (ocupados / total) * 100 : 0;
+      return { hora, total, ocupados, pct };
+    });
+  }, [heatmap]);
+
+  const maxBarPct = useMemo(() => {
+    let m = 0;
+    for (const b of barsByHora) if (b.pct > m) m = b.pct;
+    return m;
+  }, [barsByHora]);
+
   const insights = useMemo(() => {
     let maxPct = 0; let maxDia = ""; let maxHora = "";
     let minPct = 101; let minDia = ""; let minHora = "";
@@ -200,6 +218,28 @@ export default function PicosScreen() {
               </View>
             </View>
 
+            <View style={[styles.heatCard, { marginTop: 14 }]}>
+              <View style={styles.heatHeader}>
+                <Feather name="bar-chart-2" size={16} color={Colors.accent} />
+                <Text style={styles.heatTitle}>Ocupação por hora do dia</Text>
+              </View>
+              <View style={{ gap: 6 }}>
+                {barsByHora.map((b) => {
+                  const w = maxBarPct > 0 ? Math.max(2, (b.pct / maxBarPct) * 100) : 0;
+                  const c = heatColor(b.pct);
+                  return (
+                    <View key={b.hora} style={styles.barRow}>
+                      <Text style={styles.barLabel}>{b.hora}</Text>
+                      <View style={styles.barTrack}>
+                        <View style={[styles.barFill, { width: `${w}%`, backgroundColor: c.bg, borderColor: c.text + "55" }]} />
+                      </View>
+                      <Text style={styles.barValue}>{b.pct.toFixed(0)}%</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+
             {(insights.maxPct > 70 || insights.minPct < 20) && (
               <View style={[styles.heatCard, { marginTop: 14 }]}>
                 <View style={styles.heatHeader}>
@@ -256,4 +296,9 @@ const styles = StyleSheet.create({
   legendText: { fontSize: 10, fontFamily: "Inter_500Medium", color: Colors.textMuted },
   suggestionBox: { padding: 12, borderRadius: 10, borderWidth: 1, marginBottom: 8 },
   suggestionText: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.text, lineHeight: 17 },
+  barRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  barLabel: { width: 44, fontSize: 11, fontFamily: "Inter_500Medium", color: Colors.textMuted },
+  barTrack: { flex: 1, height: 18, backgroundColor: Colors.background, borderRadius: 6, overflow: "hidden", borderWidth: 1, borderColor: Colors.surfaceBorder },
+  barFill: { height: "100%", borderRadius: 5, borderWidth: 1 },
+  barValue: { width: 40, textAlign: "right", fontSize: 11, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary },
 });
