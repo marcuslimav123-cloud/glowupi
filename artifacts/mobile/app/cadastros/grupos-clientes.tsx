@@ -73,7 +73,7 @@ export default function GruposClientesScreen() {
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       if (!barbeariaId) throw new Error("Barbearia não encontrada");
-      return fetchJson(`/barbearias/${barbeariaId}/grupos-clientes/${id}`, { method: "DELETE" });
+      return fetchJson(`/barbearias/${barbeariaId}/noticias/grupos/${id}`, { method: "DELETE" });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["grupos-clientes", barbeariaId] }),
     onError: (e) => Alert.alert("Erro", getErrorMessage(e)),

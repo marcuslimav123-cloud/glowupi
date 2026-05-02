@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Feather } from "@expo/vector-icons";
-import { useColors, useTheme, type ColorPalette, type ThemeMode } from "@/lib/theme";
+import { useColors, useTheme, useTemaLayoutSync, type ColorPalette, type ThemeMode } from "@/lib/theme";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { SectionHeader } from "@/components/SectionHeader";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,7 +36,16 @@ const TEMA_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Feathe
 export default function PerfilScreen() {
   const { user, barbearia, logout, refreshUser } = useAuth();
   const colors = useColors();
-  const { mode, setMode } = useTheme();
+  const { mode } = useTheme();
+  const { saveMode, isSaving: temaSalvando } = useTemaLayoutSync();
+
+  const handleSetMode = async (m: ThemeMode) => {
+    try {
+      await saveMode(m);
+    } catch (e) {
+      Alert.alert("Erro", getErrorMessage(e));
+    }
+  };
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [editing, setEditing] = useState(false);
@@ -312,7 +321,7 @@ export default function PerfilScreen() {
         </>
       ) : null}
 
-      <SectionHeader label="Aparência" description="O tema é aplicado imediatamente em todo o app." />
+      <SectionHeader label="Aparência" description="O tema é sincronizado entre todos os dispositivos da sua barbearia." />
       <View style={styles.card}>
         <View style={styles.themeRow}>
           {TEMA_OPTIONS.map((opt) => {
@@ -320,8 +329,9 @@ export default function PerfilScreen() {
             return (
               <Pressable
                 key={opt.value}
-                onPress={() => setMode(opt.value)}
-                style={[styles.themeBtn, active && styles.themeBtnActive]}
+                onPress={() => handleSetMode(opt.value)}
+                disabled={temaSalvando}
+                style={[styles.themeBtn, active && styles.themeBtnActive, temaSalvando && { opacity: 0.7 }]}
               >
                 <Feather name={opt.icon} size={14} color={active ? colors.invertedText : colors.textSecondary} />
                 <Text style={[styles.themeText, active && { color: colors.invertedText }]}>

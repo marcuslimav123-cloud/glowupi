@@ -44,4 +44,16 @@ router.put("/:pacoteId", requireAuth, requireRole("dono", "gerente"), async (req
   res.json(formatPacote(pacote));
 });
 
+router.delete("/:pacoteId", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  const pacoteId = parseInt(req.params.pacoteId);
+  const [vendido] = await db.select().from(pacotesClienteTable).where(eq(pacotesClienteTable.pacoteId, pacoteId)).limit(1);
+  if (vendido) {
+    return res.status(409).json({ error: "Pacote já vendido — desative ao invés de excluir." });
+  }
+  await db.delete(pacotesTable).where(and(eq(pacotesTable.id, pacoteId), eq(pacotesTable.barbeariaId, barbeariaId)));
+  res.json({ success: true });
+});
+
 export default router;

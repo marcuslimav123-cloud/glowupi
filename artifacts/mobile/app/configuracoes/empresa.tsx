@@ -1,34 +1,68 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useColors, type ColorPalette } from "@/lib/theme";
 import { ScreenContainer } from "@/components/ScreenContainer";
 import { SectionHeader } from "@/components/SectionHeader";
+import { ErrorView } from "@/components/ErrorView";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchJson, getErrorMessage } from "@/lib/api";
 
+interface BarbeariaFull {
+  id: number;
+  nome: string;
+  slug: string;
+  telefone?: string | null;
+  email?: string | null;
+  cnpj?: string | null;
+  cep?: string | null;
+  logradouro?: string | null;
+  numero?: string | null;
+  bairro?: string | null;
+  cidade?: string | null;
+  uf?: string | null;
+  subscriptionStatus?: string | null;
+}
+
 export default function EmpresaScreen() {
-  const { barbearia, barbeariaId, user, refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const colors = useColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const qc = useQueryClient();
   const canManage = user?.role === "dono";
 
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
-  const [endereco, setEndereco] = useState("");
+  const [email, setEmail] = useState("");
   const [cnpj, setCnpj] = useState("");
+  const [cep, setCep] = useState("");
+  const [logradouro, setLogradouro] = useState("");
+  const [numero, setNumero] = useState("");
+  const [bairro, setBairro] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [uf, setUf] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const { data, isLoading, isError, refetch, isRefetching, error } = useQuery<BarbeariaFull>({
+    queryKey: ["barbearia-me"],
+    queryFn: () => fetchJson<BarbeariaFull>(`/barbearias/me`),
+  });
+
   useEffect(() => {
-    if (barbearia) {
-      setNome(barbearia.nome || "");
-      setTelefone((barbearia as any).telefone || "");
-      setEndereco((barbearia as any).endereco || "");
-      setCnpj((barbearia as any).cnpj || "");
-    }
-  }, [barbearia]);
+    if (!data) return;
+    setNome(data.nome || "");
+    setTelefone(data.telefone || "");
+    setEmail(data.email || "");
+    setCnpj(data.cnpj || "");
+    setCep(data.cep || "");
+    setLogradouro(data.logradouro || "");
+    setNumero(data.numero || "");
+    setBairro(data.bairro || "");
+    setCidade(data.cidade || "");
+    setUf(data.uf || "");
+  }, [data]);
 
   const handleSave = async () => {
-    if (!barbeariaId) return;
     if (nome.trim().length < 2) {
       Alert.alert("Nome inválido", "Informe o nome da empresa.");
       return;
@@ -40,11 +74,18 @@ export default function EmpresaScreen() {
         body: {
           nome: nome.trim(),
           telefone: telefone.trim() || null,
-          endereco: endereco.trim() || null,
+          email: email.trim() || null,
           cnpj: cnpj.trim() || null,
+          cep: cep.trim() || null,
+          logradouro: logradouro.trim() || null,
+          numero: numero.trim() || null,
+          bairro: bairro.trim() || null,
+          cidade: cidade.trim() || null,
+          uf: uf.trim().toUpperCase() || null,
         },
       });
       await refreshUser();
+      qc.invalidateQueries({ queryKey: ["barbearia-me"] });
       Alert.alert("Pronto", "Dados da empresa atualizados.");
     } catch (e) {
       Alert.alert("Erro", getErrorMessage(e));
@@ -53,7 +94,7 @@ export default function EmpresaScreen() {
     }
   };
 
-  if (!barbearia) {
+  if (isLoading) {
     return (
       <ScreenContainer title="Empresa">
         <View style={{ alignItems: "center", paddingVertical: 40 }}>
@@ -63,19 +104,37 @@ export default function EmpresaScreen() {
     );
   }
 
+  if (isError || !data) {
+    return (
+      <ScreenContainer title="Empresa" refreshing={isRefetching} onRefresh={refetch}>
+        <ErrorView error={error} onRetry={refetch} />
+      </ScreenContainer>
+    );
+  }
+
   return (
-    <ScreenContainer title="Empresa" subtitle="Dados do estabelecimento">
+    <ScreenContainer title="Empresa" subtitle="Dados do estabelecimento" refreshing={isRefetching} onRefresh={refetch}>
       <SectionHeader label="Identificação" />
       <View style={styles.card}>
         <Field label="Nome" value={nome} onChange={setNome} editable={canManage} colors={colors} styles={styles} />
         <Field label="CNPJ" value={cnpj} onChange={setCnpj} editable={canManage} colors={colors} styles={styles} keyboard="numbers-and-punctuation" />
-        <Field label="Slug" value={barbearia.slug} editable={false} colors={colors} styles={styles} last />
+        <Field label="Slug" value={data.slug} editable={false} colors={colors} styles={styles} last />
       </View>
 
       <SectionHeader label="Contato" />
       <View style={styles.card}>
         <Field label="Telefone" value={telefone} onChange={setTelefone} editable={canManage} colors={colors} styles={styles} keyboard="phone-pad" />
-        <Field label="Endereço" value={endereco} onChange={setEndereco} editable={canManage} colors={colors} styles={styles} multiline last />
+        <Field label="E-mail" value={email} onChange={setEmail} editable={canManage} colors={colors} styles={styles} keyboard="email-address" last />
+      </View>
+
+      <SectionHeader label="Endereço" />
+      <View style={styles.card}>
+        <Field label="CEP" value={cep} onChange={setCep} editable={canManage} colors={colors} styles={styles} keyboard="numbers-and-punctuation" />
+        <Field label="Logradouro" value={logradouro} onChange={setLogradouro} editable={canManage} colors={colors} styles={styles} />
+        <Field label="Número" value={numero} onChange={setNumero} editable={canManage} colors={colors} styles={styles} />
+        <Field label="Bairro" value={bairro} onChange={setBairro} editable={canManage} colors={colors} styles={styles} />
+        <Field label="Cidade" value={cidade} onChange={setCidade} editable={canManage} colors={colors} styles={styles} />
+        <Field label="UF" value={uf} onChange={(v) => setUf(v.toUpperCase().slice(0, 2))} editable={canManage} colors={colors} styles={styles} last />
       </View>
 
       {canManage ? (
@@ -91,7 +150,7 @@ export default function EmpresaScreen() {
           )}
         </Pressable>
       ) : (
-        <Text style={styles.hint}>Somente gerentes e proprietários podem editar.</Text>
+        <Text style={styles.hint}>Somente o(a) proprietário(a) pode editar.</Text>
       )}
     </ScreenContainer>
   );

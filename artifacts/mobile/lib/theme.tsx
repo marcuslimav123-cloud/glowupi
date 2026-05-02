@@ -1,6 +1,9 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Appearance } from "react-native";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getItem, setItem } from "@/lib/storage";
+import { fetchJson, getErrorMessage } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type ThemeMode = "claro" | "escuro" | "auto";
 export type Resolved = "claro" | "escuro";
@@ -52,6 +55,28 @@ export const lightColors: typeof darkColors = {
 export type ColorPalette = typeof darkColors;
 
 const THEME_KEY = "glow_upi_theme_mode";
+
+const TEMA_LAYOUT_TO_MODE: Record<string, ThemeMode> = {
+  Claro: "claro",
+  Escuro: "escuro",
+  "Automático": "auto",
+  Automatico: "auto",
+};
+
+const MODE_TO_TEMA_LAYOUT: Record<ThemeMode, string> = {
+  claro: "Claro",
+  escuro: "Escuro",
+  auto: "Automático",
+};
+
+export function modeToTemaLayout(m: ThemeMode): string {
+  return MODE_TO_TEMA_LAYOUT[m];
+}
+
+export function temaLayoutToMode(v: string | null | undefined): ThemeMode | null {
+  if (!v) return null;
+  return TEMA_LAYOUT_TO_MODE[v] ?? null;
+}
 
 type Ctx = {
   mode: ThemeMode;
@@ -109,4 +134,67 @@ export function useTheme(): Ctx {
 
 export function useColors(): ColorPalette {
   return useContext(ThemeContext).colors;
+}
+
+type ParamRow = { chave: string; valor: string };
+
+export function useTemaLayoutSync(): {
+  remoteMode: ThemeMode | null;
+  saveMode: (m: ThemeMode) => Promise<void>;
+  isSaving: boolean;
+} {
+  const { barbeariaId, isAuthenticated } = useAuth();
+  const { setMode } = useTheme();
+  const qc = useQueryClient();
+  const appliedRef = useRef<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const { data } = useQuery<ParamRow[]>({
+    queryKey: ["parametros-tema-layout", barbeariaId],
+    queryFn: async () => {
+      if (!barbeariaId) return [];
+      const raw = await fetchJson<unknown>(`/barbearias/${barbeariaId}/parametros`);
+      return Array.isArray(raw) ? (raw as ParamRow[]) : [];
+    },
+    enabled: !!barbeariaId && isAuthenticated,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const remoteValor = data?.find((r) => r.chave === "tema_layout")?.valor || null;
+  const remoteMode = temaLayoutToMode(remoteValor);
+
+  useEffect(() => {
+    if (!remoteMode) return;
+    if (appliedRef.current === remoteMode) return;
+    appliedRef.current = remoteMode;
+    setMode(remoteMode);
+  }, [remoteMode, setMode]);
+
+  const saveMode = useCallback(
+    async (m: ThemeMode) => {
+      setMode(m);
+      if (!barbeariaId) return;
+      setIsSaving(true);
+      try {
+        await fetchJson(`/barbearias/${barbeariaId}/parametros/tema_layout`, {
+          method: "PUT",
+          body: { valor: modeToTemaLayout(m) },
+        });
+        appliedRef.current = m;
+        qc.invalidateQueries({ queryKey: ["parametros-tema-layout", barbeariaId] });
+      } catch (e) {
+        throw new Error(getErrorMessage(e));
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [barbeariaId, qc, setMode],
+  );
+
+  return { remoteMode, saveMode, isSaving };
+}
+
+export function ThemeSyncer() {
+  useTemaLayoutSync();
+  return null;
 }

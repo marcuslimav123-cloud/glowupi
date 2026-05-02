@@ -18,7 +18,7 @@ import { setBaseUrl } from "@workspace/api-client-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ATTExplainer } from "@/components/ATTExplainer";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { ThemeProvider, useTheme } from "@/lib/theme";
+import { ThemeProvider, ThemeSyncer, useTheme } from "@/lib/theme";
 import { hasAskedATT, requestTrackingPermissionNow, markATTAsked } from "@/lib/tracking";
 
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
@@ -105,6 +105,7 @@ export default function RootLayout() {
           <GestureHandlerRootView>
             <ThemeProvider>
               <AuthProvider>
+                <ThemeSyncer />
                 <RootLayoutNav />
                 <ATTExplainer
                   visible={attVisible}
