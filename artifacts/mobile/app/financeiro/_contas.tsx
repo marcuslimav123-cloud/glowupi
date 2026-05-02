@@ -87,10 +87,11 @@ export default function ContasScreen({ tipo, headerExtra }: ContasScreenProps) {
 
   const [filterStatus, setFilterStatus] = useState<"todas" | "pendente" | "paga" | "vencida">("todas");
   const [createOpen, setCreateOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<Conta | null>(null);
   const [baixaTarget, setBaixaTarget] = useState<Conta | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // form de criação
+  // form de criação/edição
   const [descricao, setDescricao] = useState("");
   const [valor, setValor] = useState("");
   const [categoria, setCategoria] = useState("");
@@ -170,6 +171,23 @@ export default function ContasScreen({ tipo, headerExtra }: ContasScreenProps) {
     setDescricao(""); setValor(""); setCategoria(""); setDataVencimento(todayStr()); setObservacao(""); setRecorrente(false);
   };
 
+  const openEdit = (c: Conta) => {
+    setEditTarget(c);
+    setDescricao(c.descricao || "");
+    setValor(String(c.valor ?? "").replace(".", ","));
+    setCategoria(c.categoria || "");
+    setDataVencimento(c.dataVencimento || todayStr());
+    setObservacao(c.observacao || "");
+    setRecorrente(false);
+    setCreateOpen(true);
+  };
+
+  const closeCreate = () => {
+    setCreateOpen(false);
+    setEditTarget(null);
+    resetCreate();
+  };
+
   const submitCreate = async () => {
     if (!descricao.trim()) return Alert.alert("Campo obrigatório", "Informe a descrição.");
     const valorNum = parseFloat(valor.replace(",", "."));
@@ -180,21 +198,35 @@ export default function ContasScreen({ tipo, headerExtra }: ContasScreenProps) {
     }
     setSubmitting(true);
     try {
-      await fetchJson(`/barbearias/${barbeariaId}/financeiro`, {
-        method: "POST",
-        body: {
-          tipo,
-          categoria: categoria.trim() || null,
-          descricao: descricao.trim(),
-          valor: valorNum,
-          dataVencimento: dataVencimento || null,
-          status: "pendente",
-          recorrente,
-          observacao: observacao.trim() || null,
-        },
-      });
+      if (editTarget) {
+        await fetchJson(`/barbearias/${barbeariaId}/financeiro/${editTarget.id}`, {
+          method: "PUT",
+          body: {
+            categoria: categoria.trim() || null,
+            descricao: descricao.trim(),
+            valor: valorNum,
+            dataVencimento: dataVencimento || null,
+            observacao: observacao.trim() || null,
+          },
+        });
+      } else {
+        await fetchJson(`/barbearias/${barbeariaId}/financeiro`, {
+          method: "POST",
+          body: {
+            tipo,
+            categoria: categoria.trim() || null,
+            descricao: descricao.trim(),
+            valor: valorNum,
+            dataVencimento: dataVencimento || null,
+            status: "pendente",
+            recorrente,
+            observacao: observacao.trim() || null,
+          },
+        });
+      }
       invalidate();
       resetCreate();
+      setEditTarget(null);
       setCreateOpen(false);
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
@@ -338,6 +370,11 @@ export default function ContasScreen({ tipo, headerExtra }: ContasScreenProps) {
                       </TouchableOpacity>
                     ) : null}
                     {!c.isComanda ? (
+                      <TouchableOpacity style={styles.actionBtn} onPress={() => openEdit(c)}>
+                        <Feather name="edit-2" size={14} color={Colors.accent} />
+                      </TouchableOpacity>
+                    ) : null}
+                    {!c.isComanda ? (
                       <TouchableOpacity style={styles.actionBtn} onPress={() => removeConta(c)}>
                         <Feather name="trash-2" size={14} color={Colors.error} />
                       </TouchableOpacity>
@@ -351,12 +388,12 @@ export default function ContasScreen({ tipo, headerExtra }: ContasScreenProps) {
       )}
 
       {/* Modal nova conta */}
-      <Modal visible={createOpen} animationType="slide" transparent onRequestClose={() => setCreateOpen(false)}>
+      <Modal visible={createOpen} animationType="slide" transparent onRequestClose={closeCreate}>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.modalBackdrop}>
           <View style={[styles.modalSheet, { paddingBottom: 24 + insets.bottom }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Nova conta a {tipo === "pagar" ? "pagar" : "receber"}</Text>
-              <TouchableOpacity onPress={() => setCreateOpen(false)}>
+              <Text style={styles.modalTitle}>{editTarget ? "Editar conta" : `Nova conta a ${tipo === "pagar" ? "pagar" : "receber"}`}</Text>
+              <TouchableOpacity onPress={closeCreate}>
                 <Feather name="x" size={22} color={Colors.text} />
               </TouchableOpacity>
             </View>
@@ -375,19 +412,21 @@ export default function ContasScreen({ tipo, headerExtra }: ContasScreenProps) {
               <Field label="Vencimento * (AAAA-MM-DD)">
                 <TextInput style={styles.input} value={dataVencimento} onChangeText={setDataVencimento} placeholder={todayStr()} placeholderTextColor={Colors.textMuted} />
               </Field>
-              <TouchableOpacity
-                style={styles.checkRow}
-                onPress={() => setRecorrente(v => !v)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.checkbox, recorrente && styles.checkboxOn]}>
-                  {recorrente ? <Feather name="check" size={14} color="#000" /> : null}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.checkLabel}>Conta recorrente</Text>
-                  <Text style={styles.checkSub}>Será marcada como recorrente para controle.</Text>
-                </View>
-              </TouchableOpacity>
+              {!editTarget ? (
+                <TouchableOpacity
+                  style={styles.checkRow}
+                  onPress={() => setRecorrente(v => !v)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.checkbox, recorrente && styles.checkboxOn]}>
+                    {recorrente ? <Feather name="check" size={14} color="#000" /> : null}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.checkLabel}>Conta recorrente</Text>
+                    <Text style={styles.checkSub}>Será marcada como recorrente para controle.</Text>
+                  </View>
+                </TouchableOpacity>
+              ) : null}
               <Field label="Observação">
                 <TextInput
                   style={[styles.input, { minHeight: 60, textAlignVertical: "top" }]}
@@ -404,7 +443,7 @@ export default function ContasScreen({ tipo, headerExtra }: ContasScreenProps) {
               disabled={submitting}
               onPress={submitCreate}
             >
-              {submitting ? <ActivityIndicator color="#000" /> : <Text style={styles.btnPrimaryText}>Salvar conta</Text>}
+              {submitting ? <ActivityIndicator color="#000" /> : <Text style={styles.btnPrimaryText}>{editTarget ? "Salvar alterações" : "Salvar conta"}</Text>}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
