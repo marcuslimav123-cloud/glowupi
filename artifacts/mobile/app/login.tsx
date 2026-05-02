@@ -17,13 +17,14 @@ import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
+import { AppleSignInButton } from "@/components/AppleSignInButton";
 
 const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
-const APP_SCHEME = "mobile";
+const APP_SCHEME = "glowupipro";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
-  const { login, loginWithToken, isAuthenticated } = useAuth();
+  const { login, loginWithToken, loginWithApple, isAuthenticated } = useAuth();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
@@ -183,6 +184,8 @@ export default function LoginScreen() {
             onPress={handleGoogleLogin}
             disabled={isLoading}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Continuar com Google"
             testID="google-login-button"
           >
             {googleLoading ? (
@@ -194,6 +197,21 @@ export default function LoginScreen() {
               </View>
             )}
           </TouchableOpacity>
+
+          {Platform.OS === "ios" && (
+            <AppleSignInButton
+              disabled={isLoading}
+              onSuccess={async (token, fullName) => {
+                setError(null);
+                try {
+                  await loginWithApple(token, fullName);
+                } catch (e: unknown) {
+                  setError(e instanceof Error ? e.message : "Erro ao entrar com Apple");
+                }
+              }}
+              onError={(msg) => setError(msg)}
+            />
+          )}
 
           <View style={styles.registerLink}>
             <Text style={styles.registerText}>Não tem conta? </Text>

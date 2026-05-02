@@ -15,10 +15,11 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
+import { AppleSignInButton } from "@/components/AppleSignInButton";
 
 export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
-  const { register, isAuthenticated } = useAuth();
+  const { register, loginWithApple, isAuthenticated } = useAuth();
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -140,6 +141,8 @@ export default function RegisterScreen() {
             onPress={handleRegister}
             disabled={loading}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Criar conta"
           >
             {loading ? (
               <ActivityIndicator color={Colors.background} size="small" />
@@ -147,6 +150,28 @@ export default function RegisterScreen() {
               <Text style={styles.buttonText}>Criar conta</Text>
             )}
           </TouchableOpacity>
+
+          {Platform.OS === "ios" && (
+            <>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginVertical: 4 }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: Colors.surfaceBorder }} />
+                <Text style={{ fontSize: 13, color: Colors.textMuted, fontFamily: "Inter_400Regular" }}>ou</Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: Colors.surfaceBorder }} />
+              </View>
+              <AppleSignInButton
+                disabled={loading}
+                onSuccess={async (token, fullName) => {
+                  setError(null);
+                  try {
+                    await loginWithApple(token, fullName);
+                  } catch (e: unknown) {
+                    setError(e instanceof Error ? e.message : "Erro ao entrar com Apple");
+                  }
+                }}
+                onError={(msg) => setError(msg)}
+              />
+            </>
+          )}
 
           <View style={styles.loginLink}>
             <Text style={styles.loginText}>Já tem uma conta? </Text>

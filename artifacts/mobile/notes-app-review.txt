@@ -1,0 +1,84 @@
+NOTES FOR APPLE REVIEW — Glow Upi Pro
+======================================
+
+App: Glow Upi Pro (com.glowupi.pro)
+Categoria: Business / Productivity
+Idioma: pt-BR (Português do Brasil)
+
+DEMO ACCOUNT
+------------
+Email: apple.review@glowupi.com
+Senha: AppleReview2026!
+
+(Conta com plano Pro ativo, dados de demonstração já populados.
+ Login via "E-mail e senha". O app também suporta "Sign in with Apple".)
+
+
+OBJETIVO DO APP
+---------------
+Glow Upi Pro é um sistema de gestão para barbearias e salões.
+Permite ao proprietário:
+- Visualizar e gerenciar a agenda do dia (confirmar/cancelar atendimentos)
+- Abrir e fechar comandas (orçamentos de serviços)
+- Cadastrar clientes
+- Acessar plano e assinatura
+
+
+ASSINATURAS (IN-APP PURCHASE)
+-----------------------------
+O app oferece assinatura recorrente "Glow Upi Pro" via StoreKit/RevenueCat.
+- Acesso: Menu > Plano > "Plano e assinatura"
+- Restauração: botão "Restaurar compras" na mesma tela
+- Termos: link "Termos de Uso" e "Política de Privacidade" exibidos no paywall
+- Gerenciamento: link "Gerenciar assinatura (Apple)" no menu abre Ajustes > Apple ID > Assinaturas
+
+
+SIGN IN WITH APPLE
+------------------
+Disponível na tela de login. Necessário porque oferecemos login social (Google).
+Backend valida o JWT da Apple via JWKS público (https://appleid.apple.com/auth/keys).
+
+
+APP TRACKING TRANSPARENCY (ATT)
+-------------------------------
+O app NÃO faz tracking entre apps/sites de terceiros.
+Solicitamos permissão ATT apenas se o usuário ativar campanhas de marketing
+no painel web — caso contrário, não pedimos.
+
+
+PERMISSÕES SOLICITADAS
+----------------------
+- Notificações: para lembrar o lojista de novos agendamentos
+- Câmera (opcional): para tirar foto do perfil ou da barbearia
+- Galeria de fotos (opcional): para selecionar logo/imagem
+- Localização: NÃO usamos
+
+
+PRIVACIDADE / LGPD
+------------------
+- Política: https://glowupi.com/legal/privacidade
+- Termos: https://glowupi.com/legal/termos
+- Suporte: https://glowupi.com/suporte ou suporte@glowupi.com
+
+PrivacyInfo.xcprivacy declara:
+- File timestamp APIs (UserDefaults, system boot time)
+- Disk space APIs (cache management)
+- User defaults APIs
+NENHUM dado é compartilhado com terceiros para tracking.
+
+
+ROTEIRO SUGERIDO PARA REVIEW
+----------------------------
+1. Abrir app, fazer login com a conta acima
+2. Aba "Agenda": ver agendamentos do dia, tocar em um para ver opções
+3. Aba "Comandas": alternar entre "Abertas" e "Fechadas"
+4. Aba "Clientes": pesquisar e ver lista
+5. Aba "Menu" > "Plano e assinatura": visualizar paywall
+6. Menu > "Sair" para deslogar
+7. Login > "Sign in with Apple" (opcional)
+
+
+SUPORTE TÉCNICO
+---------------
+suporte@glowupi.com
+Respondemos em até 24h em dias úteis.

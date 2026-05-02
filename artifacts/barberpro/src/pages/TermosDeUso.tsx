@@ -29,7 +29,21 @@ Para utilizar os serviços, é necessário criar uma conta fornecendo informaç�
 
 O ${APP_NAME} oferece diferentes planos de assinatura com período de teste gratuito de 30 dias. Após o período de teste, é necessário escolher um plano pago para continuar utilizando os serviços.
 
-Os pagamentos são processados pela Stripe, nosso parceiro de pagamentos. As cobranças são realizadas conforme o plano e período escolhidos (mensal, semestral ou anual).
+Os pagamentos no ambiente web são processados pela Stripe, nosso parceiro de pagamentos. As cobranças são realizadas conforme o plano e período escolhidos (mensal, semestral ou anual).
+
+3A. ASSINATURAS NO APP MÓVEL (iOS)
+
+No aplicativo Glow Upi Pro disponibilizado na App Store, as assinaturas são processadas exclusivamente pelo sistema de compras in-app da Apple (StoreKit / In-App Purchase), em conformidade com as diretrizes da App Store. As condições aplicáveis às assinaturas in-app são:
+- O pagamento é cobrado na conta Apple ID do usuário no momento da confirmação da compra
+- A assinatura é renovada automaticamente, salvo cancelamento com pelo menos 24 horas antes do término do período vigente
+- A renovação é cobrada nas 24 horas antes do término do período vigente, no valor correspondente
+- O usuário pode gerenciar e cancelar a assinatura a qualquer momento em Ajustes da conta Apple ID, após a compra
+- Qualquer parte não utilizada de um período de teste gratuito será perdida ao adquirir uma assinatura
+- O preço de cada plano é exibido dentro do app antes da confirmação da compra
+
+3B. CADERNO DE RESTITUIÇÃO
+
+Reembolsos para compras realizadas via App Store são gerenciados diretamente pela Apple, conforme política oficial em https://support.apple.com/pt-br/HT204084. Reembolsos para assinaturas via Stripe (web) seguem a política comercial do ${APP_NAME} e a legislação aplicável.
 
 4. USO ADEQUADO DA PLATAFORMA
 

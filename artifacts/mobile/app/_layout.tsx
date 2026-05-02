@@ -16,6 +16,7 @@ import { setBaseUrl } from "@workspace/api-client-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Colors from "@/constants/colors";
+import { maybeRequestTrackingPermission } from "@/lib/tracking";
 
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 
@@ -44,6 +45,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
+      maybeRequestTrackingPermission();
     }
   }, [fontsLoaded, fontError]);
 

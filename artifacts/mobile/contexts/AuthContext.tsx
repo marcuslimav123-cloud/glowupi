@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { getItem, setItem, deleteItem } from "@/lib/storage";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { registerExpoPushToken, sendPushTokenToBackend } from "@/lib/pushNotifications";
 
 interface User {
   id: number;
@@ -35,6 +36,7 @@ interface AuthContextType extends AuthState {
   login: (email: string, senha: string) => Promise<void>;
   register: (nome: string, email: string, senha: string) => Promise<void>;
   loginWithGoogle: (credential: string) => Promise<void>;
+  loginWithApple: (identityToken: string, fullName?: { givenName?: string; familyName?: string }) => Promise<void>;
   loginWithToken: (token: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -161,6 +163,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await handleAuthResponse(data);
   }, [handleAuthResponse]);
 
+  const loginWithApple = useCallback(async (identityToken: string, fullName?: { givenName?: string; familyName?: string }) => {
+    const res = await fetch(`${API_BASE}/api/auth/apple`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identityToken, fullName }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Erro ao fazer login com Apple");
+    await handleAuthResponse(data);
+  }, [handleAuthResponse]);
+
   const loginWithToken = useCallback(async (token: string) => {
     await setItem(TOKEN_KEY, token);
     const meData = await fetchMe(token);
@@ -195,8 +208,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, [getToken]);
 
+  useEffect(() => {
+    if (state.isAuthenticated && state.token && state.barbeariaId) {
+      (async () => {
+        try {
+          const expoToken = await registerExpoPushToken();
+          if (expoToken && state.token && state.barbeariaId) {
+            await sendPushTokenToBackend({
+              token: expoToken,
+              barbeariaId: state.barbeariaId,
+              apiBase: API_BASE,
+              authToken: state.token,
+            });
+          }
+        } catch (err) {
+          console.warn("[Push] registro pós-login falhou:", err);
+        }
+      })();
+    }
+  }, [state.isAuthenticated, state.token, state.barbeariaId]);
+
   return (
-    <AuthContext.Provider value={{ ...state, login, register, loginWithGoogle, loginWithToken, logout, refreshUser }}>
+    <AuthContext.Provider value={{ ...state, login, register, loginWithGoogle, loginWithApple, loginWithToken, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -6,6 +6,7 @@ import { hashPassword, createSession, deleteSession, requireAuth } from "../lib/
 import { OAuth2Client } from "google-auth-library";
 import { randomBytes } from "crypto";
 import { sendEmail } from "../lib/brevo.js";
+import { verifyAppleIdentityToken } from "../lib/appleAuth.js";
 
 const router: IRouter = Router();
 
@@ -149,6 +150,85 @@ router.post("/google", async (req, res) => {
   } catch (e: any) {
     console.error("Google auth error:", e);
     return res.status(401).json({ error: "Falha na autenticação com Google" });
+  }
+});
+
+router.post("/apple", async (req, res) => {
+  try {
+    const { identityToken, fullName, utm } = req.body || {};
+    if (!identityToken) return res.status(400).json({ error: "identityToken obrigatório" });
+
+    let payload;
+    try {
+      payload = await verifyAppleIdentityToken(identityToken);
+    } catch (err: any) {
+      console.error("[Apple] verify error:", err?.message || err);
+      return res.status(401).json({ error: "Token Apple inválido" });
+    }
+
+    const appleSub = payload.sub;
+    const email = payload.email || null;
+
+    let user: any = null;
+    let isNew = false;
+
+    const [byApple] = await db.select().from(usersTable).where(eq(usersTable.appleId, appleSub)).limit(1);
+    if (byApple) {
+      user = byApple;
+    } else if (email) {
+      const [byEmail] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+      if (byEmail) {
+        [user] = await db.update(usersTable).set({ appleId: appleSub, updatedAt: new Date() })
+          .where(eq(usersTable.id, byEmail.id)).returning();
+      }
+    }
+
+    if (!user) {
+      const nomeFromApple = fullName?.givenName
+        ? `${fullName.givenName}${fullName.familyName ? " " + fullName.familyName : ""}`
+        : null;
+      const fallbackEmail = email || `apple_${appleSub.slice(0, 16)}@privaterelay.appleid.com`;
+      const fallbackNome = nomeFromApple || (email ? email.split("@")[0] : "Usuário Apple");
+
+      isNew = true;
+      [user] = await db.insert(usersTable).values({
+        nome: fallbackNome,
+        email: fallbackEmail,
+        appleId: appleSub,
+        role: "dono",
+        utmSource: utm?.utmSource || null,
+        utmMedium: utm?.utmMedium || null,
+        utmCampaign: utm?.utmCampaign || null,
+        utmContent: utm?.utmContent || null,
+        utmTerm: utm?.utmTerm || null,
+        fbclid: utm?.fbclid || null,
+        gclid: utm?.gclid || null,
+        landingPage: utm?.landingPage || null,
+        referrer: utm?.referrer || null,
+      }).returning();
+    }
+
+    let existingBarbearia: { id: number; onboardingStep: number | null } | undefined;
+    [existingBarbearia] = await db.select({ id: barbeariasTable.id, onboardingStep: barbeariasTable.onboardingStep })
+      .from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
+    if (!existingBarbearia && user.barbeariaId) {
+      [existingBarbearia] = await db.select({ id: barbeariasTable.id, onboardingStep: barbeariasTable.onboardingStep })
+        .from(barbeariasTable).where(eq(barbeariasTable.id, user.barbeariaId)).limit(1);
+    }
+
+    const token = await createSession(user.id);
+    res.cookie("session", token, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/" });
+    const { senhaHash: _, ...userWithoutPass } = user;
+    return res.json({
+      token,
+      user: { ...userWithoutPass, createdAt: user.createdAt.toISOString() },
+      isNew,
+      hasBarbearia: !!existingBarbearia,
+      onboardingComplete: existingBarbearia ? true : false,
+    });
+  } catch (err: any) {
+    console.error("[Apple] auth error:", err);
+    return res.status(500).json({ error: "Falha na autenticação com Apple" });
   }
 });
 
@@ -559,6 +639,45 @@ router.post("/reset-password", async (req, res) => {
   } catch (e) {
     console.error("reset-password error:", e);
     return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+router.delete("/me", requireAuth, async (req: any, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) return res.status(401).json({ error: "Não autenticado" });
+
+    const anonEmail = `deleted_${user.id}_${Date.now()}@deleted.glowupi.com`;
+    await db.update(usersTable).set({
+      ativo: false,
+      email: anonEmail,
+      nome: "[Conta excluída]",
+      senhaHash: "",
+      googleId: null,
+      appleId: null,
+      fotoUrl: null,
+    }).where(eq(usersTable.id, user.id));
+
+    if (user.role === "dono") {
+      await db.update(barbeariasTable).set({
+        ativo: false,
+        planoStatus: "cancelado",
+        subscriptionStatus: "canceled",
+        iapStatus: "cancelled",
+        updatedAt: new Date(),
+      }).where(eq(barbeariasTable.donoId, user.id));
+    }
+
+    if (req.cookies?.sessionId) {
+      await deleteSession(req.cookies.sessionId);
+    }
+    res.clearCookie("sessionId");
+
+    console.log(`[account-deletion] user ${user.id} (was ${user.email}) deletado/anonimizado`);
+    return res.json({ success: true });
+  } catch (e) {
+    console.error("delete account error:", e);
+    return res.status(500).json({ error: "Erro ao excluir conta" });
   }
 });
 

@@ -56,9 +56,23 @@ O tratamento dos dados pessoais é realizado com base nas seguintes hipóteses l
 Os dados pessoais poderão ser compartilhados com:
 - Stripe Inc. — para processamento de pagamentos
 - Google LLC — para serviços de autenticação (quando o usuário opta por login com Google)
+- Apple Inc. — para autenticação Sign in with Apple e processamento de assinaturas in-app na App Store
+- RevenueCat Inc. — para gestão e reconciliação de assinaturas in-app (apenas no app móvel)
+- Provedores de notificação push (Apple Push Notification Service e Firebase Cloud Messaging) — para envio de notificações ao app móvel
 - Prestadores de serviços essenciais à operação da plataforma
 
 Não vendemos, alugamos ou compartilhamos dados pessoais com terceiros para fins de marketing.
+
+5A. APP MÓVEL (iOS)
+
+O aplicativo Glow Upi Pro disponibilizado na App Store coleta as seguintes informações adicionais:
+- Identificadores Apple (sub do Sign in with Apple) quando o usuário escolhe esta forma de login
+- Token de notificação push (Expo Push Token) para envio de lembretes operacionais
+- Informações de diagnóstico anônimas para identificação de falhas
+
+O aplicativo NÃO coleta dados de localização, contatos, fotos, microfone, câmera ou rede social. Os dados coletados são vinculados à sua conta e usados exclusivamente para a prestação do serviço (Apple Privacy Labels: Contact Info, Identifiers, Usage Data — todos vinculados à identidade e usados apenas para "App Functionality").
+
+Permissão de Rastreamento (App Tracking Transparency): o app pode solicitar permissão de rastreamento conforme exigido pela Apple. Se você negar, o app continua funcionando normalmente — não realizamos rastreamento entre apps de terceiros.
 
 6. SEGURANÇA DOS DADOS
 

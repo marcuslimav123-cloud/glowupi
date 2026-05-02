@@ -38,6 +38,7 @@ const Picos = React.lazy(() => import("@/pages/agenda/Picos"));
 const AcceptInvite = React.lazy(() => import("@/pages/auth/AcceptInvite"));
 const PoliticaPrivacidade = React.lazy(() => import("@/pages/PoliticaPrivacidade"));
 const TermosDeUso = React.lazy(() => import("@/pages/TermosDeUso"));
+const Suporte = React.lazy(() => import("@/pages/Suporte"));
 
 const Tipos = React.lazy(() => import("@/pages/cadastros/Tipos"));
 const Cupons = React.lazy(() => import("@/pages/cadastros/Cupons"));
@@ -242,6 +243,10 @@ function Router() {
       <Route path="/agendar/:slug" component={PublicBooking} />
       <Route path="/politica-de-privacidade" component={PoliticaPrivacidade} />
       <Route path="/termos-de-uso" component={TermosDeUso} />
+      <Route path="/suporte" component={Suporte} />
+      <Route path="/legal/privacidade" component={PoliticaPrivacidade} />
+      <Route path="/legal/termos" component={TermosDeUso} />
+      <Route path="/legal/suporte" component={Suporte} />
 
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin" component={AdminDashboard} />
