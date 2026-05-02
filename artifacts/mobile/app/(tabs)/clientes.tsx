@@ -19,6 +19,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorView } from "@/components/ErrorView";
+import { SkeletonList } from "@/components/Skeleton";
 
 const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -48,7 +51,7 @@ export default function ClientesScreen() {
   const [novoEmail, setNovoEmail] = useState("");
   const [savingError, setSavingError] = useState<string | null>(null);
 
-  const { data: clientes = [], isLoading, refetch } = useQuery<Cliente[]>({
+  const { data: clientes = [], isLoading, isError, error, refetch } = useQuery<Cliente[]>({
     queryKey: ["clientes", barbeariaId, search],
     queryFn: async () => {
       if (!barbeariaId || !token) return [];
@@ -158,17 +161,26 @@ export default function ClientesScreen() {
         }
       >
         {isLoading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={Colors.accent} />
-          </View>
+          <SkeletonList count={5} variant="row" />
+        ) : isError ? (
+          <ErrorView
+            title="Não foi possível carregar os clientes"
+            description="Verifique sua conexão e tente novamente."
+            error={error}
+            onRetry={() => refetch()}
+          />
         ) : clientes.length === 0 ? (
-          <View style={styles.empty}>
-            <Feather name="users" size={48} color={Colors.textMuted} />
-            <Text style={styles.emptyTitle}>Nenhum cliente</Text>
-            <Text style={styles.emptySubtitle}>
-              {search ? "Nenhum cliente encontrado para essa busca." : "Toque em + para cadastrar."}
-            </Text>
-          </View>
+          <EmptyState
+            icon={search ? "search" : "users"}
+            title={search ? "Nenhum cliente encontrado" : "Nenhum cliente ainda"}
+            description={
+              search
+                ? "Tente buscar por outro nome ou telefone."
+                : "Cadastre seu primeiro cliente para começar a usar a agenda."
+            }
+            ctaLabel={search ? undefined : "Cadastrar cliente"}
+            onCtaPress={search ? undefined : () => setModalOpen(true)}
+          />
         ) : (
           clientes.map((c) => (
             <View key={c.id} style={styles.card}>

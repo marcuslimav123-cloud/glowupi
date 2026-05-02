@@ -6,7 +6,6 @@ import {
   Platform,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,6 +14,9 @@ import { useQuery } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorView } from "@/components/ErrorView";
+import { SkeletonList } from "@/components/Skeleton";
 
 const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -109,6 +111,12 @@ export default function ComandasScreen() {
 
   const webTopPadding = Platform.OS === "web" ? 67 : 0;
   const isLoading = tab === "abertas" ? abertasQuery.isLoading : fechadasQuery.isLoading;
+  const isError = tab === "abertas" ? abertasQuery.isError : fechadasQuery.isError;
+  const queryError = tab === "abertas" ? abertasQuery.error : fechadasQuery.error;
+  const retry = () => {
+    if (tab === "abertas") abertasQuery.refetch();
+    else fechadasQuery.refetch();
+  };
   const abertas = abertasQuery.data ?? [];
   const fechadas = fechadasQuery.data ?? [];
 
@@ -158,12 +166,21 @@ export default function ComandasScreen() {
         }
       >
         {isLoading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={Colors.accent} />
-          </View>
+          <SkeletonList count={4} variant="card" />
+        ) : isError ? (
+          <ErrorView
+            title={tab === "abertas" ? "Não foi possível carregar as comandas abertas" : "Não foi possível carregar o histórico"}
+            description="Verifique sua conexão e tente novamente."
+            error={queryError}
+            onRetry={retry}
+          />
         ) : tab === "abertas" ? (
           abertas.length === 0 ? (
-            <EmptyState icon="file-text" title="Sem comandas abertas" subtitle="Confirme um agendamento para abrir uma comanda." />
+            <EmptyState
+              icon="file-text"
+              title="Sem comandas abertas"
+              description="Confirme um agendamento na Agenda para abrir uma comanda."
+            />
           ) : (
             abertas.map((a) => (
               <View key={a.id} style={styles.card}>
@@ -195,7 +212,11 @@ export default function ComandasScreen() {
           )
         ) : (
           fechadas.length === 0 ? (
-            <EmptyState icon="archive" title="Sem comandas fechadas" subtitle="As comandas finalizadas no mês aparecerão aqui." />
+            <EmptyState
+              icon="archive"
+              title="Sem comandas fechadas"
+              description="As comandas finalizadas no mês aparecerão aqui."
+            />
           ) : (
             fechadas.map((c) => (
               <View key={c.id} style={styles.card}>
@@ -218,16 +239,6 @@ export default function ComandasScreen() {
           )
         )}
       </ScrollView>
-    </View>
-  );
-}
-
-function EmptyState({ icon, title, subtitle }: { icon: keyof typeof Feather.glyphMap; title: string; subtitle: string }) {
-  return (
-    <View style={styles.empty}>
-      <Feather name={icon} size={48} color={Colors.textMuted} />
-      <Text style={styles.emptyTitle}>{title}</Text>
-      <Text style={styles.emptySubtitle}>{subtitle}</Text>
     </View>
   );
 }

@@ -6,7 +6,6 @@ import {
   Platform,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
   Alert,
 } from "react-native";
@@ -16,6 +15,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorView } from "@/components/ErrorView";
+import { SkeletonList } from "@/components/Skeleton";
 
 const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -97,7 +99,7 @@ export default function AgendaScreen() {
     return arr;
   }, []);
 
-  const { data: agendamentos = [], isLoading, refetch } = useQuery<Agendamento[]>({
+  const { data: agendamentos = [], isLoading, isError, error, refetch } = useQuery<Agendamento[]>({
     queryKey: ["agendamentos", barbeariaId, dateStr],
     queryFn: async () => {
       if (!barbeariaId || !token) return [];
@@ -212,15 +214,20 @@ export default function AgendaScreen() {
         }
       >
         {isLoading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={Colors.accent} />
-          </View>
+          <SkeletonList count={4} variant="card" />
+        ) : isError ? (
+          <ErrorView
+            title="Não foi possível carregar a agenda"
+            description="Verifique sua conexão e tente novamente."
+            error={error}
+            onRetry={() => refetch()}
+          />
         ) : sortedAgendamentos.length === 0 ? (
-          <View style={styles.empty}>
-            <Feather name="calendar" size={48} color={Colors.textMuted} />
-            <Text style={styles.emptyTitle}>Sem agendamentos</Text>
-            <Text style={styles.emptySubtitle}>Nenhum atendimento para este dia.</Text>
-          </View>
+          <EmptyState
+            icon="calendar"
+            title="Nenhum agendamento"
+            description={`Você não tem atendimentos para ${shortDateLabel(selectedDate).toLowerCase()}.`}
+          />
         ) : (
           sortedAgendamentos.map((a) => (
             <View key={a.id} style={styles.card}>
