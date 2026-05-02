@@ -32,6 +32,12 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="login" options={{ gestureEnabled: false }} />
       <Stack.Screen name="register" options={{ gestureEnabled: true }} />
+      <Stack.Screen name="financeiro" />
+      <Stack.Screen name="cadastros" />
+      <Stack.Screen name="marketing" />
+      <Stack.Screen name="configuracoes" />
+      <Stack.Screen name="equipe" />
+      <Stack.Screen name="relatorios" />
     </Stack>
   );
 }

@@ -29,9 +29,9 @@ function NativeTabLayout() {
         <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
         <Label>Clientes</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="menu">
-        <Icon sf={{ default: "line.3.horizontal", selected: "line.3.horizontal" }} />
-        <Label>Menu</Label>
+      <NativeTabs.Trigger name="mais">
+        <Icon sf={{ default: "ellipsis.circle", selected: "ellipsis.circle.fill" }} />
+        <Label>Mais</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -123,14 +123,14 @@ function ClassicTabLayout() {
         }}
       />
       <Tabs.Screen
-        name="menu"
+        name="mais"
         options={{
-          title: "Menu",
+          title: "Mais",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="line.3.horizontal" tintColor={color} size={22} />
+              <SymbolView name="ellipsis.circle" tintColor={color} size={22} />
             ) : (
-              <Feather name="menu" size={22} color={color} />
+              <Feather name="more-horizontal" size={22} color={color} />
             ),
         }}
       />
