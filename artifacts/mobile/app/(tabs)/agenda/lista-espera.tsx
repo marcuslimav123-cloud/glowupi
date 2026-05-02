@@ -22,6 +22,7 @@ import Colors from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchJson, formatPhone, stripPhone, todayStr, whatsappLink, getErrorMessage } from "@/lib/api";
 import { EmptyState } from "@/components/EmptyState";
+import { ErrorView } from "@/components/ErrorView";
 
 type Item = {
   id: number;
@@ -48,7 +49,7 @@ export default function ListaEsperaScreen() {
   const [obs, setObs] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const { data: itens = [], isLoading, refetch } = useQuery<Item[]>({
+  const { data: itens = [], isLoading, isError, error, refetch } = useQuery<Item[]>({
     queryKey: ["lista-espera", barbeariaId],
     queryFn: async () => {
       if (!barbeariaId) return [];
@@ -163,6 +164,12 @@ export default function ListaEsperaScreen() {
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 + insets.bottom }}>
         {isLoading ? (
           <ActivityIndicator color={Colors.accent} style={{ marginTop: 40 }} />
+        ) : isError ? (
+          <ErrorView
+            title="Não foi possível carregar a lista de espera"
+            error={error}
+            onRetry={() => refetch()}
+          />
         ) : (itens as Item[]).length === 0 ? (
           <EmptyState
             icon="clipboard"

@@ -21,6 +21,7 @@ import Colors from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchJson, todayStr, strToDate, generateTimeSlots, getHorizontalRange, getErrorMessage } from "@/lib/api";
 import { EmptyState } from "@/components/EmptyState";
+import { ErrorView } from "@/components/ErrorView";
 
 const MANAGER_ROLES = new Set(["dono", "gerente", "admin", "owner"]);
 
@@ -64,7 +65,7 @@ export default function BloqueiosScreen() {
     enabled: !!barbeariaId,
   });
 
-  const { data: bloqueios = [], refetch, isLoading } = useQuery<Bloqueio[]>({
+  const { data: bloqueios = [], refetch, isLoading, isError, error } = useQuery<Bloqueio[]>({
     queryKey: ["bloqueios", barbeariaId, date],
     queryFn: async () => {
       if (!barbeariaId) return [];
@@ -167,6 +168,12 @@ export default function BloqueiosScreen() {
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 + insets.bottom }}>
         {isLoading ? (
           <ActivityIndicator color={Colors.accent} style={{ marginTop: 40 }} />
+        ) : isError ? (
+          <ErrorView
+            title="Não foi possível carregar os bloqueios"
+            error={error}
+            onRetry={() => refetch()}
+          />
         ) : bloqueios.length === 0 ? (
           <EmptyState
             icon="lock"
