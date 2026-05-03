@@ -38,4 +38,7 @@ yarn-error.*
 *.tsbuildinfo
 .vercel
 
+# APK builds
+build/
+
 .env
