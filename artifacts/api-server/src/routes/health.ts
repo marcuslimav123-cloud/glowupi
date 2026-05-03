@@ -19,7 +19,7 @@ interface PushTokenCounts {
   total: number;
 }
 
-router.get("/health/push", requireAuth, requireRole("dono", "gerente"), async (_req, res) => {
+router.get("/health/push", requireAuth, requireRole("dono"), async (_req, res) => {
   const vapidPublicConfigured = !!getVapidPublicKey();
   const vapidPrivateConfigured = !!process.env.VAPID_PRIVATE_KEY;
   const webPushEnabled = vapidPublicConfigured && vapidPrivateConfigured;

@@ -113,15 +113,10 @@ export async function sendPushToBarbearia(barbeariaId: number, message: PushMess
       else webTokens.push({ id: t.id, token: t.token });
     }
 
-    const expoChunks: TokenRecord[][] = [];
-    for (let i = 0; i < expoTokens.length; i += 100) {
-      expoChunks.push(expoTokens.slice(i, i + 100));
-    }
-
-    const ops: Promise<unknown>[] = [];
-    for (const chunk of expoChunks) ops.push(sendExpoPushRecords(chunk, message));
-    if (webTokens.length > 0) ops.push(sendWebPush(webTokens, message));
-    await Promise.all(ops);
+    await Promise.all([
+      expoTokens.length > 0 ? sendExpoPushRecords(expoTokens, message) : Promise.resolve(),
+      webTokens.length > 0 ? sendWebPush(webTokens, message) : Promise.resolve(),
+    ]);
   } catch (err) {
     console.error(`[Push] Error sending push to barbearia ${barbeariaId}:`, err);
   }
@@ -290,22 +285,47 @@ async function deactivatePushTokensByIds(ids: number[], reason: string): Promise
   }
 }
 
+const EXPO_BATCH_SIZE = 100;
+
 async function sendExpoPushRecords(records: TokenRecord[], message: PushMessage): Promise<{ success: number; failed: number }> {
   if (records.length === 0) return { success: 0, failed: 0 };
-  const result = await sendExpoPush(records.map(r => r.token), message);
-  if (result.deadIndexes.length > 0) {
-    const deadIds = result.deadIndexes.map(i => records[i]?.id).filter((x): x is number => typeof x === "number");
-    await deactivatePushTokensByIds(deadIds, "Expo DeviceNotRegistered/InvalidCredentials");
+
+  const chunks: TokenRecord[][] = [];
+  for (let i = 0; i < records.length; i += EXPO_BATCH_SIZE) {
+    chunks.push(records.slice(i, i + EXPO_BATCH_SIZE));
   }
+
+  let totalSuccess = 0;
+  let totalFailed = 0;
+
+  const chunkResults = await Promise.all(chunks.map(chunk => sendExpoPush(chunk.map(r => r.token), message)));
+
+  const deadIdsAll: number[] = [];
   const queuedAt = Date.now();
-  for (let i = 0; i < result.ticketIds.length; i++) {
-    const ticketId = result.ticketIds[i];
-    const rec = records[i];
-    if (ticketId && rec) {
-      pendingReceipts.set(ticketId, { tokenId: rec.id, queuedAt });
+
+  for (let c = 0; c < chunks.length; c++) {
+    const chunk = chunks[c];
+    const result = chunkResults[c];
+    totalSuccess += result.success;
+    totalFailed += result.failed;
+    for (const idx of result.deadIndexes) {
+      const rec = chunk[idx];
+      if (rec) deadIdsAll.push(rec.id);
+    }
+    for (let i = 0; i < result.ticketIds.length; i++) {
+      const ticketId = result.ticketIds[i];
+      const rec = chunk[i];
+      if (ticketId && rec) {
+        pendingReceipts.set(ticketId, { tokenId: rec.id, queuedAt });
+      }
     }
   }
-  return { success: result.success, failed: result.failed };
+
+  if (deadIdsAll.length > 0) {
+    await deactivatePushTokensByIds(deadIdsAll, "Expo DeviceNotRegistered/InvalidCredentials");
+  }
+
+  return { success: totalSuccess, failed: totalFailed };
 }
 
 type ExpoTicket =
