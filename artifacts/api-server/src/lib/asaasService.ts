@@ -20,7 +20,8 @@ export async function getClientForBarbearia(barbeariaId: number): Promise<{ clie
   const conta = await getContaByBarbearia(barbeariaId);
   if (!conta || conta.status !== "ativo") return null;
   const apiKey = decryptApiKey(conta.apiKeyEncrypted);
-  const client = createAsaasClient({ apiKey, ambiente: (conta.ambiente as any) || "sandbox" });
+  const ambiente = conta.ambiente === "producao" ? "producao" : "sandbox";
+  const client = createAsaasClient({ apiKey, ambiente });
   return { client, conta };
 }
 

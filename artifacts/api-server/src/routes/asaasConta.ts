@@ -8,6 +8,42 @@ import { createAsaasClient, type AsaasAmbiente } from "../lib/asaasClient.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
+const WEBHOOK_EVENTS = [
+  "PAYMENT_CREATED", "PAYMENT_AWAITING_RISK_ANALYSIS", "PAYMENT_APPROVED_BY_RISK_ANALYSIS",
+  "PAYMENT_REPROVED_BY_RISK_ANALYSIS", "PAYMENT_AUTHORIZED", "PAYMENT_UPDATED",
+  "PAYMENT_CONFIRMED", "PAYMENT_RECEIVED", "PAYMENT_OVERDUE", "PAYMENT_DELETED",
+  "PAYMENT_RESTORED", "PAYMENT_REFUNDED", "PAYMENT_PARTIALLY_REFUNDED",
+  "PAYMENT_RECEIVED_IN_CASH_UNDONE", "PAYMENT_CHARGEBACK_REQUESTED",
+  "PAYMENT_CHARGEBACK_DISPUTE", "PAYMENT_AWAITING_CHARGEBACK_REVERSAL",
+  "PAYMENT_DUNNING_RECEIVED", "PAYMENT_DUNNING_REQUESTED", "PAYMENT_BANK_SLIP_VIEWED",
+  "PAYMENT_CHECKOUT_VIEWED",
+];
+
+function asAmbiente(v: string | null | undefined): AsaasAmbiente {
+  return v === "producao" ? "producao" : "sandbox";
+}
+
+async function setupWebhookForConta(barbeariaId: number, conta: typeof asaasContasTable.$inferSelect): Promise<{ ok: boolean; url: string; error?: string }> {
+  try {
+    const apiKey = decryptApiKey(conta.apiKeyEncrypted);
+    const client = createAsaasClient({ apiKey, ambiente: asAmbiente(conta.ambiente) });
+    const baseUrl = process.env.PUBLIC_URL || `https://${process.env.REPLIT_DOMAINS?.split(",")[0] || ""}`;
+    const url = `${baseUrl}/api/webhooks/asaas/${barbeariaId}`;
+    await client.createWebhook({
+      url, enabled: true, interrupted: false, apiVersion: 3,
+      authToken: conta.webhookToken, events: WEBHOOK_EVENTS,
+      email: conta.accountEmail || undefined,
+    });
+    await db.update(asaasContasTable).set({ webhookConfigured: true, updatedAt: new Date() })
+      .where(eq(asaasContasTable.id, conta.id));
+    return { ok: true, url };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Erro ao registrar webhook";
+    console.error("[asaas/webhook-auto] erro:", msg);
+    return { ok: false, url: "", error: msg };
+  }
+}
+
 function publicConta(c: any, apiKeyPlain?: string) {
   if (!c) return null;
   return {
@@ -104,7 +140,11 @@ router.post("/", requireAuth, requireRole("dono", "gerente"), async (req, res) =
     }).returning();
   }
 
-  return res.status(201).json({ conta: publicConta(conta, apiKey) });
+  const webhookResult = await setupWebhookForConta(barbeariaId, conta);
+  return res.status(201).json({
+    conta: publicConta(conta, apiKey),
+    webhook: webhookResult,
+  });
 });
 
 router.put("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
@@ -145,33 +185,9 @@ router.post("/webhook-auto", requireAuth, requireRole("dono", "gerente"), async 
   if (!barbeariaId) return;
   const [conta] = await db.select().from(asaasContasTable).where(eq(asaasContasTable.barbeariaId, barbeariaId)).limit(1);
   if (!conta) return res.status(404).json({ error: "Conta Asaas não conectada" });
-  try {
-    const apiKey = decryptApiKey(conta.apiKeyEncrypted);
-    const client = createAsaasClient({ apiKey, ambiente: (conta.ambiente as any) || "sandbox" });
-    const baseUrl = process.env.PUBLIC_URL || `https://${process.env.REPLIT_DOMAINS?.split(",")[0] || ""}`;
-    const url = `${baseUrl}/api/webhooks/asaas/${barbeariaId}`;
-    const events = [
-      "PAYMENT_CREATED", "PAYMENT_AWAITING_RISK_ANALYSIS", "PAYMENT_APPROVED_BY_RISK_ANALYSIS",
-      "PAYMENT_REPROVED_BY_RISK_ANALYSIS", "PAYMENT_AUTHORIZED", "PAYMENT_UPDATED",
-      "PAYMENT_CONFIRMED", "PAYMENT_RECEIVED", "PAYMENT_OVERDUE", "PAYMENT_DELETED",
-      "PAYMENT_RESTORED", "PAYMENT_REFUNDED", "PAYMENT_PARTIALLY_REFUNDED",
-      "PAYMENT_RECEIVED_IN_CASH_UNDONE", "PAYMENT_CHARGEBACK_REQUESTED",
-      "PAYMENT_CHARGEBACK_DISPUTE", "PAYMENT_AWAITING_CHARGEBACK_REVERSAL",
-      "PAYMENT_DUNNING_RECEIVED", "PAYMENT_DUNNING_REQUESTED", "PAYMENT_BANK_SLIP_VIEWED",
-      "PAYMENT_CHECKOUT_VIEWED",
-    ];
-    await client.createWebhook({
-      url, enabled: true, interrupted: false, apiVersion: 3,
-      authToken: conta.webhookToken, events,
-      email: conta.accountEmail || undefined,
-    });
-    await db.update(asaasContasTable).set({ webhookConfigured: true, updatedAt: new Date() })
-      .where(eq(asaasContasTable.id, conta.id));
-    return res.json({ ok: true, url });
-  } catch (e: any) {
-    console.error("[asaas/webhook-auto] erro:", e?.message);
-    return res.status(400).json({ error: e?.message || "Não foi possível registrar webhook" });
-  }
+  const result = await setupWebhookForConta(barbeariaId, conta);
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  return res.json({ ok: true, url: result.url });
 });
 
 router.get("/recebimentos", requireAuth, requireRole("dono", "gerente"), async (req, res) => {

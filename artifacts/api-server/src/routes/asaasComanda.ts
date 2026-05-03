@@ -48,8 +48,19 @@ router.post("/comanda/:comandaId/cobrar", requireAuth, async (req: any, res) => 
       await db.update(comandasTable).set({ asaasPaymentId: null }).where(eq(comandasTable.id, comandaId));
     }
 
-    const valor = parseFloat(String(comanda.valorTotal || "0"));
-    if (valor <= 0) return res.status(400).json({ error: "Valor inválido" });
+    const valorTotal = parseFloat(String(comanda.valorTotal || "0"));
+    let sinalPago = 0;
+    if (comanda.agendamentoId) {
+      const [agSinal] = await db.select({ sinalValorPago: agendamentosTable.sinalValorPago, sinalStatus: agendamentosTable.sinalStatus })
+        .from(agendamentosTable).where(eq(agendamentosTable.id, comanda.agendamentoId)).limit(1);
+      if (agSinal && agSinal.sinalStatus === "pago") {
+        sinalPago = parseFloat(String(agSinal.sinalValorPago || "0"));
+      }
+    }
+    const valor = Math.max(valorTotal - sinalPago, 0);
+    if (valor <= 0) {
+      return res.status(400).json({ error: sinalPago > 0 ? "Sinal já cobre o valor da comanda" : "Valor inválido" });
+    }
 
     const due = dueDate || (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); })();
 
@@ -120,8 +131,12 @@ router.post("/agendamento/:agendamentoId/cobrar", requireAuth, async (req: any, 
     const conta = await getContaByBarbearia(barbeariaId);
     if (!conta) return res.status(503).json({ error: "Conta de pagamento não conectada" });
 
-    const valor = Number(valorBody) > 0 ? Number(valorBody) : Number(ag.valor || 0);
-    if (valor <= 0) return res.status(400).json({ error: "Valor inválido" });
+    const valorBase = Number(valorBody) > 0 ? Number(valorBody) : Number(ag.valor || 0);
+    const sinalPagoAg = ag.sinalStatus === "pago" ? parseFloat(String(ag.sinalValorPago || "0")) : 0;
+    const valor = Math.max(valorBase - sinalPagoAg, 0);
+    if (valor <= 0) {
+      return res.status(400).json({ error: sinalPagoAg > 0 ? "Sinal já cobre o valor do serviço" : "Valor inválido" });
+    }
 
     let comandaId: number;
     const [existing] = await db.select().from(comandasTable).where(

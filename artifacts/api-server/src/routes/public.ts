@@ -606,8 +606,8 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
           invoiceUrl: result.asaasPayment?.invoiceUrl || null,
           expiraEm: result.pixData?.expirationDate || null,
         };
-        agend.status = "pendente_pagamento" as any;
-      } catch (sinalErr: any) {
+        agend.status = "pendente_pagamento";
+      } catch (sinalErr: unknown) {
         console.error("[public/agendar] erro gerando sinal Asaas:", sinalErr);
         await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(eq(agendamentosTable.id, agend.id));
         return res.status(402).json({ error: "Falha ao gerar cobrança do sinal. Tente novamente." });
@@ -876,8 +876,8 @@ router.post("/:slug/agendar-simples", async (req, res) => {
           invoiceUrl: resultS.asaasPayment?.invoiceUrl || null,
           expiraEm: resultS.pixData?.expirationDate || null,
         };
-        agend.status = "pendente_pagamento" as any;
-      } catch (sinalErrS: any) {
+        agend.status = "pendente_pagamento";
+      } catch (sinalErrS: unknown) {
         console.error("[public/agendar-simples] erro gerando sinal Asaas:", sinalErrS);
         await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(eq(agendamentosTable.id, agend.id));
         return res.status(402).json({ error: "Falha ao gerar cobrança do sinal. Tente novamente." });
