@@ -67,6 +67,7 @@ import asaasContaRouter from "./asaasConta.js";
 import asaasSinalRouter from "./asaasSinal.js";
 import asaasComandaRouter from "./asaasComanda.js";
 import asaasSaaSRouter from "./asaasSaaS.js";
+import asaasPacoteRouter from "./asaasPacote.js";
 
 const router: IRouter = Router();
 
@@ -232,6 +233,7 @@ router.use("/email-marketing", emailMarketingPublicRouter);
 router.use("/barbearias/:barbeariaId/email-marketing", emailMarketingRouter);
 router.use("/barbearias/:barbeariaId/asaas", asaasContaRouter);
 router.use("/barbearias/:barbeariaId/asaas-comanda", asaasComandaRouter);
+router.use("/barbearias/:barbeariaId/asaas-pacote", asaasPacoteRouter);
 router.use("/asaas-saas", asaasSaaSRouter);
 router.use("/asaas-sinal", asaasSinalRouter);
 

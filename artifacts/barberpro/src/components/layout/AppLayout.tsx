@@ -62,6 +62,34 @@ import { usePWA } from "@/hooks/usePWA";
 import { TutorialOverlay } from "@/components/TutorialOverlay";
 import LgpdConsentDialog from "@/components/LgpdConsentDialog";
 
+function AsaasGlobalBanner() {
+  const { barbeariaId } = useAuth();
+  const { data } = useQuery<any>({
+    queryKey: ["asaas-conta-banner", barbeariaId],
+    queryFn: async () => {
+      const r = await fetch(apiUrl(`/barbearias/${barbeariaId}/asaas`), { credentials: "include" });
+      if (!r.ok) return null;
+      return r.json();
+    },
+    enabled: !!barbeariaId,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  if (!data?.conectado || !data?.conta) return null;
+  const status = (data.conta.status || "").toLowerCase();
+  const pending = ["pending", "awaiting_documents", "rejected", "blocked"].includes(status);
+  if (!pending) return null;
+  const msg = status === "rejected" || status === "blocked"
+    ? "Sua conta Asaas está bloqueada. Verifique pendências em Configurações > Assinatura."
+    : "Sua conta Asaas tem pendências de documentação. Conclua para receber pagamentos.";
+  return (
+    <Link href="/configuracoes/assinatura" className="border-b border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 sm:px-4 flex items-center justify-center gap-2 text-xs sm:text-sm text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors z-20 shrink-0">
+      <AlertTriangle className="h-3.5 w-3.5" />
+      <span>{msg}</span>
+    </Link>
+  );
+}
+
 type NavItem = {
   name: string;
   href?: string;
@@ -927,6 +955,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="hidden md:flex items-center justify-end px-6 py-2.5 border-b border-border bg-card shrink-0">
           <HeaderBar />
         </div>
+        <AsaasGlobalBanner />
         {shouldShowUpgrade && (
           <div className={`border-b px-3 py-1.5 sm:px-4 sm:py-2 flex items-center justify-center gap-2 sm:gap-3 z-20 shrink-0 ${
             trialDaysLeft >= 0 && trialDaysLeft <= 5

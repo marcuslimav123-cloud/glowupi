@@ -582,6 +582,7 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
         ? Math.max(0.5, sinalValorBase)
         : Math.max(0.5, Number(((valorServico * sinalValorBase) / 100).toFixed(2)));
       const due = new Date(); due.setDate(due.getDate() + 1);
+      const billingTypeReq = (req.body?.billingType === "BOLETO" || req.body?.billingType === "CREDIT_CARD") ? req.body.billingType : "PIX";
       try {
         const result = await createPaymentForBarbearia({
           barbeariaId: barbearia.id,
@@ -589,11 +590,11 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
           refType: "agendamento",
           refId: agend.id,
           profissionalId: profissional.id,
-          billingType: "PIX",
+          billingType: billingTypeReq as any,
           value: sinalValor,
           dueDate: due.toISOString().slice(0, 10),
           description: `Sinal — ${servico.nome} com ${profissional.nomeExibicao} (${data} ${horaInicio})`,
-          payer: { nome: clienteUser.nome, telefone: clienteWhatsapp, email: clienteUser.email },
+          payer: { nome: clienteUser.nome, telefone: clienteWhatsapp, email: clienteUser.email, cpfCnpj: req.body?.payerCpfCnpj },
           externalReference: `agend-${agend.id}`,
         });
         await db.update(agendamentosTable).set({
@@ -608,8 +609,10 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
         sinalPagamento = {
           asaasPaymentId: result.pagamento.asaasPaymentId,
           valor: sinalValor,
+          billingType: billingTypeReq,
           pixQrCodeBase64: result.pixData?.encodedImage || null,
           pixCopyPaste: result.pixData?.payload || null,
+          bankSlipUrl: result.asaasPayment?.bankSlipUrl || null,
           invoiceUrl: result.asaasPayment?.invoiceUrl || null,
           expiraEm: result.pixData?.expirationDate || null,
         };
@@ -859,6 +862,7 @@ router.post("/:slug/agendar-simples", async (req, res) => {
         ? Math.max(0.5, sinalValorBaseS)
         : Math.max(0.5, Number(((valorServicoS * sinalValorBaseS) / 100).toFixed(2)));
       const dueS = new Date(); dueS.setDate(dueS.getDate() + 1);
+      const billingTypeS = (req.body?.billingType === "BOLETO" || req.body?.billingType === "CREDIT_CARD") ? req.body.billingType : "PIX";
       try {
         const resultS = await createPaymentForBarbearia({
           barbeariaId: barbearia.id,
@@ -866,11 +870,11 @@ router.post("/:slug/agendar-simples", async (req, res) => {
           refType: "agendamento",
           refId: agend.id,
           profissionalId: profissional.id,
-          billingType: "PIX",
+          billingType: billingTypeS as any,
           value: sinalValorS,
           dueDate: dueS.toISOString().slice(0, 10),
           description: `Sinal — ${servico.nome} com ${profissional.nomeExibicao} (${data} ${horaInicio})`,
-          payer: { nome: clienteNome, telefone: whatsappLimpo },
+          payer: { nome: clienteNome, telefone: whatsappLimpo, cpfCnpj: req.body?.payerCpfCnpj },
           externalReference: `agend-${agend.id}`,
         });
         await db.update(agendamentosTable).set({
@@ -885,8 +889,10 @@ router.post("/:slug/agendar-simples", async (req, res) => {
         sinalPagamentoSimples = {
           asaasPaymentId: resultS.pagamento.asaasPaymentId,
           valor: sinalValorS,
+          billingType: billingTypeS,
           pixQrCodeBase64: resultS.pixData?.encodedImage || null,
           pixCopyPaste: resultS.pixData?.payload || null,
+          bankSlipUrl: resultS.asaasPayment?.bankSlipUrl || null,
           invoiceUrl: resultS.asaasPayment?.invoiceUrl || null,
           expiraEm: resultS.pixData?.expirationDate || null,
         };

@@ -215,6 +215,32 @@ router.get("/recebimentos", requireAuth, requireRole("dono", "gerente"), async (
   })));
 });
 
+router.post("/recebimentos/:asaasPaymentId/cancelar", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  try {
+    const { cancelPagamento } = await import("../lib/asaasService.js");
+    const out = await cancelPagamento(barbeariaId, req.params.asaasPaymentId);
+    return res.json(out);
+  } catch (e: any) {
+    console.error("[asaas/cancelar]", e);
+    return res.status(500).json({ error: e?.message || "Erro ao cancelar" });
+  }
+});
+
+router.post("/recebimentos/:asaasPaymentId/reemitir", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+  const barbeariaId = await checkAccess(req, res);
+  if (!barbeariaId) return;
+  try {
+    const { reemitirPagamento } = await import("../lib/asaasService.js");
+    const out = await reemitirPagamento(barbeariaId, req.params.asaasPaymentId, req.body || {});
+    return res.json(out);
+  } catch (e: any) {
+    console.error("[asaas/reemitir]", e);
+    return res.status(500).json({ error: e?.message || "Erro ao reemitir" });
+  }
+});
+
 router.put("/profissionais/:profId/wallet", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;

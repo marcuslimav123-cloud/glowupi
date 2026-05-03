@@ -110,6 +110,8 @@ export default function PublicBooking() {
   const [simplesNome, setSimplesNome] = useState("");
   const [simplesWhatsapp, setSimplesWhatsapp] = useState("");
   const [comLoginWhatsapp, setComLoginWhatsapp] = useState("");
+  const [sinalBillingType, setSinalBillingType] = useState<"PIX" | "BOLETO" | "CREDIT_CARD">("PIX");
+  const [payerCpfCnpj, setPayerCpfCnpj] = useState("");
   const [showMeusAgendamentos, setShowMeusAgendamentos] = useState(() => {
     const sp = new URLSearchParams(window.location.search);
     return sp.has("agendamentoId") || sp.has("mensagem");
@@ -242,6 +244,8 @@ export default function PublicBooking() {
             observacao: observacao || null,
             clienteNome: simplesNome.trim(),
             clienteWhatsapp: simplesWhatsapp.trim(),
+            billingType: sinalBillingType,
+            payerCpfCnpj: payerCpfCnpj || undefined,
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -281,6 +285,8 @@ export default function PublicBooking() {
           observacao: observacao || null,
           filialId: selectedFilial?.id || null,
           clienteWhatsapp: rawWa,
+          billingType: sinalBillingType,
+          payerCpfCnpj: payerCpfCnpj || undefined,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -1237,6 +1243,36 @@ export default function PublicBooking() {
                 />
               </div>
 
+              {(selectedServico as any)?.exigeSinal === true && (
+                <div className="mb-6 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-3">
+                  <p className="text-xs font-medium text-white/60">Forma de pagamento do sinal</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { v: "PIX", label: "PIX" },
+                      { v: "BOLETO", label: "Boleto" },
+                      { v: "CREDIT_CARD", label: "Cartão" },
+                    ].map(opt => (
+                      <button
+                        key={opt.v} type="button"
+                        onClick={() => setSinalBillingType(opt.v as any)}
+                        className={`py-2 rounded-lg text-xs font-medium transition-all ${
+                          sinalBillingType === opt.v ? "ring-2 text-white" : "bg-white/5 text-white/60 hover:bg-white/10"
+                        }`}
+                        style={sinalBillingType === opt.v ? { backgroundColor: accent, color: accentText } : {}}
+                      >{opt.label}</button>
+                    ))}
+                  </div>
+                  {(sinalBillingType === "BOLETO" || sinalBillingType === "CREDIT_CARD") && (
+                    <input
+                      type="text" value={payerCpfCnpj}
+                      onChange={e => setPayerCpfCnpj(e.target.value.replace(/\D/g, "").slice(0, 14))}
+                      maxLength={14} placeholder="CPF ou CNPJ (apenas números)"
+                      className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:border-white/30"
+                    />
+                  )}
+                </div>
+              )}
+
               <button
                 onClick={handleBooking}
                 disabled={bookingLoading}
@@ -1282,7 +1318,7 @@ export default function PublicBooking() {
                     <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
                     Pague o sinal para confirmar
                   </h3>
-                  <SinalPixBox
+                  <SinalBox
                     pagamento={sinalPagamento}
                     statusUrl={agendamentoCriadoId && agendamentoCriadoTel ? `${API_BASE}/asaas-sinal/agendamento/${agendamentoCriadoId}/status?tel=${encodeURIComponent(agendamentoCriadoTel)}` : undefined}
                     accentColor={accent}
@@ -1336,7 +1372,7 @@ export default function PublicBooking() {
   );
 }
 
-function SinalPixBox({ pagamento, statusUrl, accentColor }: { pagamento: any; statusUrl?: string; accentColor: string }) {
+function SinalBox({ pagamento, statusUrl, accentColor }: { pagamento: any; statusUrl?: string; accentColor: string }) {
   const [copied, setCopied] = useState(false);
   const [paid, setPaid] = useState(false);
 
@@ -1367,14 +1403,19 @@ function SinalPixBox({ pagamento, statusUrl, accentColor }: { pagamento: any; st
     );
   }
 
-  const isPix = pagamento.pixCopyPaste || pagamento.pixQrCodeBase64;
-
   return (
     <div className="space-y-3">
       <div className="flex items-baseline justify-between">
-        <span className="text-xs text-white/60">Valor do sinal</span>
+        <span className="text-xs text-white/60">Valor do sinal · {pagamento.billingType === "BOLETO" ? "Boleto" : pagamento.billingType === "CREDIT_CARD" ? "Cartão" : "Pix"}</span>
         <span className="text-lg font-bold text-white">R$ {Number(pagamento.valor).toFixed(2).replace(".", ",")}</span>
       </div>
+      {pagamento.bankSlipUrl && (
+        <a href={pagamento.bankSlipUrl} target="_blank" rel="noopener noreferrer"
+          className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-semibold"
+          style={{ backgroundColor: accentColor, color: "#000" }}>
+          <ExternalLink className="h-3.5 w-3.5" /> Abrir boleto
+        </a>
+      )}
       {pagamento.pixQrCodeBase64 && (
         <div className="bg-white rounded-lg p-3 flex items-center justify-center">
           <img src={`data:image/png;base64,${pagamento.pixQrCodeBase64}`} alt="QR Pix" className="w-48 h-48 object-contain" />

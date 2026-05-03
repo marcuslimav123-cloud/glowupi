@@ -41,6 +41,8 @@ type Prof = {
   fotoUrl?: string | null;
   servicoIds?: number[];
   servicosOverrides?: ServicoOverride[];
+  asaasWalletId?: string | null;
+  asaasSplitPercentual?: number | null;
 };
 
 type Servico = {
@@ -134,6 +136,8 @@ function ProfForm({
   const [horarios, setHorarios] = useState<any>(initial?.horarios || { porDia: {} });
   const [showSchedule, setShowSchedule] = useState(!!initial?.horarios?.porDia && Object.keys(initial.horarios.porDia).length > 0);
   const [selectedServicoIds, setSelectedServicoIds] = useState<number[]>(initial?.servicoIds || []);
+  const [walletId, setWalletId] = useState<string>(initial?.asaasWalletId ?? "");
+  const [splitPct, setSplitPct] = useState<string>(initial?.asaasSplitPercentual != null ? String(initial.asaasSplitPercentual) : "");
 
   const initialOverridesMap = new Map<number, ServicoOverride>();
   (initial?.servicosOverrides || []).forEach(o => initialOverridesMap.set(o.servicoId, o));
@@ -187,6 +191,8 @@ function ProfForm({
         horarios: showSchedule ? horarios : null,
         servicoIds: selectedServicoIds,
         servicosOverrides,
+        asaasWalletId: walletId.trim() || null,
+        asaasSplitPercentual: splitPct.trim() ? parseFloat(splitPct) : null,
       });
     }} className="space-y-4 mt-2">
       <div className="grid grid-cols-2 gap-4">
@@ -256,6 +262,21 @@ function ProfForm({
             required placeholder={tipo === "percentual" ? "40" : "30.00"}
             className="bg-background"
           />
+        </div>
+      </div>
+
+      <div className="border-t border-border pt-4 space-y-3">
+        <Label className="text-sm font-medium">Carteira Asaas (split)</Label>
+        <p className="text-xs text-muted-foreground -mt-1">Opcional. Quando preenchida, a comissão deste profissional é repassada automaticamente.</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="col-span-2 space-y-1.5">
+            <Label className="text-xs">Wallet ID Asaas</Label>
+            <Input value={walletId} onChange={e => setWalletId(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" className="bg-background font-mono text-xs" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">% override (opcional)</Label>
+            <Input type="number" step="0.01" min="0" max="100" value={splitPct} onChange={e => setSplitPct(e.target.value)} placeholder="usa comissão" className="bg-background" />
+          </div>
         </div>
       </div>
 

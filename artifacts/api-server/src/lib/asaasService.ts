@@ -1,7 +1,8 @@
 import { db } from "@workspace/db";
 import {
   asaasContasTable, pagamentosAsaasTable, profissionaisTable, barbeariasTable,
-  agendamentosTable, comandasTable,
+  agendamentosTable, comandasTable, pacotesClienteTable, pacotesTable,
+  assinaturasAsaasTable,
   type AsaasConta, type PagamentoAsaas,
 } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -30,6 +31,7 @@ export interface ResolveSplitOptions {
   profissionalId?: number | null;
   splitOptIn: boolean;
   splitPercentualPlataforma?: number;
+  paymentValue?: number;
 }
 
 export async function resolveSplit(opts: ResolveSplitOptions): Promise<AsaasSplit[] | undefined> {
@@ -38,10 +40,34 @@ export async function resolveSplit(opts: ResolveSplitOptions): Promise<AsaasSpli
     const [prof] = await db.select().from(profissionaisTable).where(
       and(eq(profissionaisTable.id, opts.profissionalId), eq(profissionaisTable.barbeariaId, opts.barbeariaId))
     ).limit(1);
-    if (prof?.asaasWalletId && prof.asaasSplitPercentual) {
-      const pct = parseFloat(prof.asaasSplitPercentual);
-      if (pct > 0 && pct < 100) {
+    if (prof?.asaasWalletId) {
+      let pct: number | null = null;
+      let fixedValue: number | null = null;
+
+      // 1) Override explícito por asaasSplitPercentual (config Asaas)
+      if (prof.asaasSplitPercentual) {
+        const v = parseFloat(prof.asaasSplitPercentual);
+        if (v > 0 && v < 100) pct = v;
+      }
+
+      // 2) Calcular a partir de comissaoTipo/comissaoValor
+      if (pct == null && fixedValue == null) {
+        const cv = parseFloat(prof.comissaoValor || "0");
+        if (prof.comissaoTipo === "percentual") {
+          if (cv > 0 && cv < 100) pct = cv;
+        } else if (prof.comissaoTipo === "valor_fixo") {
+          if (cv > 0 && opts.paymentValue && opts.paymentValue > 0) {
+            // Cap fixedValue em 80% do paymentValue para garantir margem da plataforma
+            fixedValue = Math.min(cv, opts.paymentValue * 0.8);
+            if (fixedValue <= 0.01) fixedValue = null;
+          }
+        }
+      }
+
+      if (pct != null) {
         splits.push({ walletId: prof.asaasWalletId, percentualValue: pct });
+      } else if (fixedValue != null) {
+        splits.push({ walletId: prof.asaasWalletId, fixedValue: Number(fixedValue.toFixed(2)) });
       }
     }
   }
@@ -88,6 +114,7 @@ export async function createPaymentForBarbearia(input: CreatePaymentForBarbearia
     barbeariaId: input.barbeariaId,
     profissionalId: input.profissionalId ?? undefined,
     splitOptIn: input.splitOptIn ?? conta.splitOptIn,
+    paymentValue: input.value,
   });
 
   const payment = await client.createPayment({
@@ -170,6 +197,68 @@ export async function updatePagamentoFromAsaas(asaasPaymentId: string, payment: 
     .where(eq(pagamentosAsaasTable.asaasPaymentId, asaasPaymentId))
     .returning();
   return updated || null;
+}
+
+export async function cancelPagamento(barbeariaId: number, asaasPaymentId: string): Promise<{ ok: true; status: string }> {
+  const ctx = await getClientForBarbearia(barbeariaId);
+  if (!ctx) throw new Error("Conta Asaas não conectada");
+  const pagamento = await getPagamentoByAsaasId(asaasPaymentId);
+  if (!pagamento || pagamento.barbeariaId !== barbeariaId) throw new Error("Pagamento não encontrado");
+  if (isPaidStatus(pagamento.status)) throw new Error("Pagamento já recebido — não pode ser cancelado");
+  await ctx.client.deletePayment(asaasPaymentId);
+  await db.update(pagamentosAsaasTable).set({
+    status: "DELETED",
+    updatedAt: new Date(),
+  }).where(eq(pagamentosAsaasTable.asaasPaymentId, asaasPaymentId));
+  return { ok: true, status: "DELETED" };
+}
+
+export async function reemitirPagamento(
+  barbeariaId: number,
+  asaasPaymentId: string,
+  opts: { billingType?: "PIX" | "BOLETO" | "CREDIT_CARD"; dueDate?: string } = {}
+): Promise<{ ok: true; novo: PagamentoAsaas }> {
+  const ctx = await getClientForBarbearia(barbeariaId);
+  if (!ctx) throw new Error("Conta Asaas não conectada");
+  const pagamento = await getPagamentoByAsaasId(asaasPaymentId);
+  if (!pagamento || pagamento.barbeariaId !== barbeariaId) throw new Error("Pagamento não encontrado");
+  if (isPaidStatus(pagamento.status)) throw new Error("Pagamento já recebido — não pode ser reemitido");
+
+  // Cancela o anterior se ainda existir
+  if (pagamento.status !== "DELETED") {
+    try { await ctx.client.deletePayment(asaasPaymentId); } catch {}
+    await db.update(pagamentosAsaasTable).set({ status: "DELETED", updatedAt: new Date() })
+      .where(eq(pagamentosAsaasTable.asaasPaymentId, asaasPaymentId));
+  }
+
+  const novoBilling = (opts.billingType || pagamento.billingType || "PIX") as any;
+  const dueDate = opts.dueDate || (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); })();
+
+  const result = await createPaymentForBarbearia({
+    barbeariaId,
+    tipo: pagamento.tipo,
+    refType: (pagamento.refType || "avulso") as any,
+    refId: pagamento.refId || undefined,
+    profissionalId: pagamento.profissionalId,
+    billingType: novoBilling,
+    value: parseFloat(String(pagamento.valor)),
+    dueDate,
+    description: pagamento.description || "Reemissão",
+    payer: {
+      nome: pagamento.payerNome || "Cliente",
+      telefone: pagamento.payerTelefone || undefined,
+      email: pagamento.payerEmail || undefined,
+      cpfCnpj: pagamento.payerCpfCnpj || undefined,
+    },
+    externalReference: pagamento.externalReference || undefined,
+  });
+
+  if (pagamento.metadata) {
+    await db.update(pagamentosAsaasTable).set({ metadata: pagamento.metadata })
+      .where(eq(pagamentosAsaasTable.id, result.pagamento.id));
+  }
+
+  return { ok: true, novo: result.pagamento };
 }
 
 export function isPaidStatus(status: string | undefined | null): boolean {
@@ -317,6 +406,57 @@ export async function processPagamentoPago(barbeariaId: number, pagamento: Pagam
       data: { type: "comanda_paga", comandaId: com.id, url: "/comandas" },
       category: "financeiro",
     }).catch(err => console.error("[Push] comanda paga:", err));
+    return;
+  }
+
+  if (tipo === "pacote_cliente") {
+    // Metadata contém os dados para criar/ativar o pacote do cliente
+    const meta = (pagamento.metadata || {}) as any;
+    const pacoteId = Number(meta.pacoteId || 0);
+    if (!pacoteId) return;
+    const [pacote] = await db.select().from(pacotesTable).where(
+      and(eq(pacotesTable.id, pacoteId), eq(pacotesTable.barbeariaId, barbeariaId))
+    ).limit(1);
+    if (!pacote) return;
+
+    // Se refId já existe (pacotesCliente já criado), apenas ativa
+    if (pagamento.refId) {
+      const [existente] = await db.select().from(pacotesClienteTable).where(
+        and(eq(pacotesClienteTable.id, pagamento.refId), eq(pacotesClienteTable.barbeariaId, barbeariaId))
+      ).limit(1);
+      if (existente && existente.status !== "ativo") {
+        await db.update(pacotesClienteTable).set({ status: "ativo" }).where(eq(pacotesClienteTable.id, existente.id));
+      }
+    } else {
+      const dataValidade = pacote.validade ? new Date(Date.now() + pacote.validade * 86400000) : null;
+      const [pc] = await db.insert(pacotesClienteTable).values({
+        barbeariaId,
+        pacoteId,
+        clienteId: meta.clienteId ?? null,
+        clienteNome: meta.clienteNome || pagamento.payerNome || "Cliente",
+        sessoesTotal: pacote.sessoesTotal,
+        dataValidade,
+      }).returning();
+      await db.update(pagamentosAsaasTable).set({ refId: pc.id, refType: "pacote_cliente" })
+        .where(eq(pagamentosAsaasTable.id, pagamento.id));
+    }
+
+    sendPushToBarbearia(barbeariaId, {
+      title: "Pacote pago",
+      body: `${pagamento.payerNome || "Cliente"} — ${pacote.nome} R$ ${Number(pagamento.valor).toFixed(2).replace(".", ",")}`,
+      data: { type: "comanda_paga", url: "/pacotes/clientes" },
+      category: "financeiro",
+    }).catch(err => console.error("[Push] pacote pago:", err));
+    return;
+  }
+
+  if (tipo === "saas") {
+    if (!pagamento.asaasSubscriptionId) return;
+    await db.update(assinaturasAsaasTable).set({
+      status: "ACTIVE",
+      updatedAt: new Date(),
+    }).where(eq(assinaturasAsaasTable.asaasSubscriptionId, pagamento.asaasSubscriptionId));
+    return;
   }
 }
 
