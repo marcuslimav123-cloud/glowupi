@@ -5,7 +5,7 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Stack, router, type Href } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
@@ -20,12 +20,11 @@ import { ATTExplainer } from "@/components/ATTExplainer";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider, ThemeSyncer, useTheme } from "@/lib/theme";
 import { hasAskedATT, requestTrackingPermissionNow, markATTAsked } from "@/lib/tracking";
+import { queryClient } from "@/lib/queryClient";
 
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 
 SplashScreen.preventAutoHideAsync();
-
-const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const { colors, resolved } = useTheme();
@@ -73,6 +72,48 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError]);
 
   useEffect(() => {
+    const received = Notifications.addNotificationReceivedListener((notification) => {
+      try {
+        const data: any = notification.request.content.data || {};
+        const tipo = String(data.type || data.tipo || "").toLowerCase();
+        const prefixes = new Set<string>(["notificacoes"]);
+        if (tipo.includes("agend") || tipo === "reminder" || tipo === "pending_appointments_nudge") {
+          prefixes.add("agendamentos");
+          prefixes.add("agendamento");
+          prefixes.add("agenda");
+          prefixes.add("cliente-agend");
+        }
+        if (tipo.includes("comanda")) {
+          prefixes.add("comandas-abertas");
+          prefixes.add("comandas-fechadas");
+          prefixes.add("comanda-detail");
+          prefixes.add("financeiro-comandas-aberto");
+          prefixes.add("fin-comandas-all");
+          prefixes.add("mov-comandas");
+          prefixes.add("fluxo-comandas");
+          prefixes.add("cliente-comandas");
+        }
+        if (tipo.includes("caixa")) {
+          prefixes.add("caixa-atual");
+          prefixes.add("caixa-historico");
+          prefixes.add("mov-caixas");
+        }
+        if (tipo.includes("cliente")) {
+          prefixes.add("clientes");
+          prefixes.add("clientes-list");
+          prefixes.add("cliente-dash");
+          prefixes.add("fin-clientes");
+        }
+        queryClient.invalidateQueries({
+          predicate: (q) => {
+            const k0 = q.queryKey?.[0];
+            return typeof k0 === "string" && prefixes.has(k0);
+          },
+        }).catch(() => {});
+      } catch (err) {
+        console.warn("[Push] erro ao processar notificação em foreground:", err);
+      }
+    });
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       try {
         const data: any = response.notification.request.content.data || {};
@@ -93,7 +134,10 @@ export default function RootLayout() {
         console.warn("[Push] erro ao processar tap de notificação:", err);
       }
     });
-    return () => sub.remove();
+    return () => {
+      sub.remove();
+      received.remove();
+    };
   }, []);
 
   if (!fontsLoaded && !fontError) return null;

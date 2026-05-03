@@ -35,6 +35,12 @@ export function getVapidPublicKey(): string {
   return VAPID_PUBLIC_KEY;
 }
 
+function isExpoToken(token: string): boolean {
+  return token.startsWith("ExponentPushToken[") || token.startsWith("ExpoPushToken[");
+}
+
+type TokenRecord = { id: number; token: string };
+
 export async function sendPushToUser(userId: number, message: PushMessage): Promise<void> {
   try {
     const tokens = await db.select().from(pushTokensTable).where(
@@ -45,16 +51,13 @@ export async function sendPushToUser(userId: number, message: PushMessage): Prom
     );
     if (tokens.length === 0) return;
 
-    const expoPushTokens = tokens.filter(t => t.token.startsWith("ExponentPushToken[") || t.token.startsWith("ExpoPushToken["));
-    const webPushTokens = tokens.filter(t => !t.token.startsWith("ExponentPushToken[") && !t.token.startsWith("ExpoPushToken["));
+    const expoPushTokens = tokens.filter(t => isExpoToken(t.token)).map(t => ({ id: t.id, token: t.token }));
+    const webPushTokens = tokens.filter(t => !isExpoToken(t.token)).map(t => ({ id: t.id, token: t.token }));
 
-    if (expoPushTokens.length > 0) {
-      await sendExpoPush(expoPushTokens.map(t => t.token), message);
-    }
-
-    if (webPushTokens.length > 0) {
-      await sendWebPush(webPushTokens.map(t => ({ id: t.id, token: t.token })), message);
-    }
+    await Promise.all([
+      expoPushTokens.length > 0 ? sendExpoPushRecords(expoPushTokens, message) : Promise.resolve(),
+      webPushTokens.length > 0 ? sendWebPush(webPushTokens, message) : Promise.resolve(),
+    ]);
   } catch (err) {
     console.error(`[Push] Error sending push to user ${userId}:`, err);
   }
@@ -92,9 +95,33 @@ export async function sendPushToBarbearia(barbeariaId: number, message: PushMess
       console.error(`[Push] Error storing notification in DB:`, dbErr);
     }
 
-    for (const userId of allUserIds) {
-      await sendPushToUser(userId, message);
+    const userIdsArray = Array.from(allUserIds);
+    if (userIdsArray.length === 0) return;
+
+    const allTokens = await db.select().from(pushTokensTable).where(
+      and(
+        inArray(pushTokensTable.userId, userIdsArray),
+        eq(pushTokensTable.ativo, true)
+      )
+    );
+    if (allTokens.length === 0) return;
+
+    const expoTokens: TokenRecord[] = [];
+    const webTokens: TokenRecord[] = [];
+    for (const t of allTokens) {
+      if (isExpoToken(t.token)) expoTokens.push({ id: t.id, token: t.token });
+      else webTokens.push({ id: t.id, token: t.token });
     }
+
+    const expoChunks: TokenRecord[][] = [];
+    for (let i = 0; i < expoTokens.length; i += 100) {
+      expoChunks.push(expoTokens.slice(i, i + 100));
+    }
+
+    const ops: Promise<unknown>[] = [];
+    for (const chunk of expoChunks) ops.push(sendExpoPushRecords(chunk, message));
+    if (webTokens.length > 0) ops.push(sendWebPush(webTokens, message));
+    await Promise.all(ops);
   } catch (err) {
     console.error(`[Push] Error sending push to barbearia ${barbeariaId}:`, err);
   }
@@ -215,7 +242,7 @@ export async function sendTestPushToUser(userId: number): Promise<{
   }
 
   if (expoTokens.length > 0) {
-    const expoResult = await sendExpoPush(expoTokens.map(t => t.token), message);
+    const expoResult = await sendExpoPushRecords(expoTokens.map(t => ({ id: t.id, token: t.token })), message);
     expoSuccess += expoResult.success;
     expoFailed += expoResult.failed;
   }
@@ -235,15 +262,49 @@ export async function sendTestPushToUser(userId: number): Promise<{
   };
 }
 
-async function sendExpoPush(tokens: string[], message: PushMessage): Promise<{ success: number; failed: number }> {
-  if (tokens.length === 0) return { success: 0, failed: 0 };
+const EXPO_DEAD_TOKEN_ERRORS = new Set([
+  "DeviceNotRegistered",
+  "InvalidCredentials",
+  "MismatchSenderId",
+]);
+
+async function deactivatePushTokensByIds(ids: number[], reason: string): Promise<void> {
+  if (ids.length === 0) return;
   try {
+    await db.update(pushTokensTable)
+      .set({ ativo: false, updatedAt: new Date() })
+      .where(inArray(pushTokensTable.id, ids));
+    console.warn(`[Push] Deactivated ${ids.length} expo token(s) — reason: ${reason}`);
+  } catch (err) {
+    console.error(`[Push] Failed to deactivate expo tokens:`, err);
+  }
+}
+
+async function sendExpoPushRecords(records: TokenRecord[], message: PushMessage): Promise<{ success: number; failed: number }> {
+  if (records.length === 0) return { success: 0, failed: 0 };
+  const result = await sendExpoPush(records.map(r => r.token), message);
+  if (result.deadIndexes.length > 0) {
+    const deadIds = result.deadIndexes.map(i => records[i]?.id).filter((x): x is number => typeof x === "number");
+    await deactivatePushTokensByIds(deadIds, "Expo DeviceNotRegistered/InvalidCredentials");
+  }
+  return { success: result.success, failed: result.failed };
+}
+
+async function sendExpoPush(tokens: string[], message: PushMessage): Promise<{ success: number; failed: number; deadIndexes: number[] }> {
+  if (tokens.length === 0) return { success: 0, failed: 0, deadIndexes: [] };
+  try {
+    const channelId = message.data?.channelId
+      || (message.data?.type === "reminder" || message.data?.type === "agendamento_lembrete" || message.data?.type === "agendamento"
+        ? "lembretes-agendamentos"
+        : "default");
     const messages = tokens.map(token => ({
       to: token,
       sound: "default" as const,
       title: message.title,
       body: message.body,
       data: message.data || {},
+      channelId,
+      priority: "high" as const,
     }));
 
     const response = await fetch("https://exp.host/--/api/v2/push/send", {
@@ -259,28 +320,37 @@ async function sendExpoPush(tokens: string[], message: PushMessage): Promise<{ s
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[Push] Expo push failed: ${response.status} ${errorText}`);
-      return { success: 0, failed: tokens.length };
+      return { success: 0, failed: tokens.length, deadIndexes: [] };
     }
 
     const result = await response.json();
     const tickets: any[] = Array.isArray(result.data) ? result.data : [];
     let success = 0;
     let failed = 0;
+    const deadIndexes: number[] = [];
     if (tickets.length === 0) {
       success = tokens.length;
     } else {
-      for (const t of tickets) {
-        if (t && t.status === "ok") success++;
-        else failed++;
+      for (let i = 0; i < tickets.length; i++) {
+        const t = tickets[i];
+        if (t && t.status === "ok") {
+          success++;
+        } else {
+          failed++;
+          const errCode: string | undefined = t?.details?.error;
+          if (errCode && EXPO_DEAD_TOKEN_ERRORS.has(errCode)) {
+            deadIndexes.push(i);
+          }
+        }
       }
       const missing = tokens.length - tickets.length;
       if (missing > 0) failed += missing;
     }
-    console.log(`[Push] Expo push: ${success} ok, ${failed} failed (of ${tokens.length})`);
-    return { success, failed };
+    console.log(`[Push] Expo push: ${success} ok, ${failed} failed (of ${tokens.length}), dead=${deadIndexes.length}`);
+    return { success, failed, deadIndexes };
   } catch (err) {
     console.error("[Push] Error sending Expo push:", err);
-    return { success: 0, failed: tokens.length };
+    return { success: 0, failed: tokens.length, deadIndexes: [] };
   }
 }
 

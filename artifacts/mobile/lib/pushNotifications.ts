@@ -48,9 +48,25 @@ export async function registerExpoPushToken(): Promise<string | null> {
     if (Platform.OS === "android") {
       try {
         await Notifications.setNotificationChannelAsync("default", {
-          name: "Padrão",
-          importance: Notifications.AndroidImportance.DEFAULT,
+          name: "Avisos gerais",
+          description: "Notificações comuns do Glow Upi Pro",
+          importance: Notifications.AndroidImportance.HIGH,
           vibrationPattern: [0, 250, 250, 250],
+          lightColor: "#c4a46a",
+          enableLights: true,
+          enableVibrate: true,
+          showBadge: true,
+        });
+        await Notifications.setNotificationChannelAsync("lembretes-agendamentos", {
+          name: "Lembretes e agendamentos",
+          description: "Lembretes de horários e mudanças de agendamentos",
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 350, 200, 350],
+          lightColor: "#c4a46a",
+          enableLights: true,
+          enableVibrate: true,
+          showBadge: true,
+          sound: "default",
         });
       } catch {}
     }
