@@ -634,6 +634,35 @@ function AbertaView({ id, insets, webTopPad, barbeariaId, qc, router }: any) {
                 </>
               )}
             </TouchableOpacity>
+
+            <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
+              <Text style={{ color: colors.muted, fontSize: 11, marginBottom: 8 }}>Cobrar cliente via Asaas</Text>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                {(["PIX", "BOLETO", "CREDIT_CARD"] as const).map(bt => (
+                  <TouchableOpacity
+                    key={bt}
+                    style={{ flex: 1, padding: 10, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center" }}
+                    onPress={async () => {
+                      try {
+                        const data = await fetchJson(`/barbearias/${barbeariaId}/asaas-comanda/comanda/${agend.id}/cobrar`, {
+                          method: "POST",
+                          body: { billingType: bt, valor: totalAPagar },
+                        });
+                        const url = (data as any)?.invoiceUrl || (data as any)?.bankSlipUrl;
+                        if (url) Linking.openURL(url);
+                        Alert.alert("Cobrança gerada", "Acompanhe em Recebimentos Asaas.");
+                      } catch (e) {
+                        Alert.alert("Erro", getErrorMessage(e, "Não foi possível gerar a cobrança."));
+                      }
+                    }}
+                  >
+                    <Text style={{ color: colors.text, fontSize: 12, fontWeight: "600" }}>
+                      {bt === "PIX" ? "Pix" : bt === "BOLETO" ? "Boleto" : "Cartão"}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
           </View>
         </View>
       </Modal>
