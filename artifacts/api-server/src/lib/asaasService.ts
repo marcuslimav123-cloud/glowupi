@@ -184,12 +184,11 @@ export async function processPagamentoPago(barbeariaId: number, pagamento: Pagam
       and(eq(agendamentosTable.id, pagamento.refId), eq(agendamentosTable.barbeariaId, barbeariaId))
     ).limit(1);
     if (!ag) return;
-    if (ag.sinalStatus === "pago" && ag.pago) return;
+    if (ag.sinalStatus === "pago") return;
     await db.update(agendamentosTable).set({
       sinalStatus: "pago",
       sinalValorPago: String(pagamento.valor),
       sinalConfirmadoEm: new Date(),
-      pago: true,
       status: ag.status === "cancelado" ? ag.status : (ag.status === "pendente_pagamento" ? "confirmado" : ag.status),
       updatedAt: new Date(),
     }).where(eq(agendamentosTable.id, pagamento.refId));
@@ -208,19 +207,25 @@ export async function processPagamentoPago(barbeariaId: number, pagamento: Pagam
       and(eq(comandasTable.id, pagamento.refId), eq(comandasTable.barbeariaId, barbeariaId))
     ).limit(1);
     if (!com) return;
+    type ComandaPagamento = {
+      metodo: string;
+      valor: number;
+      dataPagamento: string;
+      registradoVia?: string;
+      asaasPaymentId?: string | null;
+    };
+    const existingPags: ComandaPagamento[] = Array.isArray(com.pagamentos) ? (com.pagamentos as ComandaPagamento[]) : [];
     if (com.status === "paga") {
-      const existingPags: any[] = Array.isArray(com.pagamentos) ? (com.pagamentos as any[]) : [];
-      if (existingPags.some((p: any) => p.asaasPaymentId === pagamento.asaasPaymentId)) return;
+      if (existingPags.some(p => p.asaasPaymentId === pagamento.asaasPaymentId)) return;
     }
-    const existingPags: any[] = Array.isArray(com.pagamentos) ? (com.pagamentos as any[]) : [];
-    const novoPag = {
+    const novoPag: ComandaPagamento = {
       metodo: `Asaas ${pagamento.billingType}`,
       valor: Number(pagamento.valor),
       dataPagamento: new Date().toISOString().slice(0, 10),
       registradoVia: "asaas",
       asaasPaymentId: pagamento.asaasPaymentId,
     };
-    const filtered = existingPags.filter((p: any) => p.asaasPaymentId !== pagamento.asaasPaymentId);
+    const filtered = existingPags.filter(p => p.asaasPaymentId !== pagamento.asaasPaymentId);
     await db.update(comandasTable).set({
       status: "paga",
       pagamentos: [...filtered, novoPag],
