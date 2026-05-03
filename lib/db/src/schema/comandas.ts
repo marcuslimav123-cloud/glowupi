@@ -30,6 +30,7 @@ export const comandasTable = pgTable("comandas", {
   descontoTipo: text("desconto_tipo").default("valor"),
   parcelas: integer("parcelas").default(1),
   status: text("status").notNull().default("paga"),
+  asaasPaymentId: text("asaas_payment_id"),
   observacao: text("observacao"),
   cadastradoPor: text("cadastrado_por"),
   clienteId: integer("cliente_id"),

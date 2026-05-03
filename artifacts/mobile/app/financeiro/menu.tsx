@@ -70,6 +70,22 @@ export default function FinanceiroIndex() {
         />
       </View>
 
+      <SectionHeader label="Asaas e mensalidade" />
+      <View style={styles.card}>
+        <ListRow
+          icon="credit-card"
+          label="Recebimentos Asaas"
+          description="Pagamentos recebidos via Asaas"
+          onPress={go("/financeiro/recebimentos-asaas")}
+        />
+        <ListRow
+          icon="calendar"
+          label="Mensalidade do plano"
+          description="Sua assinatura do SaaS"
+          onPress={go("/financeiro/mensalidade")}
+        />
+      </View>
+
       <SectionHeader label="Comissões e contas" />
       <View style={styles.card}>
         <ListRow

@@ -50,6 +50,8 @@ import {
   Search,
   Inbox,
   MessageCircle,
+  Plug,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SafeLogoImage } from "@/components/SafeLogoImage";
@@ -163,6 +165,8 @@ const NAV_ITEMS: NavItem[] = [
       { name: "Fluxo de Caixa", href: "/financeiro/fluxo", icon: TrendingUp },
       { name: "Conta Profissional", href: "/financeiro/conta-profissional", icon: UsersRound },
       { name: "Caixinha", href: "/financeiro/caixinha", icon: Wallet },
+      { name: "Recebimentos Asaas", href: "/financeiro/recebimentos-asaas", icon: Receipt },
+      { name: "Mensalidade", href: "/financeiro/mensalidade", icon: CreditCard, roles: ["dono"] },
     ],
   },
   {
@@ -206,6 +210,7 @@ const NAV_ITEMS: NavItem[] = [
       { name: "Rodízio", href: "/configuracoes/rodizio", icon: UsersRound },
       { name: "Perfis de Acesso", href: "/configuracoes/acessos", icon: Shield, roles: ["dono"] },
       { name: "Templates E-mail", href: "/configuracoes/templates", icon: Mail, roles: ["dono"] },
+      { name: "Conexão Asaas", href: "/configuracoes/asaas", icon: Plug, roles: ["dono", "gerente"] },
     ],
     subgroups: [
       {

@@ -39,6 +39,7 @@ export const agendamentosTable = pgTable("agendamentos", {
   sinalConfirmadoEm: timestamp("sinal_confirmado_em"),
   sinalExpiraEm: timestamp("sinal_expira_em"),
   sinalComprovanteUrl: text("sinal_comprovante_url"),
+  sinalAsaasPaymentId: text("sinal_asaas_payment_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

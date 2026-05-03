@@ -103,6 +103,9 @@ const DocumentosPage = React.lazy(() => import("@/pages/configuracoes/Documentos
 const DocumentosClientePage = React.lazy(() => import("@/pages/configuracoes/Documentos").then(m => ({ default: m.DocumentosClientePage })));
 const DocumentosProfissionalPage = React.lazy(() => import("@/pages/configuracoes/Documentos").then(m => ({ default: m.DocumentosProfissionalPage })));
 const RestricaoCliente = React.lazy(() => import("@/pages/configuracoes/RestricaoCliente"));
+const ConexaoAsaas = React.lazy(() => import("@/pages/configuracoes/ConexaoAsaas"));
+const RecebimentosAsaas = React.lazy(() => import("@/pages/financeiro/RecebimentosAsaas"));
+const MensalidadeSaaS = React.lazy(() => import("@/pages/financeiro/MensalidadeSaaS"));
 const Funcionamento = React.lazy(() => import("@/pages/configuracoes/Funcionamento"));
 const ConfiguracoesComunicacao = React.lazy(() => import("@/pages/configuracoes/Comunicacao"));
 
@@ -233,6 +236,9 @@ function Router() {
       <Route path="/configuracoes/documentos-clientes" component={DocumentosClientePage} />
       <Route path="/configuracoes/documentos-profissionais" component={DocumentosProfissionalPage} />
       <Route path="/configuracoes/restricoes" component={RestricaoCliente} />
+      <Route path="/configuracoes/asaas" component={ConexaoAsaas} />
+      <Route path="/financeiro/recebimentos-asaas" component={RecebimentosAsaas} />
+      <Route path="/financeiro/mensalidade" component={MensalidadeSaaS} />
       <Route path="/configuracoes/funcionamento" component={Funcionamento} />
       <Route path="/configuracoes/comunicacao" component={ConfiguracoesComunicacao} />
 

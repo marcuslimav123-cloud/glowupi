@@ -60,3 +60,14 @@ The design embodies a "luxury clinic aesthetic" with a color palette of warm gol
 - **Expo Push:** sem credenciais necessárias para o app público; tokens mortos são desativados via tickets imediatos e via polling de receipts.
 - **Channels Android:** `default` (HIGH) para avisos gerais, `lembretes-agendamentos` (MAX) para lembretes/agendamentos.
 - **Health endpoint:** `GET /api/health/push` reporta estado VAPID, contagem de tokens ativos por plataforma e estado do DB.
+## Asaas — Integração Plano B (Task #146)
+- **Modelo:** cada barbearia conecta sua própria conta Asaas (sandbox/produção). API key criptografada em `asaas_contas.api_key_encrypted`. Webhook auto-registrado por barbearia em `/api/webhooks/asaas/:barbeariaId` com `webhookToken`.
+- **Endpoints backend:**
+  - `/api/barbearias/:id/asaas` — GET/POST/PUT/DELETE conta + `/validar`, `/webhook-auto`, `/webhook-url`, `/recebimentos`, `/profissionais/:id/wallet`
+  - `/api/barbearias/:id/asaas-comanda` — cobrança Pix por comanda + `/agendamento/:agId/cobrar` (cria comanda inline) + `/pagamento/:asaasPaymentId/status`
+  - `/api/asaas-sinal/agendamento/:id` (POST cria) + `/status` (GET retorna apenas `{status, paid}` por segurança)
+  - `/api/asaas-saas` — mensalidade SaaS (conta-mãe via `ASAAS_SANDBOX_API_KEY`)
+- **Sinal automático:** rotas públicas `/api/public/:slug/agendar` e `/agendar-simples` retornam `sinalPagamento` quando `prePagamentoAtivo=true` e barbearia tem conta Asaas.
+- **Web:** ConexaoAsaas (wizard validar→conectar→webhook+split), RecebimentosAsaas, MensalidadeSaaS; ComandasAbertas tem botão Pix; PublicBooking exibe SinalPixBox no sucesso.
+- **Mobile mirrors:** `configuracoes/asaas.tsx`, `financeiro/recebimentos-asaas.tsx`, `financeiro/mensalidade.tsx`. Contrato alinhado com backend (`{ok, account}`, `accountEmail/accountName/webhookConfigured/status`, `splitOptIn/splitPercentualPlataforma`).
+- **Stripe:** preservado para SaaS principal; Asaas opera em paralelo apenas como Plano B.

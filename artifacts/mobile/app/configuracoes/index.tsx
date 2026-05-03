@@ -84,6 +84,16 @@ export default function ConfiguracoesIndex() {
         />
       </View>
 
+      <SectionHeader label="Pagamentos" />
+      <View style={styles.card}>
+        <ListRow
+          icon="link"
+          label="Conexão Asaas"
+          description="Conecte sua conta para receber via Pix, cartão ou boleto"
+          onPress={go("/configuracoes/asaas")}
+        />
+      </View>
+
       <SectionHeader label="Clientes" />
       <View style={styles.card}>
         <ListRow

@@ -63,6 +63,10 @@ import notificacoesInternasRouter from "./notificacoesInternas.js";
 import trialLinksRouter from "./trialLinks.js";
 import campaignRouter from "./campaign.js";
 import emailMarketingRouter, { emailMarketingPublicRouter } from "./emailMarketing.js";
+import asaasContaRouter from "./asaasConta.js";
+import asaasSinalRouter from "./asaasSinal.js";
+import asaasComandaRouter from "./asaasComanda.js";
+import asaasSaaSRouter from "./asaasSaaS.js";
 
 const router: IRouter = Router();
 
@@ -226,6 +230,10 @@ router.use("/agendamento-mensagens", agendamentoMensagensClientRouter);
 router.use("/client-push-tokens", clientPushTokensRouter);
 router.use("/email-marketing", emailMarketingPublicRouter);
 router.use("/barbearias/:barbeariaId/email-marketing", emailMarketingRouter);
+router.use("/barbearias/:barbeariaId/asaas", asaasContaRouter);
+router.use("/barbearias/:barbeariaId/asaas-comanda", asaasComandaRouter);
+router.use("/asaas-saas", asaasSaaSRouter);
+router.use("/asaas-sinal", asaasSinalRouter);
 
 router.get("/lgpd/terms", async (_req, res) => {
   try {

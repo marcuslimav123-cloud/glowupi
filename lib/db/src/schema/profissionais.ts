@@ -20,6 +20,8 @@ export const profissionaisTable = pgTable("profissionais", {
   horarios: jsonb("horarios"),
   ativo: boolean("ativo").notNull().default(true),
   ordem: integer("ordem").notNull().default(1),
+  asaasWalletId: text("asaas_wallet_id"),
+  asaasSplitPercentual: numeric("asaas_split_percentual", { precision: 5, scale: 2 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

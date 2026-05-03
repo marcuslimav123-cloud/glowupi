@@ -11,7 +11,7 @@ import { formatCurrency, apiUrl } from "@/lib/utils";
 import {
   Search, Receipt, User, Scissors, Check, Gift, Plus, ShoppingBag,
   CreditCard, Banknote, Smartphone, Eye, X, RotateCcw, ChevronRight,
-  Package, DollarSign, Percent, Clock,
+  Package, DollarSign, Percent, Clock, QrCode, Copy, ExternalLink, Loader2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
@@ -88,6 +88,62 @@ export default function ComandasAbertas() {
   const [addServicoId, setAddServicoId] = useState("");
   const [addServicoProfId, setAddServicoProfId] = useState("");
   const [editandoTotal, setEditandoTotal] = useState(false);
+
+  const [asaasOpen, setAsaasOpen] = useState(false);
+  const [asaasAg, setAsaasAg] = useState<any>(null);
+  const [asaasLoading, setAsaasLoading] = useState(false);
+  const [asaasPagamento, setAsaasPagamento] = useState<any>(null);
+  const [asaasError, setAsaasError] = useState("");
+  const [asaasCopied, setAsaasCopied] = useState(false);
+  const [asaasPaid, setAsaasPaid] = useState(false);
+  const [asaasComandaId, setAsaasComandaId] = useState<number | null>(null);
+
+  async function abrirCobrancaAsaas(ag: any) {
+    setAsaasAg(ag);
+    setAsaasOpen(true);
+    setAsaasLoading(true);
+    setAsaasError("");
+    setAsaasPagamento(null);
+    setAsaasPaid(false);
+    setAsaasComandaId(null);
+    try {
+      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/asaas-comanda/agendamento/${ag.id}/cobrar`), {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ valor: Number(ag.valor) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Erro ao gerar cobrança");
+      setAsaasPagamento(data.pagamento || data);
+      setAsaasComandaId(data.comandaId || null);
+    } catch (e: any) {
+      setAsaasError(e.message);
+    } finally {
+      setAsaasLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!asaasOpen || !asaasPagamento?.asaasPaymentId || asaasPaid) return;
+    let stop = false;
+    const tick = async () => {
+      try {
+        const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/asaas-comanda/pagamento/${asaasPagamento.asaasPaymentId}/status`), { credentials: "include" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!stop && data?.paid) {
+          setAsaasPaid(true);
+          fetchAgendamentos();
+          fetchComandasFechadas();
+          toast({ title: "Pagamento confirmado", description: "Comanda paga via Pix Asaas." });
+        }
+      } catch {}
+    };
+    const id = setInterval(tick, 3000);
+    tick();
+    return () => { stop = true; clearInterval(id); };
+  }, [asaasOpen, asaasPagamento, asaasPaid, barbeariaId]);
 
   useEffect(() => {
     if (!barbeariaId) return;
@@ -405,11 +461,16 @@ export default function ComandasAbertas() {
                         <span>{ag.profissionalNome}</span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between pt-3 border-t border-border">
+                    <div className="flex items-center justify-between pt-3 border-t border-border gap-2">
                       <span className="text-[18px] font-bold text-primary">{formatCurrency(ag.valor)}</span>
-                      <Button size="sm" className="rounded-xl h-9 text-[13px]" onClick={() => openCheckout(ag)}>
-                        <Check className="h-3.5 w-3.5 mr-1.5" /> Finalizar
-                      </Button>
+                      <div className="flex gap-1.5">
+                        <Button size="sm" variant="outline" className="rounded-xl h-9 text-[12px] px-2.5" onClick={() => abrirCobrancaAsaas(ag)} title="Cobrar via Pix Asaas">
+                          <QrCode className="h-3.5 w-3.5 mr-1" /> Pix
+                        </Button>
+                        <Button size="sm" className="rounded-xl h-9 text-[13px]" onClick={() => openCheckout(ag)}>
+                          <Check className="h-3.5 w-3.5 mr-1.5" /> Finalizar
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -961,6 +1022,76 @@ export default function ComandasAbertas() {
                 >
                   <RotateCcw className="h-4 w-4" /> Reabrir Comanda
                 </Button>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={asaasOpen} onOpenChange={(v) => { setAsaasOpen(v); if (!v) { setAsaasAg(null); setAsaasPagamento(null); setAsaasError(""); setAsaasPaid(false); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><QrCode className="h-4 w-4" /> Cobrar via Pix Asaas</DialogTitle>
+          </DialogHeader>
+          {asaasAg && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg bg-muted/30">
+                <p className="font-semibold text-[14px]">{asaasAg.clienteNome}</p>
+                <p className="text-[12px] text-foreground/50">{asaasAg.servicoNome} · {asaasAg.profissionalNome}</p>
+                <p className="text-[18px] font-bold text-primary mt-1">{formatCurrency(asaasAg.valor)}</p>
+              </div>
+
+              {asaasLoading && (
+                <div className="flex items-center justify-center py-10 text-foreground/50 gap-2 text-sm">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Gerando cobrança…
+                </div>
+              )}
+
+              {asaasError && (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50">
+                  {asaasError}
+                </div>
+              )}
+
+              {asaasPaid && (
+                <div className="text-center py-6">
+                  <div className="h-14 w-14 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-3">
+                    <Check className="h-7 w-7 text-green-600 dark:text-green-400" />
+                  </div>
+                  <p className="font-semibold text-green-600 dark:text-green-400">Pagamento confirmado</p>
+                  <p className="text-[12px] text-foreground/50 mt-1">A comanda foi marcada como paga.</p>
+                </div>
+              )}
+
+              {!asaasPaid && asaasPagamento && (
+                <div className="space-y-3">
+                  {asaasPagamento.pixQrCodeBase64 && (
+                    <div className="bg-white p-3 rounded-lg border flex items-center justify-center">
+                      <img src={`data:image/png;base64,${asaasPagamento.pixQrCodeBase64}`} alt="QR Pix" className="w-56 h-56 object-contain" />
+                    </div>
+                  )}
+                  {asaasPagamento.pixCopyPaste && (
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] uppercase tracking-wide text-foreground/50">Pix copia e cola</Label>
+                      <div className="flex gap-1.5">
+                        <Input readOnly value={asaasPagamento.pixCopyPaste} className="text-[11px] h-9 truncate" />
+                        <Button type="button" size="sm" className="h-9 px-3" onClick={async () => {
+                          try { await navigator.clipboard.writeText(asaasPagamento.pixCopyPaste); setAsaasCopied(true); setTimeout(() => setAsaasCopied(false), 1500); } catch {}
+                        }}>
+                          {asaasCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  {asaasPagamento.invoiceUrl && (
+                    <a href={asaasPagamento.invoiceUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-xs text-foreground/70 hover:bg-muted/30">
+                      <ExternalLink className="h-3.5 w-3.5" /> Abrir página de pagamento
+                    </a>
+                  )}
+                  <div className="flex items-center justify-center gap-1.5 text-[11px] text-foreground/50">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Aguardando pagamento…
+                  </div>
+                </div>
               )}
             </div>
           )}
