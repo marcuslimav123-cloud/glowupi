@@ -16,11 +16,17 @@ function calcularSinalValor(barbearia: any, valorServico: number): number {
 router.post("/agendamento/:agendamentoId", async (req, res) => {
   try {
     const agendamentoId = parseInt(req.params.agendamentoId);
-    const { billingType } = req.body || {};
+    const { billingType, clienteTelefone } = req.body || {};
     const tipo = (billingType === "BOLETO" || billingType === "CREDIT_CARD") ? billingType : "PIX";
 
     const [agend] = await db.select().from(agendamentosTable).where(eq(agendamentosTable.id, agendamentoId)).limit(1);
     if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
+
+    const telLimpo = String(clienteTelefone || "").replace(/\D/g, "");
+    const telAgend = String(agend.clienteTelefone || "").replace(/\D/g, "");
+    if (!telLimpo || !telAgend || telLimpo.slice(-10) !== telAgend.slice(-10)) {
+      return res.status(401).json({ error: "Validação de posse necessária (clienteTelefone)" });
+    }
 
     const [barb] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, agend.barbeariaId)).limit(1);
     if (!barb) return res.status(404).json({ error: "Barbearia não encontrada" });
@@ -50,6 +56,7 @@ router.post("/agendamento/:agendamentoId", async (req, res) => {
       tipo: "agendamento",
       refType: "agendamento",
       refId: agend.id,
+      profissionalId: agend.profissionalId ?? null,
       billingType: tipo,
       value: sinalValor,
       dueDate: dueDate.toISOString().slice(0, 10),

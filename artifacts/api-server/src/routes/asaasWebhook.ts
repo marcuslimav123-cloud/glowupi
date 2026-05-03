@@ -33,16 +33,33 @@ router.post("/asaas/:barbeariaId", async (req, res) => {
   const paymentId = payment?.id || null;
   const subscriptionId = subscription?.id || (payment?.subscription ?? null);
 
+  const dedupeKey = `${evento}|${paymentId || "-"}|${subscriptionId || "-"}`;
+
+  const existingDup = await db.select({ id: asaasWebhookEventsTable.id })
+    .from(asaasWebhookEventsTable)
+    .where(and(
+      eq(asaasWebhookEventsTable.asaasContaId, conta.id),
+      eq(asaasWebhookEventsTable.dedupeKey, dedupeKey),
+    ))
+    .limit(1);
+  if (existingDup.length > 0) {
+    console.log(`[asaas/webhook] evento duplicado ${dedupeKey}`);
+    return res.status(200).json({ received: true, duplicate: true });
+  }
+
+  let eventRowId: number | null = null;
   try {
-    await db.insert(asaasWebhookEventsTable).values({
+    const [row] = await db.insert(asaasWebhookEventsTable).values({
       asaasContaId: conta.id,
       evento,
       paymentId,
       subscriptionId,
+      dedupeKey,
       payload: req.body,
-    });
+    }).returning({ id: asaasWebhookEventsTable.id });
+    eventRowId = row.id;
   } catch (e: any) {
-    console.log(`[asaas/webhook] evento duplicado evento=${evento} payment=${paymentId} sub=${subscriptionId}`);
+    console.log(`[asaas/webhook] insert duplicado ${dedupeKey}`);
     return res.status(200).json({ received: true, duplicate: true });
   }
 
@@ -59,20 +76,18 @@ router.post("/asaas/:barbeariaId", async (req, res) => {
       await onSubscriptionEvent(barbeariaId, evento, subscription);
     }
 
-    await db.update(asaasWebhookEventsTable).set({ processadoEm: new Date() })
-      .where(and(
-        eq(asaasWebhookEventsTable.asaasContaId, conta.id),
-        eq(asaasWebhookEventsTable.evento, evento),
-      ));
+    if (eventRowId) {
+      await db.update(asaasWebhookEventsTable).set({ processadoEm: new Date() })
+        .where(eq(asaasWebhookEventsTable.id, eventRowId));
+    }
 
     return res.status(200).json({ received: true });
   } catch (e: any) {
     console.error("[asaas/webhook] erro processando:", e);
-    await db.update(asaasWebhookEventsTable).set({ erro: e?.message?.slice(0, 500) || "erro" })
-      .where(and(
-        eq(asaasWebhookEventsTable.asaasContaId, conta.id),
-        eq(asaasWebhookEventsTable.evento, evento),
-      ));
+    if (eventRowId) {
+      await db.update(asaasWebhookEventsTable).set({ erro: e?.message?.slice(0, 500) || "erro" })
+        .where(eq(asaasWebhookEventsTable.id, eventRowId));
+    }
     return res.status(500).json({ error: "Erro interno" });
   }
 });

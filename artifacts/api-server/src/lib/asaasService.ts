@@ -50,6 +50,7 @@ export interface CreatePaymentForBarbeariaInput {
   tipo: SinalRefType;
   refType?: string;
   refId?: number;
+  profissionalId?: number | null;
   billingType: AsaasBillingType;
   value: number;
   dueDate: string;
@@ -82,7 +83,7 @@ export async function createPaymentForBarbearia(input: CreatePaymentForBarbearia
 
   const split = await resolveSplit({
     barbeariaId: input.barbeariaId,
-    profissionalId: undefined,
+    profissionalId: input.profissionalId ?? undefined,
     splitOptIn: input.splitOptIn ?? conta.splitOptIn,
   });
 
