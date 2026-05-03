@@ -22,6 +22,13 @@
       "when": 1777806800000,
       "tag": "0002_asaas_webhook_dedupe_fix",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1777809918272,
+      "tag": "0003_vsl_progress_events",
+      "breakpoints": true
     }
   ]
 }

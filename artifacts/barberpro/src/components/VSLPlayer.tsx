@@ -1,5 +1,38 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Volume2 } from "lucide-react";
+import { apiUrl } from "@/lib/utils";
+
+const VSL_SESSION_KEY = "vsl_session_id";
+
+function getVslSessionId(): string {
+  try {
+    let id = localStorage.getItem(VSL_SESSION_KEY);
+    if (!id) {
+      id = `vsl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+      localStorage.setItem(VSL_SESSION_KEY, id);
+    }
+    return id;
+  } catch {
+    return `vsl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+  }
+}
+
+function sendVslProgress(sessionId: string, percent: number) {
+  try {
+    const url = apiUrl("/public/vsl-progress");
+    const body = JSON.stringify({ sessionId, percent });
+    if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+      const blob = new Blob([body], { type: "application/json" });
+      if (navigator.sendBeacon(url, blob)) return;
+    }
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      keepalive: true,
+    }).catch(() => {});
+  } catch {}
+}
 
 declare global {
   interface Window {
@@ -46,6 +79,20 @@ export function VSLPlayer({ videoId, onProgress, allowFullControls = false }: VS
   const [showUnmuteOverlay, setShowUnmuteOverlay] = useState(!allowFullControls);
   const [playerReady, setPlayerReady] = useState(false);
   const playerId = useRef(`yt-player-${Math.random().toString(36).slice(2)}`);
+  const sessionIdRef = useRef<string>("");
+  const lastPingedBucketRef = useRef<number>(-1);
+
+  const reportProgress = useCallback((percent: number) => {
+    if (!allowFullControls) {
+      const bucket = Math.floor(percent / 10);
+      if (bucket > lastPingedBucketRef.current) {
+        lastPingedBucketRef.current = bucket;
+        if (!sessionIdRef.current) sessionIdRef.current = getVslSessionId();
+        sendVslProgress(sessionIdRef.current, percent);
+      }
+    }
+    if (onProgress) onProgress(percent);
+  }, [allowFullControls, onProgress]);
 
   const startProgressTracking = useCallback(() => {
     if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
@@ -75,17 +122,17 @@ export function VSLPlayer({ videoId, onProgress, allowFullControls = false }: VS
             }
           }
 
-          if (duration > 0 && onProgress) {
-            onProgress(Math.min(100, Math.round((maxWatchedTimeRef.current / duration) * 100)));
+          if (duration > 0) {
+            reportProgress(Math.min(100, Math.round((maxWatchedTimeRef.current / duration) * 100)));
           }
         } else {
-          if (duration > 0 && onProgress) {
-            onProgress(Math.min(100, Math.round((currentTime / duration) * 100)));
+          if (duration > 0) {
+            reportProgress(Math.min(100, Math.round((currentTime / duration) * 100)));
           }
         }
       } catch {}
     }, 500);
-  }, [allowFullControls, onProgress]);
+  }, [allowFullControls, reportProgress]);
 
   useEffect(() => {
     const divId = playerId.current;

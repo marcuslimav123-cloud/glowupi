@@ -17,6 +17,7 @@ import {
   Link2,
   Megaphone,
   UserCog,
+  Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -26,6 +27,7 @@ const ADMIN_NAV = [
   { name: "Configurações", href: "/admin/configuracoes", icon: Settings },
   { name: "Receita", href: "/admin/receita", icon: TrendingUp },
   { name: "Campanha", href: "/admin/campanha", icon: Megaphone },
+  { name: "VSL Analytics", href: "/admin/vsl-analytics", icon: Video },
   { name: "Logs", href: "/admin/logs", icon: History },
   { name: "LGPD", href: "/admin/lgpd", icon: Shield },
   { name: "Links de Trial", href: "/admin/trial-links", icon: Link2 },

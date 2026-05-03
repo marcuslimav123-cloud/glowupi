@@ -119,6 +119,7 @@ const AdminCampanha = React.lazy(() => import("@/pages/admin/AdminCampanha"));
 const AdminLgpdConsents = React.lazy(() => import("@/pages/admin/AdminLgpdConsents"));
 const AdminTrialLinks = React.lazy(() => import("@/pages/admin/AdminTrialLinks"));
 const AdminAdmins = React.lazy(() => import("@/pages/admin/AdminAdmins"));
+const AdminVslAnalytics = React.lazy(() => import("@/pages/admin/AdminVslAnalytics"));
 const TrialRegister = React.lazy(() => import("@/pages/TrialRegister"));
 
 const queryClient = new QueryClient({
@@ -266,6 +267,7 @@ function Router() {
       <Route path="/admin/lgpd" component={AdminLgpdConsents} />
       <Route path="/admin/trial-links" component={AdminTrialLinks} />
       <Route path="/admin/admins" component={AdminAdmins} />
+      <Route path="/admin/vsl-analytics" component={AdminVslAnalytics} />
 
       <Route path="/trial/:token" component={TrialRegister} />
 

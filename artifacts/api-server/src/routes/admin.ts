@@ -3,8 +3,8 @@ import crypto from "crypto";
 import multer from "multer";
 import XLSX from "xlsx";
 import { db } from "@workspace/db";
-import { superAdminsTable, barbeariasTable, usersTable, platformConfigTable, comandasTable, brevoEmailLogTable, profissionaisTable, adminLogsTable, lgpdConsentsTable, trialLinksTable, clientesTable, servicosTable } from "@workspace/db/schema";
-import { eq, sql, desc, count, and, gte, lt, isNull } from "drizzle-orm";
+import { superAdminsTable, barbeariasTable, usersTable, platformConfigTable, comandasTable, brevoEmailLogTable, profissionaisTable, adminLogsTable, lgpdConsentsTable, trialLinksTable, clientesTable, servicosTable, vslProgressEventsTable } from "@workspace/db/schema";
+import { eq, sql, desc, count, and, gte, lt, isNull, type SQL } from "drizzle-orm";
 import { verifyAdminPassword, createAdminSession, deleteAdminSession, requireAdmin } from "../lib/adminAuth.js";
 import { getEmailStats } from "../lib/brevo.js";
 import { extractYoutubeVideoId } from "../lib/youtube.js";
@@ -484,6 +484,95 @@ router.put("/config", requireAdmin, async (req: any, res) => {
 
   await logAdminAction(req.admin.id, "alterar_config", undefined, { chave, valor });
   return res.json({ success: true, chave, valor });
+});
+
+router.get("/vsl-analytics", requireAdmin, async (req, res) => {
+  try {
+    const fromRaw = req.query.from;
+    const toRaw = req.query.to;
+    const from = typeof fromRaw === "string" ? fromRaw : undefined;
+    const to = typeof toRaw === "string" ? toRaw : undefined;
+    const conditions: SQL[] = [];
+    if (from) {
+      const d = new Date(from + "T00:00:00");
+      if (!isNaN(d.getTime())) conditions.push(gte(vslProgressEventsTable.createdAt, d));
+    }
+    if (to) {
+      const d = new Date(to + "T23:59:59.999");
+      if (!isNaN(d.getTime())) conditions.push(lt(vslProgressEventsTable.createdAt, new Date(d.getTime() + 1)));
+    }
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [thresholdRow] = await db
+      .select()
+      .from(platformConfigTable)
+      .where(eq(platformConfigTable.chave, "vsl_percentual_liberar_cta"))
+      .limit(1);
+    const threshold = thresholdRow ? parseInt(thresholdRow.valor) || 0 : 0;
+
+    const sessionsAgg = await db
+      .select({
+        sessionId: vslProgressEventsTable.sessionId,
+        maxPercent: sql<number>`MAX(${vslProgressEventsTable.percent})::int`,
+        firstAt: sql<Date>`MIN(${vslProgressEventsTable.createdAt})`,
+        lastAt: sql<Date>`MAX(${vslProgressEventsTable.createdAt})`,
+        events: sql<number>`COUNT(*)::int`,
+      })
+      .from(vslProgressEventsTable)
+      .where(whereClause)
+      .groupBy(vslProgressEventsTable.sessionId);
+
+    const normalized = sessionsAgg.map(s => ({
+      sessionId: s.sessionId,
+      maxPercent: Number(s.maxPercent),
+      events: Number(s.events),
+      firstAt: new Date(s.firstAt),
+      lastAt: new Date(s.lastAt),
+    }));
+
+    const totalPlays = normalized.length;
+    const totalEvents = normalized.reduce((sum, s) => sum + s.events, 0);
+    const avgPercent = totalPlays === 0
+      ? 0
+      : normalized.reduce((sum, s) => sum + s.maxPercent, 0) / totalPlays;
+
+    const ctaThreshold = threshold > 0 ? threshold : 100;
+    const reachedCta = normalized.filter(s => s.maxPercent >= ctaThreshold).length;
+    const completed = normalized.filter(s => s.maxPercent >= 95).length;
+
+    const buckets = [0, 10, 25, 50, 75, 90, 100];
+    const distribution = buckets.map(b => ({
+      bucket: b,
+      count: normalized.filter(s => s.maxPercent >= b).length,
+    }));
+
+    const recent = normalized
+      .slice()
+      .sort((a, b) => b.lastAt.getTime() - a.lastAt.getTime())
+      .slice(0, 50)
+      .map(s => ({
+        sessionId: s.sessionId,
+        maxPercent: s.maxPercent,
+        events: s.events,
+        firstAt: s.firstAt.toISOString(),
+        lastAt: s.lastAt.toISOString(),
+      }));
+
+    return res.json({
+      totalPlays,
+      totalEvents,
+      avgPercent: Math.round(avgPercent * 10) / 10,
+      reachedCta,
+      reachedCtaPct: totalPlays === 0 ? 0 : Math.round((reachedCta / totalPlays) * 1000) / 10,
+      completed,
+      threshold,
+      distribution,
+      recent,
+    });
+  } catch (e) {
+    console.error("vsl-analytics error:", e);
+    return res.status(500).json({ error: "Erro ao carregar analytics" });
+  }
 });
 
 router.get("/revenue", requireAdmin, async (_req, res) => {

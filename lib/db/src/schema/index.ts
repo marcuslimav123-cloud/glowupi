@@ -16,6 +16,7 @@ export * from "./recompensas";
 export * from "./movimentacoesEstoque";
 export * from "./mensagens";
 export * from "./platformConfig";
+export * from "./vslProgressEvents";
 export * from "./superAdmins";
 export * from "./convites";
 export * from "./clienteUsers";

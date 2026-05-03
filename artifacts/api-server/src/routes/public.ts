@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable, avaliacoesTable, recompensasTable, produtosTable, profissionalServicosTable, pesquisaSatisfacaoTable, respostasPesquisaTable, categoriasServicoTable, filiaisTable, platformConfigTable } from "@workspace/db/schema";
+import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable, avaliacoesTable, recompensasTable, produtosTable, profissionalServicosTable, pesquisaSatisfacaoTable, respostasPesquisaTable, categoriasServicoTable, filiaisTable, platformConfigTable, vslProgressEventsTable } from "@workspace/db/schema";
 import { eq, and, desc, gte, inArray, sql } from "drizzle-orm";
 import { extractYoutubeVideoId } from "../lib/youtube.js";
 import { sendPushToBarbearia } from "../lib/pushNotifications.js";
@@ -8,6 +8,27 @@ import { requireClient } from "../lib/auth.js";
 import { validateAgendamentoEmHorario, validateAgendamentoEmJornadaProf } from "../lib/horarioValidation.js";
 
 const router: IRouter = Router();
+
+router.post("/vsl-progress", async (req, res) => {
+  try {
+    const { sessionId, percent } = req.body || {};
+    if (!sessionId || typeof sessionId !== "string" || sessionId.length > 128) {
+      return res.status(400).json({ error: "sessionId obrigatório" });
+    }
+    const pct = Number(percent);
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      return res.status(400).json({ error: "percent inválido" });
+    }
+    await db.insert(vslProgressEventsTable).values({
+      sessionId: sessionId.slice(0, 128),
+      percent: Math.round(pct),
+    });
+    return res.json({ success: true });
+  } catch (e) {
+    console.error("vsl-progress error:", e);
+    return res.status(500).json({ error: "Erro ao salvar progresso" });
+  }
+});
 
 router.get("/vsl-config", async (_req, res) => {
   try {
