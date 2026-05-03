@@ -564,9 +564,16 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
     if (barbearia.prePagamentoAtivo) {
       const { getContaByBarbearia, createPaymentForBarbearia } = await import("../lib/asaasService.js");
       const conta = await getContaByBarbearia(barbearia.id);
-      if (!conta) {
-        await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(eq(agendamentosTable.id, agend.id));
-        return res.status(503).json({ error: "Pré-pagamento exigido, mas a barbearia ainda não conectou conta de pagamento" });
+      if (!conta || conta.status !== "ativo") {
+        console.warn(`[public/agendar] barbearia ${barbearia.id} tem prePagamentoAtivo mas sem conta Asaas — agendamento confirmado em modo manual`);
+        return res.status(201).json({
+          ...agend,
+          valor: parseFloat(agend.valor as string),
+          createdAt: agend.createdAt?.toISOString(),
+          updatedAt: agend.updatedAt?.toISOString(),
+          sinalPagamento: null,
+          sinalManual: true,
+        });
       }
       const valorServico = parseFloat(String(servico.preco || "0"));
       const sinalModo = barbearia.sinalModo || "percentual";
@@ -834,9 +841,16 @@ router.post("/:slug/agendar-simples", async (req, res) => {
     if (barbearia.prePagamentoAtivo) {
       const { getContaByBarbearia, createPaymentForBarbearia } = await import("../lib/asaasService.js");
       const conta = await getContaByBarbearia(barbearia.id);
-      if (!conta) {
-        await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(eq(agendamentosTable.id, agend.id));
-        return res.status(503).json({ error: "Pré-pagamento exigido, mas a barbearia ainda não conectou conta de pagamento" });
+      if (!conta || conta.status !== "ativo") {
+        console.warn(`[public/agendar-simples] barbearia ${barbearia.id} tem prePagamentoAtivo mas sem conta Asaas — agendamento confirmado em modo manual`);
+        return res.status(201).json({
+          ...agend,
+          valor: parseFloat(agend.valor as string),
+          createdAt: agend.createdAt?.toISOString(),
+          updatedAt: agend.updatedAt?.toISOString(),
+          sinalPagamento: null,
+          sinalManual: true,
+        });
       }
       const valorServicoS = parseFloat(String(servico.preco || "0"));
       const sinalModoS = barbearia.sinalModo || "percentual";

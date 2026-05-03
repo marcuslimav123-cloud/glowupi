@@ -156,9 +156,26 @@ router.post("/asaas/:barbeariaId", async (req, res) => {
 
   try {
     if (payment && paymentId) {
-      const updated = await updatePagamentoFromAsaas(paymentId, payment);
-
-      if (updated && isPaidStatus(payment.status)) {
+      let verifiedPayment = payment;
+      if (isPaidStatus(payment.status)) {
+        try {
+          const { getClientForBarbearia } = await import("../lib/asaasService.js");
+          const ctx = await getClientForBarbearia(barbeariaId);
+          if (ctx) {
+            const live = await ctx.client.getPayment(paymentId);
+            if (live && !isPaidStatus(live.status)) {
+              console.warn(`[asaas/webhook] payload alega pago mas Asaas retorna ${live.status} para ${paymentId} — ignorando state change`);
+              verifiedPayment = live;
+            } else if (live) {
+              verifiedPayment = live;
+            }
+          }
+        } catch (verifyErr) {
+          console.error(`[asaas/webhook] falha ao re-verificar pagamento ${paymentId}:`, verifyErr);
+        }
+      }
+      const updated = await updatePagamentoFromAsaas(paymentId, verifiedPayment);
+      if (updated && isPaidStatus(verifiedPayment.status)) {
         await processPagamentoPago(barbeariaId, updated);
       }
     }
