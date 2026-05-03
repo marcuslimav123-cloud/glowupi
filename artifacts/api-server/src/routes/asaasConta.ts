@@ -109,7 +109,11 @@ router.post("/", requireAuth, requireRole("dono", "gerente"), async (req, res) =
   try {
     const client = createAsaasClient({ apiKey, ambiente: amb });
     me = await client.getMyAccount();
-    try { walletList = await client.getWallet(); } catch {}
+    try {
+      walletList = await client.getWallet();
+    } catch (walletErr) {
+      console.warn("[asaas/conta] getWallet falhou (não-bloqueante):", walletErr instanceof Error ? walletErr.message : walletErr);
+    }
   } catch (e: any) {
     return res.status(400).json({ error: e?.message || "Não foi possível validar a chave" });
   }
