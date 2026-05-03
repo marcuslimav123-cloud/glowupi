@@ -101,3 +101,9 @@ id = "25nG_by0o2Kyz60PnL8WI"
 uri = "file://exports/GlowUpi-Texto-Apresentacao.docx"
 type = "word_document"
 title = "Glow Upi — Texto da Apresentação (corrigido)"
+
+[[outputs]]
+id = "YqzbRTMxCi2Hc1OZ09Nqe"
+uri = "file://artifacts/mobile/build/glow-upi-pro-1.0.0.zip"
+type = "unspecified"
+title = "Glow Upi Pro 1.0.0 — APK Android (ZIP)"
