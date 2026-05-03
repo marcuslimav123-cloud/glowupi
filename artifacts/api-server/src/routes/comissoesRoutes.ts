@@ -1,9 +1,9 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { comissoesTable } from "@workspace/db/schema";
+import { comissoesTable, profissionaisTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
-import { sendPushToBarbearia } from "../lib/pushNotifications.js";
+import { sendPushToBarbearia, sendPushToUser } from "../lib/pushNotifications.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -51,11 +51,32 @@ router.put("/:id", requireAuth, async (req: any, res) => {
   if (!row) return res.status(404).json({ error: "Comissão não encontrada" });
 
   if (status === "paga") {
-    sendPushToBarbearia(barbeariaId, {
-      title: "Comissão liberada",
-      body: `${row.profissionalNome} — R$ ${Number(row.valorComissao || 0).toFixed(2).replace(".", ",")} (${row.mesAno})`,
-      data: { type: "comissao_paga", comissaoId: row.id, profissionalId: row.profissionalId, url: "/financeiro/comissoes" },
-    }).catch(err => console.error("[Push] Error on comissao paga:", err));
+    (async () => {
+      try {
+        const valorFmt = Number(row.valorComissao || 0).toFixed(2).replace(".", ",");
+        const pushData = { type: "comissao_paga", comissaoId: row.id, profissionalId: row.profissionalId, mesAno: row.mesAno, url: "/financeiro/comissoes", route: "/financeiro/comissoes" };
+
+        const [prof] = await db.select({ usuarioId: profissionaisTable.usuarioId })
+          .from(profissionaisTable).where(eq(profissionaisTable.id, row.profissionalId)).limit(1);
+
+        if (prof?.usuarioId) {
+          await sendPushToUser(prof.usuarioId, {
+            title: "Sua comissão foi liberada",
+            body: `R$ ${valorFmt} referente a ${row.mesAno} já está disponível.`,
+            data: pushData,
+            category: "financeiro",
+          });
+        }
+        await sendPushToBarbearia(barbeariaId, {
+          title: "Comissão liberada",
+          body: `${row.profissionalNome} — R$ ${valorFmt} (${row.mesAno})`,
+          data: pushData,
+          category: "financeiro",
+        }, prof?.usuarioId ?? undefined);
+      } catch (err) {
+        console.error("[Push] Error on comissao paga:", err);
+      }
+    })();
   }
 
   res.json(fmt(row));

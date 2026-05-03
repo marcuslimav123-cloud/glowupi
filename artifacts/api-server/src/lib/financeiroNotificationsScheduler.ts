@@ -5,9 +5,10 @@ import { sendPushToBarbearia } from "./pushNotifications.js";
 
 const sentKeys = new Set<string>();
 
-function fmtBRL(n: number | string): string {
+function fmtBRL(n: number | string | null | undefined): string {
+  if (n === null || n === undefined) return "R$ 0,00";
   const v = typeof n === "string" ? parseFloat(n) : n;
-  return `R$ ${(v || 0).toFixed(2).replace(".", ",")}`;
+  return `R$ ${(Number.isFinite(v) ? v : 0).toFixed(2).replace(".", ",")}`;
 }
 
 function todayISO(): string {
@@ -50,8 +51,8 @@ async function checkContasAPagar(): Promise<void> {
 
     sendPushToBarbearia(c.barbeariaId, {
       title: `Conta a pagar ${label}`,
-      body: `${c.descricao || c.categoria || "Conta"} — ${fmtBRL(c.valor as any)} (venc. ${venc})`,
-      data: { type: "conta_a_pagar", contaId: c.id, vencimento: venc, status: suffix, url: "/financeiro" },
+      body: `${c.descricao || c.categoria || "Conta"} — ${fmtBRL(c.valor)} (venc. ${venc})`,
+      data: { type: "conta_a_pagar", contaId: c.id, vencimento: venc, status: suffix, url: "/financeiro/contas", route: "/financeiro/contas" },
     }).catch(err => console.error("[financeiro-scheduler] push error:", err));
   }
 }
@@ -87,7 +88,7 @@ async function checkAssinaturas(): Promise<void> {
     sendPushToBarbearia(b.id, {
       title,
       body,
-      data: { type: "assinatura_status", status: st, url: "/configuracoes/assinatura" },
+      data: { type: "assinatura_status", status: st, url: "/configuracoes/assinatura", route: "/paywall" },
       category: "sistema",
     }).catch(err => console.error("[assinatura-scheduler] push error:", err));
   }

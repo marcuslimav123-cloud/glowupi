@@ -21,6 +21,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider, ThemeSyncer, useTheme } from "@/lib/theme";
 import { hasAskedATT, requestTrackingPermissionNow, markATTAsked } from "@/lib/tracking";
 import { queryClient } from "@/lib/queryClient";
+import { deeplinkForPush } from "@/lib/notificationDeeplinks";
 
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 
@@ -80,7 +81,7 @@ export default function RootLayout() {
         Notifications.getBadgeCountAsync()
           .then((current) => Notifications.setBadgeCountAsync((current || 0) + 1))
           .catch(() => {});
-        const prefixes = new Set<string>(["notificacoes"]);
+        const prefixes = new Set<string>(["notificacoes", "notificacoes-nao-lidas"]);
         if (tipo.includes("agend") || tipo === "reminder" || tipo === "pending_appointments_nudge") {
           prefixes.add("agendamentos");
           prefixes.add("agendamento");
@@ -122,19 +123,14 @@ export default function RootLayout() {
       try {
         const data = (response.notification.request.content.data ?? {}) as Record<string, unknown>;
         Notifications.setBadgeCountAsync(0).catch(() => {});
-        const route = (data.route as string | undefined) || (data.deeplink as string | undefined);
-        if (typeof route === "string" && route.length > 0) {
-          router.push(route as Href);
-          return;
-        }
-        const tipo = String(data.type ?? data.tipo ?? "");
-        if (tipo === "agendamento") {
-          router.push("/(tabs)/agenda");
-        } else if (tipo === "comanda") {
-          router.push("/(tabs)/comandas");
-        } else if (tipo === "cliente") {
-          router.push("/(tabs)/clientes");
-        }
+        queryClient.invalidateQueries({
+          predicate: (q) => {
+            const k0 = q.queryKey?.[0];
+            return k0 === "notificacoes" || k0 === "notificacoes-nao-lidas";
+          },
+        }).catch(() => {});
+        const target = deeplinkForPush(data.type ?? data.tipo, data);
+        if (target) router.push(target);
       } catch (err) {
         console.warn("[Push] erro ao processar tap de notificação:", err);
       }

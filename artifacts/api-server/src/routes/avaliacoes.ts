@@ -56,7 +56,7 @@ router.post("/", requireAuth, requireRole("dono", "gerente"), async (req: any, r
   sendPushToBarbearia(barbeariaId, {
     title: `Nova avaliação ${estrelas}`,
     body: `${clienteNome || "Cliente"}${profissionalNome ? ` para ${profissionalNome}` : ""}${comentario ? `: ${String(comentario).slice(0, 80)}` : ""}`,
-    data: { type: "avaliacao_nova", avaliacaoId: avaliacao.id, profissionalId, url: "/relatorios/avaliacoes" },
+    data: { type: "avaliacao_nova", avaliacaoId: avaliacao.id, profissionalId, url: "/relatorios/avaliacoes", route: "/relatorios" },
   }).catch(err => console.error("[Push] Error on avaliacao:", err));
 
   res.status(201).json(formatAvaliacao(avaliacao));

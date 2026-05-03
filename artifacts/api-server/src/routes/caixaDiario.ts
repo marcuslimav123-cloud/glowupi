@@ -237,7 +237,7 @@ router.post("/:caixaId/sangria", requireAuth, async (req: any, res) => {
   sendPushToBarbearia(barbeariaId, {
     title: "Sangria registrada",
     body: `R$ ${Number(valor).toFixed(2).replace(".", ",")}${motivo ? ` — ${motivo}` : ""}`,
-    data: { type: "caixa_sangria", caixaId, movimentacaoId: mov.id, url: "/caixa" },
+    data: { type: "caixa_sangria", caixaId, movimentacaoId: mov.id, url: "/caixa", route: "/caixa" },
   }).catch(err => console.error("[Push] Error on sangria:", err));
 
   res.status(201).json(fmtMov(mov));
@@ -285,7 +285,7 @@ router.post("/:caixaId/vale", requireAuth, async (req: any, res) => {
   sendPushToBarbearia(barbeariaId, {
     title: "Vale registrado",
     body: `${prof.apelido || prof.nomeExibicao} — R$ ${Number(valor).toFixed(2).replace(".", ",")}${observacao ? ` (${observacao})` : ""}`,
-    data: { type: "caixa_vale", caixaId, profissionalId, url: "/caixa" },
+    data: { type: "caixa_vale", caixaId, profissionalId, url: "/caixa", route: "/caixa" },
   }).catch(err => console.error("[Push] Error on vale:", err));
 
   res.status(201).json({ ok: true, message: "Vale registrado com sucesso" });

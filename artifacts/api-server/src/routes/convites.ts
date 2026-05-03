@@ -325,7 +325,7 @@ router.post("/accept/:token", async (req, res) => {
     sendPushToBarbearia(convite.barbeariaId, {
       title: "Convite aceito",
       body: `${nome} entrou no time como ${convite.role === "colaborador" ? "colaborador" : convite.role}.`,
-      data: { type: "convite_aceito", userId: newUser.id, conviteId: convite.id, url: "/equipe" },
+      data: { type: "convite_aceito", userId: newUser.id, conviteId: convite.id, url: "/equipe", route: "/equipe" },
     }, newUser.id).catch(err => console.error("[Push] Error on convite aceito:", err));
 
     const sessionToken = await createSession(newUser.id);

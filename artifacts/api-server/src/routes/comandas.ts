@@ -163,7 +163,7 @@ router.put("/:comandaId/pagar", requireAuth, async (req, res) => {
   sendPushToBarbearia(barbeariaId, {
     title: "Comanda paga",
     body: `${updated.clienteNome || "Cliente"} — R$ ${Number(updated.valorTotal || 0).toFixed(2).replace(".", ",")} via ${novoPag.metodo}`,
-    data: { type: "comanda_paga", comandaId: updated.id, url: "/comandas" },
+    data: { type: "comanda_paga", comandaId: updated.id, url: "/comandas", route: "/(tabs)/comandas" },
   }).catch(err => console.error("[Push] Error on comanda paga:", err));
 
   return res.json(updated);

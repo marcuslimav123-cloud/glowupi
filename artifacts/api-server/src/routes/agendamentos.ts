@@ -1168,7 +1168,7 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
   sendPushToBarbearia(barbeariaId, {
     title: "Comanda fechada",
     body: `${agend.clienteNome} — ${agend.profissionalNome} • Total R$ ${valorTotal.toFixed(2).replace(".", ",")}`,
-    data: { type: "comanda_fechada", comandaId: comanda.id, agendamentoId: id, url: "/comandas" },
+    data: { type: "comanda_fechada", comandaId: comanda.id, agendamentoId: id, url: "/comandas", route: "/(tabs)/comandas" },
   }).catch(err => console.error("[Push] Error on comanda fechada:", err));
 
   try {

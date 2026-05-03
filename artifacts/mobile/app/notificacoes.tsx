@@ -17,6 +17,7 @@ import * as Haptics from "expo-haptics";
 import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchJson, getErrorMessage } from "@/lib/api";
+import { deeplinkForPush } from "@/lib/notificationDeeplinks";
 
 interface NotificacaoItem {
   id: number;
@@ -69,18 +70,6 @@ function relativeTime(iso: string): string {
   }
 }
 
-function deeplinkForTipo(tipo: string, dados: Record<string, any> | null): Href | null {
-  const url = dados?.url as string | undefined;
-  if (url && typeof url === "string") return url as Href;
-  if (tipo.includes("agend") || tipo === "reminder") return "/(tabs)/agenda";
-  if (tipo.startsWith("comanda")) return "/(tabs)/comandas";
-  if (tipo.startsWith("comissao")) return "/financeiro/comissoes" as Href;
-  if (tipo.startsWith("conta_") || tipo.startsWith("caixa")) return "/financeiro" as Href;
-  if (tipo === "convite_aceito") return "/equipe" as Href;
-  if (tipo === "avaliacao_nova") return "/relatorios" as Href;
-  if (tipo === "assinatura_status") return "/configuracoes/assinatura" as Href;
-  return null;
-}
 
 export default function NotificacoesScreen() {
   const { barbeariaId } = useAuth();
@@ -119,7 +108,7 @@ export default function NotificacoesScreen() {
   const handlePress = (item: NotificacaoItem) => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (!item.lida) marcarLida.mutate(item.id);
-    const link = deeplinkForTipo(item.tipo, item.dados);
+    const link = deeplinkForPush(item.tipo, item.dados);
     if (link) router.push(link);
   };
 
