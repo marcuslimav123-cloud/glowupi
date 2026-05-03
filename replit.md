@@ -53,4 +53,10 @@ The design embodies a "luxury clinic aesthetic" with a color palette of warm gol
 - **jspdf & jspdf-autotable:** PDF generation.
 - **xlsx:** Excel file generation.
 - **RevenueCat:** In-app purchase (IAP) management and webhook processing.
-- **Expo Push API:** Mobile push notifications.
+- **Expo Push API:** Mobile push notifications. Receipts polled a cada 5min para limpar tokens DeviceNotRegistered/InvalidCredentials.
+
+## Push Notifications — Operação
+- **Web Push (VAPID):** requer secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` e opcionalmente `VAPID_SUBJECT` (default `mailto:marcuslimav123@gmail.com`). Gere o par com `npx web-push generate-vapid-keys`. Sem essas chaves o backend loga warn no boot e desabilita web push silenciosamente; status visível em `GET /api/health/push` (requer role `dono`).
+- **Expo Push:** sem credenciais necessárias para o app público; tokens mortos são desativados via tickets imediatos e via polling de receipts.
+- **Channels Android:** `default` (HIGH) para avisos gerais, `lembretes-agendamentos` (MAX) para lembretes/agendamentos.
+- **Health endpoint:** `GET /api/health/push` reporta estado VAPID, contagem de tokens ativos por plataforma e estado do DB.
