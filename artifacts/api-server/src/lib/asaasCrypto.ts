@@ -4,9 +4,16 @@ const ALGO = "aes-256-gcm";
 const IV_LEN = 12;
 
 function getKey(): Buffer {
-  const raw = process.env.ASAAS_ENCRYPTION_KEY || process.env.SESSION_SECRET || process.env.DATABASE_URL || "";
+  const dedicated = process.env.ASAAS_ENCRYPTION_KEY;
+  if (process.env.NODE_ENV === "production" && !dedicated) {
+    throw new Error("ASAAS_ENCRYPTION_KEY é obrigatório em produção para criptografar credenciais Asaas");
+  }
+  const raw = dedicated || process.env.SESSION_SECRET || "";
   if (!raw) {
-    throw new Error("ASAAS_ENCRYPTION_KEY (ou SESSION_SECRET) não configurado");
+    throw new Error("ASAAS_ENCRYPTION_KEY (ou SESSION_SECRET em dev) não configurado");
+  }
+  if (!dedicated) {
+    console.warn("[asaas/crypto] ASAAS_ENCRYPTION_KEY ausente — derivando de SESSION_SECRET (apenas dev). Configure ASAAS_ENCRYPTION_KEY antes de produção.");
   }
   return crypto.createHash("sha256").update(raw).digest();
 }
