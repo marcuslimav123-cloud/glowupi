@@ -7,6 +7,7 @@ import { superAdminsTable, barbeariasTable, usersTable, platformConfigTable, com
 import { eq, sql, desc, count, and, gte, lt, isNull } from "drizzle-orm";
 import { verifyAdminPassword, createAdminSession, deleteAdminSession, requireAdmin } from "../lib/adminAuth.js";
 import { getEmailStats } from "../lib/brevo.js";
+import { extractYoutubeVideoId } from "../lib/youtube.js";
 
 const importUpload = multer({
   storage: multer.memoryStorage(),
@@ -454,6 +455,23 @@ router.put("/config", requireAdmin, async (req: any, res) => {
     const days = parseInt(valor);
     if (isNaN(days) || days < 1 || days > 90) {
       return res.status(400).json({ error: "Dias de teste deve ser entre 1 e 90" });
+    }
+  }
+
+  if (chave === "vsl_youtube_url" && valor !== "") {
+    const videoId = extractYoutubeVideoId(valor);
+    if (!videoId) {
+      return res.status(400).json({ error: "Link do YouTube inválido. Use um link no formato youtube.com/watch?v=..., youtu.be/... ou Shorts." });
+    }
+  }
+
+  if (chave === "vsl_percentual_liberar_cta") {
+    if (!/^\d+$/.test(String(valor).trim())) {
+      return res.status(400).json({ error: "Percentual deve ser um número inteiro entre 0 e 100" });
+    }
+    const pct = parseInt(valor, 10);
+    if (pct < 0 || pct > 100) {
+      return res.status(400).json({ error: "Percentual deve ser entre 0 e 100" });
     }
   }
 

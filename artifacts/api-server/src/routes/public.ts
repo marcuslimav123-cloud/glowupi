@@ -1,12 +1,30 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable, avaliacoesTable, recompensasTable, produtosTable, profissionalServicosTable, pesquisaSatisfacaoTable, respostasPesquisaTable, categoriasServicoTable, filiaisTable } from "@workspace/db/schema";
-import { eq, and, desc, gte, inArray } from "drizzle-orm";
+import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable, avaliacoesTable, recompensasTable, produtosTable, profissionalServicosTable, pesquisaSatisfacaoTable, respostasPesquisaTable, categoriasServicoTable, filiaisTable, platformConfigTable } from "@workspace/db/schema";
+import { eq, and, desc, gte, inArray, sql } from "drizzle-orm";
+import { extractYoutubeVideoId } from "../lib/youtube.js";
 import { sendPushToBarbearia } from "../lib/pushNotifications.js";
 import { requireClient } from "../lib/auth.js";
 import { validateAgendamentoEmHorario, validateAgendamentoEmJornadaProf } from "../lib/horarioValidation.js";
 
 const router: IRouter = Router();
+
+router.get("/vsl-config", async (_req, res) => {
+  try {
+    const configs = await db.select().from(platformConfigTable).where(
+      sql`${platformConfigTable.chave} IN ('vsl_youtube_url', 'vsl_ativo', 'vsl_percentual_liberar_cta')`
+    );
+    const configMap: Record<string, string> = {};
+    for (const c of configs) configMap[c.chave] = c.valor;
+    const rawUrl = configMap["vsl_youtube_url"] || "";
+    const videoId = extractYoutubeVideoId(rawUrl) || null;
+    const ativo = configMap["vsl_ativo"] === "true";
+    const percentualLiberarCta = parseInt(configMap["vsl_percentual_liberar_cta"] || "0") || 0;
+    return res.json({ videoId, ativo, percentualLiberarCta });
+  } catch {
+    return res.status(500).json({ error: "Erro ao carregar configuração VSL" });
+  }
+});
 
 function addMinutes(time: string, minutes: number): string {
   const [h, m] = time.split(":").map(Number);

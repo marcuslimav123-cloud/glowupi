@@ -34,3 +34,11 @@ channel = "stable-25_05"
 [userenv.shared]
 VAPID_SUBJECT = "mailto:marcuslimav123@gmail.com"
 VAPID_PUBLIC_KEY = "BPeuNYanNWMMD1qXj-ZBk4kmYh5dfPDp-ecej75cBaCrCT_bZHPUwCdELgzw06Wa90SVmXR7csh329TZxvGLPQ8"
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
+[[ports]]
+localPort = 25359
+externalPort = 3000

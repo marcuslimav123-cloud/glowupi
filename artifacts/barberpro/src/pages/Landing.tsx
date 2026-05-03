@@ -8,6 +8,13 @@ import {
 } from "lucide-react";
 import { apiUrl } from "@/lib/utils";
 import { initTracking, trackLead, trackInitiateCheckout } from "@/lib/tracking";
+import { VSLPlayer } from "@/components/VSLPlayer";
+
+interface VslConfig {
+  videoId: string | null;
+  ativo: boolean;
+  percentualLiberarCta: number;
+}
 
 const PROMO_MONTHLY_PRICE_ID = "price_1TMFmZ75EBjZCK7yUYlgxTIc";
 const PROMO_ANNUAL_PRICE_ID = "price_1TMFmZ75EBjZCK7ytXUNXdJA";
@@ -217,11 +224,30 @@ export default function Landing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
+  const [vslConfig, setVslConfig] = useState<VslConfig | null>(null);
+  const [vslConfigLoading, setVslConfigLoading] = useState(true);
+  const [vslProgress, setVslProgress] = useState(0);
   const scrolled = useScrolled();
 
   useEffect(() => {
     initTracking();
   }, []);
+
+  useEffect(() => {
+    fetch(apiUrl("/public/vsl-config"))
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) setVslConfig(data);
+      })
+      .catch(() => {})
+      .finally(() => setVslConfigLoading(false));
+  }, []);
+
+  const showVsl = !!(vslConfig?.videoId && vslConfig.ativo);
+  const vslGateActive = !vslConfigLoading && showVsl && vslConfig!.percentualLiberarCta > 0;
+  const ctaLocked = vslConfigLoading
+    ? false
+    : vslGateActive && vslProgress < vslConfig!.percentualLiberarCta;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -331,6 +357,36 @@ export default function Landing() {
         </div>
       </nav>
 
+      {showVsl && vslConfig?.videoId && (
+        <section className="pt-16 pb-0 px-4 sm:px-6">
+          <div className="max-w-[900px] mx-auto">
+            <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border border-white/[0.08]">
+              <VSLPlayer
+                videoId={vslConfig.videoId}
+                onProgress={setVslProgress}
+              />
+            </div>
+            {vslConfig.percentualLiberarCta > 0 && ctaLocked && (
+              <div className="mt-4 text-center">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.06] border border-white/[0.10] text-white/50 text-[13px]">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Assista {vslConfig.percentualLiberarCta}% do vídeo para liberar o botão de compra
+                  {vslProgress > 0 && <span className="text-primary font-semibold">({vslProgress}%)</span>}
+                </div>
+              </div>
+            )}
+            {vslConfig.percentualLiberarCta > 0 && !ctaLocked && vslProgress > 0 && (
+              <div className="mt-4 text-center">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/15 border border-green-500/25 text-green-400 text-[13px] font-semibold">
+                  <Check className="h-3.5 w-3.5" />
+                  Botão de compra liberado!
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       <section className="pt-20 sm:pt-28 pb-12 sm:pb-20 px-4 sm:px-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.06] via-transparent to-primary/[0.03]" />
         <div className="max-w-[900px] mx-auto text-center relative">
@@ -354,12 +410,19 @@ export default function Landing() {
 
           <AnimatedSection delay={300}>
             <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
-              <a href="#oferta" onClick={e => smoothScroll(e, "oferta")}>
-                <Button size="lg" className="text-[14px] px-8 h-13 rounded-full shadow-lg shadow-primary/25 font-bold w-full sm:w-auto">
-                  Garantir minha vaga por R$97,90/mês
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </a>
+              {ctaLocked ? (
+                <div className="flex items-center gap-2 px-6 py-3 rounded-full bg-white/[0.06] border border-white/[0.10] text-white/40 text-[14px] font-semibold cursor-not-allowed select-none">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Assista o vídeo para liberar
+                </div>
+              ) : (
+                <a href="#oferta" onClick={e => smoothScroll(e, "oferta")}>
+                  <Button size="lg" className="text-[14px] px-8 h-13 rounded-full shadow-lg shadow-primary/25 font-bold w-full sm:w-auto">
+                    Garantir minha vaga por R$97,90/mês
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </a>
+              )}
             </div>
             <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12px] sm:text-[13px] text-white/40">
               <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-green-400" /> Cancele quando quiser</span>
@@ -575,20 +638,27 @@ export default function Landing() {
                   ))}
                 </div>
 
-                <Button
-                  className="w-full h-13 sm:h-14 text-[15px] font-bold rounded-full shadow-lg shadow-primary/20"
-                  onClick={() => handleSubscribe(period)}
-                  disabled={isLoadingCheckout}
-                >
-                  {isLoadingCheckout ? (
-                    <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Redirecionando...</>
-                  ) : (
-                    <>
-                      Garantir minha vaga agora
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  )}
-                </Button>
+                {ctaLocked ? (
+                  <div className="w-full h-13 sm:h-14 flex items-center justify-center gap-2 rounded-full bg-white/[0.06] border border-white/[0.10] text-white/40 text-[15px] font-bold cursor-not-allowed select-none">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Assista o vídeo para liberar
+                  </div>
+                ) : (
+                  <Button
+                    className="w-full h-13 sm:h-14 text-[15px] font-bold rounded-full shadow-lg shadow-primary/20"
+                    onClick={() => handleSubscribe(period)}
+                    disabled={isLoadingCheckout}
+                  >
+                    {isLoadingCheckout ? (
+                      <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Redirecionando...</>
+                    ) : (
+                      <>
+                        Garantir minha vaga agora
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                )}
 
                 <div className="flex items-center justify-center gap-4 mt-4 text-[11px] text-white/30">
                   <span className="flex items-center gap-1"><Shield className="h-3 w-3" /> Pagamento seguro</span>
@@ -709,21 +779,28 @@ export default function Landing() {
             <p className="text-white/45 text-[14px] sm:text-[16px] mb-8 max-w-[480px] mx-auto">
               As primeiras 100 fundadoras vão travar o menor preço da história do Glow Upi. Depois, volta ao normal.
             </p>
-            <Button
-              size="lg"
-              className="text-[14px] px-10 h-13 sm:h-14 rounded-full shadow-xl shadow-primary/25 font-bold"
-              onClick={() => handleSubscribe(period)}
-              disabled={isLoadingCheckout}
-            >
-              {isLoadingCheckout ? (
-                <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Redirecionando...</>
-              ) : (
-                <>
-                  Quero ser fundadora — R${period === "anual" ? "81,58" : "97,90"}/mês
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </Button>
+            {ctaLocked ? (
+              <div className="inline-flex items-center gap-2 px-10 h-13 sm:h-14 rounded-full bg-white/[0.06] border border-white/[0.10] text-white/40 text-[14px] font-bold cursor-not-allowed select-none">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Assista o vídeo para liberar
+              </div>
+            ) : (
+              <Button
+                size="lg"
+                className="text-[14px] px-10 h-13 sm:h-14 rounded-full shadow-xl shadow-primary/25 font-bold"
+                onClick={() => handleSubscribe(period)}
+                disabled={isLoadingCheckout}
+              >
+                {isLoadingCheckout ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Redirecionando...</>
+                ) : (
+                  <>
+                    Quero ser fundadora — R${period === "anual" ? "81,58" : "97,90"}/mês
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            )}
             <p className="text-[11px] text-white/30 mt-4">Pagamento seguro via Stripe · Cancele quando quiser · Acesso imediato</p>
           </AnimatedSection>
         </div>

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { apiUrl, APP_NAME } from "@/lib/utils";
-import { Settings, Save, ToggleLeft, ToggleRight, Info, Shield, FileText, Gift, Megaphone } from "lucide-react";
+import { Settings, Save, ToggleLeft, ToggleRight, Info, Shield, FileText, Gift, Megaphone, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { VSLPlayer } from "@/components/VSLPlayer";
 
 const DEFAULT_PRIVACY_POLICY = `1. INFORMAÇÕES GERAIS
 
@@ -179,6 +180,28 @@ export default function AdminSettings() {
   const [savingPrivacy, setSavingPrivacy] = useState(false);
   const [savingTerms, setSavingTerms] = useState(false);
   const [activeTab, setActiveTab] = useState<"privacy" | "terms">("privacy");
+  const [vslUrl, setVslUrl] = useState("");
+  const [vslAtivo, setVslAtivo] = useState(false);
+  const [vslPercentual, setVslPercentual] = useState("0");
+  const [savingVsl, setSavingVsl] = useState(false);
+  const [vslPreviewId, setVslPreviewId] = useState<string | null>(null);
+
+  function extractYoutubeVideoId(url: string): string | null {
+    if (!url) return null;
+    const trimmed = url.trim();
+    const patterns = [
+      /(?:youtube\.com\/watch\?(?:[^&]*&)*v=)([A-Za-z0-9_-]{11})/,
+      /(?:youtu\.be\/)([A-Za-z0-9_-]{11})/,
+      /(?:youtube\.com\/shorts\/)([A-Za-z0-9_-]{11})/,
+      /(?:youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/,
+    ];
+    for (const pattern of patterns) {
+      const match = trimmed.match(pattern);
+      if (match) return match[1];
+    }
+    if (/^[A-Za-z0-9_-]{11}$/.test(trimmed)) return trimmed;
+    return null;
+  }
 
   useEffect(() => {
     fetch(apiUrl("/admin/config"), { credentials: "include" })
@@ -192,6 +215,11 @@ export default function AdminSettings() {
         setGaMeasurementId(data.ga_measurement_id || "");
         setPrivacyPolicy(data.lgpd_privacy_policy || DEFAULT_PRIVACY_POLICY);
         setTermsOfUse(data.lgpd_terms_of_use || DEFAULT_TERMS_OF_USE);
+        setVslUrl(data.vsl_youtube_url || "");
+        setVslAtivo(data.vsl_ativo === "true");
+        setVslPercentual(data.vsl_percentual_liberar_cta || "0");
+        const vid = extractYoutubeVideoId(data.vsl_youtube_url || "");
+        setVslPreviewId(vid);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -234,6 +262,52 @@ export default function AdminSettings() {
       toast({ title: "Erro", description: "Falha ao salvar configuração", variant: "destructive" });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveVslConfig = async () => {
+    setSavingVsl(true);
+    try {
+      const urlRes = await fetch(apiUrl("/admin/config"), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ chave: "vsl_youtube_url", valor: vslUrl }),
+      });
+      if (!urlRes.ok) {
+        const errData = await urlRes.json().catch(() => ({}));
+        toast({ title: "Link inválido", description: errData.error || "Verifique o link do YouTube", variant: "destructive" });
+        return;
+      }
+
+      const otherRes = await Promise.all([
+        fetch(apiUrl("/admin/config"), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ chave: "vsl_ativo", valor: vslAtivo ? "true" : "false" }),
+        }),
+        fetch(apiUrl("/admin/config"), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ chave: "vsl_percentual_liberar_cta", valor: vslPercentual }),
+        }),
+      ]);
+      const failed = otherRes.find(r => !r.ok);
+      if (failed) {
+        const errData = await failed.json().catch(() => ({}));
+        toast({ title: "Erro ao salvar", description: errData.error || "Verifique os dados e tente novamente", variant: "destructive" });
+        return;
+      }
+
+      const vid = extractYoutubeVideoId(vslUrl);
+      setVslPreviewId(vid);
+      toast({ title: "Configurações do vídeo salvas", description: "As alterações já estão visíveis na página /pdvd" });
+    } catch {
+      toast({ title: "Erro", description: "Falha ao salvar configurações do vídeo", variant: "destructive" });
+    } finally {
+      setSavingVsl(false);
     }
   };
 
@@ -448,6 +522,74 @@ export default function AdminSettings() {
                 </div>
                 <p className="text-xs text-slate-500 mt-2">Opcional. Configure se quiser análise complementar via Google Analytics 4.</p>
               </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-5">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="h-10 w-10 rounded-xl bg-red-500/20 flex items-center justify-center">
+                  <Video className="h-5 w-5 text-red-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-display text-white">Vídeo VSL da página de captura</h2>
+                  <p className="text-sm text-slate-400">Configure o vídeo que aparece no topo da página /pdvd (Video Sales Letter)</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Link do YouTube</label>
+                <input
+                  type="text"
+                  value={vslUrl}
+                  onChange={(e) => setVslUrl(e.target.value)}
+                  placeholder="ex: https://youtu.be/dQw4w9WgXcQ"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder-slate-500"
+                />
+                <p className="text-xs text-slate-500 mt-1.5">Aceita youtube.com/watch?v=..., youtu.be/..., Shorts e links de embed</p>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-white font-medium">Mostrar vídeo na página /pdvd</span>
+                  <button
+                    onClick={() => setVslAtivo(!vslAtivo)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${vslAtivo ? "bg-primary" : "bg-white/10"}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${vslAtivo ? "translate-x-6" : "translate-x-1"}`} />
+                  </button>
+                  <span className={`text-sm font-medium ${vslAtivo ? "text-primary" : "text-slate-400"}`}>
+                    {vslAtivo ? "Ativado" : "Desativado"}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Liberar botão de compra após assistir X% do vídeo</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={vslPercentual}
+                    onChange={(e) => setVslPercentual(e.target.value)}
+                    className="w-24 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <span className="text-sm text-slate-400">% &nbsp;(0 = sempre liberado)</span>
+                </div>
+              </div>
+
+              <Button onClick={saveVslConfig} disabled={savingVsl} className="gap-2">
+                <Save className="h-4 w-4" />
+                {savingVsl ? "Salvando..." : "Salvar configurações do vídeo"}
+              </Button>
+
+              {vslPreviewId && (
+                <div className="border-t border-white/10 pt-5">
+                  <p className="text-sm font-medium text-white mb-3">Pré-visualização</p>
+                  <div className="max-w-[640px] rounded-xl overflow-hidden border border-white/10">
+                    <VSLPlayer videoId={vslPreviewId} allowFullControls />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-6">
