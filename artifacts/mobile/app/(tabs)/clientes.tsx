@@ -142,10 +142,10 @@ export default function ClientesScreen() {
     setModalOpen(true);
   };
 
-  const webTopPadding = Platform.OS === "web" ? 67 : 0;
+  const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
   return (
-    <View style={[styles.container, { paddingTop: webTopPadding }]}>
+    <View style={[styles.container, { paddingTop: topPadding }]}>
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>

@@ -119,7 +119,7 @@ export default function ComandasScreen() {
     [fechadas]
   );
 
-  const webTopPadding = Platform.OS === "web" ? 67 : 0;
+  const webTopPadding = Platform.OS === "web" ? 67 : insets.top;
   const isLoading = tab === "abertas" ? abertasQuery.isLoading : fechadasQuery.isLoading;
   const isError = tab === "abertas" ? abertasQuery.isError : fechadasQuery.isError;
   const queryError = tab === "abertas" ? abertasQuery.error : fechadasQuery.error;

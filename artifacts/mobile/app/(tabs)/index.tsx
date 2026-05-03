@@ -111,7 +111,7 @@ export default function DashboardScreen() {
     setRefreshing(false);
   }, [refetch]);
 
-  const webTopPadding = Platform.OS === "web" ? 67 : 0;
+  const webTopPadding = Platform.OS === "web" ? 67 : insets.top;
 
   if (!barbeariaId) {
     return (
