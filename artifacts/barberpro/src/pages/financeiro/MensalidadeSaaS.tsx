@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CreditCard, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, CreditCard, CheckCircle2, AlertCircle, Copy, Check, ExternalLink } from "lucide-react";
 
 interface Plano { id: string; nome: string; valor: number; }
 
@@ -21,6 +21,8 @@ export default function MensalidadeSaaS() {
   const [billingType, setBillingType] = useState<"PIX" | "BOLETO" | "CREDIT_CARD">("PIX");
   const [cpfCnpj, setCpfCnpj] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [primeiraFatura, setPrimeiraFatura] = useState<any>(null);
+  const [copied, setCopied] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -53,6 +55,7 @@ export default function MensalidadeSaaS() {
       toast({ title: "Assinatura criada com sucesso!" });
       setShowForm(false);
       setCpfCnpj("");
+      if (data.primeiraFatura) setPrimeiraFatura(data.primeiraFatura);
       await load();
     } catch (e: any) { toast({ title: e.message, variant: "destructive" }); }
     finally { setSubmitting(false); }
@@ -81,6 +84,50 @@ export default function MensalidadeSaaS() {
           </h1>
           <p className="text-sm text-foreground/60">Pagamento via Asaas — Pix, boleto ou cartão.</p>
         </div>
+
+        {primeiraFatura && (
+          <Card>
+            <CardContent className="p-6 space-y-3">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold">Primeira fatura</h3>
+              </div>
+              <p className="text-sm text-foreground/70">
+                Valor: R$ {Number(primeiraFatura.valor || 0).toFixed(2).replace(".", ",")}
+                {primeiraFatura.dueDate ? ` · vence ${new Date(primeiraFatura.dueDate + "T12:00:00").toLocaleDateString("pt-BR")}` : ""}
+              </p>
+              {primeiraFatura.pixQrCodeBase64 && (
+                <div className="bg-white p-3 rounded-lg border flex items-center justify-center">
+                  <img src={`data:image/png;base64,${primeiraFatura.pixQrCodeBase64}`} alt="QR Pix" className="w-56 h-56 object-contain" />
+                </div>
+              )}
+              {primeiraFatura.pixCopyPaste && (
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] uppercase tracking-wide text-foreground/50">Pix copia e cola</Label>
+                  <div className="flex gap-1.5">
+                    <Input readOnly value={primeiraFatura.pixCopyPaste} className="text-[11px] h-9 truncate" />
+                    <Button type="button" size="sm" className="h-9 px-3" onClick={async () => {
+                      try { await navigator.clipboard.writeText(primeiraFatura.pixCopyPaste); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {}
+                    }}>
+                      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {primeiraFatura.invoiceUrl && (
+                <a href={primeiraFatura.invoiceUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-xs text-foreground/70 hover:bg-muted/30">
+                  <ExternalLink className="h-3.5 w-3.5" /> Abrir página de pagamento
+                </a>
+              )}
+              {primeiraFatura.bankSlipUrl && (
+                <a href={primeiraFatura.bankSlipUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-xs text-foreground/70 hover:bg-muted/30">
+                  <ExternalLink className="h-3.5 w-3.5" /> Boleto
+                </a>
+              )}
+              <Button variant="ghost" size="sm" onClick={() => setPrimeiraFatura(null)}>Ocultar</Button>
+            </CardContent>
+          </Card>
+        )}
 
         {assinatura && assinatura.status === "ACTIVE" && (
           <Card>

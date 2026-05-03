@@ -10,6 +10,51 @@ import { sendPushToBarbearia } from "../lib/pushNotifications.js";
 
 const router: IRouter = Router();
 
+router.post("/asaas/platform", async (req, res) => {
+  const expected = process.env.ASAAS_PLATFORM_WEBHOOK_TOKEN || "";
+  if (!expected) {
+    console.error("[asaas/webhook/platform] ASAAS_PLATFORM_WEBHOOK_TOKEN não configurado — rejeitando");
+    return res.status(503).json({ error: "Webhook plataforma não configurado" });
+  }
+  const tokenHeader = req.header("asaas-access-token") || req.header("asaas-Access-Token") || "";
+  if (tokenHeader !== expected) {
+    console.warn("[asaas/webhook/platform] token inválido");
+    return res.status(401).json({ error: "Token inválido" });
+  }
+
+  const evento = req.body?.event || "UNKNOWN";
+  const subscription = req.body?.subscription;
+  const payment = req.body?.payment;
+  const subscriptionId = subscription?.id || payment?.subscription || null;
+  if (!subscriptionId) {
+    return res.status(200).json({ received: true, ignored: "sem subscriptionId" });
+  }
+
+  const [a] = await db.select().from(assinaturasAsaasTable)
+    .where(eq(assinaturasAsaasTable.asaasSubscriptionId, subscriptionId)).limit(1);
+  if (!a) {
+    console.warn(`[asaas/webhook/platform] assinatura desconhecida ${subscriptionId}`);
+    return res.status(200).json({ received: true, ignored: "subscription desconhecida" });
+  }
+
+  try {
+    if (subscription) {
+      await onSubscriptionEvent(a.barbeariaId, evento, subscription);
+    } else if (payment && evento.startsWith("PAYMENT_")) {
+      const paid = ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"].includes(String(payment.status).toUpperCase());
+      if (paid) {
+        await onSubscriptionEvent(a.barbeariaId, "SUBSCRIPTION_PAYMENT_RECEIVED", {
+          id: subscriptionId, status: "ACTIVE", nextDueDate: payment.nextDueDate,
+        });
+      }
+    }
+    return res.status(200).json({ received: true });
+  } catch (e: any) {
+    console.error("[asaas/webhook/platform] erro:", e);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 router.post("/asaas/:barbeariaId", async (req, res) => {
   const barbeariaId = parseInt(req.params.barbeariaId);
   if (isNaN(barbeariaId)) return res.status(400).json({ error: "barbeariaId inválido" });
@@ -35,32 +80,39 @@ router.post("/asaas/:barbeariaId", async (req, res) => {
 
   const dedupeKey = `${evento}|${paymentId || "-"}|${subscriptionId || "-"}`;
 
-  const existingDup = await db.select({ id: asaasWebhookEventsTable.id })
+  const [existingDup] = await db.select()
     .from(asaasWebhookEventsTable)
     .where(and(
       eq(asaasWebhookEventsTable.asaasContaId, conta.id),
       eq(asaasWebhookEventsTable.dedupeKey, dedupeKey),
     ))
     .limit(1);
-  if (existingDup.length > 0) {
-    console.log(`[asaas/webhook] evento duplicado ${dedupeKey}`);
-    return res.status(200).json({ received: true, duplicate: true });
-  }
 
-  let eventRowId: number | null = null;
-  try {
-    const [row] = await db.insert(asaasWebhookEventsTable).values({
-      asaasContaId: conta.id,
-      evento,
-      paymentId,
-      subscriptionId,
-      dedupeKey,
-      payload: req.body,
-    }).returning({ id: asaasWebhookEventsTable.id });
-    eventRowId = row.id;
-  } catch (e: any) {
-    console.log(`[asaas/webhook] insert duplicado ${dedupeKey}`);
-    return res.status(200).json({ received: true, duplicate: true });
+  let eventRowId: number;
+  if (existingDup) {
+    if (existingDup.processadoEm) {
+      console.log(`[asaas/webhook] já processado ${dedupeKey}`);
+      return res.status(200).json({ received: true, duplicate: true });
+    }
+    console.log(`[asaas/webhook] retry de evento não processado ${dedupeKey}`);
+    eventRowId = existingDup.id;
+    await db.update(asaasWebhookEventsTable).set({ erro: null, payload: req.body })
+      .where(eq(asaasWebhookEventsTable.id, eventRowId));
+  } else {
+    try {
+      const [row] = await db.insert(asaasWebhookEventsTable).values({
+        asaasContaId: conta.id,
+        evento,
+        paymentId,
+        subscriptionId,
+        dedupeKey,
+        payload: req.body,
+      }).returning({ id: asaasWebhookEventsTable.id });
+      eventRowId = row.id;
+    } catch (e: any) {
+      console.log(`[asaas/webhook] insert race ${dedupeKey}, tratando como duplicado`);
+      return res.status(200).json({ received: true, duplicate: true });
+    }
   }
 
   try {

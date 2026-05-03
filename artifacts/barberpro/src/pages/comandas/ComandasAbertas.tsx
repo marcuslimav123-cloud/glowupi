@@ -97,8 +97,9 @@ export default function ComandasAbertas() {
   const [asaasCopied, setAsaasCopied] = useState(false);
   const [asaasPaid, setAsaasPaid] = useState(false);
   const [asaasComandaId, setAsaasComandaId] = useState<number | null>(null);
+  const [asaasBillingType, setAsaasBillingType] = useState<"PIX" | "BOLETO" | "CREDIT_CARD">("PIX");
 
-  async function abrirCobrancaAsaas(ag: any) {
+  async function abrirCobrancaAsaas(ag: any, billing: "PIX" | "BOLETO" | "CREDIT_CARD" = "PIX") {
     setAsaasAg(ag);
     setAsaasOpen(true);
     setAsaasLoading(true);
@@ -106,12 +107,13 @@ export default function ComandasAbertas() {
     setAsaasPagamento(null);
     setAsaasPaid(false);
     setAsaasComandaId(null);
+    setAsaasBillingType(billing);
     try {
       const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/asaas-comanda/agendamento/${ag.id}/cobrar`), {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ valor: Number(ag.valor) }),
+        body: JSON.stringify({ valor: Number(ag.valor), billingType: billing }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Erro ao gerar cobrança");
@@ -1031,7 +1033,7 @@ export default function ComandasAbertas() {
       <Dialog open={asaasOpen} onOpenChange={(v) => { setAsaasOpen(v); if (!v) { setAsaasAg(null); setAsaasPagamento(null); setAsaasError(""); setAsaasPaid(false); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><QrCode className="h-4 w-4" /> Cobrar via Pix Asaas</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><QrCode className="h-4 w-4" /> Cobrar via Asaas</DialogTitle>
           </DialogHeader>
           {asaasAg && (
             <div className="space-y-4">
@@ -1039,6 +1041,20 @@ export default function ComandasAbertas() {
                 <p className="font-semibold text-[14px]">{asaasAg.clienteNome}</p>
                 <p className="text-[12px] text-foreground/50">{asaasAg.servicoNome} · {asaasAg.profissionalNome}</p>
                 <p className="text-[18px] font-bold text-primary mt-1">{formatCurrency(asaasAg.valor)}</p>
+              </div>
+
+              <div className="flex gap-1.5">
+                {(["PIX", "BOLETO", "CREDIT_CARD"] as const).map(b => (
+                  <Button
+                    key={b} type="button" size="sm"
+                    variant={asaasBillingType === b ? "default" : "outline"}
+                    className="flex-1 h-9 text-[12px]"
+                    disabled={asaasLoading}
+                    onClick={() => abrirCobrancaAsaas(asaasAg, b)}
+                  >
+                    {b === "PIX" ? "Pix" : b === "BOLETO" ? "Boleto" : "Cartão"}
+                  </Button>
+                ))}
               </div>
 
               {asaasLoading && (

@@ -45,6 +45,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/revenuecat", revenuecatRouter);
 app.use("/api/webhooks", asaasWebhookRouter);
+app.use("/api", asaasWebhookRouter);
 app.use("/api", router);
 
 export default app;

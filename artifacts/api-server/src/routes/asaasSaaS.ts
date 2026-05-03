@@ -56,6 +56,20 @@ router.post("/", requireAuth, requireBarbearia, async (req: any, res) => {
       externalReference: `barb-${barbearia.id}-${plano}`,
     });
 
+    let firstInvoice: any = null;
+    let pixData: any = null;
+    try {
+      const invoices = await client.raw.request<any>("GET", "/payments", undefined, {
+        subscription: subscription.id, limit: 1,
+      });
+      firstInvoice = invoices?.data?.[0] || null;
+      if (firstInvoice?.id && tipo === "PIX") {
+        try { pixData = await client.getPixQrCode(firstInvoice.id); } catch (e) { console.error("[asaas/saas] pix qr:", e); }
+      }
+    } catch (e) {
+      console.error("[asaas/saas] fetch first invoice:", e);
+    }
+
     const [existing] = await db.select().from(assinaturasAsaasTable).where(eq(assinaturasAsaasTable.barbeariaId, barbearia.id)).limit(1);
     let assinatura;
     if (existing) {
@@ -78,7 +92,21 @@ router.post("/", requireAuth, requireBarbearia, async (req: any, res) => {
       }).returning();
     }
 
-    return res.status(201).json({ assinatura: format(assinatura), subscription });
+    return res.status(201).json({
+      assinatura: format(assinatura),
+      subscription,
+      primeiraFatura: firstInvoice ? {
+        id: firstInvoice.id,
+        status: firstInvoice.status,
+        invoiceUrl: firstInvoice.invoiceUrl,
+        bankSlipUrl: firstInvoice.bankSlipUrl,
+        dueDate: firstInvoice.dueDate,
+        valor: firstInvoice.value,
+        pixQrCodeBase64: pixData?.encodedImage || null,
+        pixCopyPaste: pixData?.payload || null,
+        pixExpiraEm: pixData?.expirationDate || null,
+      } : null,
+    });
   } catch (e: any) {
     console.error("[asaas/saas] criar erro:", e);
     return res.status(500).json({ error: e?.message || "Erro ao criar assinatura" });

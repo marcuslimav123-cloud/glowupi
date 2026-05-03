@@ -3,7 +3,26 @@ import { db } from "@workspace/db";
 import { comandasTable, barbeariasTable, pagamentosAsaasTable, agendamentosTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
-import { createPaymentForBarbearia, refreshPagamentoStatus, getContaByBarbearia, isPaidStatus } from "../lib/asaasService.js";
+import { createPaymentForBarbearia, refreshPagamentoStatus, getContaByBarbearia, isPaidStatus, getClientForBarbearia } from "../lib/asaasService.js";
+
+async function cancelExistingIfDifferent(
+  barbeariaId: number,
+  existingPaymentId: string | null | undefined,
+  newBillingType: string,
+): Promise<{ keep: any | null }> {
+  if (!existingPaymentId) return { keep: null };
+  const refreshed = await refreshPagamentoStatus(existingPaymentId);
+  if (!refreshed) return { keep: null };
+  if (isPaidStatus(refreshed.status)) return { keep: refreshed };
+  if (refreshed.billingType === newBillingType) return { keep: refreshed };
+  try {
+    const ctx = await getClientForBarbearia(barbeariaId);
+    if (ctx) await ctx.client.deletePayment(existingPaymentId);
+  } catch (e) {
+    console.error("[asaas/comanda] erro cancelando cobrança antiga:", e);
+  }
+  return { keep: null };
+}
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -23,9 +42,10 @@ router.post("/comanda/:comandaId/cobrar", requireAuth, async (req: any, res) => 
     const conta = await getContaByBarbearia(barbeariaId);
     if (!conta) return res.status(503).json({ error: "Conta de pagamento não conectada" });
 
-    if (comanda.asaasPaymentId) {
-      const refreshed = await refreshPagamentoStatus(comanda.asaasPaymentId);
-      if (refreshed) return res.json(formatPagamento(refreshed));
+    const { keep } = await cancelExistingIfDifferent(barbeariaId, comanda.asaasPaymentId, tipo);
+    if (keep) return res.json(formatPagamento(keep));
+    if (comanda.asaasPaymentId && !keep) {
+      await db.update(comandasTable).set({ asaasPaymentId: null }).where(eq(comandasTable.id, comandaId));
     }
 
     const valor = parseFloat(String(comanda.valorTotal || "0"));
@@ -107,9 +127,10 @@ router.post("/agendamento/:agendamentoId/cobrar", requireAuth, async (req: any, 
 
     if (existing) {
       comandaId = existing.id;
-      if (existing.asaasPaymentId) {
-        const refreshed = await refreshPagamentoStatus(existing.asaasPaymentId);
-        if (refreshed) return res.json({ comandaId, pagamento: formatPagamento(refreshed) });
+      const { keep } = await cancelExistingIfDifferent(barbeariaId, existing.asaasPaymentId, tipo);
+      if (keep) return res.json({ comandaId, pagamento: formatPagamento(keep) });
+      if (existing.asaasPaymentId && !keep) {
+        await db.update(comandasTable).set({ asaasPaymentId: null }).where(eq(comandasTable.id, comandaId));
       }
     } else {
       const now = new Date();
