@@ -80,13 +80,13 @@ export const asaasWebhookEventsTable = pgTable("asaas_webhook_events", {
   evento: text("evento").notNull(),
   paymentId: text("payment_id"),
   subscriptionId: text("subscription_id"),
-  dedupeKey: text("dedupe_key"),
+  dedupeKey: text("dedupe_key").notNull(),
   payload: jsonb("payload").notNull(),
   processadoEm: timestamp("processado_em"),
   erro: text("erro"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => ({
-  uniqueDedupe: uniqueIndex("asaas_webhook_dedupe_unique_idx").on(t.asaasContaId, t.dedupeKey),
+  uniqueDedupe: uniqueIndex("asaas_webhook_dedupe_unique_idx").on(t.dedupeKey),
 }));
 
 export const insertAsaasContaSchema = createInsertSchema(asaasContasTable).omit({ id: true, createdAt: true, updatedAt: true });

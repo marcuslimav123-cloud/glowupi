@@ -5,7 +5,7 @@ import {
   agendamentosTable, comandasTable, assinaturasAsaasTable, barbeariasTable,
 } from "@workspace/db/schema";
 import { eq, and, isNull, sql } from "drizzle-orm";
-import { updatePagamentoFromAsaas, isPaidStatus, processPagamentoPago } from "../lib/asaasService.js";
+import { updatePagamentoFromAsaas, isPaidStatus, processPagamentoPago, processPagamentoEventoNaoPago } from "../lib/asaasService.js";
 
 const router: IRouter = Router();
 
@@ -177,6 +177,8 @@ router.post("/asaas/:barbeariaId", async (req, res) => {
       const updated = await updatePagamentoFromAsaas(paymentId, verifiedPayment);
       if (updated && isPaidStatus(verifiedPayment.status)) {
         await processPagamentoPago(barbeariaId, updated);
+      } else if (updated) {
+        await processPagamentoEventoNaoPago(barbeariaId, evento, updated);
       }
     }
 

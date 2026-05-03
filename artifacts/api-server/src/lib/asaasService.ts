@@ -176,6 +176,78 @@ export function isPaidStatus(status: string | undefined | null): boolean {
   return status === "RECEIVED" || status === "CONFIRMED" || status === "RECEIVED_IN_CASH";
 }
 
+const REFUNDED_EVENTS = new Set(["PAYMENT_REFUNDED", "PAYMENT_PARTIALLY_REFUNDED", "PAYMENT_RECEIVED_IN_CASH_UNDONE", "PAYMENT_CHARGEBACK_REQUESTED", "PAYMENT_CHARGEBACK_DISPUTE", "PAYMENT_AWAITING_CHARGEBACK_REVERSAL"]);
+const OVERDUE_EVENTS = new Set(["PAYMENT_OVERDUE", "PAYMENT_DUNNING_RECEIVED", "PAYMENT_DUNNING_REQUESTED"]);
+const DELETED_EVENTS = new Set(["PAYMENT_DELETED"]);
+
+export async function processPagamentoEventoNaoPago(
+  barbeariaId: number,
+  evento: string,
+  pagamento: PagamentoAsaas,
+): Promise<void> {
+  const isRefund = REFUNDED_EVENTS.has(evento);
+  const isOverdue = OVERDUE_EVENTS.has(evento);
+  const isDeleted = DELETED_EVENTS.has(evento);
+  if (!isRefund && !isOverdue && !isDeleted) return;
+
+  if (pagamento.tipo === "agendamento" && pagamento.refId) {
+    const [ag] = await db.select().from(agendamentosTable).where(
+      and(eq(agendamentosTable.id, pagamento.refId), eq(agendamentosTable.barbeariaId, barbeariaId))
+    ).limit(1);
+    if (!ag) return;
+    if (isRefund || isDeleted) {
+      await db.update(agendamentosTable).set({
+        sinalStatus: isRefund ? "estornado" : "cancelado",
+        updatedAt: new Date(),
+      }).where(eq(agendamentosTable.id, ag.id));
+      sendPushToBarbearia(barbeariaId, {
+        title: isRefund ? "Sinal estornado" : "Cobrança de sinal cancelada",
+        body: `${ag.clienteNome || "Cliente"} — R$ ${Number(pagamento.valor).toFixed(2).replace(".", ",")}`,
+        data: { type: "comanda_paga", agendamentoId: ag.id, url: "/agenda" },
+        category: "financeiro",
+      }).catch(err => console.error("[Push] sinal estorno:", err));
+    } else if (isOverdue) {
+      await db.update(agendamentosTable).set({
+        sinalStatus: "vencido",
+        updatedAt: new Date(),
+      }).where(eq(agendamentosTable.id, ag.id));
+      sendPushToBarbearia(barbeariaId, {
+        title: "Sinal vencido",
+        body: `${ag.clienteNome || "Cliente"} não pagou o sinal a tempo`,
+        data: { type: "comanda_paga", agendamentoId: ag.id, url: "/agenda" },
+        category: "financeiro",
+      }).catch(err => console.error("[Push] sinal vencido:", err));
+    }
+    return;
+  }
+
+  if (pagamento.tipo === "comanda" && pagamento.refId) {
+    const [com] = await db.select().from(comandasTable).where(
+      and(eq(comandasTable.id, pagamento.refId), eq(comandasTable.barbeariaId, barbeariaId))
+    ).limit(1);
+    if (!com) return;
+    if (isRefund || isDeleted) {
+      await db.update(comandasTable).set({
+        status: "aguardando_pagamento",
+        asaasPaymentId: isDeleted ? null : com.asaasPaymentId,
+      }).where(eq(comandasTable.id, com.id));
+      sendPushToBarbearia(barbeariaId, {
+        title: isRefund ? "Comanda estornada" : "Cobrança cancelada",
+        body: `${com.clienteNome || "Cliente"} — R$ ${Number(pagamento.valor).toFixed(2).replace(".", ",")}`,
+        data: { type: "comanda_paga", comandaId: com.id, url: "/comandas" },
+        category: "financeiro",
+      }).catch(err => console.error("[Push] comanda estorno:", err));
+    } else if (isOverdue) {
+      sendPushToBarbearia(barbeariaId, {
+        title: "Cobrança vencida",
+        body: `${com.clienteNome || "Cliente"} — R$ ${Number(pagamento.valor).toFixed(2).replace(".", ",")}`,
+        data: { type: "comanda_paga", comandaId: com.id, url: "/comandas" },
+        category: "financeiro",
+      }).catch(err => console.error("[Push] comanda vencida:", err));
+    }
+  }
+}
+
 export async function processPagamentoPago(barbeariaId: number, pagamento: PagamentoAsaas): Promise<void> {
   const tipo = pagamento.tipo;
 
