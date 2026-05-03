@@ -7,7 +7,9 @@ const WEB_TO_MOBILE: Array<{ test: RegExp; route: Href }> = [
   { test: /^\/comandas\b/, route: "/(tabs)/comandas" as Href },
   { test: /^\/clientes\b/, route: "/(tabs)/clientes" as Href },
   { test: /^\/financeiro\/comissoes\b/, route: "/financeiro/comissoes" as Href },
-  { test: /^\/financeiro\/contas\b/, route: "/financeiro/contas" as Href },
+  { test: /^\/financeiro\/contas-pagar\b/, route: "/financeiro/contas-pagar" as Href },
+  { test: /^\/financeiro\/contas-receber\b/, route: "/financeiro/contas-receber" as Href },
+  { test: /^\/financeiro\/contas\b/, route: "/financeiro/contas-pagar" as Href },
   { test: /^\/financeiro\/fluxo\b/, route: "/financeiro/fluxo" as Href },
   { test: /^\/financeiro\b/, route: "/financeiro" as Href },
   { test: /^\/caixa\b/, route: "/caixa" as Href },
@@ -32,7 +34,8 @@ const TYPE_TO_ROUTE: Record<string, Href> = {
   comanda_fechada: "/(tabs)/comandas" as Href,
   comanda_paga: "/(tabs)/comandas" as Href,
   comissao_paga: "/financeiro/comissoes" as Href,
-  conta_a_pagar: "/financeiro" as Href,
+  conta_a_pagar: "/financeiro/contas-pagar" as Href,
+  conta_a_receber: "/financeiro/contas-receber" as Href,
   caixa_sangria: "/caixa" as Href,
   caixa_vale: "/caixa" as Href,
   avaliacao_nova: "/relatorios" as Href,
@@ -62,7 +65,8 @@ export function deeplinkForPush(typeRaw: unknown, dados: NotifData): Href | null
   if (type.startsWith("agend")) return "/(tabs)/agenda" as Href;
   if (type.startsWith("comanda")) return "/(tabs)/comandas" as Href;
   if (type.startsWith("comissao")) return "/financeiro/comissoes" as Href;
-  if (type.startsWith("conta_") || type.startsWith("financeiro")) return "/financeiro" as Href;
+  if (type.startsWith("conta_a_receber")) return "/financeiro/contas-receber" as Href;
+  if (type.startsWith("conta_") || type.startsWith("financeiro")) return "/financeiro/contas-pagar" as Href;
   if (type.startsWith("caixa")) return "/caixa" as Href;
   if (type.startsWith("avaliacao")) return "/relatorios" as Href;
   if (type.startsWith("convite") || type.startsWith("equipe")) return "/equipe" as Href;

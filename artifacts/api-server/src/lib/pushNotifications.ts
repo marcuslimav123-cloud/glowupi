@@ -85,6 +85,17 @@ type TokenRecord = { id: number; token: string };
 
 export async function sendPushToUser(userId: number, message: PushMessage): Promise<void> {
   try {
+    const [user] = await db.select({ barbeariaId: usersTable.barbeariaId })
+      .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (user?.barbeariaId) {
+      const category = message.category || categoryForType(message.data?.type);
+      const ativo = await isCategoriaAtiva(user.barbeariaId, category);
+      if (!ativo) {
+        console.log(`[Push] Skipped user ${userId} — categoria '${category}' desativada`);
+        return;
+      }
+    }
+
     const tokens = await db.select().from(pushTokensTable).where(
       and(
         eq(pushTokensTable.userId, userId),

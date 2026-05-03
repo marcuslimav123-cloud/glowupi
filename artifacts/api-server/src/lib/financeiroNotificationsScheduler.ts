@@ -52,8 +52,47 @@ async function checkContasAPagar(): Promise<void> {
     sendPushToBarbearia(c.barbeariaId, {
       title: `Conta a pagar ${label}`,
       body: `${c.descricao || c.categoria || "Conta"} — ${fmtBRL(c.valor)} (venc. ${venc})`,
-      data: { type: "conta_a_pagar", contaId: c.id, vencimento: venc, status: suffix, url: "/financeiro/contas", route: "/financeiro/contas" },
+      data: { type: "conta_a_pagar", contaId: c.id, vencimento: venc, status: suffix, url: "/financeiro/contas-pagar", route: "/financeiro/contas-pagar" },
+      category: "financeiro",
     }).catch(err => console.error("[financeiro-scheduler] push error:", err));
+  }
+}
+
+async function checkTrialExpiringSoon(): Promise<void> {
+  const trials = await db.select({
+    id: barbeariasTable.id,
+    planoVencimento: barbeariasTable.planoVencimento,
+  }).from(barbeariasTable).where(
+    and(
+      eq(barbeariasTable.subscriptionStatus, "trial"),
+      eq(barbeariasTable.ativo, true),
+      isNotNull(barbeariasTable.planoVencimento),
+    )
+  );
+
+  const now = Date.now();
+  const hoje = todayISO();
+  for (const b of trials) {
+    if (!b.planoVencimento) continue;
+    const venc = new Date(b.planoVencimento as unknown as string | Date);
+    const diffDays = Math.ceil((venc.getTime() - now) / (24 * 60 * 60 * 1000));
+    let label: string | null = null;
+    let suffix = "";
+    if (diffDays === 3) { label = "em 3 dias"; suffix = "D-3"; }
+    else if (diffDays === 1) { label = "amanhã"; suffix = "D-1"; }
+    else if (diffDays === 0) { label = "hoje"; suffix = "hoje"; }
+    if (!label) continue;
+
+    const key = `trial:${b.id}:${suffix}:${hoje}`;
+    if (sentKeys.has(key)) continue;
+    sentKeys.add(key);
+
+    sendPushToBarbearia(b.id, {
+      title: `Seu período de teste termina ${label}`,
+      body: "Escolha um plano para manter o acesso completo.",
+      data: { type: "assinatura_status", status: "trial_expiring", suffix, url: "/configuracoes/assinatura", route: "/paywall" },
+      category: "sistema",
+    }).catch(err => console.error("[trial-warning] push error:", err));
   }
 }
 
@@ -108,6 +147,7 @@ export function startFinanceiroNotificationsScheduler(): void {
     }
     checkContasAPagar().catch(err => console.error("[financeiro-scheduler] contas error:", err));
     checkAssinaturas().catch(err => console.error("[financeiro-scheduler] assinaturas error:", err));
+    checkTrialExpiringSoon().catch(err => console.error("[financeiro-scheduler] trial error:", err));
   };
 
   run();
