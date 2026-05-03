@@ -64,7 +64,7 @@ router.post("/", requireAuth, requireBarbearia, async (req: any, res) => {
         asaasSubscriptionId: subscription.id,
         plano, periodo: "mensal",
         valor: String(planInfo.valor), billingType: tipo,
-        status: "ACTIVE", proximoVencimento: subscription.nextDueDate || null,
+        status: "PENDING", proximoVencimento: subscription.nextDueDate || null,
         updatedAt: new Date(),
       }).where(eq(assinaturasAsaasTable.id, existing.id)).returning();
     } else {
@@ -74,18 +74,9 @@ router.post("/", requireAuth, requireBarbearia, async (req: any, res) => {
         asaasSubscriptionId: subscription.id,
         plano, periodo: "mensal",
         valor: String(planInfo.valor), billingType: tipo,
-        status: "ACTIVE", proximoVencimento: subscription.nextDueDate || null,
+        status: "PENDING", proximoVencimento: subscription.nextDueDate || null,
       }).returning();
     }
-
-    await db.update(barbeariasTable).set({
-      subscriptionStatus: "active",
-      subscriptionPlan: plano,
-      subscriptionPeriod: "mensal",
-      planoNome: planInfo.nome,
-      planoStatus: "ativo",
-      updatedAt: new Date(),
-    }).where(eq(barbeariasTable.id, barbearia.id));
 
     return res.status(201).json({ assinatura: format(assinatura), subscription });
   } catch (e: any) {

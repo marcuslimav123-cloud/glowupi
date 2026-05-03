@@ -126,16 +126,38 @@ async function onPagamentoPago(barbeariaId: number, pagamento: any, asaasPayment
   }
 }
 
-async function onSubscriptionEvent(barbeariaId: number, evento: string, subscription: any) {
+async function onSubscriptionEvent(_barbeariaId: number, evento: string, subscription: any) {
   const subId = subscription?.id;
   if (!subId) return;
   const status = subscription.status;
   const proximoVencimento = subscription.nextDueDate;
-  await db.update(assinaturasAsaasTable).set({
+  const [updated] = await db.update(assinaturasAsaasTable).set({
     status: status || "ACTIVE",
     proximoVencimento: proximoVencimento || undefined,
     updatedAt: new Date(),
-  }).where(eq(assinaturasAsaasTable.asaasSubscriptionId, subId));
+  }).where(eq(assinaturasAsaasTable.asaasSubscriptionId, subId)).returning();
+
+  if (!updated) return;
+
+  const isActive = ["ACTIVE", "RECEIVED", "CONFIRMED"].includes(String(status).toUpperCase());
+  const isCancelled = ["CANCELLED", "EXPIRED", "OVERDUE", "INACTIVE"].includes(String(status).toUpperCase())
+    || evento === "SUBSCRIPTION_CANCELLED" || evento === "SUBSCRIPTION_DELETED";
+
+  if (isActive) {
+    await db.update(barbeariasTable).set({
+      subscriptionStatus: "active",
+      subscriptionPlan: updated.plano,
+      subscriptionPeriod: updated.periodo,
+      planoStatus: "ativo",
+      updatedAt: new Date(),
+    }).where(eq(barbeariasTable.id, updated.barbeariaId));
+  } else if (isCancelled) {
+    await db.update(barbeariasTable).set({
+      subscriptionStatus: "cancelled",
+      planoStatus: "cancelado",
+      updatedAt: new Date(),
+    }).where(eq(barbeariasTable.id, updated.barbeariaId));
+  }
 }
 
 export default router;
