@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { apiUrl, APP_NAME } from "@/lib/utils";
-import { Settings, Save, ToggleLeft, ToggleRight, Info, Shield, FileText, Gift, Megaphone, Video } from "lucide-react";
+import { Settings, Save, ToggleLeft, ToggleRight, Info, Shield, FileText, Gift, Megaphone, Video, Upload, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { VSLPlayer } from "@/components/VSLPlayer";
@@ -185,6 +185,10 @@ export default function AdminSettings() {
   const [vslPercentual, setVslPercentual] = useState("0");
   const [savingVsl, setSavingVsl] = useState(false);
   const [vslPreviewId, setVslPreviewId] = useState<string | null>(null);
+  const [vslVideoUrl, setVslVideoUrl] = useState<string>("");
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [removingVideo, setRemovingVideo] = useState(false);
 
   function extractYoutubeVideoId(url: string): string | null {
     if (!url) return null;
@@ -218,6 +222,7 @@ export default function AdminSettings() {
         setVslUrl(data.vsl_youtube_url || "");
         setVslAtivo(data.vsl_ativo === "true");
         setVslPercentual(data.vsl_percentual_liberar_cta || "0");
+        setVslVideoUrl(data.vsl_video_url || "");
         const vid = extractYoutubeVideoId(data.vsl_youtube_url || "");
         setVslPreviewId(vid);
       })
@@ -308,6 +313,106 @@ export default function AdminSettings() {
       toast({ title: "Erro", description: "Falha ao salvar configurações do vídeo", variant: "destructive" });
     } finally {
       setSavingVsl(false);
+    }
+  };
+
+  const handleVideoFile = async (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("video/")) {
+      toast({ title: "Arquivo inválido", description: "Selecione um arquivo de vídeo (MP4, WebM ou MOV)", variant: "destructive" });
+      return;
+    }
+    const allowed = ["video/mp4", "video/webm", "video/quicktime"];
+    if (!allowed.includes(file.type)) {
+      toast({ title: "Formato não suportado", description: "Use MP4, WebM ou MOV", variant: "destructive" });
+      return;
+    }
+    if (file.size > 500 * 1024 * 1024) {
+      toast({ title: "Arquivo muito grande", description: "Tamanho máximo: 500MB", variant: "destructive" });
+      return;
+    }
+
+    setUploadingVideo(true);
+    setUploadProgress(0);
+
+    try {
+      const reqRes = await fetch(apiUrl("/admin/vsl-video/upload-url"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+      });
+      if (!reqRes.ok) {
+        const err = await reqRes.json().catch(() => ({}));
+        throw new Error(err.error || "Erro ao preparar upload");
+      }
+      const { uploadURL, objectPath } = await reqRes.json();
+      if (typeof uploadURL !== "string" || !uploadURL || typeof objectPath !== "string" || !objectPath) {
+        throw new Error("Resposta inválida do servidor");
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", uploadURL);
+        xhr.setRequestHeader("Content-Type", file.type);
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            setUploadProgress(Math.round((e.loaded / e.total) * 100));
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else reject(new Error(`Falha no upload (${xhr.status})`));
+        };
+        xhr.onerror = () => reject(new Error("Erro de rede no upload"));
+        xhr.send(file);
+      });
+
+      const path = objectPath.startsWith("/") ? objectPath : `/${objectPath}`;
+      const servingUrl = apiUrl(`/storage${path}`);
+
+      const saveRes = await fetch(apiUrl("/admin/config"), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ chave: "vsl_video_url", valor: servingUrl }),
+      });
+      if (!saveRes.ok) {
+        const err = await saveRes.json().catch(() => ({}));
+        throw new Error(err.error || "Erro ao salvar URL do vídeo");
+      }
+
+      setVslVideoUrl(servingUrl);
+      toast({ title: "Vídeo enviado", description: "O vídeo MP4 já está sendo usado na página /pdvd" });
+    } catch (err: any) {
+      console.error("video upload error:", err);
+      toast({ title: "Erro no upload", description: err.message || "Falha ao enviar vídeo", variant: "destructive" });
+    } finally {
+      setUploadingVideo(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const removeVslVideo = async () => {
+    if (!confirm("Remover o vídeo MP4? A página /pdvd voltará a usar o YouTube (se configurado).")) return;
+    setRemovingVideo(true);
+    try {
+      const res = await fetch(apiUrl("/admin/config"), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ chave: "vsl_video_url", valor: "" }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Erro ao remover vídeo");
+      }
+      setVslVideoUrl("");
+      toast({ title: "Vídeo removido", description: "A página /pdvd voltará a usar o YouTube se configurado" });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message || "Falha ao remover", variant: "destructive" });
+    } finally {
+      setRemovingVideo(false);
     }
   };
 
@@ -535,8 +640,82 @@ export default function AdminSettings() {
                 </div>
               </div>
 
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl p-4 space-y-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-white">Vídeo MP4 hospedado (recomendado)</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Faça upload de um arquivo MP4, WebM ou MOV (máx 500MB). Quando configurado, será usado em vez do YouTube — sem marca do YouTube e com seek-lock total.
+                    </p>
+                  </div>
+                </div>
+
+                {vslVideoUrl ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Video className="h-4 w-4 text-green-400 shrink-0" />
+                        <span className="text-xs text-green-300 truncate">{vslVideoUrl}</span>
+                      </div>
+                      <Button
+                        onClick={removeVslVideo}
+                        disabled={removingVideo}
+                        size="sm"
+                        variant="outline"
+                        className="gap-2 shrink-0"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        {removingVideo ? "Removendo..." : "Remover"}
+                      </Button>
+                    </div>
+                    <label className="inline-flex items-center gap-2 text-xs text-slate-400 cursor-pointer hover:text-white transition-colors">
+                      <Upload className="h-3.5 w-3.5" />
+                      <span>Substituir vídeo</span>
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime"
+                        className="hidden"
+                        disabled={uploadingVideo}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleVideoFile(f);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <label className={`flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed transition-colors ${
+                    uploadingVideo ? "border-primary/30 bg-primary/5 cursor-wait" : "border-white/15 hover:border-primary/40 hover:bg-white/[0.02] cursor-pointer"
+                  }`}>
+                    <Upload className="h-6 w-6 text-slate-400" />
+                    <span className="text-sm text-white font-medium">
+                      {uploadingVideo ? `Enviando... ${uploadProgress}%` : "Clique para enviar um vídeo"}
+                    </span>
+                    <span className="text-xs text-slate-500">MP4, WebM ou MOV — até 500MB</span>
+                    <input
+                      type="file"
+                      accept="video/mp4,video/webm,video/quicktime"
+                      className="hidden"
+                      disabled={uploadingVideo}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleVideoFile(f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                )}
+
+                {uploadingVideo && uploadProgress > 0 && (
+                  <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-primary transition-all" style={{ width: `${uploadProgress}%` }} />
+                  </div>
+                )}
+              </div>
+
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Link do YouTube</label>
+                <label className="block text-sm font-medium text-white mb-2">Link do YouTube (fallback)</label>
                 <input
                   type="text"
                   value={vslUrl}
@@ -582,11 +761,13 @@ export default function AdminSettings() {
                 {savingVsl ? "Salvando..." : "Salvar configurações do vídeo"}
               </Button>
 
-              {vslPreviewId && (
+              {(vslVideoUrl || vslPreviewId) && (
                 <div className="border-t border-white/10 pt-5">
-                  <p className="text-sm font-medium text-white mb-3">Pré-visualização</p>
+                  <p className="text-sm font-medium text-white mb-3">
+                    Pré-visualização {vslVideoUrl ? "(MP4)" : "(YouTube)"}
+                  </p>
                   <div className="max-w-[640px] rounded-xl overflow-hidden border border-white/10">
-                    <VSLPlayer videoId={vslPreviewId} allowFullControls />
+                    <VSLPlayer videoUrl={vslVideoUrl || null} videoId={vslPreviewId} allowFullControls />
                   </div>
                 </div>
               )}

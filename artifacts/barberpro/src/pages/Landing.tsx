@@ -12,6 +12,7 @@ import { VSLPlayer } from "@/components/VSLPlayer";
 
 interface VslConfig {
   videoId: string | null;
+  videoUrl: string | null;
   ativo: boolean;
   percentualLiberarCta: number;
 }
@@ -243,7 +244,7 @@ export default function Landing() {
       .finally(() => setVslConfigLoading(false));
   }, []);
 
-  const showVsl = !!(vslConfig?.videoId && vslConfig.ativo);
+  const showVsl = !!(vslConfig?.ativo && (vslConfig.videoUrl || vslConfig.videoId));
   const vslGateActive = !vslConfigLoading && showVsl && vslConfig!.percentualLiberarCta > 0;
   const ctaLocked = vslConfigLoading
     ? false
@@ -357,11 +358,12 @@ export default function Landing() {
         </div>
       </nav>
 
-      {showVsl && vslConfig?.videoId && (
+      {showVsl && vslConfig && (
         <section className="pt-16 pb-0 px-4 sm:px-6">
           <div className="max-w-[900px] mx-auto">
             <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border border-white/[0.08]">
               <VSLPlayer
+                videoUrl={vslConfig.videoUrl}
                 videoId={vslConfig.videoId}
                 onProgress={setVslProgress}
               />

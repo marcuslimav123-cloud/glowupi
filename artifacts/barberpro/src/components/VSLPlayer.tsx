@@ -42,7 +42,8 @@ declare global {
 }
 
 interface VSLPlayerProps {
-  videoId: string;
+  videoId?: string | null;
+  videoUrl?: string | null;
   onProgress?: (percent: number) => void;
   allowFullControls?: boolean;
 }
@@ -68,7 +69,130 @@ function loadYTApi(cb: () => void) {
   };
 }
 
-export function VSLPlayer({ videoId, onProgress, allowFullControls = false }: VSLPlayerProps) {
+function UnmuteOverlay({ onClick }: { onClick: () => void }) {
+  return (
+    <div
+      className="absolute inset-0 flex items-center justify-center z-20 cursor-pointer"
+      style={{ background: "rgba(0,0,0,0.45)" }}
+      onClick={onClick}
+    >
+      <div className="flex flex-col items-center gap-3 px-6 py-5 rounded-2xl bg-black/60 border border-white/20 backdrop-blur-sm text-white text-center select-none">
+        <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/40">
+          <Volume2 className="h-7 w-7 text-white" />
+        </div>
+        <span className="text-[15px] font-bold">Clique para ativar o som</span>
+        <span className="text-[12px] text-white/60">O vídeo está reproduzindo sem som</span>
+      </div>
+    </div>
+  );
+}
+
+function BlockingOverlays() {
+  return (
+    <>
+      <div className="absolute top-0 left-0 right-0 h-14 z-10" style={{ pointerEvents: "all", background: "transparent" }} onMouseDown={e => e.preventDefault()} />
+      <div className="absolute bottom-0 left-0 right-0 h-14 z-10" style={{ pointerEvents: "all", background: "transparent" }} onMouseDown={e => e.preventDefault()} />
+      <div className="absolute top-0 left-0 bottom-0 w-14 z-10" style={{ pointerEvents: "all", background: "transparent" }} onMouseDown={e => e.preventDefault()} />
+      <div className="absolute top-0 right-0 bottom-0 w-14 z-10" style={{ pointerEvents: "all", background: "transparent" }} onMouseDown={e => e.preventDefault()} />
+    </>
+  );
+}
+
+function NativeVideoPlayer({ videoUrl, onProgress, allowFullControls }: { videoUrl: string; onProgress?: (p: number) => void; allowFullControls: boolean }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const maxWatchedTimeRef = useRef<number>(0);
+  const lastValidTimeRef = useRef<number>(0);
+  const [muted, setMuted] = useState(!allowFullControls);
+  const [showUnmuteOverlay, setShowUnmuteOverlay] = useState(!allowFullControls);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    maxWatchedTimeRef.current = 0;
+    lastValidTimeRef.current = 0;
+  }, [videoUrl]);
+
+  const handleTimeUpdate = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const ct = v.currentTime;
+    const dur = v.duration || 0;
+
+    if (!allowFullControls) {
+      if (ct > maxWatchedTimeRef.current) {
+        maxWatchedTimeRef.current = ct;
+      }
+      lastValidTimeRef.current = ct;
+      if (dur > 0 && onProgress) {
+        onProgress(Math.min(100, Math.round((maxWatchedTimeRef.current / dur) * 100)));
+      }
+    } else {
+      if (dur > 0 && onProgress) {
+        onProgress(Math.min(100, Math.round((ct / dur) * 100)));
+      }
+    }
+  }, [allowFullControls, onProgress]);
+
+  const handleSeeking = useCallback(() => {
+    const v = videoRef.current;
+    if (!v || allowFullControls) return;
+    const target = v.currentTime;
+    const maxAllowed = maxWatchedTimeRef.current + 0.75;
+    if (target > maxAllowed) {
+      v.currentTime = maxWatchedTimeRef.current;
+    }
+  }, [allowFullControls]);
+
+  const handleRateChange = useCallback(() => {
+    const v = videoRef.current;
+    if (!v || allowFullControls) return;
+    if (v.playbackRate !== 1) v.playbackRate = 1;
+  }, [allowFullControls]);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    if (!allowFullControls) e.preventDefault();
+  }, [allowFullControls]);
+
+  const handleUnmute = useCallback(() => {
+    const v = videoRef.current;
+    if (v) {
+      v.muted = false;
+      v.volume = 1;
+      v.play().catch(() => {});
+    }
+    setMuted(false);
+    setShowUnmuteOverlay(false);
+  }, []);
+
+  return (
+    <div className="relative w-full bg-black" style={{ aspectRatio: "16/9" }}>
+      <video
+        ref={videoRef}
+        src={videoUrl}
+        autoPlay
+        muted={muted}
+        playsInline
+        controls={allowFullControls}
+        controlsList={allowFullControls ? "nodownload" : "nodownload noplaybackrate"}
+        disablePictureInPicture
+        onContextMenu={handleContextMenu}
+        onTimeUpdate={handleTimeUpdate}
+        onSeeking={handleSeeking}
+        onRateChange={handleRateChange}
+        onLoadedMetadata={() => setReady(true)}
+        onCanPlay={() => {
+          const v = videoRef.current;
+          if (v && v.paused) v.play().catch(() => {});
+        }}
+        className="w-full h-full"
+        style={{ display: "block" }}
+      />
+      {!allowFullControls && <BlockingOverlays />}
+      {showUnmuteOverlay && ready && <UnmuteOverlay onClick={handleUnmute} />}
+    </div>
+  );
+}
+
+function YouTubePlayer({ videoId, onProgress, allowFullControls }: { videoId: string; onProgress?: (p: number) => void; allowFullControls: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
   const lastValidTimeRef = useRef<number>(0);
@@ -198,29 +322,18 @@ export function VSLPlayer({ videoId, onProgress, allowFullControls = false }: VS
   return (
     <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
       <div ref={containerRef} className="w-full h-full" />
-      {!allowFullControls && (
-        <>
-          <div className="absolute top-0 left-0 right-0 h-14 z-10" style={{ pointerEvents: "all", background: "transparent" }} onMouseDown={e => e.preventDefault()} />
-          <div className="absolute bottom-0 left-0 right-0 h-14 z-10" style={{ pointerEvents: "all", background: "transparent" }} onMouseDown={e => e.preventDefault()} />
-          <div className="absolute top-0 left-0 bottom-0 w-14 z-10" style={{ pointerEvents: "all", background: "transparent" }} onMouseDown={e => e.preventDefault()} />
-          <div className="absolute top-0 right-0 bottom-0 w-14 z-10" style={{ pointerEvents: "all", background: "transparent" }} onMouseDown={e => e.preventDefault()} />
-        </>
-      )}
-      {showUnmuteOverlay && playerReady && (
-        <div
-          className="absolute inset-0 flex items-center justify-center z-20 cursor-pointer"
-          style={{ background: "rgba(0,0,0,0.45)" }}
-          onClick={handleUnmute}
-        >
-          <div className="flex flex-col items-center gap-3 px-6 py-5 rounded-2xl bg-black/60 border border-white/20 backdrop-blur-sm text-white text-center select-none">
-            <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/40">
-              <Volume2 className="h-7 w-7 text-white" />
-            </div>
-            <span className="text-[15px] font-bold">Clique para ativar o som</span>
-            <span className="text-[12px] text-white/60">O vídeo está reproduzindo sem som</span>
-          </div>
-        </div>
-      )}
+      {!allowFullControls && <BlockingOverlays />}
+      {showUnmuteOverlay && playerReady && <UnmuteOverlay onClick={handleUnmute} />}
     </div>
   );
+}
+
+export function VSLPlayer({ videoId, videoUrl, onProgress, allowFullControls = false }: VSLPlayerProps) {
+  if (videoUrl) {
+    return <NativeVideoPlayer videoUrl={videoUrl} onProgress={onProgress} allowFullControls={allowFullControls} />;
+  }
+  if (videoId) {
+    return <YouTubePlayer videoId={videoId} onProgress={onProgress} allowFullControls={allowFullControls} />;
+  }
+  return null;
 }

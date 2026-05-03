@@ -8,6 +8,9 @@ import { eq, sql, desc, count, and, gte, lt, isNull, type SQL } from "drizzle-or
 import { verifyAdminPassword, createAdminSession, deleteAdminSession, requireAdmin } from "../lib/adminAuth.js";
 import { getEmailStats } from "../lib/brevo.js";
 import { extractYoutubeVideoId } from "../lib/youtube.js";
+import { ObjectStorageService } from "../lib/objectStorage.js";
+
+const adminObjectStorage = new ObjectStorageService();
 
 const importUpload = multer({
   storage: multer.memoryStorage(),
@@ -438,6 +441,37 @@ router.get("/logs", requireAdmin, async (req, res) => {
   return res.json(logs.map(l => ({ ...l, createdAt: l.createdAt?.toISOString() })));
 });
 
+router.post("/vsl-video/upload-url", requireAdmin, async (req: any, res) => {
+  try {
+    const { name, size, contentType } = req.body || {};
+    if (!name || !size || !contentType) {
+      return res.status(400).json({ error: "Campos obrigatórios ausentes (name, size, contentType)" });
+    }
+    const ct = String(contentType).toLowerCase();
+    if (!ct.startsWith("video/")) {
+      return res.status(400).json({ error: "Apenas arquivos de vídeo são permitidos" });
+    }
+    const allowed = ["video/mp4", "video/webm", "video/quicktime"];
+    if (!allowed.includes(ct)) {
+      return res.status(400).json({ error: "Formato não suportado. Use MP4, WebM ou MOV." });
+    }
+    const sizeNum = Number(size);
+    const maxSize = 500 * 1024 * 1024;
+    if (!Number.isFinite(sizeNum) || sizeNum <= 0) {
+      return res.status(400).json({ error: "Tamanho do arquivo inválido" });
+    }
+    if (sizeNum > maxSize) {
+      return res.status(400).json({ error: "Arquivo muito grande (máx 500MB)" });
+    }
+    const uploadURL = await adminObjectStorage.getObjectEntityUploadURL();
+    const objectPath = adminObjectStorage.normalizeObjectEntityPath(uploadURL);
+    return res.json({ uploadURL, objectPath, metadata: { name, size: sizeNum, contentType: ct } });
+  } catch (e) {
+    console.error("admin vsl-video upload url error:", e);
+    return res.status(500).json({ error: "Erro ao gerar URL de upload" });
+  }
+});
+
 router.get("/config", requireAdmin, async (_req, res) => {
   const configs = await db.select().from(platformConfigTable);
   const configMap: Record<string, string> = {};
@@ -462,6 +496,13 @@ router.put("/config", requireAdmin, async (req: any, res) => {
     const videoId = extractYoutubeVideoId(valor);
     if (!videoId) {
       return res.status(400).json({ error: "Link do YouTube inválido. Use um link no formato youtube.com/watch?v=..., youtu.be/... ou Shorts." });
+    }
+  }
+
+  if (chave === "vsl_video_url" && valor !== "") {
+    const v = String(valor).trim();
+    if (!/^\/?storage\/objects\/.+/.test(v) && !/^https?:\/\/.+/.test(v)) {
+      return res.status(400).json({ error: "URL de vídeo inválida" });
     }
   }
 

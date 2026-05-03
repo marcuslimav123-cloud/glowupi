@@ -33,15 +33,16 @@ router.post("/vsl-progress", async (req, res) => {
 router.get("/vsl-config", async (_req, res) => {
   try {
     const configs = await db.select().from(platformConfigTable).where(
-      sql`${platformConfigTable.chave} IN ('vsl_youtube_url', 'vsl_ativo', 'vsl_percentual_liberar_cta')`
+      sql`${platformConfigTable.chave} IN ('vsl_youtube_url', 'vsl_video_url', 'vsl_ativo', 'vsl_percentual_liberar_cta')`
     );
     const configMap: Record<string, string> = {};
     for (const c of configs) configMap[c.chave] = c.valor;
     const rawUrl = configMap["vsl_youtube_url"] || "";
     const videoId = extractYoutubeVideoId(rawUrl) || null;
+    const videoUrl = (configMap["vsl_video_url"] || "").trim() || null;
     const ativo = configMap["vsl_ativo"] === "true";
     const percentualLiberarCta = parseInt(configMap["vsl_percentual_liberar_cta"] || "0") || 0;
-    return res.json({ videoId, ativo, percentualLiberarCta });
+    return res.json({ videoId, videoUrl, ativo, percentualLiberarCta });
   } catch {
     return res.status(500).json({ error: "Erro ao carregar configuração VSL" });
   }
