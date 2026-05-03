@@ -4,9 +4,20 @@ import { useGetModoHumano, useUpdateModoHumano, getGetModoHumanoQueryKey } from 
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
-import { ShieldOff, Inbox, MessageSquare } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ShieldOff, Inbox, MessageSquare, Bell, Calendar, DollarSign, Users, Star, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
+import { apiUrl } from "@/lib/utils";
+
+type ParamRow = { chave: string; valor: string };
+
+const PUSH_CATEGORIES_UI: { key: string; label: string; description: string; Icon: any }[] = [
+  { key: "agenda", label: "Agenda", description: "Novos agendamentos, cancelamentos, lembretes e pendências.", Icon: Calendar },
+  { key: "financeiro", label: "Financeiro", description: "Comandas, contas a pagar, sangrias, vales e comissões.", Icon: DollarSign },
+  { key: "equipe", label: "Equipe", description: "Convites aceitos e mudanças no time.", Icon: Users },
+  { key: "marketing", label: "Marketing", description: "Avaliações, aniversariantes e campanhas.", Icon: Star },
+  { key: "sistema", label: "Sistema", description: "Status da assinatura, cobrança, alertas gerais.", Icon: AlertTriangle },
+];
 
 export default function ConfiguracoesComunicacao() {
   const { barbeariaId } = useAuth();
@@ -16,6 +27,37 @@ export default function ConfiguracoesComunicacao() {
   const { data: modoHumanoData } = useGetModoHumano(barbeariaId!, { query: { enabled: !!barbeariaId } } as any);
   const updateModoHumano = useUpdateModoHumano();
   const modoHumanoAtivo = !!(modoHumanoData as any)?.modoHumano;
+
+  const paramsQuery = useQuery<ParamRow[]>({
+    queryKey: ["parametros", barbeariaId],
+    enabled: !!barbeariaId,
+    queryFn: async () => {
+      const r = await fetch(apiUrl(`/barbearias/${barbeariaId}/parametros`), { credentials: "include" });
+      if (!r.ok) throw new Error("Falha ao carregar parâmetros");
+      const data = await r.json();
+      return Array.isArray(data) ? data : [];
+    },
+  });
+
+  const updateParam = useMutation({
+    mutationFn: async ({ chave, valor }: { chave: string; valor: string }) => {
+      const r = await fetch(apiUrl(`/barbearias/${barbeariaId}/parametros/${encodeURIComponent(chave)}`), {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ valor }),
+      });
+      if (!r.ok) throw new Error("Falha ao atualizar");
+      return r.json();
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["parametros", barbeariaId] }),
+    onError: (e: any) => toast({ title: "Erro", description: e?.message || "Falha ao atualizar", variant: "destructive" }),
+  });
+
+  const getParam = (chave: string): boolean => {
+    const row = (paramsQuery.data || []).find((p) => p.chave === chave);
+    return row ? row.valor !== "Não" : true;
+  };
 
   async function handleToggle(checked: boolean) {
     try {
@@ -67,6 +109,42 @@ export default function ConfiguracoesComunicacao() {
               </Link>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-5 mb-4" data-testid="card-push-prefs">
+        <div className="flex items-start gap-4 mb-3">
+          <div className="h-12 w-12 rounded-xl bg-accent/15 text-accent flex items-center justify-center shrink-0">
+            <Bell className="h-6 w-6" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-base">Notificações push (sua equipe)</p>
+            <p className="text-sm text-muted-foreground mt-1">Escolha quais categorias de alerta o sistema envia para você e sua equipe.</p>
+          </div>
+        </div>
+        <div className="divide-y divide-border">
+          {PUSH_CATEGORIES_UI.map((cat) => {
+            const chave = `notif_push_${cat.key}`;
+            const ativo = getParam(chave);
+            const Icon = cat.Icon;
+            return (
+              <div key={cat.key} className="flex items-center gap-3 py-3">
+                <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${ativo ? "bg-accent/15 text-accent" : "bg-muted text-muted-foreground"}`}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{cat.label}</p>
+                  <p className="text-xs text-muted-foreground">{cat.description}</p>
+                </div>
+                <Switch
+                  checked={ativo}
+                  onCheckedChange={(v) => updateParam.mutate({ chave, valor: v ? "Sim" : "Não" })}
+                  disabled={updateParam.isPending || paramsQuery.isLoading}
+                  data-testid={`switch-push-${cat.key}`}
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
 

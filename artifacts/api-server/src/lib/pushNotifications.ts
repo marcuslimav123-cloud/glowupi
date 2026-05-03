@@ -29,6 +29,48 @@ interface PushMessage {
   title: string;
   body: string;
   data?: Record<string, any>;
+  category?: PushCategory;
+}
+
+export type PushCategory = "agenda" | "financeiro" | "equipe" | "marketing" | "sistema";
+
+const CATEGORY_PARAM_KEY: Record<PushCategory, string> = {
+  agenda: "notif_push_agenda",
+  financeiro: "notif_push_financeiro",
+  equipe: "notif_push_equipe",
+  marketing: "notif_push_marketing",
+  sistema: "notif_push_sistema",
+};
+
+export const PUSH_CATEGORIES: { key: PushCategory; label: string; description: string }[] = [
+  { key: "agenda", label: "Agenda", description: "Novos agendamentos, cancelamentos, lembretes e pendências de aprovação" },
+  { key: "financeiro", label: "Financeiro", description: "Comandas fechadas e pagas, contas a pagar, sangrias, vales e comissões liberadas" },
+  { key: "equipe", label: "Equipe", description: "Novos membros que aceitaram convite e mudanças no time" },
+  { key: "marketing", label: "Marketing", description: "Avaliações recebidas, aniversariantes e campanhas" },
+  { key: "sistema", label: "Sistema", description: "Status da assinatura, cobrança recusada e alertas gerais" },
+];
+
+export function categoryForType(type: string | undefined): PushCategory {
+  const t = String(type || "").toLowerCase();
+  if (!t || t === "test") return "sistema";
+  if (t.startsWith("agend") || t === "reminder" || t === "pending_appointments_nudge"
+    || t === "new_appointment" || t === "pending_appointment" || t === "cancelled_appointment"
+    || t === "new_atendimento") return "agenda";
+  if (t.startsWith("comanda") || t.startsWith("conta_") || t.startsWith("comissao")
+    || t.startsWith("caixa") || t === "sangria" || t === "vale") return "financeiro";
+  if (t.startsWith("convite") || t.startsWith("equipe") || t === "novo_membro") return "equipe";
+  if (t.startsWith("avaliacao") || t.startsWith("aniversario") || t.startsWith("marketing")) return "marketing";
+  return "sistema";
+}
+
+async function isCategoriaAtiva(barbeariaId: number, category: PushCategory): Promise<boolean> {
+  try {
+    const params = await getParametros(barbeariaId);
+    const v = params[CATEGORY_PARAM_KEY[category]];
+    return v !== "Não";
+  } catch {
+    return true;
+  }
 }
 
 export function getVapidPublicKey(): string {
@@ -65,6 +107,13 @@ export async function sendPushToUser(userId: number, message: PushMessage): Prom
 
 export async function sendPushToBarbearia(barbeariaId: number, message: PushMessage, excludeUserId?: number): Promise<void> {
   try {
+    const category = message.category || categoryForType(message.data?.type);
+    const ativo = await isCategoriaAtiva(barbeariaId, category);
+    if (!ativo) {
+      console.log(`[Push] Skipped — categoria '${category}' desativada para barbearia ${barbeariaId}`);
+      return;
+    }
+
     const users = await db.select({ id: usersTable.id }).from(usersTable).where(
       and(
         eq(usersTable.barbeariaId, barbeariaId),
@@ -89,7 +138,7 @@ export async function sendPushToBarbearia(barbeariaId: number, message: PushMess
         titulo: message.title,
         corpo: message.body,
         tipo: message.data?.type || "geral",
-        dados: message.data || {},
+        dados: { ...(message.data || {}), category },
       });
     } catch (dbErr) {
       console.error(`[Push] Error storing notification in DB:`, dbErr);

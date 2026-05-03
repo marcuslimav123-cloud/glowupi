@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { comissoesTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
+import { sendPushToBarbearia } from "../lib/pushNotifications.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -48,6 +49,15 @@ router.put("/:id", requireAuth, async (req: any, res) => {
   if (percentual !== undefined) updates.percentual = String(percentual);
   const [row] = await db.update(comissoesTable).set(updates).where(and(eq(comissoesTable.id, id), eq(comissoesTable.barbeariaId, barbeariaId))).returning();
   if (!row) return res.status(404).json({ error: "Comissão não encontrada" });
+
+  if (status === "paga") {
+    sendPushToBarbearia(barbeariaId, {
+      title: "Comissão liberada",
+      body: `${row.profissionalNome} — R$ ${Number(row.valorComissao || 0).toFixed(2).replace(".", ",")} (${row.mesAno})`,
+      data: { type: "comissao_paga", comissaoId: row.id, profissionalId: row.profissionalId, url: "/financeiro/comissoes" },
+    }).catch(err => console.error("[Push] Error on comissao paga:", err));
+  }
+
   res.json(fmt(row));
 });
 

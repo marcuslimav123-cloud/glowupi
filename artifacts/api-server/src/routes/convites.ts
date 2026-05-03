@@ -7,6 +7,7 @@ import { requireAuth, createSession, checkBarbeariaAccess as checkAccess, requir
 import { sendEmail, renderTemplate } from "../lib/brevo.js";
 import { getTemplateForType } from "./emailTemplates.js";
 import { OAuth2Client } from "google-auth-library";
+import { sendPushToBarbearia } from "../lib/pushNotifications.js";
 
 const router: IRouter = Router();
 
@@ -320,6 +321,12 @@ router.post("/accept/:token", async (req, res) => {
       status: "aceito",
       acceptedAt: new Date(),
     }).where(eq(convitesTable.id, convite.id));
+
+    sendPushToBarbearia(convite.barbeariaId, {
+      title: "Convite aceito",
+      body: `${nome} entrou no time como ${convite.role === "colaborador" ? "colaborador" : convite.role}.`,
+      data: { type: "convite_aceito", userId: newUser.id, conviteId: convite.id, url: "/equipe" },
+    }, newUser.id).catch(err => console.error("[Push] Error on convite aceito:", err));
 
     const sessionToken = await createSession(newUser.id);
     res.cookie("session", sessionToken, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/" });

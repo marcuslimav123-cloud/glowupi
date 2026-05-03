@@ -18,6 +18,8 @@ import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { ListRow } from "@/components/ListRow";
 import { SectionHeader } from "@/components/SectionHeader";
+import { useQuery } from "@tanstack/react-query";
+import { fetchJson } from "@/lib/api";
 
 const PRIVACY_URL = "https://glowupi.com/legal/privacidade";
 const TERMS_URL = "https://glowupi.com/legal/termos";
@@ -45,7 +47,14 @@ type SectionDef = {
 export default function MaisScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user, barbearia, logout, token } = useAuth();
+  const { user, barbearia, logout, token, barbeariaId } = useAuth();
+  const { data: naoLidasData } = useQuery<{ count: number }>({
+    queryKey: ["notificacoes-nao-lidas", barbeariaId],
+    enabled: !!barbeariaId,
+    refetchInterval: 10_000,
+    queryFn: () => fetchJson<{ count: number }>(`/barbearias/${barbeariaId}/notificacoes-internas/nao-lidas`),
+  });
+  const naoLidas = naoLidasData?.count ?? 0;
   const colors = useColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const isWeb = Platform.OS === "web";
@@ -137,6 +146,19 @@ export default function MaisScreen() {
   };
 
   const sections: SectionDef[] = [
+    {
+      label: "Avisos",
+      items: [
+        {
+          icon: "bell",
+          label: "Notificações",
+          description: naoLidas > 0 ? `${naoLidas} não lida${naoLidas === 1 ? "" : "s"}` : "Tudo em dia",
+          to: "/notificacoes" as Href,
+          badge: naoLidas > 0 ? (naoLidas > 99 ? "99+" : String(naoLidas)) : undefined,
+          badgeTone: naoLidas > 0 ? "accent" : "default",
+        },
+      ],
+    },
     {
       label: "Financeiro",
       description: "Caixa, comissões, contas e fluxo de caixa.",

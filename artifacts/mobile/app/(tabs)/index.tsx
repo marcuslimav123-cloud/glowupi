@@ -14,6 +14,9 @@ import { Feather } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useColors, type ColorPalette } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "expo-router";
+import { TouchableOpacity } from "react-native";
+import { fetchJson } from "@/lib/api";
 
 const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -45,6 +48,33 @@ interface DashboardData {
   taxaOcupacao?: number;
   topServicos?: DashboardTopServico[];
   alertas?: DashboardAlerta[];
+}
+
+function NotificacoesBell() {
+  const { barbeariaId } = useAuth();
+  const colors = useColors();
+  const router = useRouter();
+  const { data } = useQuery<{ count: number }>({
+    queryKey: ["notificacoes-nao-lidas", barbeariaId],
+    enabled: !!barbeariaId,
+    refetchInterval: 10_000,
+    queryFn: () => fetchJson<{ count: number }>(`/barbearias/${barbeariaId}/notificacoes-internas/nao-lidas`),
+  });
+  const count = data?.count ?? 0;
+  return (
+    <TouchableOpacity
+      onPress={() => router.push("/notificacoes")}
+      style={{ width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surfaceBorder }}
+      accessibilityLabel="Notificações"
+    >
+      <Feather name="bell" size={18} color={colors.text} />
+      {count > 0 && (
+        <View style={{ position: "absolute", top: 4, right: 4, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center", paddingHorizontal: 3 }}>
+          <Text style={{ color: "#fff", fontFamily: "Inter_700Bold", fontSize: 9 }}>{count > 99 ? "99+" : count}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
 }
 
 function MetricCard({
@@ -154,8 +184,11 @@ export default function DashboardScreen() {
             <Text style={styles.barbeariaName}>{barbearia?.nome ?? "Minha Barbearia"}</Text>
           </View>
         </View>
-        <View style={styles.todayBadge}>
-          <Text style={styles.todayText}>Hoje</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <NotificacoesBell />
+          <View style={styles.todayBadge}>
+            <Text style={styles.todayText}>Hoje</Text>
+          </View>
         </View>
       </View>
 

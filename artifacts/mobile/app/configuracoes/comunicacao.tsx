@@ -8,6 +8,16 @@ import { SkeletonList } from "@/components/Skeleton";
 import { fetchJson, getErrorMessage } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
+type ParamRow = { chave: string; valor: string };
+
+const PUSH_CATEGORIES_UI: { key: string; label: string; description: string; icon: keyof typeof Feather.glyphMap }[] = [
+  { key: "agenda", label: "Agenda", description: "Novos agendamentos, cancelamentos, lembretes e pendências.", icon: "calendar" },
+  { key: "financeiro", label: "Financeiro", description: "Comandas, contas a pagar, sangrias, vales e comissões.", icon: "dollar-sign" },
+  { key: "equipe", label: "Equipe", description: "Convites aceitos e mudanças no time.", icon: "users" },
+  { key: "marketing", label: "Marketing", description: "Avaliações, aniversariantes e campanhas.", icon: "star" },
+  { key: "sistema", label: "Sistema", description: "Status da assinatura, cobrança, alertas gerais.", icon: "alert-triangle" },
+];
+
 export default function ComunicacaoScreen() {
   const { barbeariaId } = useAuth();
   const qc = useQueryClient();
@@ -26,6 +36,27 @@ export default function ComunicacaoScreen() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["modo-humano", barbeariaId] }),
     onError: (e) => Alert.alert("Erro", getErrorMessage(e)),
   });
+
+  const paramsQuery = useQuery<ParamRow[]>({
+    queryKey: ["parametros", barbeariaId],
+    enabled: !!barbeariaId,
+    queryFn: async () => {
+      const r = await fetchJson<ParamRow[]>(`/barbearias/${barbeariaId}/parametros`);
+      return Array.isArray(r) ? r : [];
+    },
+  });
+
+  const updateParam = useMutation({
+    mutationFn: ({ chave, valor }: { chave: string; valor: string }) =>
+      fetchJson(`/barbearias/${barbeariaId}/parametros/${encodeURIComponent(chave)}`, { method: "PUT", body: { valor } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["parametros", barbeariaId] }),
+    onError: (e) => Alert.alert("Erro", getErrorMessage(e)),
+  });
+
+  const getParam = (chave: string): boolean => {
+    const row = (paramsQuery.data || []).find((p) => p.chave === chave);
+    return row ? row.valor !== "Não" : true;
+  };
 
   const ativo = !!query.data?.modoHumano;
 
@@ -59,6 +90,40 @@ export default function ComunicacaoScreen() {
                 <Text style={styles.badgeText}>Ativo</Text>
               </View>
             ) : null}
+          </View>
+
+          <View style={[styles.card, { paddingBottom: 6 }]}>
+            <View style={styles.head}>
+              <View style={styles.icon}>
+                <Feather name="bell" size={18} color={colors.accent} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.title}>Notificações push (sua equipe)</Text>
+                <Text style={styles.desc}>Escolha quais categorias de alerta o app envia para você e sua equipe.</Text>
+              </View>
+            </View>
+            {PUSH_CATEGORIES_UI.map((cat) => {
+              const chave = `notif_push_${cat.key}`;
+              const ativoCat = getParam(chave);
+              return (
+                <View key={cat.key} style={styles.prefRow}>
+                  <View style={[styles.prefIcon, ativoCat && { backgroundColor: colors.accent + "22" }]}>
+                    <Feather name={cat.icon} size={16} color={ativoCat ? colors.accent : colors.textSecondary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.prefLabel}>{cat.label}</Text>
+                    <Text style={styles.prefDesc}>{cat.description}</Text>
+                  </View>
+                  <Switch
+                    value={ativoCat}
+                    onValueChange={(v) => updateParam.mutate({ chave, valor: v ? "Sim" : "Não" })}
+                    disabled={updateParam.isPending || paramsQuery.isLoading}
+                    trackColor={{ false: colors.surfaceLight, true: colors.accent }}
+                    thumbColor="#fff"
+                  />
+                </View>
+              );
+            })}
           </View>
 
           <View style={styles.infoCard}>
@@ -104,4 +169,8 @@ const makeStyles = (c: ColorPalette) => StyleSheet.create({
   bulletRow: { flexDirection: "row", gap: 8, marginBottom: 6 },
   bullet: { width: 4, height: 4, borderRadius: 2, backgroundColor: c.accent, marginTop: 7 },
   bulletText: { color: c.textSecondary, fontFamily: "Inter_500Medium", fontSize: 12, flex: 1, lineHeight: 17 },
+  prefRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: c.surfaceBorder, marginTop: 10 },
+  prefIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: c.surfaceLight, alignItems: "center", justifyContent: "center" },
+  prefLabel: { color: c.text, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  prefDesc: { color: c.textSecondary, fontFamily: "Inter_500Medium", fontSize: 11, marginTop: 2, lineHeight: 15 },
 });

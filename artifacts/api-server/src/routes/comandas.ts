@@ -4,6 +4,7 @@ import { comandasTable, agendamentosTable } from "@workspace/db/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
+import { sendPushToBarbearia } from "../lib/pushNotifications.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -158,6 +159,13 @@ router.put("/:comandaId/pagar", requireAuth, async (req, res) => {
     .set({ status: "paga", pagamentos: novosPagamentos })
     .where(and(eq(comandasTable.id, comandaId), eq(comandasTable.barbeariaId, barbeariaId)))
     .returning();
+
+  sendPushToBarbearia(barbeariaId, {
+    title: "Comanda paga",
+    body: `${updated.clienteNome || "Cliente"} — R$ ${Number(updated.valorTotal || 0).toFixed(2).replace(".", ",")} via ${novoPag.metodo}`,
+    data: { type: "comanda_paga", comandaId: updated.id, url: "/comandas" },
+  }).catch(err => console.error("[Push] Error on comanda paga:", err));
+
   return res.json(updated);
 });
 

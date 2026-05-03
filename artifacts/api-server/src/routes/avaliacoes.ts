@@ -4,6 +4,7 @@ import { avaliacoesTable, barbeariasTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
+import { sendPushToBarbearia } from "../lib/pushNotifications.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -50,6 +51,14 @@ router.post("/", requireAuth, requireRole("dono", "gerente"), async (req: any, r
   const [avaliacao] = await db.insert(avaliacoesTable).values({
     barbeariaId, agendamentoId, clienteNome, profissionalId, profissionalNome, nota, comentario
   }).returning();
+
+  const estrelas = "★".repeat(Math.max(1, Math.min(5, Number(nota) || 0)));
+  sendPushToBarbearia(barbeariaId, {
+    title: `Nova avaliação ${estrelas}`,
+    body: `${clienteNome || "Cliente"}${profissionalNome ? ` para ${profissionalNome}` : ""}${comentario ? `: ${String(comentario).slice(0, 80)}` : ""}`,
+    data: { type: "avaliacao_nova", avaliacaoId: avaliacao.id, profissionalId, url: "/relatorios/avaliacoes" },
+  }).catch(err => console.error("[Push] Error on avaliacao:", err));
+
   res.status(201).json(formatAvaliacao(avaliacao));
 });
 

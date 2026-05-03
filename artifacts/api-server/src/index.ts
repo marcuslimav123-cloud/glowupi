@@ -4,6 +4,7 @@ import { seedSuperAdmins } from "./lib/adminAuth.js";
 import { startReminderService } from "./lib/pushNotifications.js";
 import { startTrialExpiryJob } from "./lib/trialScheduler.js";
 import { startTrialCleanupScheduler } from "./lib/trialCleanup.js";
+import { startFinanceiroNotificationsScheduler } from "./lib/financeiroNotificationsScheduler.js";
 import app from "./app.js";
 
 async function initStripe() {
@@ -69,6 +70,7 @@ app.listen(port, () => {
   startReminderService();
   startTrialExpiryJob();
   startTrialCleanupScheduler();
+  startFinanceiroNotificationsScheduler();
   startEmailMarketingWorker();
   cleanupExpiredSessions().then(() => console.log("[Sessions] Startup cleanup done."))
     .catch(err => console.error("[Sessions] Startup cleanup error:", err));

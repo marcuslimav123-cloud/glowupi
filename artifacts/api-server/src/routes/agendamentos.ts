@@ -1165,6 +1165,12 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
     return cmd;
   });
 
+  sendPushToBarbearia(barbeariaId, {
+    title: "Comanda fechada",
+    body: `${agend.clienteNome} — ${agend.profissionalNome} • Total R$ ${valorTotal.toFixed(2).replace(".", ",")}`,
+    data: { type: "comanda_fechada", comandaId: comanda.id, agendamentoId: id, url: "/comandas" },
+  }).catch(err => console.error("[Push] Error on comanda fechada:", err));
+
   try {
     const pesquisasAtivas = await db.select().from(pesquisaSatisfacaoTable).where(
       and(

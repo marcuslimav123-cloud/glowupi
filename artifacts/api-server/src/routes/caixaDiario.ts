@@ -4,6 +4,7 @@ import { caixaDiarioTable, movimentacoesCaixaTable, contasProfissionalTable, pro
 import { eq, and, desc, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
+import { sendPushToBarbearia } from "../lib/pushNotifications.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -232,6 +233,13 @@ router.post("/:caixaId/sangria", requireAuth, async (req: any, res) => {
   await db.update(caixaDiarioTable).set({
     totalSaidas: String(parseFloat(caixa.totalSaidas || "0") + parseFloat(String(valor))),
   }).where(eq(caixaDiarioTable.id, caixaId));
+
+  sendPushToBarbearia(barbeariaId, {
+    title: "Sangria registrada",
+    body: `R$ ${Number(valor).toFixed(2).replace(".", ",")}${motivo ? ` — ${motivo}` : ""}`,
+    data: { type: "caixa_sangria", caixaId, movimentacaoId: mov.id, url: "/caixa" },
+  }).catch(err => console.error("[Push] Error on sangria:", err));
+
   res.status(201).json(fmtMov(mov));
 });
 
@@ -273,6 +281,13 @@ router.post("/:caixaId/vale", requireAuth, async (req: any, res) => {
       status: "pendente",
     });
   });
+
+  sendPushToBarbearia(barbeariaId, {
+    title: "Vale registrado",
+    body: `${prof.apelido || prof.nomeExibicao} — R$ ${Number(valor).toFixed(2).replace(".", ",")}${observacao ? ` (${observacao})` : ""}`,
+    data: { type: "caixa_vale", caixaId, profissionalId, url: "/caixa" },
+  }).catch(err => console.error("[Push] Error on vale:", err));
+
   res.status(201).json({ ok: true, message: "Vale registrado com sucesso" });
 });
 

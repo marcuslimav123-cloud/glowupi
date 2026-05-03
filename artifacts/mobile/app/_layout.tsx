@@ -45,6 +45,7 @@ function RootLayoutNav() {
         <Stack.Screen name="relatorios" />
         <Stack.Screen name="pacotes" />
         <Stack.Screen name="caixa" />
+        <Stack.Screen name="notificacoes" />
       </Stack>
     </>
   );
