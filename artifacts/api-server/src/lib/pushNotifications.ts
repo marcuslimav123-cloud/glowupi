@@ -152,24 +152,34 @@ async function sendWebPush(tokens: { id: number; token: string }[], message: Pus
     urgency: "high" as const,
   };
 
-  for (const tokenRecord of tokens) {
-    try {
-      const subscription = JSON.parse(tokenRecord.token);
-      await webpush.sendNotification(subscription, payload, pushOptions);
-      console.log(`[Push] Web push sent to token ${tokenRecord.id}`);
-    } catch (err: any) {
-      const sc = err.statusCode;
-      if (sc === 410 || sc === 404 || sc === 403 || sc === 401 || sc === 400) {
-        console.warn(`[Push] Web push token ${tokenRecord.id} rejected (HTTP ${sc}) — deactivating. Client will resubscribe on next open.`);
-        try {
-          await db.update(pushTokensTable).set({ ativo: false, updatedAt: new Date() })
-            .where(eq(pushTokensTable.id, tokenRecord.id));
-        } catch (dbErr) {
-          console.error(`[Push] Failed to deactivate token ${tokenRecord.id}:`, dbErr);
+  const CONCURRENCY = 10;
+  const deadIds: number[] = [];
+
+  for (let i = 0; i < tokens.length; i += CONCURRENCY) {
+    const batch = tokens.slice(i, i + CONCURRENCY);
+    await Promise.all(batch.map(async (tokenRecord) => {
+      try {
+        const subscription = JSON.parse(tokenRecord.token);
+        await webpush.sendNotification(subscription, payload, pushOptions);
+      } catch (err) {
+        const sc = (err as { statusCode?: number }).statusCode;
+        const msg = (err as { message?: string }).message;
+        if (sc === 410 || sc === 404 || sc === 403 || sc === 401 || sc === 400) {
+          console.warn(`[Push] Web push token ${tokenRecord.id} rejected (HTTP ${sc}) — deactivating.`);
+          deadIds.push(tokenRecord.id);
+        } else {
+          console.error(`[Push] Web push error for token ${tokenRecord.id}:`, sc || msg);
         }
-      } else {
-        console.error(`[Push] Web push error for token ${tokenRecord.id}:`, sc || err.message);
       }
+    }));
+  }
+
+  if (deadIds.length > 0) {
+    try {
+      await db.update(pushTokensTable).set({ ativo: false, updatedAt: new Date() })
+        .where(inArray(pushTokensTable.id, deadIds));
+    } catch (dbErr) {
+      console.error(`[Push] Failed to deactivate ${deadIds.length} web push token(s):`, dbErr);
     }
   }
 }
@@ -287,11 +297,30 @@ async function sendExpoPushRecords(records: TokenRecord[], message: PushMessage)
     const deadIds = result.deadIndexes.map(i => records[i]?.id).filter((x): x is number => typeof x === "number");
     await deactivatePushTokensByIds(deadIds, "Expo DeviceNotRegistered/InvalidCredentials");
   }
+  const queuedAt = Date.now();
+  for (let i = 0; i < result.ticketIds.length; i++) {
+    const ticketId = result.ticketIds[i];
+    const rec = records[i];
+    if (ticketId && rec) {
+      pendingReceipts.set(ticketId, { tokenId: rec.id, queuedAt });
+    }
+  }
   return { success: result.success, failed: result.failed };
 }
 
-async function sendExpoPush(tokens: string[], message: PushMessage): Promise<{ success: number; failed: number; deadIndexes: number[] }> {
-  if (tokens.length === 0) return { success: 0, failed: 0, deadIndexes: [] };
+type ExpoTicket =
+  | { status: "ok"; id: string }
+  | { status: "error"; message?: string; details?: { error?: string } };
+
+type ExpoReceipt =
+  | { status: "ok" }
+  | { status: "error"; message?: string; details?: { error?: string } };
+
+const pendingReceipts = new Map<string, { tokenId: number; queuedAt: number }>();
+const RECEIPT_MAX_AGE_MS = 60 * 60 * 1000;
+
+async function sendExpoPush(tokens: string[], message: PushMessage): Promise<{ success: number; failed: number; deadIndexes: number[]; ticketIds: (string | null)[] }> {
+  if (tokens.length === 0) return { success: 0, failed: 0, deadIndexes: [], ticketIds: [] };
   try {
     const channelId = message.data?.channelId
       || (message.data?.type === "reminder" || message.data?.type === "agendamento_lembrete" || message.data?.type === "agendamento"
@@ -320,37 +349,99 @@ async function sendExpoPush(tokens: string[], message: PushMessage): Promise<{ s
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[Push] Expo push failed: ${response.status} ${errorText}`);
-      return { success: 0, failed: tokens.length, deadIndexes: [] };
+      return { success: 0, failed: tokens.length, deadIndexes: [], ticketIds: [] };
     }
 
-    const result = await response.json();
-    const tickets: any[] = Array.isArray(result.data) ? result.data : [];
+    const result = (await response.json()) as { data?: ExpoTicket[] };
+    const tickets: ExpoTicket[] = Array.isArray(result.data) ? result.data : [];
     let success = 0;
     let failed = 0;
     const deadIndexes: number[] = [];
+    const ticketIds: (string | null)[] = [];
     if (tickets.length === 0) {
       success = tokens.length;
+      for (let i = 0; i < tokens.length; i++) ticketIds.push(null);
     } else {
       for (let i = 0; i < tickets.length; i++) {
         const t = tickets[i];
         if (t && t.status === "ok") {
           success++;
+          ticketIds.push(t.id);
         } else {
           failed++;
-          const errCode: string | undefined = t?.details?.error;
+          ticketIds.push(null);
+          const errCode = t?.status === "error" ? t.details?.error : undefined;
           if (errCode && EXPO_DEAD_TOKEN_ERRORS.has(errCode)) {
             deadIndexes.push(i);
           }
         }
       }
       const missing = tokens.length - tickets.length;
-      if (missing > 0) failed += missing;
+      for (let i = 0; i < missing; i++) {
+        failed++;
+        ticketIds.push(null);
+      }
     }
     console.log(`[Push] Expo push: ${success} ok, ${failed} failed (of ${tokens.length}), dead=${deadIndexes.length}`);
-    return { success, failed, deadIndexes };
+    return { success, failed, deadIndexes, ticketIds };
   } catch (err) {
     console.error("[Push] Error sending Expo push:", err);
-    return { success: 0, failed: tokens.length, deadIndexes: [] };
+    return { success: 0, failed: tokens.length, deadIndexes: [], ticketIds: [] };
+  }
+}
+
+export async function pollExpoReceipts(): Promise<void> {
+  if (pendingReceipts.size === 0) return;
+  const now = Date.now();
+  for (const [id, info] of pendingReceipts) {
+    if (now - info.queuedAt > RECEIPT_MAX_AGE_MS) pendingReceipts.delete(id);
+  }
+  const ids = Array.from(pendingReceipts.keys());
+  if (ids.length === 0) return;
+
+  const CHUNK = 1000;
+  const deadTokenIds: number[] = [];
+
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const chunk = ids.slice(i, i + CHUNK);
+    try {
+      const response = await fetch("https://exp.host/--/api/v2/push/getReceipts", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Accept-encoding": "gzip, deflate",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids: chunk }),
+      });
+      if (!response.ok) {
+        console.error(`[Push] Expo getReceipts failed: ${response.status}`);
+        continue;
+      }
+      const json = (await response.json()) as { data?: Record<string, ExpoReceipt> };
+      const receipts = json.data || {};
+      for (const id of chunk) {
+        const r = receipts[id];
+        if (!r) continue;
+        const info = pendingReceipts.get(id);
+        if (!info) continue;
+        if (r.status === "ok") {
+          pendingReceipts.delete(id);
+        } else {
+          const errCode = r.details?.error;
+          if (errCode && EXPO_DEAD_TOKEN_ERRORS.has(errCode)) {
+            deadTokenIds.push(info.tokenId);
+          }
+          pendingReceipts.delete(id);
+        }
+      }
+    } catch (err) {
+      console.error("[Push] pollExpoReceipts error:", err);
+    }
+  }
+
+  if (deadTokenIds.length > 0) {
+    await deactivatePushTokensByIds(Array.from(new Set(deadTokenIds)), "Expo receipt DeviceNotRegistered/InvalidCredentials");
   }
 }
 
@@ -717,6 +808,9 @@ export function startReminderService(): void {
     );
     sendPendingApprovalNudges().catch(err =>
       console.error("[Push] Pending nudge service error:", err)
+    );
+    pollExpoReceipts().catch(err =>
+      console.error("[Push] Expo receipt poll error:", err)
     );
   }, 5 * 60 * 1000);
 

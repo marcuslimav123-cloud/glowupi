@@ -9,6 +9,13 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "primaryColor": "#c4a46a",
+    "notification": {
+      "icon": "./assets/images/icon.png",
+      "color": "#c4a46a",
+      "androidMode": "default",
+      "androidCollapsedTitle": "Glow Upi Pro",
+      "iosDisplayInForeground": true
+    },
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",

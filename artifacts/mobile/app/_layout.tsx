@@ -74,8 +74,11 @@ export default function RootLayout() {
   useEffect(() => {
     const received = Notifications.addNotificationReceivedListener((notification) => {
       try {
-        const data: any = notification.request.content.data || {};
-        const tipo = String(data.type || data.tipo || "").toLowerCase();
+        const data = (notification.request.content.data ?? {}) as Record<string, unknown>;
+        const tipo = String(data.type ?? data.tipo ?? "").toLowerCase();
+        Notifications.getBadgeCountAsync()
+          .then((current) => Notifications.setBadgeCountAsync((current || 0) + 1))
+          .catch(() => {});
         const prefixes = new Set<string>(["notificacoes"]);
         if (tipo.includes("agend") || tipo === "reminder" || tipo === "pending_appointments_nudge") {
           prefixes.add("agendamentos");
@@ -116,18 +119,19 @@ export default function RootLayout() {
     });
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       try {
-        const data: any = response.notification.request.content.data || {};
+        const data = (response.notification.request.content.data ?? {}) as Record<string, unknown>;
         Notifications.setBadgeCountAsync(0).catch(() => {});
-        const route = data.route || data.deeplink;
+        const route = (data.route as string | undefined) || (data.deeplink as string | undefined);
         if (typeof route === "string" && route.length > 0) {
           router.push(route as Href);
           return;
         }
-        if (data.type === "agendamento" || data.tipo === "agendamento") {
+        const tipo = String(data.type ?? data.tipo ?? "");
+        if (tipo === "agendamento") {
           router.push("/(tabs)/agenda");
-        } else if (data.type === "comanda" || data.tipo === "comanda") {
+        } else if (tipo === "comanda") {
           router.push("/(tabs)/comandas");
-        } else if (data.type === "cliente" || data.tipo === "cliente") {
+        } else if (tipo === "cliente") {
           router.push("/(tabs)/clientes");
         }
       } catch (err) {
