@@ -3,7 +3,7 @@ import { db } from "@workspace/db";
 import { comandasTable, barbeariasTable, pagamentosAsaasTable, agendamentosTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
-import { createPaymentForBarbearia, refreshPagamentoStatus, getContaByBarbearia, isPaidStatus, getClientForBarbearia } from "../lib/asaasService.js";
+import { createPaymentForBarbearia, refreshPagamentoStatus, getContaByBarbearia, isPaidStatus, getClientForBarbearia, processPagamentoPago } from "../lib/asaasService.js";
 
 async function cancelExistingIfDifferent(
   barbeariaId: number,
@@ -94,6 +94,9 @@ router.get("/comanda/:comandaId/status", requireAuth, async (req: any, res) => {
     if (!comanda.asaasPaymentId) return res.json({ paid: false, pagamento: null });
     const refreshed = await refreshPagamentoStatus(comanda.asaasPaymentId);
     if (!refreshed) return res.json({ paid: false, pagamento: null });
+    if (isPaidStatus(refreshed.status)) {
+      await processPagamentoPago(barbeariaId, refreshed);
+    }
     return res.json({ paid: isPaidStatus(refreshed.status), pagamento: formatPagamento(refreshed) });
   } catch (e: any) {
     console.error("[asaas/comanda] status erro:", e);
@@ -190,6 +193,9 @@ router.get("/pagamento/:asaasPaymentId/status", requireAuth, async (req: any, re
     const refreshed = await refreshPagamentoStatus(asaasPaymentId);
     if (!refreshed) return res.json({ paid: false, pagamento: null });
     if (refreshed.barbeariaId !== barbeariaId) return res.status(403).json({ error: "Sem acesso" });
+    if (isPaidStatus(refreshed.status)) {
+      await processPagamentoPago(barbeariaId, refreshed);
+    }
     return res.json({ paid: isPaidStatus(refreshed.status), pagamento: formatPagamento(refreshed) });
   } catch (e: any) {
     console.error("[asaas/comanda] status pagamento erro:", e);

@@ -1,11 +1,13 @@
 import { db } from "@workspace/db";
 import {
   asaasContasTable, pagamentosAsaasTable, profissionaisTable, barbeariasTable,
+  agendamentosTable, comandasTable,
   type AsaasConta, type PagamentoAsaas,
 } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { createAsaasClient, type AsaasClient, type AsaasSplit, type AsaasBillingType } from "./asaasClient.js";
 import { decryptApiKey } from "./asaasCrypto.js";
+import { sendPushToBarbearia } from "./pushNotifications.js";
 
 export type SinalRefType = "agendamento" | "comanda" | "pacote_cliente" | "saas" | "avulso";
 
@@ -171,6 +173,73 @@ export async function updatePagamentoFromAsaas(asaasPaymentId: string, payment: 
 
 export function isPaidStatus(status: string | undefined | null): boolean {
   return status === "RECEIVED" || status === "CONFIRMED" || status === "RECEIVED_IN_CASH";
+}
+
+export async function processPagamentoPago(barbeariaId: number, pagamento: PagamentoAsaas): Promise<void> {
+  const tipo = pagamento.tipo;
+
+  if (tipo === "agendamento" && pagamento.refId) {
+    const [ag] = await db.select().from(agendamentosTable).where(
+      and(eq(agendamentosTable.id, pagamento.refId), eq(agendamentosTable.barbeariaId, barbeariaId))
+    ).limit(1);
+    if (!ag) return;
+    if (ag.sinalStatus === "pago" && ag.pago) return;
+    await db.update(agendamentosTable).set({
+      sinalStatus: "pago",
+      sinalValorPago: String(pagamento.valor),
+      sinalConfirmadoEm: new Date(),
+      pago: true,
+      status: ag.status === "cancelado" ? ag.status : (ag.status === "pendente_pagamento" ? "confirmado" : ag.status),
+      updatedAt: new Date(),
+    }).where(eq(agendamentosTable.id, pagamento.refId));
+
+    sendPushToBarbearia(barbeariaId, {
+      title: "Sinal recebido",
+      body: `${pagamento.payerNome || "Cliente"} confirmou o sinal de R$ ${Number(pagamento.valor).toFixed(2).replace(".", ",")}`,
+      data: { type: "comanda_paga", agendamentoId: pagamento.refId, url: "/agenda" },
+      category: "financeiro",
+    }).catch(err => console.error("[Push] sinal pago:", err));
+    return;
+  }
+
+  if (tipo === "comanda" && pagamento.refId) {
+    const [com] = await db.select().from(comandasTable).where(
+      and(eq(comandasTable.id, pagamento.refId), eq(comandasTable.barbeariaId, barbeariaId))
+    ).limit(1);
+    if (!com) return;
+    if (com.status === "paga") {
+      const existingPags: any[] = Array.isArray(com.pagamentos) ? (com.pagamentos as any[]) : [];
+      if (existingPags.some((p: any) => p.asaasPaymentId === pagamento.asaasPaymentId)) return;
+    }
+    const existingPags: any[] = Array.isArray(com.pagamentos) ? (com.pagamentos as any[]) : [];
+    const novoPag = {
+      metodo: `Asaas ${pagamento.billingType}`,
+      valor: Number(pagamento.valor),
+      dataPagamento: new Date().toISOString().slice(0, 10),
+      registradoVia: "asaas",
+      asaasPaymentId: pagamento.asaasPaymentId,
+    };
+    const filtered = existingPags.filter((p: any) => p.asaasPaymentId !== pagamento.asaasPaymentId);
+    await db.update(comandasTable).set({
+      status: "paga",
+      pagamentos: [...filtered, novoPag],
+    }).where(eq(comandasTable.id, com.id));
+
+    if (com.agendamentoId) {
+      await db.update(agendamentosTable).set({
+        pago: true,
+        status: "concluido",
+        updatedAt: new Date(),
+      }).where(and(eq(agendamentosTable.id, com.agendamentoId), eq(agendamentosTable.barbeariaId, barbeariaId)));
+    }
+
+    sendPushToBarbearia(barbeariaId, {
+      title: "Comanda paga",
+      body: `${com.clienteNome || "Cliente"} — R$ ${Number(pagamento.valor).toFixed(2).replace(".", ",")} via Asaas`,
+      data: { type: "comanda_paga", comandaId: com.id, url: "/comandas" },
+      category: "financeiro",
+    }).catch(err => console.error("[Push] comanda paga:", err));
+  }
 }
 
 export async function nextDueDate(addDays = 1): Promise<string> {

@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { agendamentosTable, barbeariasTable, pagamentosAsaasTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
-import { createPaymentForBarbearia, refreshPagamentoStatus, getContaByBarbearia, isPaidStatus } from "../lib/asaasService.js";
+import { createPaymentForBarbearia, refreshPagamentoStatus, getContaByBarbearia, isPaidStatus, processPagamentoPago } from "../lib/asaasService.js";
 
 const router: IRouter = Router();
 
@@ -87,21 +87,20 @@ router.post("/agendamento/:agendamentoId", async (req, res) => {
 router.get("/agendamento/:agendamentoId/status", async (req, res) => {
   try {
     const agendamentoId = parseInt(req.params.agendamentoId);
+    const tel = String((req.query.tel as string) || "").replace(/\D/g, "");
     const [agend] = await db.select().from(agendamentosTable).where(eq(agendamentosTable.id, agendamentoId)).limit(1);
     if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
+    const telAg = String(agend.clienteTelefone || "").replace(/\D/g, "");
+    if (!tel || !telAg || tel.slice(-10) !== telAg.slice(-10)) {
+      return res.status(401).json({ error: "Validação de posse necessária (?tel=)" });
+    }
     if (!agend.sinalAsaasPaymentId) {
       return res.json({ status: agend.sinalStatus, paid: false });
     }
     const refreshed = await refreshPagamentoStatus(agend.sinalAsaasPaymentId);
     if (!refreshed) return res.json({ status: agend.sinalStatus, paid: false });
     if (isPaidStatus(refreshed.status)) {
-      await db.update(agendamentosTable).set({
-        sinalStatus: "pago",
-        sinalConfirmadoEm: agend.sinalConfirmadoEm || new Date(),
-        sinalValorPago: refreshed.valor,
-        pago: true,
-        updatedAt: new Date(),
-      }).where(eq(agendamentosTable.id, agendamentoId));
+      await processPagamentoPago(agend.barbeariaId, refreshed);
       return res.json({ status: "pago", paid: true });
     }
     return res.json({ status: agend.sinalStatus, paid: false });

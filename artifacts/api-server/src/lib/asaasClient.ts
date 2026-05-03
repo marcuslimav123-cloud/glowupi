@@ -168,8 +168,9 @@ export function createAsaasClient({ apiKey, ambiente = "sandbox", userAgent = "G
 export type AsaasClient = ReturnType<typeof createAsaasClient>;
 
 export function platformAsaasClient(): AsaasClient {
-  const apiKey = process.env.ASAAS_PLATFORM_API_KEY || process.env.ASAAS_SANDBOX_API_KEY || "";
-  const ambiente: AsaasAmbiente = process.env.ASAAS_PLATFORM_API_KEY ? "producao" : "sandbox";
-  if (!apiKey) throw new Error("ASAAS_SANDBOX_API_KEY (ou ASAAS_PLATFORM_API_KEY) não configurado");
+  const apiKey = process.env.ASAAS_API_KEY || process.env.ASAAS_PLATFORM_API_KEY || process.env.ASAAS_SANDBOX_API_KEY || "";
+  const isProd = !!(process.env.ASAAS_API_KEY || process.env.ASAAS_PLATFORM_API_KEY);
+  const ambiente: AsaasAmbiente = isProd ? "producao" : "sandbox";
+  if (!apiKey) throw new Error("ASAAS_API_KEY (ou ASAAS_SANDBOX_API_KEY) não configurado");
   return createAsaasClient({ apiKey, ambiente });
 }

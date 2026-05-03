@@ -4,9 +4,8 @@ import {
   asaasContasTable, asaasWebhookEventsTable, pagamentosAsaasTable,
   agendamentosTable, comandasTable, assinaturasAsaasTable, barbeariasTable,
 } from "@workspace/db/schema";
-import { eq, and } from "drizzle-orm";
-import { updatePagamentoFromAsaas, isPaidStatus } from "../lib/asaasService.js";
-import { sendPushToBarbearia } from "../lib/pushNotifications.js";
+import { eq, and, isNull, sql } from "drizzle-orm";
+import { updatePagamentoFromAsaas, isPaidStatus, processPagamentoPago } from "../lib/asaasService.js";
 
 const router: IRouter = Router();
 
@@ -26,14 +25,46 @@ router.post("/asaas/platform", async (req, res) => {
   const subscription = req.body?.subscription;
   const payment = req.body?.payment;
   const subscriptionId = subscription?.id || payment?.subscription || null;
+  const paymentId = payment?.id || null;
   if (!subscriptionId) {
     return res.status(200).json({ received: true, ignored: "sem subscriptionId" });
+  }
+
+  const dedupeKey = `platform|${evento}|${paymentId || ""}|${subscriptionId}`;
+  const existing = await db.select().from(asaasWebhookEventsTable).where(
+    and(isNull(asaasWebhookEventsTable.asaasContaId), eq(asaasWebhookEventsTable.dedupeKey, dedupeKey))
+  ).limit(1);
+  let eventRowId: number | null = null;
+  if (existing[0]) {
+    if (existing[0].processadoEm) {
+      return res.status(200).json({ received: true, duplicate: true });
+    }
+    eventRowId = existing[0].id;
+  } else {
+    try {
+      const [row] = await db.insert(asaasWebhookEventsTable).values({
+        asaasContaId: null,
+        evento,
+        paymentId,
+        subscriptionId,
+        dedupeKey,
+        payload: req.body,
+      }).returning({ id: asaasWebhookEventsTable.id });
+      eventRowId = row.id;
+    } catch (e) {
+      console.log(`[asaas/webhook/platform] insert race ${dedupeKey}, tratando como duplicado`);
+      return res.status(200).json({ received: true, duplicate: true });
+    }
   }
 
   const [a] = await db.select().from(assinaturasAsaasTable)
     .where(eq(assinaturasAsaasTable.asaasSubscriptionId, subscriptionId)).limit(1);
   if (!a) {
     console.warn(`[asaas/webhook/platform] assinatura desconhecida ${subscriptionId}`);
+    if (eventRowId) {
+      await db.update(asaasWebhookEventsTable).set({ processadoEm: new Date(), erro: "subscription desconhecida" })
+        .where(eq(asaasWebhookEventsTable.id, eventRowId));
+    }
     return res.status(200).json({ received: true, ignored: "subscription desconhecida" });
   }
 
@@ -48,9 +79,17 @@ router.post("/asaas/platform", async (req, res) => {
         });
       }
     }
+    if (eventRowId) {
+      await db.update(asaasWebhookEventsTable).set({ processadoEm: new Date() })
+        .where(eq(asaasWebhookEventsTable.id, eventRowId));
+    }
     return res.status(200).json({ received: true });
   } catch (e: any) {
     console.error("[asaas/webhook/platform] erro:", e);
+    if (eventRowId) {
+      await db.update(asaasWebhookEventsTable).set({ erro: String(e?.message || "erro").slice(0, 500) })
+        .where(eq(asaasWebhookEventsTable.id, eventRowId));
+    }
     return res.status(500).json({ error: "Erro interno" });
   }
 });
@@ -120,7 +159,7 @@ router.post("/asaas/:barbeariaId", async (req, res) => {
       const updated = await updatePagamentoFromAsaas(paymentId, payment);
 
       if (updated && isPaidStatus(payment.status)) {
-        await onPagamentoPago(barbeariaId, updated, payment);
+        await processPagamentoPago(barbeariaId, updated);
       }
     }
 
@@ -143,55 +182,6 @@ router.post("/asaas/:barbeariaId", async (req, res) => {
     return res.status(500).json({ error: "Erro interno" });
   }
 });
-
-async function onPagamentoPago(barbeariaId: number, pagamento: any, asaasPayment: any) {
-  const tipo = pagamento.tipo;
-
-  if (tipo === "agendamento" && pagamento.refId) {
-    await db.update(agendamentosTable).set({
-      sinalStatus: "pago",
-      sinalValorPago: String(pagamento.valor),
-      sinalConfirmadoEm: new Date(),
-      pago: true,
-      updatedAt: new Date(),
-    }).where(and(eq(agendamentosTable.id, pagamento.refId), eq(agendamentosTable.barbeariaId, barbeariaId)));
-
-    sendPushToBarbearia(barbeariaId, {
-      title: "Sinal recebido",
-      body: `${pagamento.payerNome || "Cliente"} confirmou o sinal de R$ ${Number(pagamento.valor).toFixed(2).replace(".", ",")}`,
-      data: { type: "comanda_paga", agendamentoId: pagamento.refId, url: "/agenda" },
-      category: "financeiro",
-    }).catch(err => console.error("[Push] sinal pago:", err));
-  }
-
-  if (tipo === "comanda" && pagamento.refId) {
-    const [com] = await db.select().from(comandasTable).where(
-      and(eq(comandasTable.id, pagamento.refId), eq(comandasTable.barbeariaId, barbeariaId))
-    ).limit(1);
-    if (com) {
-      const existingPags: any[] = Array.isArray(com.pagamentos) ? (com.pagamentos as any[]) : [];
-      const novoPag = {
-        metodo: `Asaas ${pagamento.billingType}`,
-        valor: Number(pagamento.valor),
-        dataPagamento: new Date().toISOString().slice(0, 10),
-        registradoVia: "asaas-webhook",
-        asaasPaymentId: pagamento.asaasPaymentId,
-      };
-      const filtered = existingPags.filter((p: any) => p.asaasPaymentId !== pagamento.asaasPaymentId);
-      await db.update(comandasTable).set({
-        status: "paga",
-        pagamentos: [...filtered, novoPag],
-      }).where(eq(comandasTable.id, com.id));
-
-      sendPushToBarbearia(barbeariaId, {
-        title: "Comanda paga",
-        body: `${com.clienteNome || "Cliente"} — R$ ${Number(pagamento.valor).toFixed(2).replace(".", ",")} via Asaas`,
-        data: { type: "comanda_paga", comandaId: com.id, url: "/comandas" },
-        category: "financeiro",
-      }).catch(err => console.error("[Push] comanda paga:", err));
-    }
-  }
-}
 
 async function onSubscriptionEvent(_barbeariaId: number, evento: string, subscription: any) {
   const subId = subscription?.id;
