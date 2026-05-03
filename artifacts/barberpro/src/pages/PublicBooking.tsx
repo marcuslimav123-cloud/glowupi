@@ -106,6 +106,7 @@ export default function PublicBooking() {
   const [sinalPagamento, setSinalPagamento] = useState<any>(null);
   const [agendamentoCriadoId, setAgendamentoCriadoId] = useState<number | null>(null);
   const [agendamentoCriadoTel, setAgendamentoCriadoTel] = useState<string | null>(null);
+  const [sinalConsultaToken, setSinalConsultaToken] = useState<string | null>(null);
   const [observacao, setObservacao] = useState("");
   const [simplesNome, setSimplesNome] = useState("");
   const [simplesWhatsapp, setSimplesWhatsapp] = useState("");
@@ -256,6 +257,7 @@ export default function PublicBooking() {
         setSinalPagamento(data?.sinalPagamento || null);
         setAgendamentoCriadoId(data?.id || null);
         setAgendamentoCriadoTel(simplesWhatsapp.replace(/\D/g, "").slice(-10));
+        setSinalConsultaToken(data?.sinalPagamento?.consultaToken || null);
         setStep("sucesso");
       } catch (e: any) {
         setError(e.message);
@@ -297,6 +299,7 @@ export default function PublicBooking() {
       setSinalPagamento(data?.sinalPagamento || null);
       setAgendamentoCriadoId(data?.id || null);
       setAgendamentoCriadoTel(rawWa.slice(-10));
+      setSinalConsultaToken(data?.sinalPagamento?.consultaToken || null);
       setStep("sucesso");
     } catch (e: any) {
       setError(e.message);
@@ -1320,7 +1323,7 @@ export default function PublicBooking() {
                   </h3>
                   <SinalBox
                     pagamento={sinalPagamento}
-                    statusUrl={agendamentoCriadoId && agendamentoCriadoTel ? `${API_BASE}/asaas-sinal/agendamento/${agendamentoCriadoId}/status?tel=${encodeURIComponent(agendamentoCriadoTel)}` : undefined}
+                    statusUrl={agendamentoCriadoId && sinalConsultaToken ? `${API_BASE}/asaas-sinal/agendamento/${agendamentoCriadoId}/status?token=${encodeURIComponent(sinalConsultaToken)}` : undefined}
                     accentColor={accent}
                   />
                 </div>

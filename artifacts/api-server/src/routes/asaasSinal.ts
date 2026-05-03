@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { randomBytes, timingSafeEqual } from "crypto";
 import { db } from "@workspace/db";
 import { agendamentosTable, barbeariasTable, pagamentosAsaasTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -11,6 +12,17 @@ function calcularSinalValor(barbearia: any, valorServico: number): number {
   const v = parseFloat(String(barbearia.sinalValor || "0"));
   if (modo === "valor") return Math.max(0.5, v);
   return Math.max(0.5, Number(((valorServico * v) / 100).toFixed(2)));
+}
+
+export function generateSinalConsultaToken(): string {
+  return randomBytes(24).toString("base64url");
+}
+
+function safeEqualToken(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
 }
 
 router.post("/agendamento/:agendamentoId", async (req, res) => {
@@ -39,10 +51,19 @@ router.post("/agendamento/:agendamentoId", async (req, res) => {
       return res.status(503).json({ error: "Esta barbearia ainda não conectou uma conta de pagamento" });
     }
 
+    let consultaToken = agend.sinalConsultaToken || null;
+
     if (agend.sinalAsaasPaymentId) {
       const refreshed = await refreshPagamentoStatus(agend.sinalAsaasPaymentId);
       if (refreshed) {
-        return res.json(formatPagamento(refreshed));
+        if (!consultaToken) {
+          consultaToken = generateSinalConsultaToken();
+          await db.update(agendamentosTable).set({
+            sinalConsultaToken: consultaToken,
+            updatedAt: new Date(),
+          }).where(eq(agendamentosTable.id, agendamentoId));
+        }
+        return res.json({ ...formatPagamento(refreshed), consultaToken });
       }
     }
 
@@ -68,16 +89,19 @@ router.post("/agendamento/:agendamentoId", async (req, res) => {
       externalReference: `agend-${agend.id}`,
     });
 
+    if (!consultaToken) consultaToken = generateSinalConsultaToken();
+
     await db.update(agendamentosTable).set({
       sinalStatus: "aguardando",
       sinalValorDevido: String(sinalValor),
       sinalAsaasPaymentId: result.pagamento.asaasPaymentId,
+      sinalConsultaToken: consultaToken,
       sinalInformadoEm: new Date(),
       sinalExpiraEm: result.pixData?.expirationDate ? new Date(result.pixData.expirationDate) : null,
       updatedAt: new Date(),
     }).where(eq(agendamentosTable.id, agendamentoId));
 
-    return res.status(201).json(formatPagamento(result.pagamento));
+    return res.status(201).json({ ...formatPagamento(result.pagamento), consultaToken });
   } catch (e: any) {
     console.error("[asaas/sinal] criar erro:", e);
     return res.status(500).json({ error: e?.message || "Erro ao gerar sinal" });
@@ -87,12 +111,18 @@ router.post("/agendamento/:agendamentoId", async (req, res) => {
 router.get("/agendamento/:agendamentoId/status", async (req, res) => {
   try {
     const agendamentoId = parseInt(req.params.agendamentoId);
-    const tel = String((req.query.tel as string) || "").replace(/\D/g, "");
+    const tokenHeader = String(req.header("x-sinal-token") || "");
+    const tokenQuery = String((req.query.token as string) || "");
+    const token = (tokenHeader || tokenQuery).trim();
+    if (!token) {
+      return res.status(401).json({ error: "Token de consulta obrigatório" });
+    }
     const [agend] = await db.select().from(agendamentosTable).where(eq(agendamentosTable.id, agendamentoId)).limit(1);
-    if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
-    const telAg = String(agend.clienteTelefone || "").replace(/\D/g, "");
-    if (!tel || !telAg || tel.slice(-10) !== telAg.slice(-10)) {
-      return res.status(401).json({ error: "Validação de posse necessária (?tel=)" });
+    if (!agend || !agend.sinalConsultaToken) {
+      return res.status(404).json({ error: "Agendamento não encontrado" });
+    }
+    if (!safeEqualToken(token, agend.sinalConsultaToken)) {
+      return res.status(401).json({ error: "Token inválido" });
     }
     if (!agend.sinalAsaasPaymentId) {
       return res.json({ status: agend.sinalStatus, paid: false });

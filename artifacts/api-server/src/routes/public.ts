@@ -623,6 +623,8 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
         : Math.max(0.5, Number(((valorServico * sinalValorBase) / 100).toFixed(2)));
       const due = new Date(); due.setDate(due.getDate() + 1);
       const billingTypeReq = (req.body?.billingType === "BOLETO" || req.body?.billingType === "CREDIT_CARD") ? req.body.billingType : "PIX";
+      const { generateSinalConsultaToken } = await import("./asaasSinal.js");
+      const consultaToken = generateSinalConsultaToken();
       try {
         const result = await createPaymentForBarbearia({
           barbeariaId: barbearia.id,
@@ -642,6 +644,7 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
           sinalStatus: "aguardando",
           sinalValorDevido: String(sinalValor),
           sinalAsaasPaymentId: result.pagamento.asaasPaymentId,
+          sinalConsultaToken: consultaToken,
           sinalInformadoEm: new Date(),
           sinalExpiraEm: result.pixData?.expirationDate ? new Date(result.pixData.expirationDate) : null,
           updatedAt: new Date(),
@@ -655,6 +658,7 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
           bankSlipUrl: result.asaasPayment?.bankSlipUrl || null,
           invoiceUrl: result.asaasPayment?.invoiceUrl || null,
           expiraEm: result.pixData?.expirationDate || null,
+          consultaToken,
         };
         agend.status = "pendente_pagamento";
       } catch (sinalErr: unknown) {
@@ -903,6 +907,8 @@ router.post("/:slug/agendar-simples", async (req, res) => {
         : Math.max(0.5, Number(((valorServicoS * sinalValorBaseS) / 100).toFixed(2)));
       const dueS = new Date(); dueS.setDate(dueS.getDate() + 1);
       const billingTypeS = (req.body?.billingType === "BOLETO" || req.body?.billingType === "CREDIT_CARD") ? req.body.billingType : "PIX";
+      const { generateSinalConsultaToken: genTokenSimples } = await import("./asaasSinal.js");
+      const consultaTokenSimples = genTokenSimples();
       try {
         const resultS = await createPaymentForBarbearia({
           barbeariaId: barbearia.id,
@@ -922,6 +928,7 @@ router.post("/:slug/agendar-simples", async (req, res) => {
           sinalStatus: "aguardando",
           sinalValorDevido: String(sinalValorS),
           sinalAsaasPaymentId: resultS.pagamento.asaasPaymentId,
+          sinalConsultaToken: consultaTokenSimples,
           sinalInformadoEm: new Date(),
           sinalExpiraEm: resultS.pixData?.expirationDate ? new Date(resultS.pixData.expirationDate) : null,
           updatedAt: new Date(),
@@ -935,6 +942,7 @@ router.post("/:slug/agendar-simples", async (req, res) => {
           bankSlipUrl: resultS.asaasPayment?.bankSlipUrl || null,
           invoiceUrl: resultS.asaasPayment?.invoiceUrl || null,
           expiraEm: resultS.pixData?.expirationDate || null,
+          consultaToken: consultaTokenSimples,
         };
         agend.status = "pendente_pagamento";
       } catch (sinalErrS: unknown) {
