@@ -78,6 +78,47 @@ export async function enablePushNotifications(barbeariaId?: number | null): Prom
   return perm;
 }
 
+// Situação dos avisos NESTE aparelho: "ativo" só quando o navegador permitiu
+// e existe uma assinatura de push registrada.
+export type PushStatus = "ativo" | "inativo" | "bloqueado" | "indisponivel";
+
+export async function getPushStatus(): Promise<PushStatus> {
+  if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) return "indisponivel";
+  if (Notification.permission === "denied") return "bloqueado";
+  if (Notification.permission !== "granted") return "inativo";
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    const sub = await registration?.pushManager.getSubscription();
+    return sub ? "ativo" : "inativo";
+  } catch {
+    return "inativo";
+  }
+}
+
+// Desliga os avisos neste aparelho sem mexer na permissão do navegador:
+// cancela a assinatura de push e avisa o servidor para parar de enviar.
+export async function disablePushNotifications(barbeariaId?: number | null): Promise<boolean> {
+  try {
+    if (!("serviceWorker" in navigator)) return false;
+    const registration = await navigator.serviceWorker.getRegistration();
+    const sub = await registration?.pushManager.getSubscription();
+    if (!sub) return true;
+    if (barbeariaId) {
+      await fetch(apiUrl(`/barbearias/${barbeariaId}/push-tokens/unregister`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ token: JSON.stringify(sub.toJSON()) }),
+      }).catch(() => {});
+    }
+    await sub.unsubscribe();
+    return true;
+  } catch (err) {
+    console.error("[Push] Erro ao desativar:", err);
+    return false;
+  }
+}
+
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");

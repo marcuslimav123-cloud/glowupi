@@ -6,7 +6,7 @@ import { getRoleLabel, apiUrl } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { applyTheme, THEMES } from "@/components/layout/HeaderBar";
-import { requestNotificationPermission } from "@/hooks/useNotifications";
+import { enablePushNotifications, disablePushNotifications, getPushStatus, type PushStatus } from "@/hooks/useNotifications";
 import type { LucideProps } from "lucide-react";
 import {
   Users,
@@ -115,88 +115,57 @@ export default function MenuPage() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [themeOpen, setThemeOpen] = useState(false);
-  const [notifStatus, setNotifStatus] = useState<"loading" | "granted" | "denied" | "default">("loading");
+  const [notifStatus, setNotifStatus] = useState<"loading" | PushStatus>("loading");
+  const [notifHint, setNotifHint] = useState<string | null>(null);
   const [notifLoading, setNotifLoading] = useState(false);
   const [testingNotif, setTestingNotif] = useState(false);
   const [batteryHelpOpen, setBatteryHelpOpen] = useState(false);
 
   useEffect(() => {
-    if ("Notification" in window) {
-      setNotifStatus(Notification.permission as any);
-    } else {
-      setNotifStatus("denied");
-    }
+    getPushStatus().then(setNotifStatus);
   }, []);
 
-  const urlBase64ToUint8Array = (publicKey: string): Uint8Array => {
-    const padding = "=".repeat((4 - (publicKey.length % 4)) % 4);
-    const base64 = (publicKey + padding).replace(/-/g, "+").replace(/_/g, "/");
-    const rawData = window.atob(base64);
-    const arr = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; i++) arr[i] = rawData.charCodeAt(i);
-    return arr;
-  };
-
-  const uint8ToBase64Url = (bytes: Uint8Array): string => {
-    let s = "";
-    for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
-    return window.btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  };
+  const CAMINHO_CADEADO = "toque no cadeado ao lado do endereço → Permissões → Notificações → Permitir, e tente de novo.";
 
   const handleToggleNotifications = async () => {
-    if (notifStatus === "granted") {
-      toast({ title: "Notificações já ativas", description: "Para desativar, use as configurações do seu navegador." });
-      return;
-    }
+    if (notifLoading) return;
     setNotifLoading(true);
+    setNotifHint(null);
     try {
-      const perm = await requestNotificationPermission();
-      setNotifStatus(perm as any);
-      if (perm === "granted") {
-        toast({ title: "Notificações ativadas!" });
-        if ("serviceWorker" in navigator && barbeariaId) {
-          const registration = await navigator.serviceWorker.ready;
-          const vapidResp = await fetch(apiUrl("/push/vapid-public-key"), { credentials: "include" });
-          if (vapidResp.ok) {
-            const { publicKey } = await vapidResp.json();
-            if (publicKey) {
-              let sub: PushSubscription | null = await registration.pushManager.getSubscription();
-              if (sub) {
-                const buf = sub.options.applicationServerKey;
-                const subKey = buf ? uint8ToBase64Url(new Uint8Array(buf)) : "";
-                if (subKey !== publicKey.replace(/=+$/, "")) {
-                  try { await sub.unsubscribe(); } catch {}
-                  sub = null;
-                }
-              }
-              if (!sub) {
-                sub = await registration.pushManager.subscribe({
-                  userVisibleOnly: true,
-                  applicationServerKey: urlBase64ToUint8Array(publicKey),
-                });
-              }
-              await fetch(apiUrl(`/barbearias/${barbeariaId}/push-tokens/register`), {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ token: JSON.stringify(sub.toJSON()), platform: "web" }),
-              });
-            }
-          }
-        }
+      if (notifStatus === "ativo") {
+        await disablePushNotifications(barbeariaId);
+        setNotifStatus(await getPushStatus());
+        toast({ title: "Avisos desativados neste aparelho" });
+        return;
+      }
+      if (notifStatus === "indisponivel") {
+        setNotifHint("Este navegador não suporta avisos. No celular, use o Chrome.");
+        return;
+      }
+      if (notifStatus === "bloqueado") {
+        setNotifHint(`O navegador está bloqueando este site: ${CAMINHO_CADEADO}`);
+        return;
+      }
+      const perm = await enablePushNotifications(barbeariaId);
+      const status = await getPushStatus();
+      setNotifStatus(status);
+      if (status === "ativo") {
+        toast({ title: "Avisos ativados!", description: "Você vai receber os novos agendamentos neste aparelho." });
       } else if (perm === "denied") {
-        toast({ title: "Notificações bloqueadas", description: "Permita nas configurações do navegador.", variant: "destructive" });
+        setNotifHint(`O navegador bloqueou os avisos: ${CAMINHO_CADEADO}`);
+      } else {
+        setNotifHint(`O navegador mostrou um aviso pequeno (normalmente na parte de baixo da tela) e ele sumiu antes de você responder. Toque em "Ativar avisos" de novo e, quando o aviso aparecer, toque nele e escolha Permitir. Se sumir de novo, ${CAMINHO_CADEADO}`);
       }
     } catch (err) {
       console.error("Notification error:", err);
-      toast({ title: "Erro ao ativar notificações", variant: "destructive" });
+      toast({ title: "Erro ao ativar avisos", variant: "destructive" });
     } finally {
       setNotifLoading(false);
     }
   };
 
   const handleTestNotification = async () => {
-    if (notifStatus !== "granted") {
+    if (notifStatus !== "ativo") {
       toast({ title: "Ative as notificações primeiro", variant: "destructive" });
       return;
     }
@@ -370,37 +339,42 @@ export default function MenuPage() {
               className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors"
             >
               <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
-                notifStatus === "granted" ? "bg-green-500/10" : "bg-primary/8"
+                notifStatus === "ativo" ? "bg-green-500/10" : "bg-primary/8"
               }`}>
                 {notifLoading
                   ? <Loader2 className="h-4.5 w-4.5 text-primary animate-spin" />
-                  : notifStatus === "granted"
+                  : notifStatus === "ativo"
                     ? <Bell className="h-4.5 w-4.5 text-green-600" />
                     : <BellOff className="h-4.5 w-4.5 text-muted-foreground" />
                 }
               </div>
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-sm font-medium text-foreground">
-                  {notifStatus === "granted" ? "Notificações Ativas" : "Ativar Notificações"}
+                  {notifStatus === "ativo" ? "Avisos ativos neste aparelho" : "Ativar avisos"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {notifStatus === "granted"
-                    ? "Você receberá alertas de agendamentos"
-                    : notifStatus === "denied"
-                      ? "Bloqueadas — permita nas configurações do navegador"
+                  {notifStatus === "ativo"
+                    ? "Novos agendamentos chegam aqui. Toque para desativar."
+                    : notifStatus === "bloqueado"
+                      ? "Bloqueados pelo navegador — toque para ver como liberar"
                       : "Receba alertas de novos agendamentos"}
                 </p>
               </div>
               <div className={`h-7 w-12 rounded-full p-0.5 transition-colors ${
-                notifStatus === "granted" ? "bg-green-500" : "bg-muted-foreground/20"
+                notifStatus === "ativo" ? "bg-green-500" : "bg-muted-foreground/20"
               }`}>
                 <div className={`h-6 w-6 rounded-full bg-white shadow-sm transition-transform ${
-                  notifStatus === "granted" ? "translate-x-5" : "translate-x-0"
+                  notifStatus === "ativo" ? "translate-x-5" : "translate-x-0"
                 }`} />
               </div>
             </button>
+            {notifHint && (
+              <div className="px-4 pb-3 -mt-1">
+                <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">{notifHint}</p>
+              </div>
+            )}
 
-            {notifStatus === "granted" && (
+            {notifStatus === "ativo" && (
               <button
                 onClick={handleTestNotification}
                 disabled={testingNotif}
