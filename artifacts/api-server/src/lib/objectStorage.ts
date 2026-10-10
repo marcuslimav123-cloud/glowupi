@@ -1,6 +1,8 @@
 import { Storage, File } from "@google-cloud/storage";
 import { Readable } from "stream";
 import { randomUUID } from "crypto";
+import fs from "fs";
+import path from "path";
 import {
   ObjectAclPolicy,
   ObjectPermission,
@@ -10,6 +12,65 @@ import {
 } from "./objectAcl";
 
 const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
+
+// Fora do Replit (OBJECT_STORAGE_MODE=local) os uploads vão para o disco da
+// própria máquina em vez do bucket GCS assinado pelo sidecar do Replit.
+const LOCAL_MODE = process.env.OBJECT_STORAGE_MODE === "local";
+const LOCAL_UPLOAD_URL_PREFIX = "/api/storage/local-upload/";
+const LOCAL_OBJECT_ID_RE = /^[0-9a-fA-F-]{36}$/;
+
+export function isLocalStorageMode(): boolean {
+  return LOCAL_MODE;
+}
+
+export function getLocalObjectDir(): string {
+  return (
+    process.env.LOCAL_OBJECT_DIR || path.resolve(process.cwd(), "data", "uploads")
+  );
+}
+
+export function isValidLocalObjectId(id: string): boolean {
+  return LOCAL_OBJECT_ID_RE.test(id);
+}
+
+export function localObjectPaths(id: string): { file: string; meta: string } {
+  if (!isValidLocalObjectId(id)) {
+    throw new ObjectNotFoundError();
+  }
+  const dir = getLocalObjectDir();
+  return { file: path.join(dir, id), meta: path.join(dir, `${id}.meta.json`) };
+}
+
+export async function saveLocalObject(
+  id: string,
+  body: Buffer,
+  contentType: string
+): Promise<void> {
+  const { file, meta } = localObjectPaths(id);
+  await fs.promises.mkdir(getLocalObjectDir(), { recursive: true });
+  await fs.promises.writeFile(file, body);
+  await fs.promises.writeFile(meta, JSON.stringify({ contentType }));
+}
+
+export async function readLocalObject(
+  id: string
+): Promise<{ stream: fs.ReadStream; contentType: string; size: number }> {
+  const { file, meta } = localObjectPaths(id);
+  let stat: fs.Stats;
+  try {
+    stat = await fs.promises.stat(file);
+  } catch {
+    throw new ObjectNotFoundError();
+  }
+  let contentType = "application/octet-stream";
+  try {
+    const raw = await fs.promises.readFile(meta, "utf8");
+    contentType = JSON.parse(raw).contentType || contentType;
+  } catch {
+    // metadado ausente: serve com o content-type genérico
+  }
+  return { stream: fs.createReadStream(file), contentType, size: stat.size };
+}
 
 export const objectStorageClient = new Storage({
   credentials: {
@@ -107,6 +168,12 @@ export class ObjectStorageService {
   }
 
   async getObjectEntityUploadURL(): Promise<string> {
+    if (LOCAL_MODE) {
+      const objectId = randomUUID();
+      const base = (process.env.APP_BASE_URL || "").replace(/\/+$/, "");
+      return `${base}${LOCAL_UPLOAD_URL_PREFIX}${objectId}`;
+    }
+
     const privateObjectDir = this.getPrivateObjectDir();
     if (!privateObjectDir) {
       throw new Error(
@@ -155,6 +222,12 @@ export class ObjectStorageService {
   }
 
   normalizeObjectEntityPath(rawPath: string): string {
+    const localIdx = rawPath.indexOf(LOCAL_UPLOAD_URL_PREFIX);
+    if (localIdx !== -1) {
+      const id = rawPath.slice(localIdx + LOCAL_UPLOAD_URL_PREFIX.length);
+      return `/objects/uploads/${id}`;
+    }
+
     if (!rawPath.startsWith("https://storage.googleapis.com/")) {
       return rawPath;
     }

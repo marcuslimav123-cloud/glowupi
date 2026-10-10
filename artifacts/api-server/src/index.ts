@@ -27,7 +27,9 @@ async function initStripe() {
     const stripeSync = await getStripeSync();
 
     console.log('Setting up managed webhook...');
-    const webhookBaseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+    const webhookBaseUrl =
+      process.env.APP_BASE_URL?.replace(/\/+$/, "") ||
+      `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
     const webhookResult = await stripeSync.findOrCreateManagedWebhook(
       `${webhookBaseUrl}/api/stripe/webhook`
     );
