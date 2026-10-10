@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable, avaliacoesTable, recompensasTable, produtosTable, profissionalServicosTable, pesquisaSatisfacaoTable, respostasPesquisaTable, categoriasServicoTable, filiaisTable, platformConfigTable, vslProgressEventsTable } from "@workspace/db/schema";
 import { eq, and, desc, gte, inArray, sql } from "drizzle-orm";
@@ -7,6 +7,8 @@ import { sendPushToBarbearia } from "../lib/pushNotifications.js";
 import { requireClient } from "../lib/auth.js";
 import { validateAgendamentoEmHorario, validateAgendamentoEmJornadaProf } from "../lib/horarioValidation.js";
 import { verifyConfirmToken } from "../lib/confirmToken.js";
+import { defaultIconPath, defaultLogoPath, tipoEstabelecimentoDe } from "../lib/branding.js";
+import crypto from "node:crypto";
 
 const router: IRouter = Router();
 
@@ -233,6 +235,8 @@ router.get("/:slug", async (req, res) => {
     cep: barbearia.cep,
     corPrimaria: barbearia.corPrimaria,
     logoUrl: barbearia.logoUrl,
+    tipoEstabelecimento: tipoEstabelecimentoDe(barbearia.segmentacao),
+    logoPadraoUrl: defaultLogoPath(barbearia.segmentacao, process.env.BASE_PATH || "/"),
     descricaoPublica: barbearia.descricaoPublica,
     horarioFuncionamento: barbearia.horarioFuncionamento,
     fotos: barbearia.fotos || [],
@@ -999,6 +1003,28 @@ router.post("/:slug/agendar-simples", async (req, res) => {
   }
 });
 
+type BarbeariaBrand = { slug: string; logoUrl: string | null; segmentacao: unknown };
+
+function logoVersion(logoUrl: string): string {
+  return crypto.createHash("sha1").update(logoUrl).digest("hex").slice(0, 8);
+}
+
+// Ícones do manifest: sempre PNG quadrado (exigência do Chrome/Android para
+// instalar o app). Com logo própria, apontam para o ícone gerado pelo servidor;
+// sem logo, para a marca padrão do segmento.
+function brandIcons(barbearia: BarbeariaBrand, basePath: string) {
+  const src = (size: 192 | 512) =>
+    barbearia.logoUrl
+      ? `${basePath}/api/public/${barbearia.slug}/icon-${size}.png?v=${logoVersion(barbearia.logoUrl)}`.replace(/\/+/g, "/")
+      : defaultIconPath(barbearia.segmentacao, size, basePath);
+  const icons: { src: string; sizes: string; type: string; purpose: string }[] = [];
+  for (const size of [192, 512] as const) {
+    icons.push({ src: src(size), sizes: `${size}x${size}`, type: "image/png", purpose: "any" });
+    icons.push({ src: src(size), sizes: `${size}x${size}`, type: "image/png", purpose: "maskable" });
+  }
+  return icons;
+}
+
 router.get("/:slug/manifest.json", async (req, res) => {
   try {
     const { slug } = req.params;
@@ -1011,38 +1037,112 @@ router.get("/:slug/manifest.json", async (req, res) => {
       return res.status(404).json({ error: "Barbearia não encontrada" });
 
     const basePath = process.env.BASE_PATH || "/";
-    const icons: { src: string; sizes: string; type?: string; purpose: string }[] = [];
-    if (barbearia.logoUrl) {
-      icons.push(
-        { src: barbearia.logoUrl, sizes: "192x192", purpose: "any" },
-        { src: barbearia.logoUrl, sizes: "512x512", purpose: "any" },
-        { src: barbearia.logoUrl, sizes: "192x192", purpose: "maskable" },
-        { src: barbearia.logoUrl, sizes: "512x512", purpose: "maskable" },
-      );
-    } else {
-      icons.push(
-        { src: `${basePath}logo-icon.png`, sizes: "192x192", type: "image/png", purpose: "any" },
-      );
-    }
+    const painel = req.query.modo === "painel";
+    const startUrl = painel ? `${basePath}agenda` : `${basePath}agendar/${slug}`;
     const manifest = {
+      id: startUrl,
       name: barbearia.nome,
       short_name: barbearia.nome.length > 12 ? barbearia.nome.slice(0, 12) : barbearia.nome,
-      description: barbearia.descricaoPublica || `Agende com ${barbearia.nome}`,
-      start_url: `${basePath}agendar/${slug}`,
+      description: painel
+        ? `Painel - ${barbearia.nome}`
+        : barbearia.descricaoPublica || `Agende com ${barbearia.nome}`,
+      start_url: startUrl,
       scope: basePath,
       display: "standalone",
       background_color: "#111111",
       theme_color: barbearia.corPrimaria || "#C4943C",
-      icons,
+      icons: brandIcons(barbearia, basePath),
     };
 
     res.setHeader("Content-Type", "application/manifest+json");
+    res.setHeader("Cache-Control", "no-cache");
     res.json(manifest);
   } catch (e) {
     console.error("manifest.json error:", e);
     res.status(500).json({ error: "Erro ao gerar manifest" });
   }
 });
+
+async function fetchLogoBytes(logoUrl: string): Promise<Buffer> {
+  const url = /^https?:\/\//i.test(logoUrl)
+    ? logoUrl
+    : `http://127.0.0.1:${process.env.PORT || 5000}${logoUrl.startsWith("/") ? "" : "/"}${logoUrl}`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const r = await fetch(url, { signal: ctrl.signal });
+    if (!r.ok) throw new Error(`HTTP ${r.status} ao buscar a logo`);
+    const bytes = await r.arrayBuffer();
+    if (bytes.byteLength > 15 * 1024 * 1024) throw new Error("logo acima de 15MB");
+    return Buffer.from(bytes);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Converte a logo enviada pelo dono (qualquer formato/proporção) em um ícone
+// PNG quadrado, com a logo dentro da zona segura dos ícones "maskable".
+async function renderIcon(logoUrl: string, size: number): Promise<Buffer> {
+  const { default: sharp } = await import("sharp");
+  const src = await fetchLogoBytes(logoUrl);
+  const inner = Math.round(size * 0.8);
+  const { data, info } = await sharp(src)
+    .rotate()
+    .resize(inner, inner, { fit: "inside" })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  // Fundo: a própria cor de canto da logo quando ela é opaca; branco quando é transparente.
+  const opaqueCorner = data[3] > 250;
+  const background = opaqueCorner
+    ? { r: data[0], g: data[1], b: data[2], alpha: 1 }
+    : { r: 255, g: 255, b: 255, alpha: 1 };
+  return sharp({ create: { width: size, height: size, channels: 4, background } })
+    .composite([{ input: data, raw: { width: info.width, height: info.height, channels: 4 }, gravity: "centre" }])
+    .png()
+    .toBuffer();
+}
+
+const iconCache = new Map<string, Buffer>();
+const ICON_CACHE_MAX = 300;
+
+function iconHandler(size: 192 | 512) {
+  return async (req: Request, res: Response) => {
+    try {
+      const [barbearia] = await db
+        .select({ slug: barbeariasTable.slug, logoUrl: barbeariasTable.logoUrl, segmentacao: barbeariasTable.segmentacao })
+        .from(barbeariasTable)
+        .where(eq(barbeariasTable.slug, req.params.slug))
+        .limit(1);
+      if (!barbearia) return res.status(404).end();
+      const basePath = process.env.BASE_PATH || "/";
+      const fallback = () => res.redirect(302, defaultIconPath(barbearia.segmentacao, size, basePath));
+      if (!barbearia.logoUrl) return fallback();
+
+      const key = `${barbearia.logoUrl}|${size}`;
+      let png = iconCache.get(key);
+      if (!png) {
+        try {
+          png = await renderIcon(barbearia.logoUrl, size);
+        } catch (e: any) {
+          console.warn(`[icon] falha ao gerar ícone de ${barbearia.slug}: ${e?.message || e}`);
+          return fallback();
+        }
+        if (iconCache.size >= ICON_CACHE_MAX) iconCache.delete(iconCache.keys().next().value as string);
+        iconCache.set(key, png);
+      }
+      res.setHeader("Content-Type", "image/png");
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      return res.send(png);
+    } catch (e) {
+      console.error("icon error:", e);
+      return res.status(500).end();
+    }
+  };
+}
+
+router.get("/:slug/icon-192.png", iconHandler(192));
+router.get("/:slug/icon-512.png", iconHandler(512));
 
 router.get("/:slug/config", async (req, res) => {
   try {

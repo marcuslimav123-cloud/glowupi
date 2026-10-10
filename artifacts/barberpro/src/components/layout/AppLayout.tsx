@@ -538,7 +538,7 @@ const CollapsibleGroup = React.memo(function CollapsibleGroup({ item, location, 
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { user, logout, isLoading, barbeariaId, role, perfilPermissoes, logoUrl, barbeariaNome, barbeariaSlug } = useAuth();
+  const { user, logout, isLoading, barbeariaId, role, perfilPermissoes, logoUrl, barbeariaNome, barbeariaSlug, tipoEstabelecimento, logoPadrao } = useAuth();
   const { canAccess, status, shouldShowUpgrade, trialDaysLeft } = useSubscriptionGuard();
 
   const basePath = import.meta.env.BASE_URL || "/";
@@ -548,6 +548,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     logoUrl: logoUrl || null,
     corPrimaria: undefined,
     startUrl: `${basePath}agenda`,
+    tipoEstabelecimento,
   });
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [showTutorial, setShowTutorial] = React.useState(false);
@@ -820,7 +821,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </Button>
           <div className="font-semibold text-[14px] text-foreground tracking-tight flex items-center gap-1.5 min-w-0">
             <SafeLogoImage
-              src={logoUrl || `${basePath}logo-icon.png`.replace(/\/+/g, "/")}
+              src={logoUrl || logoPadrao}
               alt={barbeariaNome || APP_NAME}
               className={logoUrl ? "h-[24px] w-[24px] object-contain rounded-full shrink-0" : "h-[24px] w-[24px] object-contain shrink-0"}
             />
@@ -849,7 +850,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <SafeLogoImage src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <SafeLogoImage src={`${basePath}logo-icon.png`.replace(/\/+/g, "/")} alt={APP_NAME} className="h-14 w-14 object-contain opacity-60" />
+                  <SafeLogoImage src={logoPadrao} alt={APP_NAME} className="h-14 w-14 object-contain opacity-60" />
                 </div>
               )}
             </div>

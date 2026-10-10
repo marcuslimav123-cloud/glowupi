@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useGetCurrentUser, useLogoutUser, type UserWithBarbearia } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
+import { defaultLogoUrl } from "@/lib/branding";
 
 type UserWithPerfilPermissoes = UserWithBarbearia & {
   perfilPermissoes?: string[] | null;
@@ -24,6 +25,9 @@ interface AuthContextType {
   barbeariaNome: string | null;
   logoUrl: string | null;
   barbeariaSlug: string | null;
+  tipoEstabelecimento: string | null;
+  /** Logo padrão do sistema para este estabelecimento (quando não há logo própria). */
+  logoPadrao: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -52,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const typedUser = user as UserWithPerfilPermissoes | undefined;
   const perfilPermissoes = typedUser?.perfilPermissoes ?? null;
   const barbearia = user?.barbearia ?? null;
+  const segmentacao = (barbearia as any)?.segmentacao ?? null;
   const value = {
     user: user || null,
     isLoading,
@@ -65,6 +70,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     barbeariaNome: barbearia?.nome ?? null,
     logoUrl: barbearia?.logoUrl ?? null,
     barbeariaSlug: (barbearia as any)?.slug ?? null,
+    tipoEstabelecimento: segmentacao?.tipoEstabelecimento ?? null,
+    logoPadrao: defaultLogoUrl(segmentacao),
     logout,
   };
 

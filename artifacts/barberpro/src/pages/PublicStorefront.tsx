@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import ClientAuthModal from "@/components/ClientAuthModal";
 import { usePWA } from "@/hooks/usePWA";
+import { defaultLogoUrl } from "@/lib/branding";
 import { useInstallPWA } from "@/hooks/useInstallPWA";
 import { InstallAppButton } from "@/components/InstallAppButton";
 import { SafeLogoImage } from "@/components/SafeLogoImage";
@@ -64,6 +65,8 @@ interface BarbeariaData {
   email: string;
   corPrimaria: string;
   logoUrl: string | null;
+  tipoEstabelecimento?: string | null;
+  logoPadraoUrl?: string;
   descricaoPublica: string | null;
   cidade: string;
   uf: string;
@@ -145,6 +148,7 @@ export default function PublicStorefront() {
     nome: barbearia?.nome,
     logoUrl: barbearia?.logoUrl,
     corPrimaria: barbearia?.corPrimaria,
+    tipoEstabelecimento: barbearia?.tipoEstabelecimento,
   });
 
   const { isInstalled } = useInstallPWA();
@@ -405,9 +409,7 @@ export default function PublicStorefront() {
               {barbearia.logoUrl ? (
                 <SafeLogoImage src={barbearia.logoUrl} alt={barbearia.nome} className="h-9 w-9 rounded-xl object-cover border border-white/10 flex-shrink-0" />
               ) : (
-                <div className="h-9 w-9 rounded-xl flex items-center justify-center border border-white/10 flex-shrink-0" style={{ background: `${accent}25` }}>
-                  <Scissors className="h-4 w-4" style={{ color: accent }} />
-                </div>
+                <SafeLogoImage src={defaultLogoUrl(barbearia.tipoEstabelecimento)} alt={barbearia.nome} className="h-9 w-9 rounded-xl object-contain p-1 border border-white/10 flex-shrink-0" style={{ background: `${accent}25` }} />
               )}
               <div className="min-w-0">
                 <h1 className="font-bold text-[15px] truncate">{barbearia.nome}</h1>
@@ -423,6 +425,7 @@ export default function PublicStorefront() {
                 <InstallAppButton
                   nome={barbearia?.nome}
                   logoUrl={barbearia?.logoUrl}
+                logoPadrao={defaultLogoUrl(barbearia?.tipoEstabelecimento)}
                   accentColor={accent}
                   variant="ghost"
                   size="sm"
@@ -739,9 +742,7 @@ export default function PublicStorefront() {
                 {barbearia.logoUrl ? (
                   <SafeLogoImage src={barbearia.logoUrl} alt={barbearia.nome} className="h-16 w-16 rounded-2xl object-cover border border-white/10" />
                 ) : (
-                  <div className="h-16 w-16 rounded-2xl flex items-center justify-center border border-white/10" style={{ background: `${accent}25` }}>
-                    <Scissors className="h-7 w-7" style={{ color: accent }} />
-                  </div>
+                  <SafeLogoImage src={defaultLogoUrl(barbearia.tipoEstabelecimento)} alt={barbearia.nome} className="h-16 w-16 rounded-2xl object-contain p-2 border border-white/10" style={{ background: `${accent}25` }} />
                 )}
                 <div className="flex-1 min-w-0">
                   <h3 className="text-xl font-bold">{barbearia.nome}</h3>

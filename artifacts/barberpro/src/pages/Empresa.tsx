@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ImageUpload } from "@/components/ImageUpload";
 import { formatPhone, stripPhone, apiUrl } from "@/lib/utils";
+import { TIPOS_ESTABELECIMENTO } from "@/lib/branding";
 import { useToast } from "@/hooks/use-toast";
 import { Building2, MapPin, Clock, Palette, Save, Link2, Copy, Check, ExternalLink, ImageIcon, XCircle, AlertTriangle, Loader2, CreditCard, ArrowUpRight, Settings } from "lucide-react";
 import { Link as WouterLink } from "wouter";
@@ -62,6 +63,7 @@ export default function Empresa() {
   const [horarios, setHorarios] = useState<any>(DEFAULT_HORARIOS);
   const [loadingCep, setLoadingCep] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [tipoEstabelecimento, setTipoEstabelecimento] = useState("");
   const [cancellingPlan, setCancellingPlan] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [openingPortal, setOpeningPortal] = useState(false);
@@ -81,6 +83,7 @@ export default function Empresa() {
       setCorPrimaria(barbearia.corPrimaria || "#3b82f6");
       setHorarios(normalizeHorarios(barbearia.horarioFuncionamento));
       setLogoUrl((barbearia as any).logoUrl || null);
+      setTipoEstabelecimento((barbearia as any).segmentacao?.tipoEstabelecimento || "");
     }
   }, [barbearia]);
 
@@ -160,7 +163,7 @@ export default function Empresa() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateMutation.mutateAsync({ data: { nome, telefone: stripPhone(telefone), email: email || null, cnpj: cnpj || null, cep: cep || null, logradouro: logradouro || null, numero: numero || null, bairro: bairro || null, cidade: cidade || null, uf: uf || null, corPrimaria, logoUrl } as any });
+      await updateMutation.mutateAsync({ data: { nome, telefone: stripPhone(telefone), email: email || null, cnpj: cnpj || null, cep: cep || null, logradouro: logradouro || null, numero: numero || null, bairro: bairro || null, cidade: cidade || null, uf: uf || null, corPrimaria, logoUrl, segmentacao: { ...(((barbearia as any)?.segmentacao) || {}), tipoEstabelecimento: tipoEstabelecimento || null } } as any });
       qc.invalidateQueries();
       try {
         if ("serviceWorker" in navigator) {
@@ -293,6 +296,18 @@ export default function Empresa() {
               <div className="space-y-2 md:col-span-2">
                 <Label>Nome do Salão / Estúdio</Label>
                 <Input value={nome} onChange={e => setNome(e.target.value)} required />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Tipo de estabelecimento</Label>
+                <select
+                  value={tipoEstabelecimento}
+                  onChange={e => setTipoEstabelecimento(e.target.value)}
+                  className="flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1"
+                >
+                  <option value="">Selecione</option>
+                  {TIPOS_ESTABELECIMENTO.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <p className="text-xs text-muted-foreground">Define a marca padrão do sistema enquanto você não envia sua própria logo (barbearias usam a versão masculina).</p>
               </div>
               <div className="space-y-2">
                 <Label>Telefone / WhatsApp</Label>

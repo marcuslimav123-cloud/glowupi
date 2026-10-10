@@ -3,6 +3,7 @@ import { useParams } from "wouter";
 import { Calendar, Clock, Scissors, User, ChevronLeft, ChevronRight, Check, MapPin, Phone, Loader2, LogOut, MessageCircle, XCircle, CalendarDays, AlertTriangle, Download, Share, X, Copy, ExternalLink } from "lucide-react";
 import ClientAuthModal from "@/components/ClientAuthModal";
 import { usePWA } from "@/hooks/usePWA";
+import { defaultLogoUrl } from "@/lib/branding";
 import { useInstallPWA } from "@/hooks/useInstallPWA";
 import { InstallAppButton } from "@/components/InstallAppButton";
 import { useClientNotifications } from "@/hooks/useClientNotifications";
@@ -47,6 +48,8 @@ interface BarbeariaData {
   telefone: string;
   corPrimaria: string;
   logoUrl: string | null;
+  tipoEstabelecimento?: string | null;
+  logoPadraoUrl?: string;
   descricaoPublica: string | null;
   cidade: string;
   uf: string;
@@ -145,6 +148,7 @@ export default function PublicBooking() {
     nome: barbearia?.nome,
     logoUrl: barbearia?.logoUrl,
     corPrimaria: barbearia?.corPrimaria,
+    tipoEstabelecimento: barbearia?.tipoEstabelecimento,
   });
 
   const { isInstalled } = useInstallPWA();
@@ -529,6 +533,7 @@ export default function PublicBooking() {
               <InstallAppButton
                 nome={barbearia?.nome}
                 logoUrl={barbearia?.logoUrl}
+                logoPadrao={defaultLogoUrl(barbearia?.tipoEstabelecimento)}
                 accentColor={accent}
                 variant="ghost"
                 size="sm"
@@ -1333,6 +1338,7 @@ export default function PublicBooking() {
                   <InstallAppButton
                     nome={barbearia?.nome}
                     logoUrl={barbearia?.logoUrl}
+                logoPadrao={defaultLogoUrl(barbearia?.tipoEstabelecimento)}
                     accentColor={accent}
                     variant="default"
                     className="px-6 py-2.5 rounded-xl text-sm font-medium"

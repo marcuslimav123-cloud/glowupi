@@ -5,6 +5,7 @@ interface SafeLogoImageProps {
   alt: string;
   className?: string;
   fallbackSrc?: string;
+  style?: React.CSSProperties;
 }
 
 export function SafeLogoImage({
@@ -12,6 +13,7 @@ export function SafeLogoImage({
   alt,
   className,
   fallbackSrc,
+  style,
 }: SafeLogoImageProps) {
   const basePath = (import.meta.env.BASE_URL || "/").replace(/\/+$/, "/");
   const fallback = fallbackSrc || `${basePath}logo-icon.png`.replace(/\/+/g, "/");
@@ -28,6 +30,7 @@ export function SafeLogoImage({
       src={currentSrc}
       alt={alt}
       className={className}
+      style={style}
       onError={() => {
         if (currentSrc !== fallback) {
           setCurrentSrc(fallback);

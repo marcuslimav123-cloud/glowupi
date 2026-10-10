@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiUrl, formatPhone, stripPhone } from "@/lib/utils";
+import { TIPOS_ESTABELECIMENTO } from "@/lib/branding";
 
 const STEPS = [
   { id: 1, label: "Seu Negócio", icon: Store, subtitle: "Informações básicas" },
@@ -24,11 +25,6 @@ const ESTADOS_BR = [
   "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"
 ];
 
-const TIPOS_ESTABELECIMENTO = [
-  "Barbearia", "Salão de Beleza", "Clínica de Estética", "Studio de Sobrancelhas",
-  "Studio de Maquiagem", "Extensão de Cílios", "Esmalteria",
-  "Studio de Tatuagem", "Outro"
-];
 
 const COMO_SOUBE = ["Google", "Instagram", "Facebook", "Indicação de amigo", "Outro"];
 
