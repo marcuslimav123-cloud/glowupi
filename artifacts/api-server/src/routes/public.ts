@@ -6,8 +6,41 @@ import { extractYoutubeVideoId } from "../lib/youtube.js";
 import { sendPushToBarbearia } from "../lib/pushNotifications.js";
 import { requireClient } from "../lib/auth.js";
 import { validateAgendamentoEmHorario, validateAgendamentoEmJornadaProf } from "../lib/horarioValidation.js";
+import { verifyConfirmToken } from "../lib/confirmToken.js";
 
 const router: IRouter = Router();
+
+// Link "Confirmar Presença" enviado nos lembretes por e-mail. Sem login: o
+// token assinado no link é o que autoriza a confirmação daquele agendamento.
+router.get("/confirmar/:agendamentoId", async (req, res) => {
+  const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+  const page = (titulo: string, texto: string, ok: boolean) =>
+    `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${titulo}</title></head>` +
+    `<body style="margin:0;font-family:Inter,Arial,sans-serif;background:#0a0a0a;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;">` +
+    `<div style="max-width:420px;text-align:center;background:#161616;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:40px 32px;">` +
+    `<div style="font-size:48px;margin-bottom:12px;">${ok ? "✅" : "⚠️"}</div><h1 style="font-size:22px;margin:0 0 8px;">${titulo}</h1>` +
+    `<p style="color:rgba(255,255,255,.6);margin:0;line-height:1.5;">${texto}</p></div></body></html>`;
+
+  const id = parseInt(req.params.agendamentoId);
+  const token = String(req.query.t || "");
+  if (!Number.isFinite(id) || !verifyConfirmToken(id, token)) {
+    return res.status(403).send(page("Link inválido", "Este link de confirmação não é válido.", false));
+  }
+  const [agend] = await db.select().from(agendamentosTable).where(eq(agendamentosTable.id, id)).limit(1);
+  if (!agend || agend.status === "cancelado") {
+    return res.status(404).send(page("Agendamento não encontrado", "Esse agendamento não existe mais ou foi cancelado.", false));
+  }
+  if (!agend.presencaConfirmadaEm) {
+    await db.update(agendamentosTable).set({ presencaConfirmadaEm: new Date(), updatedAt: new Date() }).where(eq(agendamentosTable.id, id));
+  }
+  const [barb] = await db.select({ nome: barbeariasTable.nome }).from(barbeariasTable).where(eq(barbeariasTable.id, agend.barbeariaId)).limit(1);
+  const [y, m, d] = agend.data.split("-");
+  return res.send(page(
+    "Presença confirmada!",
+    `${esc(agend.clienteNome)}, te esperamos em <b>${esc(barb?.nome || "nosso espaço")}</b> no dia <b>${d}/${m}/${y}</b> às <b>${esc(agend.horaInicio.slice(0, 5))}</b> — ${esc(agend.servicoNome)} com ${esc(agend.profissionalNome)}.`,
+    true,
+  ));
+});
 
 router.post("/vsl-progress", async (req, res) => {
   try {

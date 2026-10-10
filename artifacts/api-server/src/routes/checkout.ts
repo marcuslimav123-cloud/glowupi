@@ -5,6 +5,7 @@ import { barbeariasTable, platformConfigTable } from "@workspace/db/schema";
 import { stripeService } from "../stripeService.js";
 import { stripeStorage } from "../stripeStorage.js";
 import { getUncachableStripeClient, getStripePublishableKey } from "../stripeClient.js";
+import { getAppBaseUrl } from "../lib/appUrl.js";
 import { requireAuth, requireBarbearia } from "../lib/auth.js";
 import { sendCapiEvent, purchaseEventId } from "../lib/fbCapi.js";
 import { buildVerifyDirectSessionPurchaseEvent } from "../lib/purchaseEvent.js";
@@ -154,7 +155,7 @@ router.post("/create-checkout-session", requireAuth, requireBarbearia, async (re
       }
     }
 
-    const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+    const baseUrl = getAppBaseUrl();
 
     const session = await stripeService.createCheckoutSession(
       customerId,
@@ -210,7 +211,7 @@ router.post("/create-portal-session", requireAuth, requireBarbearia, async (req:
       return res.status(400).json({ error: "No Stripe customer found" });
     }
 
-    const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+    const baseUrl = getAppBaseUrl();
     const session = await stripeService.createCustomerPortalSession(
       barbearia.stripeCustomerId,
       `${baseUrl}/empresa`
@@ -343,7 +344,7 @@ router.post("/create-direct-session", requireAuth, async (req: any, res) => {
       }
     }
 
-    const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+    const baseUrl = getAppBaseUrl();
 
     const session = await stripeClient.checkout.sessions.create({
       customer: customerId,

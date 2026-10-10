@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { barbeariasTable, parametrosConfigTable, platformConfigTable, trialLinksTable, profissionaisTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
-import { requireAuth, requireRole } from "../lib/auth.js";
+import { requireAuth, requireRole, checkBarbeariaAccess } from "../lib/auth.js";
 import { slugify } from "../lib/slugify.js";
 import { PARAMETROS_DEFAULTS } from "./parametros.js";
 import { validateHorarioFuncionamento, profsForaDaJanela } from "../lib/horarioValidation.js";
@@ -102,6 +102,18 @@ router.get("/me", requireAuth, async (req, res) => {
   try {
     const user = (req as any).user;
     const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
+    if (!barbearia) return res.status(404).json({ error: "Barbearia não encontrada" });
+    return res.json(formatBarbearia(barbearia));
+  } catch (e) {
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+router.get("/:barbeariaId", requireAuth, async (req, res) => {
+  try {
+    const barbeariaId = await checkBarbeariaAccess(req, res);
+    if (!barbeariaId) return;
+    const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
     if (!barbearia) return res.status(404).json({ error: "Barbearia não encontrada" });
     return res.json(formatBarbearia(barbearia));
   } catch (e) {

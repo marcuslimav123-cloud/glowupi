@@ -7,6 +7,7 @@ import { startTrialCleanupScheduler } from "./lib/trialCleanup.js";
 import { startFinanceiroNotificationsScheduler } from "./lib/financeiroNotificationsScheduler.js";
 import { startAsaasToleranceScheduler } from "./lib/asaasToleranceScheduler.js";
 import app from "./app.js";
+import { getAppBaseUrl } from "./lib/appUrl.js";
 
 async function initStripe() {
   const databaseUrl = process.env.DATABASE_URL;
@@ -27,9 +28,7 @@ async function initStripe() {
     const stripeSync = await getStripeSync();
 
     console.log('Setting up managed webhook...');
-    const webhookBaseUrl =
-      process.env.APP_BASE_URL?.replace(/\/+$/, "") ||
-      `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+    const webhookBaseUrl = getAppBaseUrl();
     const webhookResult = await stripeSync.findOrCreateManagedWebhook(
       `${webhookBaseUrl}/api/stripe/webhook`
     );

@@ -16,6 +16,7 @@ import { sendPushToBarbearia, sendPushToClienteUser } from "../lib/pushNotificat
 import { clienteUsersTable } from "@workspace/db/schema";
 import { validateAgendamentoEmHorario, validateAgendamentoEmJornadaProf, type HorarioDia } from "../lib/horarioValidation.js";
 import { buildWhatsappUrl, renderWhatsappTemplate, formatDateBR } from "../lib/whatsappLink.js";
+import { getAppBaseUrl } from "../lib/appUrl.js";
 
 async function notificarAgendamento(barbeariaId: number, params: Record<string, string>, agendData: { clienteNome: string; clienteTelefone?: string; profissionalNome: string; servicoNome: string; data: string; horaInicio: string; clienteId?: number | null; agendamentoId?: number }, tipo: "criado" | "cancelado") {
   try {
@@ -1183,8 +1184,7 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
       const pesquisa = pesquisasAtivas[0];
       const [cliente] = await db.select().from(clientesTable)
         .where(eq(clientesTable.id, agend.clienteId)).limit(1);
-      const domain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(",")[0] || "";
-      const surveyUrl = `https://${domain}/pesquisa/${pesquisa.id}?cliente=${agend.clienteId}&prof=${agend.profissionalId}`;
+      const surveyUrl = `${getAppBaseUrl()}/pesquisa/${pesquisa.id}?cliente=${agend.clienteId}&prof=${agend.profissionalId}`;
       const [barb] = await db.select().from(barbeariasTable)
         .where(eq(barbeariasTable.id, barbeariaId)).limit(1);
       const nomeEstab = barb?.nome || "Glow Upi";

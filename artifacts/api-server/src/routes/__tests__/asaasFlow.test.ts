@@ -368,7 +368,8 @@ describe("Asaas E2E — sinal de agendamento", () => {
   });
 
   it("GET /asaas-sinal/agendamento/:id/status — antes do pagamento retorna paid:false", async () => {
-    const res = await fetch(`${baseUrl}/api/asaas-sinal/agendamento/${agendamentoId}/status?tel=11988887777`);
+    const [agTok] = await db.select().from(agendamentosTable).where(eq(agendamentosTable.id, agendamentoId));
+    const res = await fetch(`${baseUrl}/api/asaas-sinal/agendamento/${agendamentoId}/status?token=${encodeURIComponent(agTok.sinalConsultaToken ?? "")}`);
     assert.equal(res.status, 200);
     const body = await res.json() as any;
     assert.equal(body.paid, false);
@@ -395,7 +396,7 @@ describe("Asaas E2E — sinal de agendamento", () => {
     assert.equal(ag.sinalStatus, "pago");
     assert.equal(parseFloat(ag.sinalValorPago as string), 20);
 
-    const sres = await fetch(`${baseUrl}/api/asaas-sinal/agendamento/${agendamentoId}/status?tel=11988887777`);
+    const sres = await fetch(`${baseUrl}/api/asaas-sinal/agendamento/${agendamentoId}/status?token=${encodeURIComponent(ag.sinalConsultaToken ?? "")}`);
     const sbody = await sres.json() as any;
     assert.equal(sbody.paid, true);
     assert.equal(sbody.status, "pago");
@@ -627,7 +628,9 @@ describe("Asaas E2E — fluxo público /agendar e /agendar-simples", () => {
   });
 
   it("GET status do sinal de /agendar-simples reflete pagamento via webhook", async () => {
-    const sresPre = await fetch(`${baseUrl}/api/asaas-sinal/agendamento/${agendarSimplesId}/status?tel=11933332222`);
+    const [agS] = await db.select().from(agendamentosTable).where(eq(agendamentosTable.id, agendarSimplesId));
+    const statusUrl = `${baseUrl}/api/asaas-sinal/agendamento/${agendarSimplesId}/status?token=${encodeURIComponent(agS.sinalConsultaToken ?? "")}`;
+    const sresPre = await fetch(statusUrl);
     const preBody = await sresPre.json() as any;
     assert.equal(preBody.paid, false);
 
@@ -646,7 +649,7 @@ describe("Asaas E2E — fluxo público /agendar e /agendar-simples", () => {
     const [ag] = await db.select().from(agendamentosTable).where(eq(agendamentosTable.id, agendarSimplesId));
     assert.equal(ag.sinalStatus, "pago");
 
-    const sresPos = await fetch(`${baseUrl}/api/asaas-sinal/agendamento/${agendarSimplesId}/status?tel=11933332222`);
+    const sresPos = await fetch(statusUrl);
     const posBody = await sresPos.json() as any;
     assert.equal(posBody.paid, true);
     assert.equal(posBody.status, "pago");

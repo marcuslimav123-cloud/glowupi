@@ -1,9 +1,8 @@
 import crypto from "node:crypto";
 import { sendEmail, renderTemplate } from "./brevo.js";
+import { getAppBaseUrl } from "./appUrl.js";
 
-const PUBLIC_BASE = process.env.REPLIT_DOMAINS
-  ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
-  : (process.env.PUBLIC_APP_URL || "");
+const PUBLIC_BASE = getAppBaseUrl();
 
 export function generateUnsubscribeToken(): string {
   return crypto.randomBytes(24).toString("hex");

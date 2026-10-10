@@ -5,6 +5,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { encryptApiKey, generateWebhookToken, maskApiKey, decryptApiKey } from "../lib/asaasCrypto.js";
 import { createAsaasClient, type AsaasAmbiente } from "../lib/asaasClient.js";
+import { getAppBaseUrl } from "../lib/appUrl.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -27,7 +28,7 @@ async function setupWebhookForConta(barbeariaId: number, conta: typeof asaasCont
   try {
     const apiKey = decryptApiKey(conta.apiKeyEncrypted);
     const client = createAsaasClient({ apiKey, ambiente: asAmbiente(conta.ambiente) });
-    const baseUrl = process.env.PUBLIC_URL || `https://${process.env.REPLIT_DOMAINS?.split(",")[0] || ""}`;
+    const baseUrl = getAppBaseUrl();
     const url = `${baseUrl}/api/webhooks/asaas/${barbeariaId}`;
     await client.createWebhook({
       url, enabled: true, interrupted: false, apiVersion: 3,
@@ -177,7 +178,7 @@ router.get("/webhook-url", requireAuth, requireRole("dono", "gerente"), async (r
   if (!barbeariaId) return;
   const [conta] = await db.select().from(asaasContasTable).where(eq(asaasContasTable.barbeariaId, barbeariaId)).limit(1);
   if (!conta) return res.status(404).json({ error: "Conta Asaas não conectada" });
-  const baseUrl = process.env.PUBLIC_URL || `https://${process.env.REPLIT_DOMAINS?.split(",")[0] || ""}`;
+  const baseUrl = getAppBaseUrl();
   return res.json({
     url: `${baseUrl}/api/webhooks/asaas/${barbeariaId}`,
     authToken: conta.webhookToken,

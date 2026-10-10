@@ -5,6 +5,8 @@ import { eq, and, sql, desc, gte, lte } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
 import { sendEmail } from "../lib/brevo.js";
+import { getAppBaseUrl } from "../lib/appUrl.js";
+import { makeConfirmToken } from "../lib/confirmToken.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -354,10 +356,9 @@ router.post("/lembretes/enviar", requireAuth, async (req, res) => {
   if (agend.clienteId) {
     const [cliente] = await db.select().from(clientesTable).where(eq(clientesTable.id, agend.clienteId)).limit(1);
     if (cliente?.email) {
-      const domain = process.env.REPLIT_DEV_DOMAIN || "glowup.app";
       let linkHtml = "";
       if (incluirLink) {
-        const confirmUrl = `https://${domain}/confirmar/${agend.id}`;
+        const confirmUrl = `${getAppBaseUrl()}/api/public/confirmar/${agend.id}?t=${makeConfirmToken(agend.id)}`;
         linkHtml = `<p style="margin-top:16px;text-align:center;"><a href="${confirmUrl}" style="display:inline-block;padding:10px 24px;background:#c4a46a;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">Confirmar Presença</a></p>`;
       }
       await sendEmail({
