@@ -19,6 +19,9 @@ BACKUP_DIR=/var/backups/glowupi
 
 echo "==> [1/6] Baixando a versão mais recente"
 cd "$APP_DIR"
+# O repositório pertence ao usuário do serviço, mas o script roda como root.
+git config --global --get-all safe.directory 2>/dev/null | grep -qx "$APP_DIR" \
+  || git config --global --add safe.directory "$APP_DIR"
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 git fetch --quiet origin "$BRANCH"
 git reset --hard --quiet "origin/$BRANCH"
