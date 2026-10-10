@@ -81,6 +81,24 @@ export function HeaderBar() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [activePopup, setActivePopup] = useState<string | null>(null);
+  const [pushPerm, setPushPerm] = useState<NotificationPermission | "unsupported">(() =>
+    typeof window !== "undefined" && "Notification" in window ? Notification.permission : "unsupported",
+  );
+  const [pushEnabling, setPushEnabling] = useState(false);
+  const handleEnablePush = async () => {
+    setPushEnabling(true);
+    try {
+      const perm = await enablePushNotifications(barbeariaId);
+      setPushPerm(perm);
+      if (perm === "granted") {
+        toast({ title: "Avisos ativados!", description: "Você vai receber os novos agendamentos neste aparelho." });
+      } else if (perm === "denied") {
+        toast({ title: "O navegador bloqueou os avisos", description: "Permita as notificações para glowupi.com.br nas configurações do site e tente de novo.", variant: "destructive" });
+      }
+    } finally {
+      setPushEnabling(false);
+    }
+  };
   const [themeOpen, setThemeOpen] = useState(false);
   const [solTab, setSolTab] = useState("todos");
   const { notificacoes, unreadCount, loading: notifLoading, fetchNotificacoes, markAsRead, markAllAsRead } = useNotifications();
@@ -327,7 +345,6 @@ export function HeaderBar() {
             if (activePopup === "notificacoes") {
               setActivePopup(null);
             } else {
-              enablePushNotifications(barbeariaId);
               fetchNotificacoes();
               toggle("notificacoes");
             }
@@ -356,6 +373,24 @@ export function HeaderBar() {
                 </button>
               )}
             </div>
+            {pushPerm === "default" && (
+              <div className="mb-3 p-3 rounded-lg bg-primary/5 border border-primary/15">
+                <p className="text-[12px] font-medium text-foreground leading-snug">Receber avisos neste aparelho</p>
+                <p className="text-[11px] text-foreground/50 mt-0.5 leading-snug">Novos agendamentos e mensagens chegam como notificação, mesmo com o painel fechado.</p>
+                <button
+                  onClick={handleEnablePush}
+                  disabled={pushEnabling}
+                  className="mt-2 w-full h-8 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold hover:opacity-90 transition-opacity disabled:opacity-60"
+                >
+                  {pushEnabling ? "Aguardando o navegador..." : "Ativar avisos"}
+                </button>
+              </div>
+            )}
+            {pushPerm === "denied" && (
+              <p className="mb-3 text-[11px] text-foreground/50 leading-snug">
+                Avisos bloqueados pelo navegador. Para ativar, permita as notificações de glowupi.com.br nas configurações do site.
+              </p>
+            )}
             {notifLoading ? (
               <div className="flex justify-center py-6">
                 <Loader2 className="h-5 w-5 animate-spin text-foreground/30" />
