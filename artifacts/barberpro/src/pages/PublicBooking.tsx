@@ -6,7 +6,7 @@ import { usePWA } from "@/hooks/usePWA";
 import { defaultLogoUrl } from "@/lib/branding";
 import { useInstallPWA } from "@/hooks/useInstallPWA";
 import { InstallAppButton } from "@/components/InstallAppButton";
-import { useClientNotifications } from "@/hooks/useClientNotifications";
+import { useClientNotifications, enableClientNotifications } from "@/hooks/useClientNotifications";
 
 const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, "/");
 
@@ -263,6 +263,8 @@ export default function PublicBooking() {
         setAgendamentoCriadoTel(simplesWhatsapp.replace(/\D/g, "").slice(-10));
         setSinalConsultaToken(data?.sinalPagamento?.consultaToken || null);
         setStep("sucesso");
+        if (clientUser) enableClientNotifications().catch(() => {});
+      if (clientUser) enableClientNotifications().catch(() => {});
       } catch (e: any) {
         setError(e.message);
       } finally {
@@ -305,6 +307,7 @@ export default function PublicBooking() {
       setAgendamentoCriadoTel(rawWa.slice(-10));
       setSinalConsultaToken(data?.sinalPagamento?.consultaToken || null);
       setStep("sucesso");
+      if (clientUser) enableClientNotifications().catch(() => {});
     } catch (e: any) {
       setError(e.message);
     } finally {

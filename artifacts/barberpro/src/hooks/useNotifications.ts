@@ -67,6 +67,17 @@ export function requestNotificationPermission(): Promise<NotificationPermission>
   return Notification.requestPermission();
 }
 
+// Pede a permissão (deve ser chamado a partir de um clique do usuário — o
+// Chrome bloqueia sites que pedem sozinhos ao carregar a página) e, se
+// concedida, registra o push desta barbearia.
+export async function enablePushNotifications(barbeariaId?: number | null): Promise<NotificationPermission> {
+  const perm = await requestNotificationPermission();
+  if (perm === "granted" && barbeariaId) {
+    await subscribeToPush(barbeariaId);
+  }
+  return perm;
+}
+
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -212,16 +223,12 @@ export function useNotifications() {
   useEffect(() => {
     if (!barbeariaId || !isAuthenticated) return;
     if (pushSubscribingRef.current) return;
+    // Sem pedir permissão aqui: só mantém a assinatura de quem já permitiu.
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
     pushSubscribingRef.current = true;
 
-    requestNotificationPermission().then((perm) => {
-      if (perm === "granted") {
-        subscribeToPush(barbeariaId).then((success) => {
-          if (!success) {
-            pushSubscribingRef.current = false;
-          }
-        });
-      } else {
+    subscribeToPush(barbeariaId).then((success) => {
+      if (!success) {
         pushSubscribingRef.current = false;
       }
     });

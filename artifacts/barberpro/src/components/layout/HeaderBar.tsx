@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiUrl } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { ComporMensagemDialog } from "@/components/mensagens/ComporMensagemDialog";
-import { useNotifications, requestNotificationPermission } from "@/hooks/useNotifications";
+import { useNotifications, enablePushNotifications } from "@/hooks/useNotifications";
 import {
   CalendarDays, DollarSign, FileText, Cake, Mail, UserPlus,
   User, LogOut, Palette, Shield, Settings, X, Check, Bell, CheckCheck, Loader2,
@@ -327,7 +327,7 @@ export function HeaderBar() {
             if (activePopup === "notificacoes") {
               setActivePopup(null);
             } else {
-              requestNotificationPermission();
+              enablePushNotifications(barbeariaId);
               fetchNotificacoes();
               toggle("notificacoes");
             }

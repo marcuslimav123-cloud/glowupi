@@ -65,6 +65,16 @@ async function subscribeClientToPush(): Promise<boolean> {
   }
 }
 
+// Chamar a partir de uma ação do cliente (ex.: logo após confirmar um
+// agendamento). Pedir ao carregar a página faz o Chrome bloquear o site.
+export async function enableClientNotifications(): Promise<boolean> {
+  if (!("Notification" in window)) return false;
+  if (Notification.permission === "denied") return false;
+  const perm = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+  if (perm !== "granted") return false;
+  return subscribeClientToPush();
+}
+
 export function useClientNotifications(isAuthenticated: boolean) {
   const subscribingRef = useRef(false);
 
@@ -86,14 +96,6 @@ export function useClientNotifications(isAuthenticated: boolean) {
 
     if (Notification.permission === "granted") {
       doSubscribe();
-    } else if (Notification.permission !== "denied") {
-      Notification.requestPermission().then((perm) => {
-        if (perm === "granted") {
-          doSubscribe();
-        } else {
-          subscribingRef.current = false;
-        }
-      });
     } else {
       subscribingRef.current = false;
     }
