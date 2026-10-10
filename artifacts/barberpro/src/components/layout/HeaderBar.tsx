@@ -98,6 +98,8 @@ export function HeaderBar() {
         toast({ title: "Avisos ativados!", description: "Você vai receber os novos agendamentos neste aparelho." });
       } else if (perm === "denied") {
         setPushHint("O navegador bloqueou: toque no cadeado ao lado do endereço → Permissões → Notificações → Permitir, e tente de novo.");
+      } else if (perm === "granted") {
+        setPushHint("A permissão foi dada, mas não consegui registrar este aparelho no servidor. Tente de novo em alguns segundos.");
       } else {
         setPushHint("O navegador mostrou um aviso pequeno e ele sumiu. Toque em Ativar de novo e, quando o aviso aparecer, toque nele e escolha Permitir.");
       }

@@ -153,6 +153,8 @@ export default function MenuPage() {
         toast({ title: "Avisos ativados!", description: "Você vai receber os novos agendamentos neste aparelho." });
       } else if (perm === "denied") {
         setNotifHint(`O navegador bloqueou os avisos: ${CAMINHO_CADEADO}`);
+      } else if (perm === "granted") {
+        setNotifHint("A permissão foi dada, mas não consegui registrar este aparelho no servidor. Tente de novo em alguns segundos.");
       } else {
         setNotifHint(`O navegador mostrou um aviso pequeno (normalmente na parte de baixo da tela) e ele sumiu antes de você responder. Toque em "Ativar avisos" de novo e, quando o aviso aparecer, toque nele e escolha Permitir. Se sumir de novo, ${CAMINHO_CADEADO}`);
       }
