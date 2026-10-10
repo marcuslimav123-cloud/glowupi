@@ -10,8 +10,12 @@
 - **Domínio**: **glowupi.com.br** (registrado na própria Hostinger; DNS ainda NÃO aponta para a VPS)
 - **Credenciais disponíveis na sessão nova**:
   - `VPS_ROOT_PASSWORD` — variável de ambiente (senha root da VPS)
-  - `HOSTINGER_API_TOKEN` — network secret: o proxy injeta `Authorization: Bearer ...`
-    automaticamente em chamadas para `developers.hostinger.com` (não dá para ler o valor)
+  - **Conector Hostinger (preferir!)**: o usuário instalou/está instalando o conector oficial
+    da Hostinger no claude.ai (OAuth). Se houver tools `mcp__hostinger*` (ou via ToolSearch),
+    usá-las para DNS e dados da VPS em vez de curl na API.
+  - `HOSTINGER_API_TOKEN` — network secret (fallback): o proxy injeta `Authorization: Bearer ...`
+    em chamadas para `developers.hostinger.com` (não dá para ler o valor; pode não existir
+    se o usuário não achou o token — o conector substitui)
 - O app já foi rodado e validado de ponta a ponta em sessão anterior (screenshots enviados ao
   usuário): landing, admin (/admin/login), dashboard do salão, agenda, portal público.
 
