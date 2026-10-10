@@ -32,8 +32,13 @@ RackNerd etc.) com domínio próprio e HTTPS automático.
 
 4. **Login Google (necessário para cadastro de donos de salão):**
    - Crie um OAuth Client ID em https://console.cloud.google.com/apis/credentials
-     (tipo "Web application", origem `https://seudominio.com.br`);
-   - Cole o ID em `GOOGLE_CLIENT_ID=` no arquivo `/etc/glowupi.env`;
+     (tipo "Web application"):
+     - Origem JavaScript autorizada: `https://seudominio.com.br`
+     - URI de redirecionamento autorizado:
+       `https://seudominio.com.br/api/auth/google/mobile/callback`
+   - Cole o ID em `GOOGLE_CLIENT_ID=` **e o segredo em `GOOGLE_CLIENT_SECRET=`**
+     no arquivo `/etc/glowupi.env` (o fluxo web troca o `code` por token no
+     servidor, então o segredo é obrigatório);
    - `systemctl restart glowupi-api`.
 
 ## Adaptações feitas no código para rodar fora do Replit
@@ -55,7 +60,7 @@ RackNerd etc.) com domínio próprio e HTTPS automático.
 | `OBJECT_STORAGE_MODE` | sim (fora do Replit) | `local` |
 | `LOCAL_OBJECT_DIR` | não | Pasta dos uploads |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | p/ push | Geradas pelo script |
-| `GOOGLE_CLIENT_ID` | p/ login Google | Criar no Google Cloud Console |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | p/ login Google | Criar no Google Cloud Console (os dois) |
 | `STRIPE_SECRET_KEY`, `BREVO_API_KEY`... | não | Ativar depois, quando precisar |
 
 ## Operação do dia a dia

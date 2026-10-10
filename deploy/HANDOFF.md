@@ -28,6 +28,45 @@
   Caddy+HTTPS, systemd, ufw, VAPID, drizzle push, build do frontend). Idempotente.
 - `deploy/README.md`: guia de operação
 
+## ✅ DEPLOY CONCLUÍDO (10/10/2026 ~13:40 UTC) — leia isto primeiro
+
+**https://glowupi.com.br está no ar** (certificado Let's Encrypt emitido 13:36 UTC,
+`curl` de dentro da VPS → 200, usuário confirmou acesso pelo celular em 4G).
+
+Como foi feito de verdade (o plano abaixo NÃO funcionou como escrito):
+- A rede da sessão cloud **bloqueia porta 22** (timeout) e o proxy de egress **nega
+  CONNECT para glowupi.com.br:443** (policy). O classificador de segurança bloqueia
+  qualquer tentativa de túnel SSH pelo proxy — não tente. Para a sessão conseguir
+  abrir/fotografar o site, o Marcus precisa liberar `glowupi.com.br` em
+  Allowed domains na configuração de rede do ambiente (menu do ambiente → Edit).
+- A chave SSH gerada na sessão FOI adicionada à VM pelo conector
+  (`vps_ssh-keys_add-virtual-machine`), mas ficou inútil pela porta 22 bloqueada.
+- Caminho que funcionou: **Marcus abriu o Browser Terminal do hPanel** e colou os
+  comandos. O repo é **público**, então o próprio setup-vps.sh clonou via
+  `GIT_URL=https://github.com/marcuslimav123-cloud/glowupi GIT_BRANCH=claude/stoic-tesla-ownbsp`.
+- Pegadinhas do Browser Terminal da Hostinger: o paste vem com bracketed-paste
+  (`^[[200~`) que quebra o comando → rodar antes `bind 'set enable-bracketed-paste off'`.
+  Colar com botão direito ou Ctrl+Shift+V.
+- Repositório Cloudsmith do Caddy devolveu `402 Payment Required`; resolvido com
+  `rm /etc/apt/sources.list.d/caddy-stable.list` + `apt-get install caddy` do próprio
+  Ubuntu 26.04 (universe). O setup-vps.sh agora tenta o pacote do Ubuntu primeiro.
+- DNS: zona Hostinger correta (A @ → 179.236.69.85 TTL 300; www CNAME; NS
+  atlas/hyperion.dns-parking.com). Nenhum firewall Hostinger ativo. O PC do Marcus
+  via `ERR_CONNECTION_CLOSED` por cache do resolver da operadora (registro antigo
+  TTL 14400) — resolve sozinho em até 4h; `ipconfig /flushdns` não basta.
+
+Pendências (todas opcionais / para combinar com o Marcus):
+- Login Google: o fluxo web (`/auth/google/signin-popup` → `/google/mobile/callback`)
+  exige **`GOOGLE_CLIENT_ID` E `GOOGLE_CLIENT_SECRET`** em `/etc/glowupi.env`
+  (o README antigo só citava o ID — estava incompleto) + redirect URI
+  `https://glowupi.com.br/api/auth/google/mobile/callback` cadastrado no Google
+  Cloud Console + `systemctl restart glowupi-api`. Login super admin já funciona.
+- Stripe (`STRIPE_SECRET_KEY`) e e-mail (`BREVO_API_KEY`) NÃO configurados:
+  pagamentos e e-mails não funcionam até preencher.
+- Trocar a senha padrão do super admin (marcus@admin.com).
+- Endurecer SSH (`PasswordAuthentication no`) — NÃO foi feito.
+- VPS pede reboot (kernel 7.0.0-38 pendente); serviços estão `enabled`, voltam sozinhos.
+
 ## ⚡ PLANO DE EXECUÇÃO ATUAL (atualizado 10/10/2026 13:10 UTC — substitui os passos antigos abaixo)
 
 Fatos já confirmados pela sessão-mãe (NÃO refazer):

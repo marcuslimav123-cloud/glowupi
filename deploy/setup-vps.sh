@@ -37,13 +37,20 @@ command -v pnpm >/dev/null 2>&1 || npm install -g pnpm@10
 
 echo "==> [3/9] Caddy (servidor web com HTTPS automático)"
 if ! command -v caddy >/dev/null 2>&1; then
-  apt-get install -y debian-keyring debian-archive-keyring apt-transport-https
-  curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
-    | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-  curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
-    > /etc/apt/sources.list.d/caddy-stable.list
-  apt-get update -y
-  apt-get install -y caddy
+  # O repositório da Cloudsmith responde 402 quando estoura a cota de banda,
+  # e um .list quebrado derruba todo apt-get update dali em diante.
+  if ! apt-get install -y caddy; then
+    apt-get install -y debian-keyring debian-archive-keyring apt-transport-https
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
+      | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
+      > /etc/apt/sources.list.d/caddy-stable.list
+    if ! apt-get update -y || ! apt-get install -y caddy; then
+      rm -f /etc/apt/sources.list.d/caddy-stable.list
+      echo "ERRO: não foi possível instalar o caddy (nem do Ubuntu, nem da Cloudsmith)."
+      exit 1
+    fi
+  fi
 fi
 
 echo "==> [4/9] Código em $APP_DIR"
@@ -88,8 +95,10 @@ LOCAL_OBJECT_DIR=${UPLOAD_DIR}
 VAPID_PUBLIC_KEY=${VAPID_PUB}
 VAPID_PRIVATE_KEY=${VAPID_PRIV}
 VAPID_SUBJECT=mailto:contato@${DOMAIN}
-# Preencher depois para habilitar login Google (obrigatório p/ cadastro de clientes):
+# Preencher depois para habilitar login Google (obrigatório p/ cadastro de clientes).
+# Redirect URI a cadastrar no Google: https://${DOMAIN}/api/auth/google/mobile/callback
 GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 # Opcionais (Stripe, e-mail etc.) — preencher quando for ativar:
 # STRIPE_SECRET_KEY=
 # BREVO_API_KEY=
