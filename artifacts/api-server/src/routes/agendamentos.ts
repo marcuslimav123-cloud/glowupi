@@ -915,8 +915,16 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
 
   const hasComissaoOverride = profServicoLink?.comissaoOverride != null;
   const comissaoPerc = hasComissaoOverride
-    ? parseFloat(profServicoLink!.comissaoOverride!)
-    : (profissional ? parseFloat(profissional.comissaoValor as string) : 40);
+    ? (parseFloat(profServicoLink!.comissaoOverride!) || 0)
+    : (profissional ? (parseFloat(profissional.comissaoValor as string) || 0) : 0);
+
+  // Comissão sobre produtos: o parâmetro "comissao_produtos_percentual" quando
+  // preenchido; senão a mesma porcentagem do profissional (comissão em valor
+  // fixo vale só para o serviço). Profissional com 0% não recebe nada.
+  const comissaoProdutosParam = String(params["comissao_produtos_percentual"] ?? "").trim().replace(",", ".");
+  const comissaoProdutosPerc = comissaoProdutosParam !== "" && !isNaN(Number(comissaoProdutosParam))
+    ? Math.max(0, Number(comissaoProdutosParam))
+    : (profissional?.comissaoTipo === "percentual" ? Math.max(0, parseFloat(profissional.comissaoValor as string) || 0) : 0);
   let comissaoServico = (hasComissaoOverride || profissional?.comissaoTipo === "percentual")
     ? (valorServico * comissaoPerc) / 100
     : comissaoPerc;
@@ -966,7 +974,7 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
     const [prod] = await db.select().from(produtosTable).where(and(eq(produtosTable.id, p.produtoId), eq(produtosTable.barbeariaId, barbeariaId))).limit(1);
     if (prod) {
       valorProdutos += p.valor * p.quantidade;
-      const comProd = (p.valor * p.quantidade * 10) / 100;
+      const comProd = (p.valor * p.quantidade * comissaoProdutosPerc) / 100;
       comissaoProdutos += comProd;
       prodItems.push({ id: prod.id, nome: prod.nome, valor: p.valor, quantidade: p.quantidade, comissao: comProd });
       await db.update(produtosTable).set({ quantidade: prod.quantidade - p.quantidade, updatedAt: new Date() }).where(eq(produtosTable.id, prod.id));
@@ -984,7 +992,7 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
       const [saProf] = await db.select().from(profissionaisTable).where(
         and(eq(profissionaisTable.id, saProfId), eq(profissionaisTable.barbeariaId, barbeariaId))
       ).limit(1);
-      const saComPerc = saProf ? parseFloat(saProf.comissaoValor as string) : 40;
+      const saComPerc = saProf ? (parseFloat(saProf.comissaoValor as string) || 0) : 0;
       const saComissao = (saProf?.comissaoTipo === "percentual")
         ? (saValor * saComPerc) / 100
         : saComPerc;

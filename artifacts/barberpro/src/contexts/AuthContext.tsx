@@ -38,6 +38,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     query: {
       retry: false,
       staleTime: 5 * 60 * 1000,
+      // Sessão encerrada em outra aba/aparelho: detecta ao voltar para a aba
+      // (e a cada 10 min) e o layout redireciona para o login, em vez de
+      // deixar a tela viva dando erros 401.
+      refetchOnWindowFocus: true,
+      refetchInterval: 10 * 60 * 1000,
     }
   });
 

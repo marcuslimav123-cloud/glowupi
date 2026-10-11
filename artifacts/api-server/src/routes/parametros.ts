@@ -83,6 +83,7 @@ export const PARAMETROS_DEFAULTS: ParamDef[] = [
   { chave: "agenda_horario_inicio", label: "Início de horário da agenda do WebAdmin/App PRO", categoria: "Agenda & Agendamentos", tipo: "input", valorPadrao: "08:00" },
   { chave: "comanda_caixa_profissional_nao_gestor", label: "Mostrar caixa no App Pro para profissionais não-gestores", categoria: "Comandas & Caixa", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "comissao_valor_original_assinatura", label: "Nos agendamentos do clube de assinatura, gerar comissão com base no valor original do serviço (Sem desconto)", categoria: "Comissões", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
+  { chave: "comissao_produtos_percentual", label: "Comissão sobre produtos vendidos na comanda (%). Em branco = usa a porcentagem do profissional", categoria: "Comissões", tipo: "input", valorPadrao: "" },
   { chave: "comissao_nao_gerar_cortesia", label: "Não gerar comissões para itens que forem cortesias", categoria: "Comissões", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Sim" },
   { chave: "agenda_tamanho_slots", label: "Tamanho dos slots da agenda no Web", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["15 minutos", "30 minutos", "45 minutos", "60 minutos"], valorPadrao: "30 minutos" },
   { chave: "agenda_limite_abertos_cliente", label: "Limite de agendamentos futuros em aberto por cliente", categoria: "Agenda & Agendamentos", tipo: "input", valorPadrao: "5" },

@@ -247,7 +247,7 @@ export default function Parametros() {
                         {p.tipo === "select" && p.opcoes.length > 0 ? (
                           <select
                             value={currentVal}
-                            onChange={(e) => handleValueChange(p.chave, e.target.value)}
+                            onChange={(e) => { handleValueChange(p.chave, e.target.value); saveMutation.mutate({ chave: p.chave, valor: e.target.value }); }}
                             className="h-8 rounded-lg border border-border bg-card px-2 text-[12px] text-foreground min-w-[160px]"
                           >
                             {p.opcoes.map(o => (
@@ -258,17 +258,21 @@ export default function Parametros() {
                           <Input
                             value={currentVal}
                             onChange={(e) => handleValueChange(p.chave, e.target.value)}
+                            onBlur={() => { if (isModified(p)) saveMutation.mutate({ chave: p.chave, valor: currentVal }); }}
+                            onKeyDown={(e) => { if (e.key === "Enter" && isModified(p)) saveMutation.mutate({ chave: p.chave, valor: currentVal }); }}
                             className="h-8 rounded-lg border-border text-[12px] w-[160px]"
                           />
                         )}
-                        <Button
-                          size="sm"
-                          onClick={() => saveMutation.mutate({ chave: p.chave, valor: currentVal })}
-                          disabled={!modified || saveMutation.isPending}
-                          className="h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] disabled:opacity-40"
-                        >
-                          Salvar
-                        </Button>
+                        {p.tipo !== "select" && (
+                          <Button
+                            size="sm"
+                            onClick={() => saveMutation.mutate({ chave: p.chave, valor: currentVal })}
+                            disabled={!modified || saveMutation.isPending}
+                            className="h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] disabled:opacity-40"
+                          >
+                            Salvar
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"

@@ -64,11 +64,21 @@ const DIAS_SEMANA = [
   { key: "domingo", label: "Domingo" },
 ];
 
-function ScheduleEditor({ value, onChange }: { value: any; onChange: (v: any) => void }) {
-  const horarios = value?.porDia || {};
+type Funcionamento = { ativo?: boolean; abertura?: string; fechamento?: string } | null | undefined;
 
-  const updateDay = (dia: string, field: string, val: any) => {
-    const current = horarios[dia] || { inicio: "08:00", fim: "18:00", folga: false };
+// Horários do profissional, sempre dentro do funcionamento do estabelecimento
+// (mesma ordem de dias usada em Configurações → Funcionamento: segunda = 0).
+function ScheduleEditor({ value, onChange, funcionamento }: { value: any; onChange: (v: any) => void; funcionamento?: Funcionamento[] | null }) {
+  const horarios = value?.porDia || {};
+  const funcDo = (i: number): Funcionamento => (Array.isArray(funcionamento) ? funcionamento[i] : null);
+  const padraoDo = (i: number) => {
+    const f = funcDo(i);
+    const fechado = !!f && f.ativo === false;
+    return { inicio: f?.abertura || "08:00", fim: f?.fechamento || "18:00", folga: fechado };
+  };
+
+  const updateDay = (dia: string, i: number, field: string, val: any) => {
+    const current = horarios[dia] || padraoDo(i);
     const updated = { ...current, [field]: val };
     onChange({ ...value, porDia: { ...horarios, [dia]: updated } });
   };
@@ -79,36 +89,55 @@ function ScheduleEditor({ value, onChange }: { value: any; onChange: (v: any) =>
         <Clock className="h-4 w-4 text-primary" />
         Horários por Dia da Semana
       </Label>
+      <p className="text-xs text-muted-foreground">
+        Os horários do profissional precisam caber dentro do funcionamento do estabelecimento. Para o estabelecimento abrir mais cedo ou fechar mais tarde, altere em Configurações → Funcionamento.
+      </p>
       <div className="rounded-xl border border-border overflow-hidden">
         {DIAS_SEMANA.map((dia, i) => {
-          const config = horarios[dia.key] || { inicio: "08:00", fim: "18:00", folga: false };
+          const f = funcDo(i);
+          const fechado = !!f && f.ativo === false;
+          const config = horarios[dia.key] || padraoDo(i);
+          const folga = fechado || !!config.folga;
+          const foraInicio = !folga && f?.abertura && config.inicio && config.inicio < f.abertura;
+          const foraFim = !folga && f?.fechamento && config.fim && config.fim > f.fechamento;
           return (
-            <div key={dia.key} className={`flex items-center gap-3 px-4 py-2.5 ${i > 0 ? "border-t border-border/50" : ""} ${config.folga ? "opacity-50 bg-muted/30" : ""}`}>
-              <span className="w-20 text-sm font-medium text-foreground shrink-0">{dia.label}</span>
-              <div className="flex items-center gap-2 flex-1">
-                <Input
-                  type="time"
-                  value={config.folga ? "" : (config.inicio || "08:00")}
-                  onChange={e => updateDay(dia.key, "inicio", e.target.value)}
-                  disabled={config.folga}
-                  className="h-8 w-28 text-xs bg-background"
-                />
-                <span className="text-xs text-muted-foreground">às</span>
-                <Input
-                  type="time"
-                  value={config.folga ? "" : (config.fim || "18:00")}
-                  onChange={e => updateDay(dia.key, "fim", e.target.value)}
-                  disabled={config.folga}
-                  className="h-8 w-28 text-xs bg-background"
-                />
+            <div key={dia.key} className={`px-4 py-2.5 ${i > 0 ? "border-t border-border/50" : ""} ${folga ? "opacity-60 bg-muted/30" : ""}`}>
+              <div className="flex items-center gap-3">
+                <span className="w-20 text-sm font-medium text-foreground shrink-0">{dia.label}</span>
+                <div className="flex items-center gap-2 flex-1">
+                  <Input
+                    type="time"
+                    value={folga ? "" : (config.inicio || "08:00")}
+                    onChange={e => updateDay(dia.key, i, "inicio", e.target.value)}
+                    disabled={folga}
+                    className={`h-8 w-28 text-xs bg-background ${foraInicio ? "border-red-500" : ""}`}
+                  />
+                  <span className="text-xs text-muted-foreground">às</span>
+                  <Input
+                    type="time"
+                    value={folga ? "" : (config.fim || "18:00")}
+                    onChange={e => updateDay(dia.key, i, "fim", e.target.value)}
+                    disabled={folga}
+                    className={`h-8 w-28 text-xs bg-background ${foraFim ? "border-red-500" : ""}`}
+                  />
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs text-muted-foreground">{fechado ? "Fechado" : "Folga"}</span>
+                  <Switch
+                    checked={folga}
+                    disabled={fechado}
+                    onCheckedChange={(checked) => updateDay(dia.key, i, "folga", checked)}
+                  />
+                </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs text-muted-foreground">Folga</span>
-                <Switch
-                  checked={config.folga || false}
-                  onCheckedChange={(checked) => updateDay(dia.key, "folga", checked)}
-                />
-              </div>
+              {f && !fechado && (
+                <p className={`text-[11px] mt-1 ml-[5.75rem] ${foraInicio || foraFim ? "text-red-500" : "text-muted-foreground/70"}`}>
+                  {foraInicio || foraFim ? "Fora do funcionamento: " : "Funcionamento: "}{f.abertura}–{f.fechamento}
+                </p>
+              )}
+              {fechado && (
+                <p className="text-[11px] mt-1 ml-[5.75rem] text-muted-foreground/70">Estabelecimento fechado neste dia</p>
+              )}
             </div>
           );
         })}
@@ -118,13 +147,14 @@ function ScheduleEditor({ value, onChange }: { value: any; onChange: (v: any) =>
 }
 
 function ProfForm({
-  initial, onSave, onCancel, isPending, servicos
+  initial, onSave, onCancel, isPending, servicos, funcionamento
 }: {
   initial?: Partial<Prof>;
   onSave: (d: any) => void;
   onCancel: () => void;
   isPending?: boolean;
   servicos: Servico[];
+  funcionamento?: Funcionamento[] | null;
 }) {
   const [nome, setNome] = useState(initial?.nomeExibicao ?? "");
   const [apelido, setApelido] = useState(initial?.apelido ?? "");
@@ -375,7 +405,7 @@ function ProfForm({
           </Label>
           <Switch checked={showSchedule} onCheckedChange={setShowSchedule} />
         </div>
-        {showSchedule && <ScheduleEditor value={horarios} onChange={setHorarios} />}
+        {showSchedule && <ScheduleEditor value={horarios} onChange={setHorarios} funcionamento={funcionamento} />}
         {!showSchedule && (
           <p className="text-xs text-muted-foreground">Usando horário de funcionamento do estabelecimento</p>
         )}
@@ -392,7 +422,8 @@ function ProfForm({
 }
 
 export default function Profissionais() {
-  const { barbeariaId } = useAuth();
+  const { barbeariaId, user } = useAuth();
+  const funcionamento = ((user as any)?.barbearia?.horarioFuncionamento ?? null) as Funcionamento[] | null;
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -681,6 +712,7 @@ export default function Profissionais() {
             onCancel={() => { setModalOpen(false); setEditing(null); }}
             isPending={createMutation.isPending || updateMutation.isPending}
             servicos={servicos as Servico[]}
+            funcionamento={funcionamento}
           />
         </DialogContent>
       </Dialog>

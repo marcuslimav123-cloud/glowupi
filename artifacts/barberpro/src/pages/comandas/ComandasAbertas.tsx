@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -152,6 +152,29 @@ export default function ComandasAbertas() {
     fetchAgendamentos();
     fetchExtras();
   }, [barbeariaId]);
+
+  // Vindo da Agenda com ?agendamento=ID: abre direto o checkout completo
+  // (serviços, produtos, pagamento) daquele agendamento.
+  const deepLinkHandled = useRef(false);
+  useEffect(() => {
+    if (deepLinkHandled.current || !barbeariaId || loading) return;
+    const id = Number(new URLSearchParams(window.location.search).get("agendamento"));
+    if (!id) return;
+    deepLinkHandled.current = true;
+    const local = agendamentos.find((a: any) => a.id === id);
+    if (local) { openCheckout(local); return; }
+    fetch(apiUrl(`/barbearias/${barbeariaId}/agendamentos/${id}`), { credentials: "include" })
+      .then(r => (r.ok ? r.json() : null))
+      .then(a => {
+        if (a && a.status === "confirmado" && !a.pago) {
+          setAgendamentos(prev => (prev.some((x: any) => x.id === a.id) ? prev : [a, ...prev]));
+          openCheckout(a);
+        } else {
+          toast({ title: "Este agendamento não está disponível para checkout", description: a?.pago ? "Ele já foi pago." : undefined });
+        }
+      })
+      .catch(() => {});
+  }, [agendamentos, loading, barbeariaId]);
 
   useEffect(() => {
     if (!barbeariaId || tab !== "historico") return;
