@@ -50,7 +50,6 @@ import {
   Search,
   Inbox,
   MessageCircle,
-  Plug,
   CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -61,34 +60,6 @@ import { MobileBottomBar } from "./MobileBottomBar";
 import { usePWA } from "@/hooks/usePWA";
 import { TutorialOverlay } from "@/components/TutorialOverlay";
 import LgpdConsentDialog from "@/components/LgpdConsentDialog";
-
-function AsaasGlobalBanner() {
-  const { barbeariaId } = useAuth();
-  const { data } = useQuery<any>({
-    queryKey: ["asaas-conta-banner", barbeariaId],
-    queryFn: async () => {
-      const r = await fetch(apiUrl(`/barbearias/${barbeariaId}/asaas`), { credentials: "include" });
-      if (!r.ok) return null;
-      return r.json();
-    },
-    enabled: !!barbeariaId,
-    staleTime: 60_000,
-    refetchOnWindowFocus: false,
-  });
-  if (!data?.conectado || !data?.conta) return null;
-  const status = (data.conta.status || "").toLowerCase();
-  const pending = ["pending", "awaiting_documents", "rejected", "blocked"].includes(status);
-  if (!pending) return null;
-  const msg = status === "rejected" || status === "blocked"
-    ? "Sua conta Asaas está bloqueada. Verifique pendências em Configurações > Assinatura."
-    : "Sua conta Asaas tem pendências de documentação. Conclua para receber pagamentos.";
-  return (
-    <Link href="/configuracoes/assinatura" className="border-b border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 sm:px-4 flex items-center justify-center gap-2 text-xs sm:text-sm text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors z-20 shrink-0">
-      <AlertTriangle className="h-3.5 w-3.5" />
-      <span>{msg}</span>
-    </Link>
-  );
-}
 
 type NavItem = {
   name: string;
@@ -132,13 +103,7 @@ const NAV_ITEMS: NavItem[] = [
           { name: "Tipo Pagamentos", href: "/cadastros/tipos?cat=pagamento", icon: CreditCardIcon },
           { name: "Despesas", href: "/cadastros/tipos?cat=despesa", icon: TrendingUp },
           { name: "Receitas", href: "/cadastros/tipos?cat=receita", icon: DollarSign },
-          { name: "Subcontas", href: "/cadastros/tipos?cat=subconta", icon: ClipboardList },
-          { name: "Equipamentos", href: "/cadastros/tipos?cat=equipamento", icon: Settings },
-          { name: "Fornecedores", href: "/cadastros/tipos?cat=fornecedor", icon: Package },
-          { name: "Tipo Anamnese", href: "/cadastros/tipos?cat=anamnese", icon: FileText },
           { name: "Bandeiras", href: "/cadastros/tipos?cat=bandeira", icon: Tag },
-          { name: "Remunerações", href: "/cadastros/tipos?cat=remuneracao", icon: DollarSign },
-          { name: "Deduções", href: "/cadastros/tipos?cat=deducao", icon: Percent },
         ],
       },
       {
@@ -147,7 +112,6 @@ const NAV_ITEMS: NavItem[] = [
           { name: "Mensagens", href: "/mensagens", icon: MessageSquare },
           { name: "Inbox Agendamentos", href: "/comunicacao/inbox", icon: Inbox },
           { name: "E-mail Marketing", href: "/comunicacao/email-marketing", icon: Mail, roles: ["dono", "gerente"] },
-          { name: "Notícias", href: "/cadastros/noticias", icon: Newspaper },
           { name: "Grupos de Clientes", href: "/cadastros/grupos", icon: UsersRound },
           { name: "Pesquisa Satisfação", href: "/cadastros/pesquisa", icon: ClipboardList },
         ],
@@ -157,7 +121,6 @@ const NAV_ITEMS: NavItem[] = [
         items: [
           { name: "Lembretes", href: "/cadastros/lembretes", icon: Bell },
           { name: "Produtos / Estoque", href: "/gestao/produtos", icon: Package },
-          { name: "Clube de Vantagens", href: "/cadastros/clube-vantagens", icon: Gift },
           { name: "Cupom de Desconto", href: "/cadastros/cupons", icon: Ticket },
           { name: "Clube de Fidelidade", href: "/clube", icon: Award },
         ],
@@ -189,12 +152,9 @@ const NAV_ITEMS: NavItem[] = [
       { name: "Histórico Caixa", href: "/financeiro/historico", icon: History },
       { name: "Entrada/Saída", href: "/financeiro/movimentacoes", icon: ArrowUpDown },
       { name: "Comissões", href: "/financeiro/comissoes", icon: Percent },
-      { name: "Conta do Cliente", href: "/financeiro/conta-cliente", icon: Users },
       { name: "Fluxo de Caixa", href: "/financeiro/fluxo", icon: TrendingUp },
       { name: "Conta Profissional", href: "/financeiro/conta-profissional", icon: UsersRound },
       { name: "Caixinha", href: "/financeiro/caixinha", icon: Wallet },
-      { name: "Recebimentos Asaas", href: "/financeiro/recebimentos-asaas", icon: Receipt },
-      { name: "Mensalidade", href: "/financeiro/mensalidade", icon: CreditCard, roles: ["dono"] },
     ],
   },
   {
@@ -235,42 +195,22 @@ const NAV_ITEMS: NavItem[] = [
     roles: ["dono", "gerente"],
     children: [
       { name: "Parâmetros", href: "/configuracoes/parametros", icon: Settings },
-      { name: "Rodízio", href: "/configuracoes/rodizio", icon: UsersRound },
       { name: "Perfis de Acesso", href: "/configuracoes/acessos", icon: Shield, roles: ["dono"] },
       { name: "Templates E-mail", href: "/configuracoes/templates", icon: Mail, roles: ["dono"] },
-      { name: "Conexão Asaas", href: "/configuracoes/asaas", icon: Plug, roles: ["dono", "gerente"] },
     ],
     subgroups: [
       {
         label: "Fila de Espera",
         items: [
-          { name: "Ordem de Chegada", href: "/configuracoes/ordem-chegada", icon: ClipboardList },
           { name: "Lista de Espera", href: "/lista-espera", icon: Users },
-        ],
-      },
-      {
-        label: "Anamnese",
-        items: [
-          { name: "Formulários", href: "/configuracoes/anamnese-formularios", icon: FileText },
-          { name: "Clientes", href: "/configuracoes/anamnese-clientes", icon: Users },
-        ],
-      },
-      {
-        label: "Documentos",
-        items: [
-          { name: "Meus Documentos", href: "/configuracoes/documentos", icon: FileText },
-          { name: "Clientes", href: "/configuracoes/documentos-clientes", icon: Users },
-          { name: "Profissionais", href: "/configuracoes/documentos-profissionais", icon: UsersRound },
         ],
       },
       {
         label: "Outros",
         items: [
           { name: "Avaliações", href: "/avaliacoes", icon: Star },
-          { name: "Lista de Restrições", href: "/configuracoes/restricoes", icon: ShieldAlert },
           { name: "Funcionamento", href: "/configuracoes/funcionamento", icon: Clock },
           { name: "Comunicação", href: "/configuracoes/comunicacao", icon: MessageCircle },
-          { name: "Alertas", href: "/configuracoes/alertas", icon: Bell },
         ],
       },
     ],
@@ -316,10 +256,8 @@ const HREF_TO_PERMISSION: Record<string, string> = {
   "/clube": "clube",
   "/cadastros/clubes": "clubes_assinatura",
   "/cadastros/assinantes": "clubes_assinatura",
-  "/cadastros/noticias": "noticias",
   "/cadastros/grupos": "noticias",
   "/cadastros/pesquisa": "pesquisa",
-  "/cadastros/clube-vantagens": "clube",
   "/pacotes": "pacotes",
   "/pacotes/vendas": "venda_pacotes",
   "/comandas/abertas": "comandas",
@@ -328,7 +266,6 @@ const HREF_TO_PERMISSION: Record<string, string> = {
   "/financeiro/historico": "caixa",
   "/financeiro/movimentacoes": "caixa",
   "/financeiro/comissoes": "financeiro",
-  "/financeiro/conta-cliente": "financeiro",
   "/financeiro/fluxo": "financeiro",
   "/financeiro/conta-profissional": "financeiro",
   "/financeiro/caixinha": "financeiro",
@@ -350,16 +287,7 @@ const HREF_TO_PERMISSION: Record<string, string> = {
   "/configuracoes/parametros": "configuracoes",
   "/configuracoes/acessos": "configuracoes",
   "/configuracoes/templates": "configuracoes",
-  "/configuracoes/rodizio": "configuracoes",
-  "/configuracoes/ordem-chegada": "configuracoes",
-  "/configuracoes/anamnese-formularios": "configuracoes",
-  "/configuracoes/anamnese-clientes": "configuracoes",
-  "/configuracoes/documentos": "configuracoes",
-  "/configuracoes/documentos-clientes": "configuracoes",
-  "/configuracoes/documentos-profissionais": "configuracoes",
-  "/configuracoes/restricoes": "configuracoes",
   "/configuracoes/funcionamento": "configuracoes",
-  "/configuracoes/alertas": "configuracoes",
   "/empresa": "empresa",
   "/equipe": "equipe",
   "/relatorios/dias-sem-vir": "relatorios",
@@ -388,7 +316,7 @@ const ESSENCIAL_HREFS = new Set<string>([
   "/mensagens", "/comunicacao/inbox", "/cadastros/lembretes", "/cadastros/cupons", "/clube",
   "/cadastros/clubes", "/cadastros/assinantes",
   "/comandas/abertas", "/comandas/historico",
-  "/financeiro/caixa", "/financeiro/historico", "/financeiro/movimentacoes", "/financeiro/comissoes", "/financeiro/fluxo", "/financeiro/caixinha", "/financeiro/mensalidade",
+  "/financeiro/caixa", "/financeiro/historico", "/financeiro/movimentacoes", "/financeiro/comissoes", "/financeiro/fluxo", "/financeiro/caixinha",
   "/relatorios/agendamentos", "/relatorios/rankings", "/relatorios/aniversariantes", "/relatorios", "/relatorios/financeiro", "/relatorios/dias-sem-vir", "/relatorios/lucro-produtos", "/relatorios/estoque",
   "/configuracoes/parametros", "/configuracoes/funcionamento", "/configuracoes/acessos", "/configuracoes/comunicacao", "/avaliacoes", "/lista-espera",
   "/empresa", "/equipe",
@@ -1008,7 +936,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="hidden md:flex items-center justify-end px-6 py-2.5 border-b border-border bg-card shrink-0">
           <HeaderBar />
         </div>
-        <AsaasGlobalBanner />
         {shouldShowUpgrade && (
           <div className={`border-b px-3 py-1.5 sm:px-4 sm:py-2 flex items-center justify-center gap-2 sm:gap-3 z-20 shrink-0 ${
             trialDaysLeft >= 0 && trialDaysLeft <= 5

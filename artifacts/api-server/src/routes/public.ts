@@ -637,80 +637,11 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       data: { agendamentoId: agend.id, type: statusInicialPub === "pendente_aprovacao" ? "pending_appointment" : "new_appointment", url: "/agenda" },
     }).catch(err => console.error("[Push] Error on client booking:", err));
 
-    let sinalPagamento: any = null;
-    if (barbearia.prePagamentoAtivo) {
-      const { getContaByBarbearia, createPaymentForBarbearia } = await import("../lib/asaasService.js");
-      const conta = await getContaByBarbearia(barbearia.id);
-      if (!conta || conta.status !== "ativo") {
-        console.warn(`[public/agendar] barbearia ${barbearia.id} tem prePagamentoAtivo mas sem conta Asaas — agendamento confirmado em modo manual`);
-        return res.status(201).json({
-          ...agend,
-          valor: parseFloat(agend.valor as string),
-          createdAt: agend.createdAt?.toISOString(),
-          updatedAt: agend.updatedAt?.toISOString(),
-          sinalPagamento: null,
-          sinalManual: true,
-        });
-      }
-      const valorServico = parseFloat(String(servico.preco || "0"));
-      const sinalModo = barbearia.sinalModo || "percentual";
-      const sinalValorBase = parseFloat(String(barbearia.sinalValor || "0"));
-      const sinalValor = sinalModo === "valor"
-        ? Math.max(0.5, sinalValorBase)
-        : Math.max(0.5, Number(((valorServico * sinalValorBase) / 100).toFixed(2)));
-      const due = new Date(); due.setDate(due.getDate() + 1);
-      const billingTypeReq = (req.body?.billingType === "BOLETO" || req.body?.billingType === "CREDIT_CARD") ? req.body.billingType : "PIX";
-      const { generateSinalConsultaToken } = await import("./asaasSinal.js");
-      const consultaToken = generateSinalConsultaToken();
-      try {
-        const result = await createPaymentForBarbearia({
-          barbeariaId: barbearia.id,
-          tipo: "agendamento",
-          refType: "agendamento",
-          refId: agend.id,
-          profissionalId: profissional.id,
-          billingType: billingTypeReq as any,
-          value: sinalValor,
-          dueDate: due.toISOString().slice(0, 10),
-          description: `Sinal — ${servico.nome} com ${profissional.nomeExibicao} (${data} ${horaInicio})`,
-          payer: { nome: clienteUser.nome, telefone: clienteWhatsapp, email: clienteUser.email, cpfCnpj: req.body?.payerCpfCnpj },
-          externalReference: `agend-${agend.id}`,
-        });
-        await db.update(agendamentosTable).set({
-          status: "pendente_pagamento",
-          sinalStatus: "aguardando",
-          sinalValorDevido: String(sinalValor),
-          sinalAsaasPaymentId: result.pagamento.asaasPaymentId,
-          sinalConsultaToken: consultaToken,
-          sinalInformadoEm: new Date(),
-          sinalExpiraEm: result.pixData?.expirationDate ? new Date(result.pixData.expirationDate) : null,
-          updatedAt: new Date(),
-        }).where(eq(agendamentosTable.id, agend.id));
-        sinalPagamento = {
-          asaasPaymentId: result.pagamento.asaasPaymentId,
-          valor: sinalValor,
-          billingType: billingTypeReq,
-          pixQrCodeBase64: result.pixData?.encodedImage || null,
-          pixCopyPaste: result.pixData?.payload || null,
-          bankSlipUrl: result.asaasPayment?.bankSlipUrl || null,
-          invoiceUrl: result.asaasPayment?.invoiceUrl || null,
-          expiraEm: result.pixData?.expirationDate || null,
-          consultaToken,
-        };
-        agend.status = "pendente_pagamento";
-      } catch (sinalErr: unknown) {
-        console.error("[public/agendar] erro gerando sinal Asaas:", sinalErr);
-        await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(eq(agendamentosTable.id, agend.id));
-        return res.status(402).json({ error: "Falha ao gerar cobrança do sinal. Tente novamente." });
-      }
-    }
-
     return res.status(201).json({
       ...agend,
       valor: parseFloat(agend.valor as string),
       createdAt: agend.createdAt?.toISOString(),
       updatedAt: agend.updatedAt?.toISOString(),
-      sinalPagamento,
     });
   } catch (e) {
     console.error("public agendar error:", e);
@@ -921,80 +852,11 @@ router.post("/:slug/agendar-simples", async (req, res) => {
       data: { agendamentoId: agend.id, type: statusInicialSimples === "pendente_aprovacao" ? "pending_appointment" : "new_appointment", url: "/agenda" },
     }).catch(err => console.error("[Push] Error on client booking:", err));
 
-    let sinalPagamentoSimples: any = null;
-    if (barbearia.prePagamentoAtivo) {
-      const { getContaByBarbearia, createPaymentForBarbearia } = await import("../lib/asaasService.js");
-      const conta = await getContaByBarbearia(barbearia.id);
-      if (!conta || conta.status !== "ativo") {
-        console.warn(`[public/agendar-simples] barbearia ${barbearia.id} tem prePagamentoAtivo mas sem conta Asaas — agendamento confirmado em modo manual`);
-        return res.status(201).json({
-          ...agend,
-          valor: parseFloat(agend.valor as string),
-          createdAt: agend.createdAt?.toISOString(),
-          updatedAt: agend.updatedAt?.toISOString(),
-          sinalPagamento: null,
-          sinalManual: true,
-        });
-      }
-      const valorServicoS = parseFloat(String(servico.preco || "0"));
-      const sinalModoS = barbearia.sinalModo || "percentual";
-      const sinalValorBaseS = parseFloat(String(barbearia.sinalValor || "0"));
-      const sinalValorS = sinalModoS === "valor"
-        ? Math.max(0.5, sinalValorBaseS)
-        : Math.max(0.5, Number(((valorServicoS * sinalValorBaseS) / 100).toFixed(2)));
-      const dueS = new Date(); dueS.setDate(dueS.getDate() + 1);
-      const billingTypeS = (req.body?.billingType === "BOLETO" || req.body?.billingType === "CREDIT_CARD") ? req.body.billingType : "PIX";
-      const { generateSinalConsultaToken: genTokenSimples } = await import("./asaasSinal.js");
-      const consultaTokenSimples = genTokenSimples();
-      try {
-        const resultS = await createPaymentForBarbearia({
-          barbeariaId: barbearia.id,
-          tipo: "agendamento",
-          refType: "agendamento",
-          refId: agend.id,
-          profissionalId: profissional.id,
-          billingType: billingTypeS as any,
-          value: sinalValorS,
-          dueDate: dueS.toISOString().slice(0, 10),
-          description: `Sinal — ${servico.nome} com ${profissional.nomeExibicao} (${data} ${horaInicio})`,
-          payer: { nome: clienteNome, telefone: whatsappLimpo, cpfCnpj: req.body?.payerCpfCnpj },
-          externalReference: `agend-${agend.id}`,
-        });
-        await db.update(agendamentosTable).set({
-          status: "pendente_pagamento",
-          sinalStatus: "aguardando",
-          sinalValorDevido: String(sinalValorS),
-          sinalAsaasPaymentId: resultS.pagamento.asaasPaymentId,
-          sinalConsultaToken: consultaTokenSimples,
-          sinalInformadoEm: new Date(),
-          sinalExpiraEm: resultS.pixData?.expirationDate ? new Date(resultS.pixData.expirationDate) : null,
-          updatedAt: new Date(),
-        }).where(eq(agendamentosTable.id, agend.id));
-        sinalPagamentoSimples = {
-          asaasPaymentId: resultS.pagamento.asaasPaymentId,
-          valor: sinalValorS,
-          billingType: billingTypeS,
-          pixQrCodeBase64: resultS.pixData?.encodedImage || null,
-          pixCopyPaste: resultS.pixData?.payload || null,
-          bankSlipUrl: resultS.asaasPayment?.bankSlipUrl || null,
-          invoiceUrl: resultS.asaasPayment?.invoiceUrl || null,
-          expiraEm: resultS.pixData?.expirationDate || null,
-          consultaToken: consultaTokenSimples,
-        };
-        agend.status = "pendente_pagamento";
-      } catch (sinalErrS: unknown) {
-        console.error("[public/agendar-simples] erro gerando sinal Asaas:", sinalErrS);
-        await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(eq(agendamentosTable.id, agend.id));
-        return res.status(402).json({ error: "Falha ao gerar cobrança do sinal. Tente novamente." });
-      }
-    }
-
     return res.status(201).json({
       ...agend,
       valor: parseFloat(agend.valor as string),
       createdAt: agend.createdAt?.toISOString(),
       updatedAt: agend.updatedAt?.toISOString(),
-      sinalPagamento: sinalPagamentoSimples,
     });
   } catch (e) {
     console.error("public agendar-simples error:", e);

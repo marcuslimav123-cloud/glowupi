@@ -48,12 +48,6 @@ import caixaDiarioRouter from "./caixaDiario.js";
 import comissoesRouter from "./comissoesRoutes.js";
 import contasProfissionalRouter from "./contasProfissionalRoutes.js";
 import pesquisaRouter from "./pesquisaRoutes.js";
-import anamneseRouter from "./anamneseRoutes.js";
-import documentosRouter from "./documentosRoutes.js";
-import clubeVantagensRouter from "./clubeVantagensRoutes.js";
-import fornecedoresRouter from "./fornecedoresRoutes.js";
-import remuneracoesRouter from "./remuneracoesRoutes.js";
-import equipamentosRouter from "./equipamentosRoutes.js";
 import pushTokensRouter from "./pushTokens.js";
 import clientPushTokensRouter from "./clientPushTokens.js";
 import { clientRouter as agendamentoMensagensClientRouter, staffRouter as agendamentoMensagensStaffRouter } from "./agendamentoMensagens.js";
@@ -63,11 +57,6 @@ import notificacoesInternasRouter from "./notificacoesInternas.js";
 import trialLinksRouter from "./trialLinks.js";
 import campaignRouter from "./campaign.js";
 import emailMarketingRouter, { emailMarketingPublicRouter } from "./emailMarketing.js";
-import asaasContaRouter from "./asaasConta.js";
-import asaasSinalRouter from "./asaasSinal.js";
-import asaasComandaRouter from "./asaasComanda.js";
-import asaasSaaSRouter from "./asaasSaaS.js";
-import asaasPacoteRouter from "./asaasPacote.js";
 
 const router: IRouter = Router();
 
@@ -217,12 +206,6 @@ router.use("/barbearias/:barbeariaId/caixa-diario", caixaDiarioRouter);
 router.use("/barbearias/:barbeariaId/comissoes", comissoesRouter);
 router.use("/barbearias/:barbeariaId/contas-profissional", contasProfissionalRouter);
 router.use("/barbearias/:barbeariaId/pesquisas", pesquisaRouter);
-router.use("/barbearias/:barbeariaId/anamnese", anamneseRouter);
-router.use("/barbearias/:barbeariaId/documentos", documentosRouter);
-router.use("/barbearias/:barbeariaId/clube-vantagens", clubeVantagensRouter);
-router.use("/barbearias/:barbeariaId/fornecedores", fornecedoresRouter);
-router.use("/barbearias/:barbeariaId/rh", remuneracoesRouter);
-router.use("/barbearias/:barbeariaId/equipamentos", equipamentosRouter);
 router.use("/barbearias/:barbeariaId/push-tokens", pushTokensRouter);
 router.use("/barbearias/:barbeariaId/filiais", filiaisRouter);
 router.use("/barbearias/:barbeariaId/notificacoes-internas", notificacoesInternasRouter);
@@ -231,11 +214,6 @@ router.use("/agendamento-mensagens", agendamentoMensagensClientRouter);
 router.use("/client-push-tokens", clientPushTokensRouter);
 router.use("/email-marketing", emailMarketingPublicRouter);
 router.use("/barbearias/:barbeariaId/email-marketing", emailMarketingRouter);
-router.use("/barbearias/:barbeariaId/asaas", asaasContaRouter);
-router.use("/barbearias/:barbeariaId/asaas-comanda", asaasComandaRouter);
-router.use("/barbearias/:barbeariaId/asaas-pacote", asaasPacoteRouter);
-router.use("/asaas-saas", asaasSaaSRouter);
-router.use("/asaas-sinal", asaasSinalRouter);
 
 router.get("/lgpd/terms", async (_req, res) => {
   try {

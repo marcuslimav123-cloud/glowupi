@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams } from "wouter";
-import { Calendar, Clock, Scissors, User, ChevronLeft, ChevronRight, Check, MapPin, Phone, Loader2, LogOut, MessageCircle, XCircle, CalendarDays, AlertTriangle, Download, Share, X, Copy, ExternalLink, Info } from "lucide-react";
+import { Calendar, Clock, Scissors, User, ChevronLeft, ChevronRight, Check, MapPin, Phone, Loader2, LogOut, MessageCircle, XCircle, CalendarDays, AlertTriangle, Download, Share, X, Info } from "lucide-react";
 import ClientAuthModal from "@/components/ClientAuthModal";
 import { usePWA } from "@/hooks/usePWA";
 import { defaultLogoUrl } from "@/lib/branding";
@@ -118,16 +118,10 @@ export default function PublicBooking() {
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingStatus, setBookingStatus] = useState<string>("confirmado");
-  const [sinalPagamento, setSinalPagamento] = useState<any>(null);
-  const [agendamentoCriadoId, setAgendamentoCriadoId] = useState<number | null>(null);
-  const [agendamentoCriadoTel, setAgendamentoCriadoTel] = useState<string | null>(null);
-  const [sinalConsultaToken, setSinalConsultaToken] = useState<string | null>(null);
   const [observacao, setObservacao] = useState("");
   const [simplesNome, setSimplesNome] = useState("");
   const [simplesWhatsapp, setSimplesWhatsapp] = useState("");
   const [comLoginWhatsapp, setComLoginWhatsapp] = useState("");
-  const [sinalBillingType, setSinalBillingType] = useState<"PIX" | "BOLETO" | "CREDIT_CARD">("PIX");
-  const [payerCpfCnpj, setPayerCpfCnpj] = useState("");
   const [showMeusAgendamentos, setShowMeusAgendamentos] = useState(() => {
     const sp = new URLSearchParams(window.location.search);
     return sp.has("agendamentoId") || sp.has("mensagem");
@@ -261,8 +255,6 @@ export default function PublicBooking() {
             observacao: observacao || null,
             clienteNome: simplesNome.trim(),
             clienteWhatsapp: simplesWhatsapp.trim(),
-            billingType: sinalBillingType,
-            payerCpfCnpj: payerCpfCnpj || undefined,
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -270,13 +262,7 @@ export default function PublicBooking() {
           throw new Error(data.error || "Erro ao agendar");
         }
         setBookingStatus(data?.status || "confirmado");
-        setSinalPagamento(data?.sinalPagamento || null);
-        setAgendamentoCriadoId(data?.id || null);
-        setAgendamentoCriadoTel(simplesWhatsapp.replace(/\D/g, "").slice(-10));
-        setSinalConsultaToken(data?.sinalPagamento?.consultaToken || null);
         setStep("sucesso");
-        if (clientUser) enableClientNotifications().catch(() => {});
-      if (clientUser) enableClientNotifications().catch(() => {});
       } catch (e: any) {
         setError(e.message);
       } finally {
@@ -305,8 +291,6 @@ export default function PublicBooking() {
           observacao: observacao || null,
           filialId: selectedFilial?.id || null,
           clienteWhatsapp: rawWa,
-          billingType: sinalBillingType,
-          payerCpfCnpj: payerCpfCnpj || undefined,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -314,10 +298,6 @@ export default function PublicBooking() {
         throw new Error(data.error || "Erro ao agendar");
       }
       setBookingStatus(data?.status || "confirmado");
-      setSinalPagamento(data?.sinalPagamento || null);
-      setAgendamentoCriadoId(data?.id || null);
-      setAgendamentoCriadoTel(rawWa.slice(-10));
-      setSinalConsultaToken(data?.sinalPagamento?.consultaToken || null);
       setStep("sucesso");
       if (clientUser) enableClientNotifications().catch(() => {});
     } catch (e: any) {
@@ -1277,36 +1257,6 @@ export default function PublicBooking() {
                 />
               </div>
 
-              {(selectedServico as any)?.exigeSinal === true && (
-                <div className="mb-6 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-3">
-                  <p className="text-xs font-medium text-white/60">Forma de pagamento do sinal</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { v: "PIX", label: "PIX" },
-                      { v: "BOLETO", label: "Boleto" },
-                      { v: "CREDIT_CARD", label: "Cartão" },
-                    ].map(opt => (
-                      <button
-                        key={opt.v} type="button"
-                        onClick={() => setSinalBillingType(opt.v as any)}
-                        className={`py-2 rounded-lg text-xs font-medium transition-all ${
-                          sinalBillingType === opt.v ? "ring-2 text-white" : "bg-white/5 text-white/60 hover:bg-white/10"
-                        }`}
-                        style={sinalBillingType === opt.v ? { backgroundColor: accent, color: accentText } : {}}
-                      >{opt.label}</button>
-                    ))}
-                  </div>
-                  {(sinalBillingType === "BOLETO" || sinalBillingType === "CREDIT_CARD") && (
-                    <input
-                      type="text" value={payerCpfCnpj}
-                      onChange={e => setPayerCpfCnpj(e.target.value.replace(/\D/g, "").slice(0, 14))}
-                      maxLength={14} placeholder="CPF ou CNPJ (apenas números)"
-                      className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:border-white/30"
-                    />
-                  )}
-                </div>
-              )}
-
               <button
                 onClick={handleBooking}
                 disabled={bookingLoading}
@@ -1346,19 +1296,6 @@ export default function PublicBooking() {
                 {selectedDate && new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })} às {selectedSlot?.horaInicio}
               </p>
 
-              {sinalPagamento && (
-                <div className="text-left bg-white/5 rounded-xl p-4 mb-6">
-                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-white">
-                    <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-                    Pague o sinal para confirmar
-                  </h3>
-                  <SinalBox
-                    pagamento={sinalPagamento}
-                    statusUrl={agendamentoCriadoId && sinalConsultaToken ? `${API_BASE}/asaas-sinal/agendamento/${agendamentoCriadoId}/status?token=${encodeURIComponent(sinalConsultaToken)}` : undefined}
-                    accentColor={accent}
-                  />
-                </div>
-              )}
               {!isInstalled && (
                 <div className="mb-4">
                   <InstallAppButton
@@ -1405,84 +1342,6 @@ export default function PublicBooking() {
         />
       )}
 
-    </div>
-  );
-}
-
-function SinalBox({ pagamento, statusUrl, accentColor }: { pagamento: any; statusUrl?: string; accentColor: string }) {
-  const [copied, setCopied] = useState(false);
-  const [paid, setPaid] = useState(false);
-
-  useEffect(() => {
-    if (!statusUrl || paid) return;
-    let stop = false;
-    const tick = async () => {
-      try {
-        const res = await fetch(statusUrl);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!stop && data?.paid) setPaid(true);
-      } catch {}
-    };
-    tick();
-    const id = setInterval(tick, 3000);
-    return () => { stop = true; clearInterval(id); };
-  }, [statusUrl, paid]);
-
-  if (paid) {
-    return (
-      <div className="text-center py-4">
-        <div className="h-12 w-12 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-2">
-          <Check className="h-6 w-6 text-green-400" />
-        </div>
-        <p className="text-green-400 font-medium text-sm">Sinal recebido — agendamento garantido!</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-baseline justify-between">
-        <span className="text-xs text-white/60">Valor do sinal · {pagamento.billingType === "BOLETO" ? "Boleto" : pagamento.billingType === "CREDIT_CARD" ? "Cartão" : "Pix"}</span>
-        <span className="text-lg font-bold text-white">R$ {Number(pagamento.valor).toFixed(2).replace(".", ",")}</span>
-      </div>
-      {pagamento.bankSlipUrl && (
-        <a href={pagamento.bankSlipUrl} target="_blank" rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-semibold"
-          style={{ backgroundColor: accentColor, color: "#000" }}>
-          <ExternalLink className="h-3.5 w-3.5" /> Abrir boleto
-        </a>
-      )}
-      {pagamento.pixQrCodeBase64 && (
-        <div className="bg-white rounded-lg p-3 flex items-center justify-center">
-          <img src={`data:image/png;base64,${pagamento.pixQrCodeBase64}`} alt="QR Pix" className="w-48 h-48 object-contain" />
-        </div>
-      )}
-      {pagamento.pixCopyPaste && (
-        <div className="space-y-1.5">
-          <p className="text-[10px] uppercase tracking-wide text-white/50">Pix copia e cola</p>
-          <div className="flex gap-1.5">
-            <input readOnly value={pagamento.pixCopyPaste}
-              className="flex-1 text-[11px] px-2 py-1.5 rounded bg-black/30 border border-white/10 text-white/80 truncate" />
-            <button
-              onClick={async () => { try { await navigator.clipboard.writeText(pagamento.pixCopyPaste); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {} }}
-              className="px-2.5 py-1.5 rounded text-[11px] font-semibold flex items-center gap-1"
-              style={{ backgroundColor: accentColor, color: "#000" }}>
-              {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-              {copied ? "Copiado" : "Copiar"}
-            </button>
-          </div>
-        </div>
-      )}
-      {pagamento.invoiceUrl && (
-        <a href={pagamento.invoiceUrl} target="_blank" rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-white/10 text-xs text-white/80">
-          <ExternalLink className="h-3.5 w-3.5" /> Abrir página de pagamento
-        </a>
-      )}
-      <div className="flex items-center justify-center gap-1.5 text-[11px] text-white/50">
-        <Loader2 className="h-3 w-3 animate-spin" /> Aguardando pagamento…
-      </div>
     </div>
   );
 }

@@ -3,8 +3,6 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import router from "./routes/index.js";
 import { WebhookHandlers } from "./webhookHandlers.js";
-import revenuecatRouter from "./routes/revenuecat.js";
-import asaasWebhookRouter from "./routes/asaasWebhook.js";
 
 const app: Express = express();
 
@@ -43,9 +41,6 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/api/revenuecat", revenuecatRouter);
-app.use("/api/webhooks", asaasWebhookRouter);
-app.use("/api", asaasWebhookRouter);
 app.use("/api", router);
 
 export default app;

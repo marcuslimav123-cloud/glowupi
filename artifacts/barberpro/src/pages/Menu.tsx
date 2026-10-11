@@ -65,7 +65,6 @@ const MENU_SECTIONS: MenuSection[] = [
       { name: "Serviços", href: "/gestao/servicos", icon: Heart, description: "Catálogo e preços" },
       { name: "Produtos / Estoque", href: "/gestao/produtos", icon: Package, description: "Estoque e controle" },
       { name: "Pacotes", href: "/pacotes", icon: Boxes, description: "Pacotes de serviços" },
-      { name: "Filiais", href: "/gestao/filiais", icon: GitBranch, description: "Múltiplas unidades", roles: ["dono"] },
     ],
   },
   {

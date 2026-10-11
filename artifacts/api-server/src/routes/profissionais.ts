@@ -29,7 +29,6 @@ function formatProf(p: typeof profissionaisTable.$inferSelect) {
     comissaoValor: parseFloat(p.comissaoValor),
     createdAt: p.createdAt?.toISOString?.() ?? p.createdAt,
     updatedAt: p.updatedAt?.toISOString?.() ?? p.updatedAt,
-    asaasSplitPercentual: p.asaasSplitPercentual != null ? parseFloat(p.asaasSplitPercentual as any) : null,
   };
 }
 
@@ -110,7 +109,6 @@ router.post("/", requireAuth, requireRole("dono", "gerente"), async (req, res) =
   const {
     nomeExibicao, apelido, fotoUrl, comissaoTipo, comissaoValor,
     especialidade, horarios, celular, servicoIds, servicosOverrides,
-    asaasWalletId, asaasSplitPercentual,
   } = req.body;
   if (!nomeExibicao || comissaoValor === undefined) return res.status(400).json({ error: "Dados inválidos" });
 
@@ -155,8 +153,6 @@ router.post("/", requireAuth, requireRole("dono", "gerente"), async (req, res) =
     celular: celular ?? null,
     especialidade: especialidade ?? null,
     horarios: horarios ?? null,
-    asaasWalletId: asaasWalletId ?? null,
-    asaasSplitPercentual: asaasSplitPercentual != null ? String(asaasSplitPercentual) : null,
   }).returning();
 
   let validatedIds: number[] = [];
@@ -216,7 +212,6 @@ router.put("/:profissionalId", requireAuth, requireRole("dono", "gerente"), asyn
   const {
     nomeExibicao, apelido, fotoUrl, comissaoTipo, comissaoValor,
     ativo, ordem, especialidade, horarios, celular, servicoIds, servicosOverrides,
-    asaasWalletId, asaasSplitPercentual,
   } = req.body;
   const [existing] = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, id), eq(profissionaisTable.barbeariaId, barbeariaId))).limit(1);
   if (!existing) return res.status(404).json({ error: "Profissional não encontrado" });
@@ -243,10 +238,6 @@ router.put("/:profissionalId", requireAuth, requireRole("dono", "gerente"), asyn
     ordem: ordem !== undefined ? ordem : existing.ordem,
     especialidade: especialidade ?? existing.especialidade,
     horarios: horarios ?? existing.horarios,
-    asaasWalletId: asaasWalletId !== undefined ? (asaasWalletId || null) : existing.asaasWalletId,
-    asaasSplitPercentual: asaasSplitPercentual !== undefined
-      ? (asaasSplitPercentual != null ? String(asaasSplitPercentual) : null)
-      : existing.asaasSplitPercentual,
     updatedAt: new Date(),
   }).where(eq(profissionaisTable.id, id)).returning();
 
