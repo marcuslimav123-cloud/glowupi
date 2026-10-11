@@ -16,7 +16,7 @@ export function buildUnsubscribeUrl(token: string): string {
 export function buildAgendamentoUrl(barbeariaSlug: string | null | undefined): string {
   const base = PUBLIC_BASE || "";
   if (!barbeariaSlug) return base + "/barberpro/";
-  return `${base}/barberpro/agendar/${barbeariaSlug}`;
+  return `${base}/s/${barbeariaSlug}`;
 }
 
 export function buildUnsubscribeFooter(nomeEstabelecimento: string, unsubscribeUrl: string): string {

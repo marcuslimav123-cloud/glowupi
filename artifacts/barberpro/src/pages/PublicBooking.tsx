@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams } from "wouter";
-import { Calendar, Clock, Scissors, User, ChevronLeft, ChevronRight, Check, MapPin, Phone, Loader2, LogOut, MessageCircle, XCircle, CalendarDays, AlertTriangle, Download, Share, X, Copy, ExternalLink } from "lucide-react";
+import { Calendar, Clock, Scissors, User, ChevronLeft, ChevronRight, Check, MapPin, Phone, Loader2, LogOut, MessageCircle, XCircle, CalendarDays, AlertTriangle, Download, Share, X, Copy, ExternalLink, Info } from "lucide-react";
 import ClientAuthModal from "@/components/ClientAuthModal";
 import { usePWA } from "@/hooks/usePWA";
 import { defaultLogoUrl } from "@/lib/branding";
 import { useInstallPWA } from "@/hooks/useInstallPWA";
 import { InstallAppButton } from "@/components/InstallAppButton";
 import { useClientNotifications, enableClientNotifications } from "@/hooks/useClientNotifications";
+import { SafeLogoImage } from "@/components/SafeLogoImage";
+import { PublicProfileSheet } from "@/components/public/PublicProfileSheet";
 
 const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, "/");
 
@@ -56,6 +58,15 @@ interface BarbeariaData {
   logradouro: string;
   bairro: string;
   horarioFuncionamento: any;
+  numero?: string | null;
+  fotos?: string[];
+  formasPagamento?: string[];
+  redesSociais?: Record<string, string>;
+  avaliacoes?: any[];
+  notaMedia?: number;
+  totalAvaliacoes?: number;
+  recompensas?: any[];
+  produtos?: any[];
   servicos: any[];
   profissionais: any[];
   tipoLinkAgendamento?: "simples" | "com_login";
@@ -102,6 +113,7 @@ export default function PublicBooking() {
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [clientUser, setClientUser] = useState<ClientUser | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -524,6 +536,14 @@ export default function PublicBooking() {
                 <ChevronLeft className="h-5 w-5" />
               </button>
             )}
+            <button onClick={() => setShowProfile(true)} className="shrink-0 rounded-xl overflow-hidden border border-white/10" title="Sobre o estabelecimento" aria-label="Sobre o estabelecimento">
+              <SafeLogoImage
+                src={barbearia.logoUrl || defaultLogoUrl(barbearia.tipoEstabelecimento)}
+                alt={barbearia.nome}
+                className={barbearia.logoUrl ? "h-10 w-10 object-cover" : "h-10 w-10 object-contain p-1.5"}
+                style={barbearia.logoUrl ? undefined : { background: `${accent}25` }}
+              />
+            </button>
             <div className="flex-1 min-w-0">
               <h1 className="font-bold text-lg truncate">{barbearia.nome}</h1>
               {barbearia.cidade && (
@@ -532,6 +552,9 @@ export default function PublicBooking() {
                 </p>
               )}
             </div>
+            <button onClick={() => setShowProfile(true)} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition" title="Sobre" aria-label="Sobre">
+              <Info className="h-4 w-4 text-white/40" />
+            </button>
             {!isInstalled && (
               <InstallAppButton
                 nome={barbearia?.nome}
@@ -1370,6 +1393,8 @@ export default function PublicBooking() {
           )}
         </div>
       </div>
+
+      {showProfile && barbearia && <PublicProfileSheet barbearia={barbearia as any} accent={accent} onClose={() => setShowProfile(false)} />}
 
       {!isSimpleMode && (
         <ClientAuthModal

@@ -51,7 +51,6 @@ const Pesquisa = React.lazy(() => import("@/pages/cadastros/Pesquisa"));
 const ClubeVantagens = React.lazy(() => import("@/pages/cadastros/ClubeVantagens"));
 const VendaPacotes = React.lazy(() => import("@/pages/VendaPacotes"));
 const PublicBooking = React.lazy(() => import("@/pages/PublicBooking"));
-const PublicStorefront = React.lazy(() => import("@/pages/PublicStorefront"));
 const PublicPesquisa = React.lazy(() => import("@/pages/PublicPesquisa"));
 
 const DirectSalesSuccess = React.lazy(() => import("@/pages/DirectSalesSuccess"));
@@ -248,7 +247,7 @@ function Router() {
       <Route path="/clube" component={Clube} />
 
       <Route path="/pesquisa/:barbeariaId/:pesquisaId" component={PublicPesquisa} />
-      <Route path="/s/:slug" component={PublicStorefront} />
+      <Route path="/s/:slug" component={PublicBooking} />
       <Route path="/agendar/:slug" component={PublicBooking} />
       <Route path="/politica-de-privacidade" component={PoliticaPrivacidade} />
       <Route path="/termos-de-uso" component={TermosDeUso} />
