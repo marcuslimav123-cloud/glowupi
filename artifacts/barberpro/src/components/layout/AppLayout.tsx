@@ -377,22 +377,44 @@ function hasPermission(href: string | undefined, perms: string[] | null): boolea
   return perms.includes(key);
 }
 
-function filterNavByRole(items: NavItem[], role: string, perfilPermissoes?: string[] | null): NavItem[] {
+// Menu "Essencial": o que uma barbearia/salão usa no dia a dia. Os demais
+// recursos continuam existindo e aparecem no modo "Completo"
+// (Configurações → Parâmetros → Aparência → Menu do painel).
+const ESSENCIAL_HREFS = new Set<string>([
+  "/dashboard", "/agenda",
+  "/gestao/clientes", "/gestao/profissionais", "/gestao/servicos", "/gestao/produtos",
+  "/pacotes", "/pacotes/vendas",
+  "/cadastros/tipos", "/cadastros/tipos?cat=pagamento", "/cadastros/tipos?cat=bandeira", "/cadastros/tipos?cat=despesa", "/cadastros/tipos?cat=receita",
+  "/mensagens", "/comunicacao/inbox", "/cadastros/lembretes", "/cadastros/cupons", "/clube",
+  "/cadastros/clubes", "/cadastros/assinantes",
+  "/comandas/abertas", "/comandas/historico",
+  "/financeiro/caixa", "/financeiro/historico", "/financeiro/movimentacoes", "/financeiro/comissoes", "/financeiro/fluxo", "/financeiro/caixinha", "/financeiro/mensalidade",
+  "/relatorios/agendamentos", "/relatorios/rankings", "/relatorios/aniversariantes", "/relatorios", "/relatorios/financeiro", "/relatorios/dias-sem-vir", "/relatorios/lucro-produtos", "/relatorios/estoque",
+  "/configuracoes/parametros", "/configuracoes/funcionamento", "/configuracoes/acessos", "/configuracoes/comunicacao", "/avaliacoes", "/lista-espera",
+  "/empresa", "/equipe",
+]);
+
+function visivelNoModo(href: string | undefined, lean: boolean): boolean {
+  if (!lean || !href) return true;
+  return ESSENCIAL_HREFS.has(href);
+}
+
+function filterNavByRole(items: NavItem[], role: string, perfilPermissoes?: string[] | null, lean = false): NavItem[] {
   return items.reduce<NavItem[]>((acc, item) => {
     if (item.roles && !item.roles.includes(role)) return acc;
     if (item.children || item.subgroups) {
       const filteredChildren = (item.children || []).filter(
-        child => (!child.roles || child.roles.includes(role)) && hasPermission(child.href, perfilPermissoes ?? null)
+        child => (!child.roles || child.roles.includes(role)) && hasPermission(child.href, perfilPermissoes ?? null) && visivelNoModo(child.href, lean)
       );
       const filteredSubgroups = item.subgroups?.map(sg => ({
         ...sg,
-        items: sg.items.filter(sub => hasPermission(sub.href, perfilPermissoes ?? null)),
+        items: sg.items.filter(sub => hasPermission(sub.href, perfilPermissoes ?? null) && visivelNoModo(sub.href, lean)),
       })).filter(sg => sg.items.length > 0);
       if (filteredChildren.length > 0 || (filteredSubgroups && filteredSubgroups.length > 0)) {
         acc.push({ ...item, children: filteredChildren, subgroups: filteredSubgroups });
       }
     } else {
-      if (hasPermission(item.href, perfilPermissoes ?? null)) {
+      if (hasPermission(item.href, perfilPermissoes ?? null) && visivelNoModo(item.href, lean)) {
         acc.push(item);
       }
     }
@@ -739,10 +761,28 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const menuEssencial = (layoutParams?.["menu_modo"] || "Essencial") !== "Completo";
   const filteredNav = React.useMemo(
-    () => filterNavByRole(NAV_ITEMS, role, perfilPermissoes),
-    [role, perfilPermissoes]
+    () => filterNavByRole(NAV_ITEMS, role, perfilPermissoes, menuEssencial),
+    [role, perfilPermissoes, menuEssencial]
   );
+  const [trocandoMenu, setTrocandoMenu] = React.useState(false);
+  const alternarMenu = async () => {
+    if (!barbeariaId || trocandoMenu) return;
+    setTrocandoMenu(true);
+    try {
+      await fetch(apiUrl(`/barbearias/${barbeariaId}/parametros/menu_modo`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ valor: menuEssencial ? "Completo" : "Essencial" }),
+      });
+      queryClient.invalidateQueries({ queryKey: ["parametros-layout"] });
+      queryClient.invalidateQueries({ queryKey: ["parametros"] });
+    } finally {
+      setTrocandoMenu(false);
+    }
+  };
 
   const searchResults = React.useMemo(() => {
     const q = sidebarSearch.trim().toLowerCase();
@@ -933,6 +973,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="p-4 border-t border-border shrink-0">
+          {(role === "dono" || role === "gerente") && (
+            <button
+              type="button"
+              onClick={alternarMenu}
+              disabled={trocandoMenu}
+              className="w-full mb-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground/45 hover:text-foreground hover:bg-muted transition-colors text-left flex items-center justify-between"
+              title={menuEssencial ? "Mostrar todos os recursos do sistema" : "Mostrar só o essencial do dia a dia"}
+            >
+              <span>Menu: {menuEssencial ? "Essencial" : "Completo"}</span>
+              <span className="text-primary font-medium">{menuEssencial ? "ver tudo" : "simplificar"}</span>
+            </button>
+          )}
           <div className="flex items-center gap-2.5 px-2 py-2 mb-3">
             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-semibold text-[12px]">
               {user.nome.charAt(0).toUpperCase()}

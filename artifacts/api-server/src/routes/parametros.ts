@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { parametrosConfigTable, barbeariasTable } from "@workspace/db/schema";
-import { eq, and } from "drizzle-orm";
+import { inArray, eq, and } from "drizzle-orm";
 import { requireAuth, requireRole } from "../lib/auth.js";
 
 const router: IRouter = Router({ mergeParams: true });
@@ -29,6 +29,7 @@ export const PARAMETROS_DEFAULTS: ParamDef[] = [
   { chave: "cancel_tolerancia_cliente", label: "Limite de tolerância de cancelamento de horário pelo cliente (app)", categoria: "Cancelamentos & Tolerância", tipo: "input", valorPadrao: "2" },
   { chave: "agenda_tempo_padrao", label: "Intervalo da agenda (granularidade dos slots)", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["5 minutos", "10 minutos", "15 minutos", "20 minutos", "30 minutos"], valorPadrao: "30 minutos" },
   { chave: "tema_layout", label: "Tema/Layout WebAdmin", categoria: "Aparência", tipo: "select", opcoes: ["Claro", "Escuro", "Automático"], valorPadrao: "Claro" },
+  { chave: "menu_modo", label: "Menu do painel (Essencial mostra só o dia a dia; Completo mostra todos os recursos)", categoria: "Aparência", tipo: "select", opcoes: ["Essencial", "Completo"], valorPadrao: "Essencial" },
   { chave: "agenda_limite_antecedencia", label: "Limite de antecedência para agendamento de horário pelo App", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Sem limite", "1 hora", "2 horas", "3 horas", "4 horas", "6 horas", "12 horas", "24 horas"], valorPadrao: "Sem limite" },
   { chave: "notif_mensagem_agendar_cancelar", label: "Habilitar envio de mensagem quando agendar/cancelar pelo aplicativo", categoria: "Notificações & Mensagens", tipo: "select", opcoes: ["Habilitado", "Desabilitado"], valorPadrao: "Habilitado" },
   { chave: "agenda_mesmo_horario_cliente", label: "Permitir agendamento no mesmo horário pelo cliente (Aplicativo)", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Sim" },
@@ -139,11 +140,12 @@ router.get("/tema-layout", requireAuth, async (req, res) => {
   const user = (req as any).user;
   const userBarbId = await resolveUserBarbeariaId(user);
   if (userBarbId !== barbeariaId) return res.status(403).json({ error: "Sem permissão" });
-  const [row] = await db.select().from(parametrosConfigTable).where(
-    and(eq(parametrosConfigTable.barbeariaId, barbeariaId), eq(parametrosConfigTable.chave, "tema_layout"))
-  ).limit(1);
-  const def = PARAMETROS_DEFAULTS.find(d => d.chave === "tema_layout");
-  return res.json({ chave: "tema_layout", valor: row?.valor ?? def?.valorPadrao ?? "Claro" });
+  const rows = await db.select().from(parametrosConfigTable).where(
+    and(eq(parametrosConfigTable.barbeariaId, barbeariaId), inArray(parametrosConfigTable.chave, ["tema_layout", "menu_modo"]))
+  );
+  const valorDe = (chave: string, fallback: string) =>
+    rows.find(r => r.chave === chave)?.valor ?? PARAMETROS_DEFAULTS.find(d => d.chave === chave)?.valorPadrao ?? fallback;
+  return res.json({ chave: "tema_layout", valor: valorDe("tema_layout", "Claro"), menuModo: valorDe("menu_modo", "Essencial") });
 });
 
 router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {

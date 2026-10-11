@@ -34,7 +34,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
-  const { data: user, isLoading, error } = useGetCurrentUser({
+  const { data: rawUser, isLoading, error } = useGetCurrentUser({
     query: {
       retry: false,
       staleTime: 5 * 60 * 1000,
@@ -57,6 +57,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Sessão inválida (401) derruba o usuário mesmo com dados antigos em cache.
+  const user = error && (error as any)?.status === 401 ? undefined : rawUser;
   const userRole = user?.role || "dono";
   const typedUser = user as UserWithPerfilPermissoes | undefined;
   const perfilPermissoes = typedUser?.perfilPermissoes ?? null;
