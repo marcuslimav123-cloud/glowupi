@@ -1,4 +1,4 @@
-const CACHE_NAME = "glowupi-pwa-v7";
+const CACHE_NAME = "glowupi-pwa-v8";
 const SW_VERSION = "7.0.0";
 
 self.addEventListener("install", () => {
