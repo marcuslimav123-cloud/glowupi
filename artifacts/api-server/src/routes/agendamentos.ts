@@ -12,6 +12,7 @@ import { eq, and, gte, lte, inArray, sql } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
 import { sendEmail } from "../lib/brevo.js";
+import { formatDataBR } from "../lib/datas.js";
 import { sendPushToBarbearia, sendPushToClienteUser } from "../lib/pushNotifications.js";
 import { clienteUsersTable } from "@workspace/db/schema";
 import { validateAgendamentoEmHorario, validateAgendamentoEmJornadaProf, type HorarioDia } from "../lib/horarioValidation.js";
@@ -26,8 +27,8 @@ async function notificarAgendamento(barbeariaId: number, params: Record<string, 
       ? `${nomeEstab} — Agendamento Confirmado`
       : `${nomeEstab} — Agendamento Cancelado`;
     const mensagem = tipo === "criado"
-      ? `Seu agendamento de <strong>${agendData.servicoNome}</strong> com <strong>${agendData.profissionalNome}</strong> em ${agendData.data} às ${agendData.horaInicio} foi confirmado.`
-      : `Seu agendamento de <strong>${agendData.servicoNome}</strong> com <strong>${agendData.profissionalNome}</strong> em ${agendData.data} às ${agendData.horaInicio} foi cancelado.`;
+      ? `Seu agendamento de <strong>${agendData.servicoNome}</strong> com <strong>${agendData.profissionalNome}</strong> em ${formatDataBR(agendData.data)} às ${agendData.horaInicio} foi confirmado.`
+      : `Seu agendamento de <strong>${agendData.servicoNome}</strong> com <strong>${agendData.profissionalNome}</strong> em ${formatDataBR(agendData.data)} às ${agendData.horaInicio} foi cancelado.`;
 
     const modoHumano = !!barb?.modoHumano;
     const clienteNotifHabilitada = (params["notif_mensagem_agendar_cancelar"] || "Habilitado") === "Habilitado";
@@ -42,9 +43,9 @@ async function notificarAgendamento(barbeariaId: number, params: Record<string, 
           tipo: "confirmacao",
           agendamentoId: agendData.agendamentoId,
           clienteId: agendData.clienteId ?? null,
-          contexto: { servico: agendData.servicoNome, profissional: agendData.profissionalNome, data: agendData.data, hora: agendData.horaInicio },
+          contexto: { servico: agendData.servicoNome, profissional: agendData.profissionalNome, data: formatDataBR(agendData.data), hora: agendData.horaInicio },
           dedupeKey: `confirm:${barbeariaId}:${agendData.agendamentoId}`,
-          fallbackTexto: `Olá ${agendData.clienteNome}! Seu horário de ${agendData.servicoNome} com ${agendData.profissionalNome} em ${agendData.data} às ${agendData.horaInicio} está confirmado. ${nomeEstab}`,
+          fallbackTexto: `Olá ${agendData.clienteNome}! Seu horário de ${agendData.servicoNome} com ${agendData.profissionalNome} em ${formatDataBR(agendData.data)} às ${agendData.horaInicio} está confirmado. ${nomeEstab}`,
           categoriaPreferida: "confirmacao",
         });
       } catch (e) {
@@ -393,8 +394,8 @@ router.post("/", requireAuth, async (req, res) => {
   sendPushToBarbearia(barbeariaId, {
     title: statusInicial === "pendente_aprovacao" ? "Aguardando confirmação" : "Novo Agendamento",
     body: statusInicial === "pendente_aprovacao"
-      ? `${clienteNome} solicitou ${servico.nome} com ${profissional.apelido || profissional.nomeExibicao} em ${data} às ${horaInicio}. Confirme ou recuse.`
-      : `${clienteNome} agendou ${servico.nome} com ${profissional.apelido || profissional.nomeExibicao} em ${data} às ${horaInicio}`,
+      ? `${clienteNome} solicitou ${servico.nome} com ${profissional.apelido || profissional.nomeExibicao} em ${formatDataBR(data)} às ${horaInicio}. Confirme ou recuse.`
+      : `${clienteNome} agendou ${servico.nome} com ${profissional.apelido || profissional.nomeExibicao} em ${formatDataBR(data)} às ${horaInicio}`,
     data: { agendamentoId: agend.id, type: statusInicial === "pendente_aprovacao" ? "pending_appointment" : "new_appointment", url: "/agenda" },
   }).catch(err => console.error("[Push] Error on new appointment:", err));
 
@@ -746,7 +747,7 @@ router.delete("/:agendamentoId", requireAuth, async (req, res) => {
   }
 
   await db.transaction(async (tx) => {
-    await tx.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId)));
+    await tx.update(agendamentosTable).set({ status: "cancelado", canceladoPor: "equipe", updatedAt: new Date() }).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId)));
 
     // Refund pacote session if applicable (idempotent: only when leaving an active state)
     if (agend.pacoteClienteId && (agend.status === "confirmado" || agend.status === "pendente_aprovacao" || agend.status === "pago")) {
@@ -773,8 +774,8 @@ router.delete("/:agendamentoId", requireAuth, async (req, res) => {
   }, "cancelado");
 
   sendPushToBarbearia(barbeariaId, {
-    title: "Agendamento Cancelado",
-    body: `${agend.clienteNome} cancelou ${agend.servicoNome} com ${agend.profissionalNome} em ${agend.data} às ${agend.horaInicio}`,
+    title: "Agendamento cancelado",
+    body: `${agend.clienteNome} cancelou ${agend.servicoNome} com ${agend.profissionalNome} em ${formatDataBR(agend.data)} às ${agend.horaInicio}`,
     data: { agendamentoId: agend.id, type: "cancelled_appointment", url: "/agenda" },
   }).catch(err => console.error("[Push] Error on cancelled appointment:", err));
 

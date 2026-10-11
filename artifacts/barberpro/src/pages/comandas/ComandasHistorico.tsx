@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useLiveRefresh } from "@/lib/liveRefresh";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ export default function ComandasHistorico() {
     if (!barbeariaId) return;
     fetchComandas();
   }, [barbeariaId, dataInicio, dataFim]);
+  useLiveRefresh(() => { if (barbeariaId) fetchComandas(); }, !!barbeariaId);
 
   const fetchComandas = async () => {
     setLoading(true);

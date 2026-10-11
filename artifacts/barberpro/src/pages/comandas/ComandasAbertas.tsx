@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { useWhatsappTemplates, renderWhatsappTemplate, buildWhatsappLink } from "@/lib/waTemplates";
+import { useLiveRefresh, triggerLiveRefresh } from "@/lib/liveRefresh";
 
 const METODO_LABEL: Record<string, string> = { pix: "PIX", dinheiro: "Dinheiro", credito: "Crédito", debito: "Débito" };
 const METODO_ICON: Record<string, React.ReactNode> = {
@@ -94,6 +95,13 @@ export default function ComandasAbertas() {
     fetchAgendamentos();
     fetchExtras();
   }, [barbeariaId]);
+
+  // Push, volta para a aba ou tique de 1 minuto: recarrega sem precisar de F5.
+  useLiveRefresh(() => {
+    if (!barbeariaId) return;
+    fetchAgendamentos();
+    if (tab === "historico") fetchComandasFechadas();
+  }, !!barbeariaId);
 
   // Vindo da Agenda com ?agendamento=ID: abre direto o checkout completo
   // (serviços, produtos, pagamento) daquele agendamento.
@@ -314,6 +322,7 @@ export default function ComandasAbertas() {
         setCheckoutOpen(false);
         setSelected(null);
         fetchAgendamentos();
+        triggerLiveRefresh("local");
       } else {
         const err = await res.json().catch(() => ({}));
         toast({ title: err.error || "Erro ao fechar comanda", variant: "destructive" });
@@ -335,6 +344,7 @@ export default function ComandasAbertas() {
         toast({ title: "Comanda reaberta com sucesso!" });
         fetchComandasFechadas();
         fetchAgendamentos();
+        triggerLiveRefresh("local");
       } else {
         const err = await res.json().catch(() => ({}));
         toast({ title: err.error || "Erro ao reabrir comanda", variant: "destructive" });

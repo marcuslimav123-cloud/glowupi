@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import NotFound from "@/pages/not-found";
 import LgpdPopup from "@/components/LgpdPopup";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
+import { LiveRefreshBridge } from "@/components/LiveRefreshBridge";
 
 import DirectSales from "@/pages/DirectSales";
 import Landing from "@/pages/Landing";
@@ -107,7 +108,8 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 30_000,
       gcTime: 5 * 60_000,
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
       retry: 1,
     },
   },
@@ -244,6 +246,7 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <LiveRefreshBridge />
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <AuthProvider>

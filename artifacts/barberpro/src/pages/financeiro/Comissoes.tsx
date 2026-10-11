@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useLiveRefresh } from "@/lib/liveRefresh";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ export default function Comissoes() {
   const BASE = import.meta.env.BASE_URL;
 
   useEffect(() => { if (barbeariaId) { fetchComissoes(); fetchProfissionais(); } }, [barbeariaId]);
+  useLiveRefresh(() => { if (barbeariaId) fetchComissoes(); }, !!barbeariaId);
 
   const fetchProfissionais = async () => {
     try {

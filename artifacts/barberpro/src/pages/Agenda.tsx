@@ -90,7 +90,8 @@ function getStatusColor(status: string, encaixe?: boolean) {
   }
 }
 
-function getStatusLabel(status: string) {
+function getStatusLabel(status: string, canceladoPor?: string | null) {
+  if (status === "cancelado" && canceladoPor === "cliente") return "Cancelado pelo cliente";
   switch (status) {
     case 'pago': return 'Pago';
     case 'confirmado': return 'Confirmado';
@@ -235,7 +236,7 @@ export default function Agenda() {
 
   const tiposPath = `/barbearias/${barbeariaId}/tipos`;
   const { data: tipos = [] } = useApiList("tipos", tiposPath, !!barbeariaId);
-  const { data: agendamentos = [], refetch } = useListAgendamentos(barbeariaId!, dateRangeParams, { query: { enabled: !!barbeariaId } });
+  const { data: agendamentos = [], refetch } = useListAgendamentos(barbeariaId!, dateRangeParams, { query: { enabled: !!barbeariaId, refetchInterval: 60_000, refetchIntervalInBackground: false } });
 
   const createMutation = useCreateAgendamento();
   const createAtendimentoMutation = useCreateAtendimento();
@@ -1326,7 +1327,7 @@ export default function Agenda() {
             <div className="flex flex-wrap items-center gap-1.5">
               <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(detailAgend.status, detailAgend.encaixe)}`}>
                 {detailAgend.encaixe && <Zap className="h-3 w-3" />}
-                {getStatusLabel(detailAgend.status)}
+                {getStatusLabel(detailAgend.status, (detailAgend as any).canceladoPor)}
                 {detailAgend.encaixe && " (Encaixe)"}
               </div>
               {detailAgend.atendimentoId && (

@@ -4,6 +4,7 @@ import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, 
 import { eq, and, desc, gte, inArray, sql } from "drizzle-orm";
 import { extractYoutubeVideoId } from "../lib/youtube.js";
 import { sendPushToBarbearia } from "../lib/pushNotifications.js";
+import { formatDataBR } from "../lib/datas.js";
 import { requireClient } from "../lib/auth.js";
 import { validateAgendamentoEmHorario, validateAgendamentoEmJornadaProf } from "../lib/horarioValidation.js";
 import { verifyConfirmToken } from "../lib/confirmToken.js";
@@ -600,7 +601,7 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       sendEmail({
         to: [{ email: cliente.email, name: clienteUser.nome }],
         subject: `${nomeEstab} — Agendamento Confirmado`,
-        htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>Olá <strong>${clienteUser.nome}</strong>, seu agendamento de <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${data}</strong> às <strong>${horaInicio}</strong> foi confirmado com sucesso!</p></div>`,
+        htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>Olá <strong>${clienteUser.nome}</strong>, seu agendamento de <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${formatDataBR(data)}</strong> às <strong>${horaInicio}</strong> foi confirmado com sucesso!</p></div>`,
       }).catch(err => console.error("[Notif] Error sending booking email to client:", err));
     }
 
@@ -623,7 +624,7 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
           sendEmail({
             to: [{ email: g.email, name: g.nome || "Gestor" }],
             subject: `${nomeEstab} — Novo agendamento pelo site: ${clienteUser.nome}`,
-            htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>O cliente <strong>${clienteUser.nome}</strong> agendou <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${data}</strong> às <strong>${horaInicio}</strong> pelo link público.</p></div>`,
+            htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>O cliente <strong>${clienteUser.nome}</strong> agendou <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${formatDataBR(data)}</strong> às <strong>${horaInicio}</strong> pelo link público.</p></div>`,
           }).catch(err => console.error("[Notif] Error sending booking email to manager:", err));
         }
       }
@@ -632,8 +633,8 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
     sendPushToBarbearia(barbearia.id, {
       title: statusInicialPub === "pendente_aprovacao" ? "Aguardando confirmação" : "Novo Agendamento pelo Site",
       body: statusInicialPub === "pendente_aprovacao"
-        ? `${clienteUser.nome} solicitou ${servico.nome} com ${profissional.nomeExibicao} em ${data} às ${horaInicio}. Confirme ou recuse.`
-        : `${clienteUser.nome} agendou ${servico.nome} com ${profissional.nomeExibicao} em ${data} às ${horaInicio}`,
+        ? `${clienteUser.nome} solicitou ${servico.nome} com ${profissional.nomeExibicao} em ${formatDataBR(data)} às ${horaInicio}. Confirme ou recuse.`
+        : `${clienteUser.nome} agendou ${servico.nome} com ${profissional.nomeExibicao} em ${formatDataBR(data)} às ${horaInicio}`,
       data: { agendamentoId: agend.id, type: statusInicialPub === "pendente_aprovacao" ? "pending_appointment" : "new_appointment", url: "/agenda" },
     }).catch(err => console.error("[Push] Error on client booking:", err));
 
@@ -815,7 +816,7 @@ router.post("/:slug/agendar-simples", async (req, res) => {
       sendEmail({
         to: [{ email: cliente.email, name: clienteNome }],
         subject: `${nomeEstab} — Agendamento Confirmado`,
-        htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>Olá <strong>${clienteNome}</strong>, seu agendamento de <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${data}</strong> às <strong>${horaInicio}</strong> foi confirmado com sucesso!</p></div>`,
+        htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>Olá <strong>${clienteNome}</strong>, seu agendamento de <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${formatDataBR(data)}</strong> às <strong>${horaInicio}</strong> foi confirmado com sucesso!</p></div>`,
       }).catch(err => console.error("[Notif] Error sending booking email to client:", err));
     }
 
@@ -838,7 +839,7 @@ router.post("/:slug/agendar-simples", async (req, res) => {
           sendEmail({
             to: [{ email: g.email, name: g.nome || "Gestor" }],
             subject: `${nomeEstab} — Novo agendamento pelo site: ${clienteNome}`,
-            htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>O cliente <strong>${clienteNome}</strong> agendou <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${data}</strong> às <strong>${horaInicio}</strong> pelo link público.</p></div>`,
+            htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>O cliente <strong>${clienteNome}</strong> agendou <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${formatDataBR(data)}</strong> às <strong>${horaInicio}</strong> pelo link público.</p></div>`,
           }).catch(err => console.error("[Notif] Error sending booking email to manager:", err));
         }
       }
@@ -847,8 +848,8 @@ router.post("/:slug/agendar-simples", async (req, res) => {
     sendPushToBarbearia(barbearia.id, {
       title: statusInicialSimples === "pendente_aprovacao" ? "Aguardando confirmação" : "Novo Agendamento pelo Site",
       body: statusInicialSimples === "pendente_aprovacao"
-        ? `${clienteNome} solicitou ${servico.nome} com ${profissional.nomeExibicao} em ${data} às ${horaInicio}. Confirme ou recuse.`
-        : `${clienteNome} agendou ${servico.nome} com ${profissional.nomeExibicao} em ${data} às ${horaInicio}`,
+        ? `${clienteNome} solicitou ${servico.nome} com ${profissional.nomeExibicao} em ${formatDataBR(data)} às ${horaInicio}. Confirme ou recuse.`
+        : `${clienteNome} agendou ${servico.nome} com ${profissional.nomeExibicao} em ${formatDataBR(data)} às ${horaInicio}`,
       data: { agendamentoId: agend.id, type: statusInicialSimples === "pendente_aprovacao" ? "pending_appointment" : "new_appointment", url: "/agenda" },
     }).catch(err => console.error("[Push] Error on client booking:", err));
 
@@ -1116,7 +1117,7 @@ router.post("/:slug/agendamentos/:id/cancelar", requireClient, async (req, res) 
       }
     }
 
-    await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(
+    await db.update(agendamentosTable).set({ status: "cancelado", canceladoPor: "cliente", updatedAt: new Date() }).where(
       and(eq(agendamentosTable.id, agendamentoId), eq(agendamentosTable.barbeariaId, barbearia.id))
     );
 
@@ -1129,7 +1130,7 @@ router.post("/:slug/agendamentos/:id/cancelar", requireClient, async (req, res) 
       sendEmail({
         to: [{ email: cliente.email, name: agend.clienteNome }],
         subject: `${nomeEstab} — Agendamento Cancelado`,
-        htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>Seu agendamento de <strong>${agend.servicoNome}</strong> com <strong>${agend.profissionalNome}</strong> em ${agend.data} às ${agend.horaInicio} foi cancelado.</p></div>`,
+        htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>Seu agendamento de <strong>${agend.servicoNome}</strong> com <strong>${agend.profissionalNome}</strong> em ${formatDataBR(agend.data)} às ${agend.horaInicio} foi cancelado.</p></div>`,
       }).catch(err => console.error("[Notif] Error sending cancel email to client:", err));
     }
 
@@ -1150,15 +1151,15 @@ router.post("/:slug/agendamentos/:id/cancelar", requireClient, async (req, res) 
           sendEmail({
             to: [{ email: g.email, name: g.nome || "Gestor" }],
             subject: `${nomeEstab} — Agendamento cancelado pelo cliente: ${agend.clienteNome}`,
-            htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>O cliente <strong>${agend.clienteNome}</strong> cancelou o agendamento de <strong>${agend.servicoNome}</strong> com <strong>${agend.profissionalNome}</strong> em ${agend.data} às ${agend.horaInicio} pelo link público.</p></div>`,
+            htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>O cliente <strong>${agend.clienteNome}</strong> cancelou o agendamento de <strong>${agend.servicoNome}</strong> com <strong>${agend.profissionalNome}</strong> em ${formatDataBR(agend.data)} às ${agend.horaInicio} pelo link público.</p></div>`,
           }).catch(err => console.error("[Notif] Error sending cancel email to manager:", err));
         }
       }
     }
 
     sendPushToBarbearia(barbearia.id, {
-      title: "Agendamento Cancelado pelo Cliente",
-      body: `${agend.clienteNome} cancelou ${agend.servicoNome} com ${agend.profissionalNome} em ${agend.data} às ${agend.horaInicio}`,
+      title: "Cancelado pelo cliente",
+      body: `${agend.clienteNome} cancelou ${agend.servicoNome} com ${agend.profissionalNome} em ${formatDataBR(agend.data)} às ${agend.horaInicio}`,
       data: { agendamentoId: agend.id, type: "cancelled_appointment", url: "/agenda" },
     }).catch(err => console.error("[Push] Error on client cancelled appointment:", err));
 
@@ -1262,13 +1263,13 @@ router.post("/:slug/agendamentos/:id/cancelar-simples", async (req, res) => {
       }
     }
 
-    await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(
+    await db.update(agendamentosTable).set({ status: "cancelado", canceladoPor: "cliente", updatedAt: new Date() }).where(
       and(eq(agendamentosTable.id, agendamentoId), eq(agendamentosTable.barbeariaId, barbearia.id))
     );
 
     sendPushToBarbearia(barbearia.id, {
-      title: "Agendamento Cancelado pelo Cliente",
-      body: `${agend.clienteNome} cancelou ${agend.servicoNome} com ${agend.profissionalNome} em ${agend.data} às ${agend.horaInicio}`,
+      title: "Cancelado pelo cliente",
+      body: `${agend.clienteNome} cancelou ${agend.servicoNome} com ${agend.profissionalNome} em ${formatDataBR(agend.data)} às ${agend.horaInicio}`,
       data: { agendamentoId: agend.id, type: "cancelled_appointment", url: "/agenda" },
     }).catch(err => console.error("[Push] Error on simple cancel:", err));
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useLiveRefresh } from "@/lib/liveRefresh";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ export default function FluxoCaixa() {
   const [dataFim, setDataFim] = useState(() => new Date().toISOString().slice(0, 10));
 
   useEffect(() => { if (barbeariaId) fetchData(); }, [barbeariaId]);
+  useLiveRefresh(() => { if (barbeariaId) fetchData(); }, !!barbeariaId);
 
   const fetchData = async () => {
     setLoading(true);

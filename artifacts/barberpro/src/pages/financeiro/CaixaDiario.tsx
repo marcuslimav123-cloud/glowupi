@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useLiveRefresh } from "@/lib/liveRefresh";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ export default function CaixaDiario() {
   useEffect(() => {
     if (barbeariaId) { fetchCaixa(); fetchProfissionais(); fetchBandeiras(); }
   }, [barbeariaId]);
+  useLiveRefresh(() => { if (barbeariaId) fetchCaixa(); }, !!barbeariaId);
 
   const fetchCaixa = async () => {
     try {

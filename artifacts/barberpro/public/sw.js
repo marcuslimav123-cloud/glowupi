@@ -1,4 +1,4 @@
-const CACHE_NAME = "glowupi-pwa-v8";
+const CACHE_NAME = "glowupi-pwa-v9";
 const SW_VERSION = "7.0.0";
 
 self.addEventListener("install", () => {
@@ -92,6 +92,12 @@ self.addEventListener("push", (event) => {
 
     console.log("[SW] Showing notification:", data.title, options.tag);
     await self.registration.showNotification(data.title || "Glow Upi", options);
+
+    // Avisa as abas abertas para recarregarem os dados (agenda, comandas, sino).
+    try {
+      const openClients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      for (const c of openClients) c.postMessage({ type: "PUSH_RECEIVED", data: data.data || {} });
+    } catch (_) {}
   })();
 
   event.waitUntil(

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useLiveRefresh } from "@/lib/liveRefresh";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ export default function HistoricoCaixa() {
   const BASE = import.meta.env.BASE_URL;
 
   useEffect(() => { if (barbeariaId) fetchHistorico(); }, [barbeariaId]);
+  useLiveRefresh(() => { if (barbeariaId) fetchHistorico(); }, !!barbeariaId);
 
   const fetchHistorico = async () => {
     setLoading(true);
