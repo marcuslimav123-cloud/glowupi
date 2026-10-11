@@ -918,13 +918,10 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
     ? (parseFloat(profServicoLink!.comissaoOverride!) || 0)
     : (profissional ? (parseFloat(profissional.comissaoValor as string) || 0) : 0);
 
-  // Comissão sobre produtos: o parâmetro "comissao_produtos_percentual" quando
-  // preenchido; senão a mesma porcentagem do profissional (comissão em valor
-  // fixo vale só para o serviço). Profissional com 0% não recebe nada.
+  // Comissão sobre produtos: desligada por padrão. Só existe quando o
+  // estabelecimento define a porcentagem no parâmetro "comissao_produtos_percentual".
   const comissaoProdutosParam = String(params["comissao_produtos_percentual"] ?? "").trim().replace(",", ".");
-  const comissaoProdutosPerc = comissaoProdutosParam !== "" && !isNaN(Number(comissaoProdutosParam))
-    ? Math.max(0, Number(comissaoProdutosParam))
-    : (profissional?.comissaoTipo === "percentual" ? Math.max(0, parseFloat(profissional.comissaoValor as string) || 0) : 0);
+  const comissaoProdutosPerc = Math.max(0, Number(comissaoProdutosParam) || 0);
   let comissaoServico = (hasComissaoOverride || profissional?.comissaoTipo === "percentual")
     ? (valorServico * comissaoPerc) / 100
     : comissaoPerc;

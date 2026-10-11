@@ -122,13 +122,14 @@ describe("Checkout — comissão de serviços e produtos", () => {
     assert.equal(Number(produtos[0].comissao), 0);
   });
 
-  it("profissional com 40% recebe 40% do serviço e dos produtos", async () => {
+  it("por padrão não há comissão sobre produtos, só sobre o serviço", async () => {
     const comanda = await checkout(await criarAgendamento(profQuarentaId, "Barbeiro 40"));
-    // serviço 50 * 40% = 20; produtos 160 * 40% = 64
-    assert.equal(Number(comanda.comissaoTotal), 84);
+    // serviço 50 * 40% = 20; produtos 160 * 0% = 0
+    assert.equal(Number(comanda.comissaoTotal), 20);
+    assert.equal(Number((comanda.produtos as any[])[0].comissao), 0);
   });
 
-  it("parâmetro de comissão de produtos sobrepõe a porcentagem do profissional", async () => {
+  it("estabelecimento que liga a comissão sobre produtos (parâmetro) paga a porcentagem definida", async () => {
     await db.insert(parametrosConfigTable).values({ barbeariaId, chave: "comissao_produtos_percentual", valor: "10", tipo: "input" });
     const comanda = await checkout(await criarAgendamento(profQuarentaId, "Barbeiro 40"));
     // serviço 50 * 40% = 20; produtos 160 * 10% = 16
