@@ -96,8 +96,8 @@ export default function FluxoCaixa() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="text-[24px] font-bold text-foreground">Fluxo de Caixa</h1>
-        <p className="text-foreground/40 text-[14px] mt-0.5">Visão consolidada das finanças</p>
+        <h1 className="text-[24px] font-bold text-foreground">Fluxo de caixa</h1>
+        <p className="text-foreground/40 text-[14px] mt-0.5">Entradas e saídas por período</p>
       </div>
       <div className="flex flex-wrap gap-3 mb-6">
         <Input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} className="w-40 rounded-xl" />

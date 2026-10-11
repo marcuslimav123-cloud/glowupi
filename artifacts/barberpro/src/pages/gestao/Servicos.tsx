@@ -294,10 +294,10 @@ export default function Servicos() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-display font-bold text-foreground">Serviços</h1>
-          <p className="text-muted-foreground mt-1">Catálogo de serviços oferecidos</p>
+          <p className="text-muted-foreground mt-1">O que você oferece, com preço e duração</p>
         </div>
         <Button className="shadow-lg shadow-primary/25" onClick={() => { setEditing(null); setModalOpen(true); }}>
-          <Plus className="mr-2 h-4 w-4" /> Novo Serviço
+          <Plus className="mr-2 h-4 w-4" /> Novo serviço
         </Button>
       </div>
 

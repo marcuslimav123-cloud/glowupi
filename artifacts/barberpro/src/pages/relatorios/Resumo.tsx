@@ -41,8 +41,8 @@ export default function Resumo() {
   return (
     <AppLayout>
       <div className="mb-8">
-        <h1 className="text-[24px] font-bold text-foreground">Resumo</h1>
-        <p className="text-foreground/40 text-[14px] mt-0.5">Visão geral rápida do seu negócio</p>
+        <h1 className="text-[24px] font-bold text-foreground">Resumo do negócio</h1>
+        <p className="text-foreground/40 text-[14px] mt-0.5">Os números principais de hoje, num só lugar</p>
       </div>
 
       {isLoading ? (

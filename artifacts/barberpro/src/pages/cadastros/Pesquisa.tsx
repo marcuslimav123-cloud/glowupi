@@ -169,7 +169,7 @@ export default function Pesquisa() {
     <AppLayout>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-[24px] font-bold text-foreground">Pesquisa de Satisfação</h1>
+          <h1 className="text-[24px] font-bold text-foreground">Pesquisa de satisfação</h1>
           <p className="text-foreground/40 text-[14px] mt-0.5">Crie pesquisas, gere links públicos e acompanhe a satisfação dos clientes</p>
         </div>
         <Button onClick={() => { resetForm(); setShowForm(true); }} className="rounded-xl"><Plus className="h-4 w-4 mr-2" />Nova Pesquisa</Button>

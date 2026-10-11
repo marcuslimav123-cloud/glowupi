@@ -43,7 +43,6 @@ const Suporte = React.lazy(() => import("@/pages/Suporte"));
 
 const Tipos = React.lazy(() => import("@/pages/cadastros/Tipos"));
 const Cupons = React.lazy(() => import("@/pages/cadastros/Cupons"));
-const Lembretes = React.lazy(() => import("@/pages/cadastros/Lembretes"));
 const ClubesAssinatura = React.lazy(() => import("@/pages/cadastros/Clubes"));
 const GruposClientes = React.lazy(() => import("@/pages/cadastros/GruposClientes"));
 const Pesquisa = React.lazy(() => import("@/pages/cadastros/Pesquisa"));
@@ -186,7 +185,6 @@ function Router() {
 
       <Route path="/cadastros/tipos" component={Tipos} />
       <Route path="/cadastros/cupons" component={Cupons} />
-      <Route path="/cadastros/lembretes" component={Lembretes} />
       <Route path="/cadastros/clubes" component={ClubesAssinatura} />
       <Route path="/cadastros/assinantes" component={ClubesAssinatura} />
       <Route path="/cadastros/grupos" component={GruposClientes} />

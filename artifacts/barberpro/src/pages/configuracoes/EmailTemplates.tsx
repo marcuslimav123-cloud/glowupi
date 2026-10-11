@@ -232,8 +232,8 @@ export default function EmailTemplates() {
     <AppLayout>
       <div className="max-w-3xl mx-auto space-y-8">
         <div>
-          <h1 className="text-[22px] font-bold text-foreground tracking-tight">Templates de E-mail</h1>
-          <p className="text-foreground/45 text-[14px] mt-1">Personalize os e-mails enviados pelo sistema</p>
+          <h1 className="text-[22px] font-bold text-foreground tracking-tight">Modelos de e-mail</h1>
+          <p className="text-foreground/45 text-[14px] mt-1">Textos dos e-mails automáticos que seus clientes recebem</p>
         </div>
 
         {loading ? (

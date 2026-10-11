@@ -138,8 +138,8 @@ export default function Mensagens() {
     <AppLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Mensagens</h1>
-          <p className="text-muted-foreground mt-1">Modelos, campanhas e modo humano</p>
+          <h1 className="text-3xl font-display font-bold text-foreground">Mensagens WhatsApp</h1>
+          <p className="text-muted-foreground mt-1">Promoções e retornos enviados pelo WhatsApp, com modelos prontos</p>
         </div>
       </div>
 

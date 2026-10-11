@@ -36,7 +36,7 @@ export default function Avaliacoes() {
     <AppLayout>
       <div className="mb-8">
         <h1 className="text-3xl font-display font-bold text-foreground">Avaliações</h1>
-        <p className="text-muted-foreground mt-1">Pesquisa de satisfação dos clientes</p>
+        <p className="text-muted-foreground mt-1">Notas e comentários deixados pelos clientes</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">

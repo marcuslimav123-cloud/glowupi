@@ -80,8 +80,8 @@ export function ImportExcelDialog({ open, onOpenChange, barbeariaId, onImportCom
       setPreviewRows(data.previewRows);
 
       const initialMapping: Record<number, string> = {};
-      for (const [colIdx, field] of Object.entries(data.autoMapping)) {
-        initialMapping[Number(colIdx)] = field;
+      for (const [colIdx, field] of Object.entries(data.autoMapping as Record<string, string>)) {
+        initialMapping[Number(colIdx)] = String(field);
       }
       setMapping(initialMapping);
       setStep("mapping");

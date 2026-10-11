@@ -1,12 +1,10 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { clientesTable, mensagensTable, solicitacoesCadastroTable, usersTable, pacotesClienteTable, pacotesTable, barbeariasTable, agendamentosTable } from "@workspace/db/schema";
-import { eq, and, sql, desc, gte, lte } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
 import { sendEmail } from "../lib/brevo.js";
-import { getAppBaseUrl } from "../lib/appUrl.js";
-import { makeConfirmToken } from "../lib/confirmToken.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -238,89 +236,6 @@ router.post("/aniversario/enviar", requireAuth, async (req, res) => {
   }
 
   return res.status(400).json({ error: "Canal inválido. Use: email ou app" });
-});
-
-router.get("/lembretes", requireAuth, async (req, res) => {
-  const barbeariaId = await checkAccess(req, res);
-  if (!barbeariaId) return;
-  const params = await getParametros(barbeariaId);
-  const tempoLembreteHoras = parseInt(params["notif_tempo_lembrete"] || "24");
-  const incluirLink = (params["notif_link_confirmacao"] || "Sim") === "Sim";
-
-  const agora = new Date();
-  const limiteHoras = new Date(agora.getTime() + tempoLembreteHoras * 60 * 60 * 1000);
-  const dataHoje = agora.toISOString().slice(0, 10);
-  const dataLimite = limiteHoras.toISOString().slice(0, 10);
-
-  const agendamentos = await db.select().from(agendamentosTable).where(
-    and(
-      eq(agendamentosTable.barbeariaId, barbeariaId),
-      eq(agendamentosTable.status, "confirmado"),
-      gte(agendamentosTable.data, dataHoje),
-      lte(agendamentosTable.data, dataLimite)
-    )
-  );
-
-  const lembretesPendentes = agendamentos.filter(a => {
-    const agendDate = new Date(a.data + "T" + a.horaInicio + ":00");
-    const diffMs = agendDate.getTime() - agora.getTime();
-    const diffHoras = diffMs / (1000 * 60 * 60);
-    return diffHoras > 0 && diffHoras <= tempoLembreteHoras;
-  });
-
-  return res.json({
-    tempoLembreteHoras,
-    incluirLinkConfirmacao: incluirLink,
-    canais: { email: true },
-    lembretes: lembretesPendentes.map(a => ({
-      agendamentoId: a.id,
-      clienteNome: a.clienteNome,
-      clienteTelefone: a.clienteTelefone,
-      clienteId: a.clienteId,
-      profissionalNome: a.profissionalNome,
-      servicoNome: a.servicoNome,
-      data: a.data,
-      horaInicio: a.horaInicio,
-    })),
-  });
-});
-
-router.post("/lembretes/enviar", requireAuth, async (req, res) => {
-  const barbeariaId = await checkAccess(req, res);
-  if (!barbeariaId) return;
-  const params = await getParametros(barbeariaId);
-  const { agendamentoId } = req.body;
-  if (!agendamentoId) return res.status(400).json({ error: "agendamentoId é obrigatório" });
-
-  const [agend] = await db.select().from(agendamentosTable).where(
-    and(eq(agendamentosTable.id, agendamentoId), eq(agendamentosTable.barbeariaId, barbeariaId))
-  ).limit(1);
-  if (!agend) return res.status(404).json({ error: "Agendamento não encontrado" });
-
-  const [barb] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
-  const nomeEstab = barb?.nome || "Glow Upi";
-  const incluirLink = (params["notif_link_confirmacao"] || "Sim") === "Sim";
-  const resultados: { canal: string; status: string }[] = [];
-
-  if (agend.clienteId) {
-    const [cliente] = await db.select().from(clientesTable).where(eq(clientesTable.id, agend.clienteId)).limit(1);
-    if (cliente?.email) {
-      let linkHtml = "";
-      if (incluirLink) {
-        const confirmUrl = `${getAppBaseUrl()}/api/public/confirmar/${agend.id}?t=${makeConfirmToken(agend.id)}`;
-        linkHtml = `<p style="margin-top:16px;text-align:center;"><a href="${confirmUrl}" style="display:inline-block;padding:10px 24px;background:#c4a46a;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">Confirmar Presença</a></p>`;
-      }
-      await sendEmail({
-        to: [{ email: cliente.email, name: agend.clienteNome }],
-        subject: `${nomeEstab} — Lembrete de Agendamento`,
-        htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>Olá, ${agend.clienteNome}! Lembramos que você tem um agendamento de <strong>${agend.servicoNome}</strong> com <strong>${agend.profissionalNome}</strong> em ${agend.data} às ${agend.horaInicio}.</p>${linkHtml}</div>`,
-      });
-      resultados.push({ canal: "email", status: "enviado" });
-    }
-  }
-
-
-  return res.json({ success: true, agendamentoId: agend.id, resultados });
 });
 
 export default router;

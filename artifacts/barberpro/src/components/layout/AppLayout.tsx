@@ -342,19 +342,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="px-4 pt-4 pb-2 text-center font-semibold text-[14px] text-foreground tracking-tight truncate">
             {barbeariaNome || APP_NAME}
           </div>
-          <div className="px-4 pb-4">
-            <div
-              className="w-full rounded-lg overflow-hidden bg-muted border border-border"
-              style={{ aspectRatio: "16/9" }}
-            >
-              {logoUrl ? (
-                <SafeLogoImage src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <SafeLogoImage src={logoPadrao} alt={APP_NAME} className="h-14 w-14 object-contain opacity-60" />
-                </div>
-              )}
-            </div>
+          <div className="px-4 pb-3 flex justify-center">
+            <SafeLogoImage
+              src={logoUrl || logoPadrao}
+              alt={barbeariaNome || APP_NAME}
+              className={logoUrl ? "h-16 w-16 rounded-2xl object-cover border border-border" : "h-12 w-12 object-contain opacity-70"}
+            />
           </div>
         </div>
 

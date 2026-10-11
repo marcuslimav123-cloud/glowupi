@@ -562,11 +562,12 @@ export default function PublicBooking() {
                       handleOpenMeusAgendamentos();
                     }
                   }}
-                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition"
-                  title="Meus Agendamentos"
-                  style={showMeusAgendamentos ? { backgroundColor: `${accent}20`, borderColor: accent } : {}}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-xs font-medium"
+                  title="Meus agendamentos"
+                  style={showMeusAgendamentos ? { backgroundColor: `${accent}20`, color: accent } : { color: "rgba(255,255,255,0.7)" }}
                 >
-                  <CalendarDays className="h-4 w-4" style={showMeusAgendamentos ? { color: accent } : { color: "rgba(255,255,255,0.4)" }} />
+                  <CalendarDays className="h-4 w-4" />
+                  <span>{showMeusAgendamentos ? "Voltar" : "Meus horários"}</span>
                 </button>
                 {!isSimpleMode && clientUser && (
                   <>

@@ -37,7 +37,7 @@ export default function ComandasCanceladas() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="text-[24px] font-bold text-foreground">Comandas Canceladas</h1>
+        <h1 className="text-[24px] font-bold text-foreground">Cancelamentos</h1>
         <p className="text-foreground/40 text-[14px] mt-0.5">Agendamentos cancelados no período</p>
       </div>
       <ReportTemplate

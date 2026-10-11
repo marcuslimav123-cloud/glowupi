@@ -75,8 +75,8 @@ export default function Caixinha() {
     <AppLayout>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-[24px] font-bold text-foreground">Caixinha dos Profissionais</h1>
-          <p className="text-foreground/40 text-[14px] mt-0.5">Gorjetas e caixinha do mês</p>
+          <h1 className="text-[24px] font-bold text-foreground">Caixinha</h1>
+          <p className="text-foreground/40 text-[14px] mt-0.5">Gorjetas recebidas por cada profissional no mês</p>
         </div>
         <Button onClick={() => setShowForm(true)} className="rounded-xl"><Plus className="h-4 w-4 mr-2" />Registrar Gorjeta</Button>
       </div>

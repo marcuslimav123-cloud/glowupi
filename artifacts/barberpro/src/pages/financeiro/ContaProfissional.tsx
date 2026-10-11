@@ -73,16 +73,16 @@ export default function ContaProfissional() {
     <AppLayout>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-[24px] font-bold text-foreground">Conta do Profissional</h1>
-          <p className="text-foreground/40 text-[14px] mt-0.5">Créditos e débitos por profissional</p>
+          <h1 className="text-[24px] font-bold text-foreground">Conta do profissional</h1>
+          <p className="text-foreground/40 text-[14px] mt-0.5">Vales, adiantamentos e acertos de cada profissional no mês</p>
         </div>
-        <Button onClick={() => setShowForm(true)} className="rounded-xl"><Plus className="h-4 w-4 mr-2" />Novo Lançamento</Button>
+        <Button onClick={() => setShowForm(true)} className="rounded-xl"><Plus className="h-4 w-4 mr-2" />Novo lançamento</Button>
       </div>
 
       <div className="flex flex-wrap gap-3 mb-6">
         <Input type="month" value={mesAno} onChange={e => setMesAno(e.target.value)} className="w-44 rounded-xl" />
         <Select value={filtroProf} onValueChange={setFiltroProf}><SelectTrigger className="w-48 rounded-xl"><SelectValue placeholder="Todos profissionais" /></SelectTrigger>
-          <SelectContent><SelectItem value="__all__">Todos</SelectItem>{profissionais.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.nome}</SelectItem>)}</SelectContent></Select>
+          <SelectContent><SelectItem value="__all__">Todos</SelectItem>{profissionais.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.nomeExibicao || p.nome}</SelectItem>)}</SelectContent></Select>
         <Button onClick={fetchContas} className="rounded-xl"><Search className="h-4 w-4 mr-2" />Filtrar</Button>
       </div>
 
@@ -93,7 +93,7 @@ export default function ContaProfissional() {
             <div className="grid grid-cols-2 gap-4">
               <div><Label>Profissional</Label>
                 <Select value={form.profissionalId} onValueChange={v => setForm(f => ({ ...f, profissionalId: v }))}><SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{profissionais.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.nome}</SelectItem>)}</SelectContent></Select>
+                  <SelectContent>{profissionais.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.nomeExibicao || p.nome}</SelectItem>)}</SelectContent></Select>
               </div>
               <div><Label>Tipo</Label>
                 <Select value={form.tipo} onValueChange={v => setForm(f => ({ ...f, tipo: v }))}><SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
@@ -113,7 +113,7 @@ export default function ContaProfissional() {
       {loading ? <div className="animate-pulse h-48 bg-card rounded-2xl" /> : grouped.length === 0 ? (
         <Card className="bg-card border-border shadow-none"><CardContent className="py-16 text-center">
           <Users className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
-          <p className="text-foreground/40 text-[14px]">Nenhuma conta encontrada</p>
+          <p className="text-foreground/40 text-[14px]">Nenhum lançamento neste mês</p>
         </CardContent></Card>
       ) : (
         <div className="space-y-4">
@@ -123,7 +123,7 @@ export default function ContaProfissional() {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center"><Users className="h-5 w-5 text-primary" /></div>
-                    <div><p className="font-semibold text-[14px]">{p.nome}</p><p className="text-[12px] text-foreground/40">{p.contas.length} lançamentos</p></div>
+                    <div><p className="font-semibold text-[14px]">{p.nomeExibicao || p.nome}</p><p className="text-[12px] text-foreground/40">{p.contas.length} lançamentos</p></div>
                   </div>
                   <span className={`text-[16px] font-bold ${p.saldo >= 0 ? "text-green-600" : "text-red-600"}`}>{formatCurrency(p.saldo)}</span>
                 </div>

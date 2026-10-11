@@ -170,12 +170,12 @@ export default function Financeiro() {
     <AppLayout>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Financeiro</h1>
-          <p className="text-muted-foreground mt-1">Gestão financeira completa</p>
+          <h1 className="text-3xl font-display font-bold text-foreground">Contas a pagar e receber</h1>
+          <p className="text-muted-foreground mt-1">Aluguel, fornecedores, boletos e valores a receber</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" /> Nova Conta</Button>
+            <Button><Plus className="h-4 w-4 mr-2" /> Nova conta</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Nova Conta</DialogTitle></DialogHeader>

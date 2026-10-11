@@ -29,7 +29,7 @@ export default function Relatorios() {
     <AppLayout>
       <div className="mb-8">
         <h1 className="text-3xl font-display font-bold text-foreground">Relatórios</h1>
-        <p className="text-muted-foreground mt-1">Análise detalhada do desempenho</p>
+        <p className="text-muted-foreground mt-1">Quanto entrou e quanto foi para comissões no período</p>
       </div>
 
       <Tabs defaultValue="faturamento" className="space-y-6">
@@ -90,8 +90,9 @@ export default function Relatorios() {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="lg:col-span-2">
-                  <CardHeader><CardTitle>Faturamento por Dia</CardTitle></CardHeader>
+                  <CardHeader><CardTitle>Faturamento por dia</CardTitle></CardHeader>
                   <CardContent>
+                    {fat.porDia.every((d: any) => !Number(d.valor ?? d.total)) ? <p className="text-muted-foreground text-sm">Sem dados neste período</p> : (
                     <ResponsiveContainer width="100%" height={220}>
                       <BarChart data={fat.porDia}>
                         <XAxis dataKey="data" tickFormatter={d => format(new Date(d + "T00:00:00"), "dd/MM")} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
@@ -100,6 +101,7 @@ export default function Relatorios() {
                         <Bar dataKey="valor" fill="hsl(var(--primary))" radius={[4,4,0,0]} />
                       </BarChart>
                     </ResponsiveContainer>
+                    )}
                   </CardContent>
                 </Card>
 

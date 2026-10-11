@@ -178,8 +178,8 @@ export default function Empresa() {
   return (
     <AppLayout>
       <div className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-foreground">Meu Estúdio</h1>
-        <p className="text-muted-foreground mt-1">Configurações do seu espaço</p>
+        <h1 className="text-3xl font-display font-bold text-foreground">Meu estabelecimento</h1>
+        <p className="text-muted-foreground mt-1">Dados, logo, plano e link de agendamento</p>
       </div>
 
       {barbearia && (
@@ -207,9 +207,9 @@ export default function Empresa() {
 
       {barbearia?.slug && (
         <Card className="mb-6">
-          <CardHeader><CardTitle className="flex items-center gap-2"><Link2 className="h-5 w-5 text-primary" /> Página Pública</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Link2 className="h-5 w-5 text-primary" /> Link de agendamento</CardTitle></CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-3">Compartilhe este link com seus clientes para agendamento online:</p>
+            <p className="text-sm text-muted-foreground mb-3">É por este link que seus clientes agendam. Coloque no Instagram, no WhatsApp e no Google.</p>
             <div className="flex items-center gap-2">
               <div className="flex-1 px-3 py-2 rounded-lg bg-muted text-sm font-mono truncate">
                 {window.location.origin}{import.meta.env.BASE_URL}s/{barbearia.slug}
@@ -275,10 +275,10 @@ export default function Empresa() {
       ) : (
         <form onSubmit={handleSave} className="space-y-6">
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5 text-primary" /> Logo do Estúdio</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5 text-primary" /> Logo</CardTitle></CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Essa imagem aparecerá na sua página pública de agendamento. Recomendamos uma imagem quadrada (ex: 500x500px).
+                Aparece na página de agendamento, no ícone do aplicativo e no painel. Use uma imagem quadrada.
               </p>
               <ImageUpload
                 value={logoUrl}
@@ -291,10 +291,10 @@ export default function Empresa() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5 text-primary" /> Dados do Estúdio</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5 text-primary" /> Dados do estabelecimento</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2 md:col-span-2">
-                <Label>Nome do Salão / Estúdio</Label>
+                <Label>Nome do estabelecimento</Label>
                 <Input value={nome} onChange={e => setNome(e.target.value)} required />
               </div>
               <div className="space-y-2 md:col-span-2">
@@ -307,7 +307,7 @@ export default function Empresa() {
                   <option value="">Selecione</option>
                   {TIPOS_ESTABELECIMENTO.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
-                <p className="text-xs text-muted-foreground">Define a marca padrão do sistema enquanto você não envia sua própria logo (barbearias usam a versão masculina).</p>
+                <p className="text-xs text-muted-foreground">Ajusta sugestões e a marca padrão enquanto você não envia sua logo.</p>
               </div>
               <div className="space-y-2">
                 <Label>Telefone / WhatsApp</Label>
@@ -315,7 +315,7 @@ export default function Empresa() {
               </div>
               <div className="space-y-2">
                 <Label>E-mail</Label>
-                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="contato@seusalao.com" />
+                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="contato@seunegocio.com.br" />
               </div>
               <div className="space-y-2">
                 <Label>CNPJ</Label>
@@ -383,11 +383,11 @@ export default function Empresa() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><Palette className="h-5 w-5 text-primary" /> Personalização</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2"><Palette className="h-5 w-5 text-primary" /> Cor da página de agendamento</CardTitle></CardHeader>
             <CardContent>
               <div className="flex items-center gap-4">
                 <div className="space-y-2">
-                  <Label>Cor Principal</Label>
+                  <Label>Cor principal</Label>
                   <div className="flex items-center gap-3">
                     <input type="color" value={corPrimaria} onChange={e => setCorPrimaria(e.target.value)} className="h-10 w-16 rounded-lg border border-border cursor-pointer" />
                     <Input value={corPrimaria} onChange={e => setCorPrimaria(e.target.value)} className="w-32 font-mono" />
@@ -411,7 +411,7 @@ export default function Empresa() {
                     Ao cancelar, as cobranças param imediatamente, mas você mantém acesso até o final do período já pago.
                   </p>
                   <Button variant="outline" className="border-red-500/30 text-red-500 hover:bg-red-500/10" onClick={() => setShowCancelConfirm(true)}>
-                    Cancelar Meu Plano
+                    Cancelar meu plano
                   </Button>
                 </div>
               ) : (

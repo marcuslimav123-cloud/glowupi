@@ -193,7 +193,7 @@ export default function InboxMensagens() {
       <div className="mb-6 flex items-center gap-3">
         <div className="flex items-center gap-2">
           <Inbox className="h-6 w-6 text-primary" />
-          <h1 className="text-[24px] font-bold text-foreground">Mensagens</h1>
+          <h1 className="text-[24px] font-bold text-foreground">Caixa de entrada</h1>
         </div>
       </div>
 

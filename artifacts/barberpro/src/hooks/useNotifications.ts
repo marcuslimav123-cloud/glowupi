@@ -166,7 +166,7 @@ async function createFreshSubscription(
   try {
     return await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey),
+      applicationServerKey: urlBase64ToUint8Array(publicKey) as unknown as BufferSource,
     });
   } catch (err) {
     console.error("[Push] subscribe() failed:", err);

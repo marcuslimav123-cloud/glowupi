@@ -361,7 +361,7 @@ export default function ComandasAbertas() {
     <AppLayout>
       <div className="mb-6">
         <h1 className="text-[24px] font-bold text-foreground">Comandas</h1>
-        <p className="text-foreground/40 text-[14px] mt-0.5">Gerencie comandas abertas e histórico</p>
+        <p className="text-foreground/40 text-[14px] mt-0.5">Atendimentos de hoje para fechar e as comandas já pagas</p>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
@@ -432,7 +432,7 @@ export default function ComandasAbertas() {
                       <span className="text-[18px] font-bold text-primary">{formatCurrency(ag.valor)}</span>
                       <div className="flex gap-1.5">
                         <Button size="sm" className="rounded-xl h-9 text-[13px]" onClick={() => openCheckout(ag)}>
-                          <Check className="h-3.5 w-3.5 mr-1.5" /> Finalizar
+                          <Check className="h-3.5 w-3.5 mr-1.5" /> Fechar comanda
                         </Button>
                       </div>
                     </div>
@@ -538,7 +538,7 @@ export default function ComandasAbertas() {
 
       <Dialog open={checkoutOpen} onOpenChange={v => { setCheckoutOpen(v); if (!v) setSelected(null); }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Fechar Comanda</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Fechar comanda</DialogTitle></DialogHeader>
           {selected && (
             <form onSubmit={fecharComanda} className="space-y-4">
               <div className="p-3 rounded-lg bg-muted/30 space-y-2">

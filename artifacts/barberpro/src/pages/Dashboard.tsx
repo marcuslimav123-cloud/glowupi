@@ -37,7 +37,7 @@ export default function Dashboard() {
     return (
       <AppLayout>
         <div className="mb-8">
-          <h1 className="text-[24px] font-bold text-foreground">Meu Painel</h1>
+          <h1 className="text-[24px] font-bold text-foreground">Início</h1>
           <p className="text-foreground/40 text-[14px] mt-0.5">Seus agendamentos de hoje</p>
         </div>
 
@@ -84,7 +84,7 @@ export default function Dashboard() {
     <AppLayout>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-[22px] sm:text-[24px] font-bold text-foreground">Dashboard</h1>
+          <h1 className="text-[22px] sm:text-[24px] font-bold text-foreground">Início</h1>
           <p className="text-foreground/40 text-[13px] mt-0.5">Visão geral do seu negócio</p>
         </div>
         <div className="flex bg-card p-1 rounded-full border border-border w-fit">
@@ -127,10 +127,16 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
         <Card className="lg:col-span-2 bg-card border-border shadow-none">
           <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
-            <CardTitle className="text-[14px] sm:text-[15px] font-semibold">Faturamento ({periodo})</CardTitle>
+            <CardTitle className="text-[14px] sm:text-[15px] font-semibold">Faturamento {periodo === "hoje" ? "de hoje" : periodo === "semana" ? "da semana" : "do mês"}</CardTitle>
           </CardHeader>
           <CardContent className="px-2 sm:px-6 pb-4 sm:pb-6">
             <div className="h-[180px] sm:h-[280px] w-full">
+              {(!data.faturamentoPorDia || data.faturamentoPorDia.every((d: any) => !Number(d.valor))) ? (
+                <div className="h-full flex flex-col items-center justify-center text-center px-4">
+                  <p className="text-sm font-medium text-foreground/70">Nenhuma comanda fechada neste período</p>
+                  <p className="text-xs text-muted-foreground mt-1">O faturamento aparece aqui conforme você fecha as comandas.</p>
+                </div>
+              ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.faturamentoPorDia} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <XAxis dataKey="data" stroke="hsl(var(--foreground) / 0.25)" fontSize={11} tickLine={false} axisLine={false} />
@@ -142,26 +148,33 @@ export default function Dashboard() {
                     labelStyle={{ color: 'hsl(var(--foreground))' }}
                   />
                   <Bar dataKey="valor" radius={[6, 6, 0, 0]}>
-                    {data.faturamentoPorDia.map((entry, index) => (
+                    {data.faturamentoPorDia.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={index === data.faturamentoPorDia.length - 1 ? 'hsl(var(--primary))' : 'hsl(var(--primary) / 0.3)'} />
                     ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+              )}
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-card border-border shadow-none">
           <CardHeader>
-            <CardTitle className="text-[15px] font-semibold">Top Serviços</CardTitle>
+            <CardTitle className="text-[15px] font-semibold">Serviços mais vendidos</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center">
+            {(!data.topServicos || data.topServicos.length === 0) ? (
+              <div className="h-[200px] flex flex-col items-center justify-center text-center px-4">
+                <p className="text-sm font-medium text-foreground/70">Ainda sem vendas no período</p>
+                <p className="text-xs text-muted-foreground mt-1">Os serviços mais vendidos aparecem aqui.</p>
+              </div>
+            ) : (<>
             <div className="h-[200px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={data.topServicos} innerRadius={55} outerRadius={75} paddingAngle={4} dataKey="valor">
-                    {data.topServicos.map((entry, index) => (
+                    {data.topServicos.map((entry: any, index: number) => (
                       <PieCell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -170,7 +183,7 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </div>
             <div className="w-full space-y-2 mt-3">
-              {data.topServicos.map((servico, idx) => (
+              {data.topServicos.map((servico: any, idx: number) => (
                 <div key={idx} className="flex items-center justify-between text-[13px]">
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
@@ -180,6 +193,7 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
+            </>)}
           </CardContent>
         </Card>
       </div>
@@ -187,11 +201,11 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
         <Card className="bg-card border-border shadow-none">
           <CardHeader>
-            <CardTitle className="text-[15px] font-semibold flex items-center gap-2"><Award className="h-4 w-4 text-primary" /> Ranking Profissionais</CardTitle>
+            <CardTitle className="text-[15px] font-semibold flex items-center gap-2"><Award className="h-4 w-4 text-primary" /> Profissionais no período</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {data.rankingProfissionais.map((prof, idx) => (
+              {data.rankingProfissionais.map((prof: any, idx: number) => (
                 <div key={prof.profissionalId} className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
                   <div className="flex items-center gap-3">
                     <div className={`h-7 w-7 rounded-full flex items-center justify-center font-bold text-[11px] ${idx === 0 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : idx === 1 ? 'bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400' : idx === 2 ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' : 'bg-muted text-foreground/40'}`}>
@@ -220,7 +234,7 @@ export default function Dashboard() {
               <div className="text-center py-8 text-foreground/35 text-[14px]">Nenhum alerta no momento.</div>
             ) : (
               <div className="space-y-2">
-                {data.alertas.map((alerta, idx) => (
+                {data.alertas.map((alerta: any, idx: number) => (
                   <div key={idx} className={`p-3.5 rounded-xl border ${alerta.nivel === 'danger' ? 'bg-red-50 dark:bg-red-950/30 border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400' : 'bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/30 text-amber-600 dark:text-amber-400'}`}>
                     <p className="font-medium text-[13px]">{alerta.mensagem}</p>
                   </div>

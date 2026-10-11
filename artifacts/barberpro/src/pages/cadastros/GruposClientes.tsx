@@ -107,8 +107,8 @@ export default function GruposClientes() {
     <AppLayout>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-[24px] font-bold text-foreground">Grupos de Clientes</h1>
-          <p className="text-foreground/40 text-[14px] mt-0.5">Segmente seus clientes em grupos para comunicação direcionada</p>
+          <h1 className="text-[24px] font-bold text-foreground">Grupos de clientes</h1>
+          <p className="text-foreground/40 text-[14px] mt-0.5">Separe clientes em grupos para mandar mensagens direcionadas</p>
         </div>
         <Button onClick={() => { resetForm(); setShowForm(true); }} className="rounded-xl"><Plus className="h-4 w-4 mr-2" />Novo Grupo</Button>
       </div>

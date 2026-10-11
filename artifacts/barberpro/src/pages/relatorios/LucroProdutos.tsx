@@ -42,7 +42,7 @@ export default function LucroProdutos() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="text-[24px] font-bold text-foreground">Lucro por Produtos</h1>
+        <h1 className="text-[24px] font-bold text-foreground">Lucro por produto</h1>
         <p className="text-foreground/40 text-[14px] mt-0.5">Receita - Custo - Comissões = Lucro por produto</p>
       </div>
       <ReportTemplate

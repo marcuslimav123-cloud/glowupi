@@ -37,7 +37,7 @@ export default function PacotesReport() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="text-[24px] font-bold text-foreground">Relatório de Pacotes</h1>
+        <h1 className="text-[24px] font-bold text-foreground">Pacotes</h1>
         <p className="text-foreground/40 text-[14px] mt-0.5">Vendas e uso de pacotes</p>
       </div>
       <ReportTemplate

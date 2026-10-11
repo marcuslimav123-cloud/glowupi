@@ -566,10 +566,10 @@ export default function Profissionais() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-display font-bold text-foreground">Profissionais</h1>
-          <p className="text-muted-foreground mt-1">Gerencie a equipe do seu espaço</p>
+          <p className="text-muted-foreground mt-1">Quem atende, em quais horários e com qual comissão</p>
         </div>
         <Button className="shadow-lg shadow-primary/25" onClick={() => { setEditing(null); setModalOpen(true); }}>
-          <Plus className="mr-2 h-4 w-4" /> Adicionar Membro
+          <Plus className="mr-2 h-4 w-4" /> Novo profissional
         </Button>
       </div>
 

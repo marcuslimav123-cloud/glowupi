@@ -43,7 +43,7 @@ export default function ComandasHistorico() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="text-[24px] font-bold text-foreground">Histórico de Comandas</h1>
+        <h1 className="text-[24px] font-bold text-foreground">Histórico de comandas</h1>
         <p className="text-foreground/40 text-[14px] mt-0.5">Todas as comandas fechadas</p>
       </div>
 

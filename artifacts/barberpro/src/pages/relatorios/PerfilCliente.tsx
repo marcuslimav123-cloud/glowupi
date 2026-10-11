@@ -39,7 +39,7 @@ export default function PerfilCliente() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="text-[24px] font-bold text-foreground">Perfil do Cliente</h1>
+        <h1 className="text-[24px] font-bold text-foreground">Perfil dos clientes</h1>
         <p className="text-foreground/40 text-[14px] mt-0.5">Dados consolidados dos clientes</p>
       </div>
       <ReportTemplate
