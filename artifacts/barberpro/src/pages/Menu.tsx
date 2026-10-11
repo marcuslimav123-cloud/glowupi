@@ -7,14 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { applyTheme, THEMES } from "@/components/layout/HeaderBar";
 import { enablePushNotifications, disablePushNotifications, getPushStatus, type PushStatus } from "@/hooks/useNotifications";
-import type { LucideProps } from "lucide-react";
 import {
-  Users,
-  Heart,
-  Package,
-  Boxes,
-  BarChart3,
-  Clock,
   Building2,
   LogOut,
   ChevronRight,
@@ -22,12 +15,7 @@ import {
   Sun,
   Moon,
   Monitor,
-  Shield,
-  Settings,
-  Star,
-  UsersRound,
   Check,
-  GitBranch,
   GraduationCap,
   Bell,
   BellOff,
@@ -36,78 +24,13 @@ import {
   AlertCircle,
   ChevronDown,
 } from "lucide-react";
+import { NAV_ITEMS, filterNav, type NavItem } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
 import { InstallAppButton } from "@/components/InstallAppButton";
 import { SafeLogoImage } from "@/components/SafeLogoImage";
 
-type LucideIcon = React.ForwardRefExoticComponent<LucideProps & React.RefAttributes<SVGSVGElement>>;
-
-type MenuItem = {
-  name: string;
-  href: string;
-  icon: LucideIcon;
-  description?: string;
-  roles?: string[];
-};
-
-type MenuSection = {
-  label: string;
-  roles?: string[];
-  items: MenuItem[];
-};
-
-const MENU_SECTIONS: MenuSection[] = [
-  {
-    label: "Gestão",
-    roles: ["dono", "gerente"],
-    items: [
-      { name: "Profissionais", href: "/gestao/profissionais", icon: UsersRound, description: "Equipe e comissões" },
-      { name: "Serviços", href: "/gestao/servicos", icon: Heart, description: "Catálogo e preços" },
-      { name: "Produtos / Estoque", href: "/gestao/produtos", icon: Package, description: "Estoque e controle" },
-      { name: "Pacotes", href: "/pacotes", icon: Boxes, description: "Pacotes de serviços" },
-    ],
-  },
-  {
-    label: "Relatórios",
-    roles: ["dono", "gerente"],
-    items: [
-      { name: "Faturamento", href: "/relatorios", icon: BarChart3, description: "Receita por período" },
-      { name: "Rankings", href: "/relatorios/rankings", icon: Star, description: "Profissionais e serviços" },
-      { name: "Resumo", href: "/relatorios/resumo", icon: BarChart3, description: "Visão geral" },
-    ],
-  },
-  {
-    label: "Configurações",
-    roles: ["dono", "gerente"],
-    items: [
-      { name: "Meu Estúdio", href: "/empresa", icon: Building2, description: "Dados do estabelecimento" },
-      { name: "Funcionamento", href: "/configuracoes/funcionamento", icon: Clock, description: "Horários e regras" },
-      { name: "Parâmetros", href: "/configuracoes/parametros", icon: Settings, description: "Configurações gerais" },
-      { name: "Perfis de Acesso", href: "/configuracoes/acessos", icon: Shield, description: "Permissões", roles: ["dono"] },
-    ],
-  },
-];
-
-const HREF_TO_PERMISSION: Record<string, string> = {
-  "/gestao/profissionais": "profissionais",
-  "/gestao/servicos": "servicos",
-  "/gestao/produtos": "produtos",
-  "/pacotes": "pacotes",
-  "/relatorios": "relatorios",
-  "/relatorios/rankings": "relatorios",
-  "/relatorios/resumo": "relatorios",
-  "/empresa": "empresa",
-  "/configuracoes/funcionamento": "configuracoes",
-  "/configuracoes/parametros": "configuracoes",
-  "/configuracoes/acessos": "configuracoes",
-};
-
-function hasPermission(href: string, perms: string[] | null): boolean {
-  if (!perms) return true;
-  const key = HREF_TO_PERMISSION[href];
-  if (!key) return true;
-  return perms.includes(key);
-}
+// Rotas já presentes na barra inferior do celular: não repetir no menu.
+const BOTTOM_BAR = new Set(["/dashboard", "/agenda", "/gestao/clientes", "/financeiro/caixa"]);
 
 export default function MenuPage() {
   const { user, logout, role, barbeariaNome, logoUrl, isDono, isGerente, barbeariaId, perfilPermissoes } = useAuth();
@@ -255,16 +178,14 @@ export default function MenuPage() {
 
   if (!user) return null;
 
-  const filteredSections = MENU_SECTIONS.filter(
-    (s) => !s.roles || s.roles.includes(role)
-  ).map((s) => ({
-    ...s,
-    items: s.items.filter(
-      (item) =>
-        (!item.roles || item.roles.includes(role)) &&
-        hasPermission(item.href, perfilPermissoes)
-    ),
-  })).filter((s) => s.items.length > 0);
+  const nav = filterNav(NAV_ITEMS, role, perfilPermissoes);
+  const grupos: { label: string; items: NavItem[] }[] = [];
+  const soltos: NavItem[] = [];
+  for (const item of nav) {
+    if (item.children) grupos.push({ label: item.name, items: item.children });
+    else if (item.href && !BOTTOM_BAR.has(item.href)) soltos.push(item);
+  }
+  const [aberto, setAberto] = useState<string | null>(null);
 
   return (
     <AppLayout>
@@ -299,35 +220,54 @@ export default function MenuPage() {
           />
         </div>
 
-        {filteredSections.map((section) => (
-          <div key={section.label} className="mb-5">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
-              {section.label}
-            </h3>
+        {grupos.map((g) => {
+          const open = aberto === g.label;
+          return (
+            <div key={g.label} className="mb-3">
+              <div className="bg-card border border-border rounded-2xl overflow-hidden">
+                <button onClick={() => setAberto(open ? null : g.label)} className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-muted/30 transition-colors">
+                  <span className="text-sm font-semibold text-foreground">{g.label}</span>
+                  <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {g.items.length} {g.items.length === 1 ? "item" : "itens"}
+                    <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+                  </span>
+                </button>
+                {open && g.items.map((item) => (
+                  <Link key={item.href} href={item.href!} className="flex items-center gap-3 px-4 py-3 border-t border-border hover:bg-muted/30 transition-colors">
+                    <div className="h-9 w-9 rounded-xl bg-primary/8 flex items-center justify-center shrink-0">
+                      <item.icon className="h-4.5 w-4.5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">{item.name}</p>
+                      {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+
+        {soltos.length > 0 && (
+          <div className="mb-5 mt-5">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">Conta</h3>
             <div className="bg-card border border-border rounded-2xl overflow-hidden">
-              {section.items.map((item, i) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors ${
-                    i !== 0 ? "border-t border-border" : ""
-                  }`}
-                >
+              {soltos.map((item, i) => (
+                <Link key={item.href} href={item.href!} className={`flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors ${i !== 0 ? "border-t border-border" : ""}`}>
                   <div className="h-9 w-9 rounded-xl bg-primary/8 flex items-center justify-center shrink-0">
                     <item.icon className="h-4.5 w-4.5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground">{item.name}</p>
-                    {item.description && (
-                      <p className="text-xs text-muted-foreground">{item.description}</p>
-                    )}
+                    {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
                   </div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                 </Link>
               ))}
             </div>
           </div>
-        ))}
+        )}
 
         <div className="mb-5">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">

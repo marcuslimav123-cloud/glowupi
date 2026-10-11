@@ -155,7 +155,7 @@ export default function Mensagens() {
             </div>
             <p className="text-xs text-muted-foreground">
               Confirmações, lembretes e aniversários estão indo para a <strong>Inbox → Sugeridas</strong> para envio manual.{" "}
-              <Link href="/configuracoes/comunicacao" className="text-primary underline inline-flex items-center gap-1">
+              <Link href="/configuracoes?secao=notificacoes" className="text-primary underline inline-flex items-center gap-1">
                 <Settings className="h-3 w-3" /> Configurar
               </Link>
             </p>

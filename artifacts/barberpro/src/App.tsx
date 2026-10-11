@@ -82,14 +82,13 @@ const LucroProdutos = React.lazy(() => import("@/pages/relatorios/LucroProdutos"
 const RelatorioCupons = React.lazy(() => import("@/pages/relatorios/RelatorioCupons"));
 const ClienteDetalhe = React.lazy(() => import("@/pages/gestao/ClienteDetalhe"));
 
-const Parametros = React.lazy(() => import("@/pages/configuracoes/Parametros"));
+const Configuracoes = React.lazy(() => import("@/pages/configuracoes/Configuracoes"));
 const InboxMensagens = React.lazy(() => import("@/pages/comunicacao/InboxMensagens"));
 const EmailMarketing = React.lazy(() => import("@/pages/comunicacao/EmailMarketing"));
 const NovaCampanha = React.lazy(() => import("@/pages/comunicacao/NovaCampanha"));
 const PerfisAcesso = React.lazy(() => import("@/pages/configuracoes/PerfisAcesso"));
 const EmailTemplates = React.lazy(() => import("@/pages/configuracoes/EmailTemplates"));
 const Funcionamento = React.lazy(() => import("@/pages/configuracoes/Funcionamento"));
-const ConfiguracoesComunicacao = React.lazy(() => import("@/pages/configuracoes/Comunicacao"));
 
 const AdminLogin = React.lazy(() => import("@/pages/admin/AdminLogin"));
 const AdminDashboard = React.lazy(() => import("@/pages/admin/AdminDashboard"));
@@ -202,11 +201,12 @@ function Router() {
       <Route path="/equipe" component={Equipe} />
       <Route path="/convite/:token" component={AcceptInvite} />
 
-      <Route path="/configuracoes/parametros" component={Parametros} />
+      <Route path="/configuracoes" component={Configuracoes} />
+      <Route path="/configuracoes">{() => <Redirect to="/configuracoes" />}</Route>
       <Route path="/configuracoes/acessos" component={PerfisAcesso} />
       <Route path="/configuracoes/templates" component={EmailTemplates} />
       <Route path="/configuracoes/funcionamento" component={Funcionamento} />
-      <Route path="/configuracoes/comunicacao" component={ConfiguracoesComunicacao} />
+      <Route path="/configuracoes?secao=notificacoes">{() => <Redirect to="/configuracoes?secao=notificacoes" />}</Route>
 
       <Route path="/menu" component={MenuPage} />
       <Route path="/empresa" component={Empresa} />

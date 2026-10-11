@@ -29,7 +29,6 @@ export const PARAMETROS_DEFAULTS: ParamDef[] = [
   { chave: "cancel_tolerancia_cliente", label: "Limite de tolerância de cancelamento de horário pelo cliente (app)", categoria: "Cancelamentos & Tolerância", tipo: "input", valorPadrao: "2" },
   { chave: "agenda_tempo_padrao", label: "Intervalo da agenda (granularidade dos slots)", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["5 minutos", "10 minutos", "15 minutos", "20 minutos", "30 minutos"], valorPadrao: "30 minutos" },
   { chave: "tema_layout", label: "Tema/Layout WebAdmin", categoria: "Aparência", tipo: "select", opcoes: ["Claro", "Escuro", "Automático"], valorPadrao: "Claro" },
-  { chave: "menu_modo", label: "Menu do painel (Essencial mostra só o dia a dia; Completo mostra todos os recursos)", categoria: "Aparência", tipo: "select", opcoes: ["Essencial", "Completo"], valorPadrao: "Essencial" },
   { chave: "agenda_limite_antecedencia", label: "Limite de antecedência para agendamento de horário pelo App", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Sem limite", "1 hora", "2 horas", "3 horas", "4 horas", "6 horas", "12 horas", "24 horas"], valorPadrao: "Sem limite" },
   { chave: "notif_mensagem_agendar_cancelar", label: "Habilitar envio de mensagem quando agendar/cancelar pelo aplicativo", categoria: "Notificações & Mensagens", tipo: "select", opcoes: ["Habilitado", "Desabilitado"], valorPadrao: "Habilitado" },
   { chave: "agenda_mesmo_horario_cliente", label: "Permitir agendamento no mesmo horário pelo cliente (Aplicativo)", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Sim" },
@@ -44,12 +43,9 @@ export const PARAMETROS_DEFAULTS: ParamDef[] = [
   { chave: "comanda_edicao_comissoes", label: "Campo de edição de comissões na comanda", categoria: "Comandas & Caixa", tipo: "select", opcoes: ["Bloquear", "Liberar"], valorPadrao: "Liberar" },
   { chave: "agenda_nao_agendar_profissional", label: "Não deixar agendar horários pelo App profissionais não-gestor", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "financeiro_baixa_automatica", label: "Ativar baixa automática do contas a receber quando chegar o vencimento", categoria: "Financeiro", tipo: "select", opcoes: ["Habilitado", "Desabilitado"], valorPadrao: "Desabilitado" },
-  { chave: "cliente_controle_celular", label: "Ativar controle de clientes por número de celular (legado)", categoria: "Clientes & Cadastro", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "cliente_permitir_duplicado_telefone", label: "Permitir cadastrar clientes com o mesmo telefone (admin)", categoria: "Clientes & Cadastro", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "notif_tempo_lembrete", label: "Tempo (em horas) para envio de lembrete automático para agendamentos feitos pelo aplicativo", categoria: "Notificações & Mensagens", tipo: "input", valorPadrao: "24" },
-  { chave: "fonte_webadmin", label: "Fonte WebAdmin", categoria: "Aparência", tipo: "select", opcoes: ["Inter", "Quicksand", "Mulish", "Dosis", "Didact Gothic"], valorPadrao: "Inter" },
   { chave: "fidelidade_pontos_app_site", label: "Contabilizar pontos no programa de fidelidade apenas para agendamentos feitos pelo App/Site pelo cliente", categoria: "Fidelidade & Pontos", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
-  { chave: "notif_lembrete_sms", label: "Ativar envio automático de lembrete via SMS para agendamentos pelo aplicativo (caso tenha saldo de SMS)", categoria: "Notificações & Mensagens", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "notif_aniversario_app", label: "Envio automático de mensagens de aniversário via notificação no aplicativo", categoria: "Notificações & Mensagens", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "cliente_nao_mostrar_telefone", label: "Não mostrar telefone do cliente no aplicativo e agendamentos do ChatBot para usuários não-gestores", categoria: "Clientes & Cadastro", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "agenda_limite_passado", label: "Limite de dias para agendamento passado", categoria: "Agenda & Agendamentos", tipo: "input", valorPadrao: "7" },
@@ -61,10 +57,6 @@ export const PARAMETROS_DEFAULTS: ParamDef[] = [
   { chave: "comanda_reabertura_nao_gestor", label: "Não permitir a reabertura de comandas por profissionais não-gestores", categoria: "Comandas & Caixa", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "notif_link_confirmacao", label: "Enviar link de confirmação de agendamento para o cliente no lembrete via Email, SMS e WhatsApp", categoria: "Notificações & Mensagens", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Sim" },
   { chave: "agenda_nao_bloquear_profissional", label: "Não deixar bloquear horários pelo App profissional não-gestor", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
-  { chave: "outros_habilitar_auxiliar", label: "Habilitar configuração de auxiliar", categoria: "Outros", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
-  { chave: "notif_aniversario_sms", label: "Ativar envio automático de mensagens de aniversário via SMS (caso tenha saldo de SMS)", categoria: "Notificações & Mensagens", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
-  { chave: "notif_retorno_sms", label: "Ativar envio automático de mensagens de retorno via SMS (caso tenha saldo de SMS)", categoria: "Notificações & Mensagens", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
-  { chave: "outros_jornada_profissional_servico", label: "Ativar controle jornada × profissional × serviço", categoria: "Outros", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "agenda_sem_preferencia", label: "Mostrar opção do 'sem preferência' na lista de profissionais", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Sim" },
   { chave: "notif_mensagem_gestores", label: "Habilitar envio de mensagem quando agendar/cancelar pelo aplicativo para todos os gestores", categoria: "Notificações & Mensagens", tipo: "select", opcoes: ["Habilitado", "Desabilitado"], valorPadrao: "Habilitado" },
   { chave: "agenda_associar_pacote_auto", label: "Habilitar associação automática do pacote ao agendamento", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Habilitado", "Desabilitado"], valorPadrao: "Habilitado" },
@@ -74,12 +66,9 @@ export const PARAMETROS_DEFAULTS: ParamDef[] = [
   { chave: "cliente_agendar_sem_cliente", label: "Não permitir agendamento sem cliente por profissionais não-gestores", categoria: "Clientes & Cadastro", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "comanda_encaixes_nao_gestor", label: "Não permitir a criação de encaixes por profissionais não-gestores", categoria: "Comandas & Caixa", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "comissao_nao_gerar_pacote", label: "Não gerar comissão na comanda para serviços associados a pacotes comissionados", categoria: "Comissões", tipo: "select", opcoes: ["Habilitado", "Desabilitado"], valorPadrao: "Habilitado" },
-  { chave: "notif_lembrete_whatsapp", label: "Ativar envio automático de lembrete via WhatsApp para agendamentos (caso tenha saldo de WhatsApp)", categoria: "Notificações & Mensagens", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "agenda_limite_diario_mesmo_servico", label: "Limite de agendamento diários para o cliente (Mesmo serviço)", categoria: "Agenda & Agendamentos", tipo: "input", valorPadrao: "3" },
   { chave: "outros_fuso_horario", label: "Fuso horário", categoria: "Outros", tipo: "select", opcoes: ["America/Sao_Paulo", "America/Manaus", "America/Bahia", "America/Recife", "America/Fortaleza", "America/Cuiaba", "America/Porto_Velho", "America/Rio_Branco", "America/Belem"], valorPadrao: "America/Sao_Paulo" },
   { chave: "outros_mostrar_produtos_app", label: "Mostrar produtos no App Cliente/Site", categoria: "Outros", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Sim" },
-  { chave: "notif_retorno_whatsapp", label: "Ativar envio automático de mensagens de retorno via WhatsApp (caso tenha saldo de WhatsApp)", categoria: "Notificações & Mensagens", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
-  { chave: "notif_aniversario_whatsapp", label: "Ativar envio automático de aniversário via WhatsApp (caso tenha saldo de WhatsApp)", categoria: "Notificações & Mensagens", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "fidelidade_desativar", label: "Desativar programa de fidelidade", categoria: "Fidelidade & Pontos", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "agenda_horario_inicio", label: "Início de horário da agenda do WebAdmin/App PRO", categoria: "Agenda & Agendamentos", tipo: "input", valorPadrao: "08:00" },
   { chave: "comanda_caixa_profissional_nao_gestor", label: "Mostrar caixa no App Pro para profissionais não-gestores", categoria: "Comandas & Caixa", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
@@ -92,11 +81,9 @@ export const PARAMETROS_DEFAULTS: ParamDef[] = [
   { chave: "agenda_horario_fim", label: "Final dos horários na agenda do WebAdmin", categoria: "Agenda & Agendamentos", tipo: "input", valorPadrao: "20:00" },
   { chave: "notif_pacote_expirando", label: "Enviar notificação no aplicativo quando o cliente estiver com pacote expirando", categoria: "Notificações & Mensagens", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Sim" },
   { chave: "cancel_bloquear_edicao_profissional", label: "Bloquear edição de agendamento para profissionais não-gestores", categoria: "Cancelamentos & Tolerância", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
-  { chave: "notif_avaliacao_whatsapp", label: "Ativar envio automático de avaliação do atendimento via WhatsApp (caso tenha saldo de WhatsApp)", categoria: "Notificações & Mensagens", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "comanda_abertura_nao_gestor", label: "Não permitir abertura de comanda por profissionais não gestores", categoria: "Comandas & Caixa", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "agenda_categorias_selecao", label: "Mostrar lista de categorias para seleção de profissionais na agenda", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "app_nao_quero_conversar", label: "Não mostrar opção de 'Não quero conversar...' no app", categoria: "Outros", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
-  { chave: "assinatura_dias_semana", label: "Mostrar opção de assinatura por dias da semana", categoria: "Outros", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "avaliacao_individual", label: "Mostrar avaliação individual dos profissionais", categoria: "Outros", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "agenda_tipo_link", label: "Tipo de link de agendamento", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Com login", "Sem login (simples)"], valorPadrao: "Com login" },
   { chave: "agenda_whatsapp_encaixe", label: "Mostrar botão 'Tentar encaixe via WhatsApp' no link público de agendamento", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
@@ -141,11 +128,11 @@ router.get("/tema-layout", requireAuth, async (req, res) => {
   const userBarbId = await resolveUserBarbeariaId(user);
   if (userBarbId !== barbeariaId) return res.status(403).json({ error: "Sem permissão" });
   const rows = await db.select().from(parametrosConfigTable).where(
-    and(eq(parametrosConfigTable.barbeariaId, barbeariaId), inArray(parametrosConfigTable.chave, ["tema_layout", "menu_modo"]))
+    and(eq(parametrosConfigTable.barbeariaId, barbeariaId), inArray(parametrosConfigTable.chave, ["tema_layout"]))
   );
   const valorDe = (chave: string, fallback: string) =>
     rows.find(r => r.chave === chave)?.valor ?? PARAMETROS_DEFAULTS.find(d => d.chave === chave)?.valorPadrao ?? fallback;
-  return res.json({ chave: "tema_layout", valor: valorDe("tema_layout", "Claro"), menuModo: valorDe("menu_modo", "Essencial") });
+  return res.json({ chave: "tema_layout", valor: valorDe("tema_layout", "Claro") });
 });
 
 router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {

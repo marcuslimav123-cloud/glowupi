@@ -18,17 +18,10 @@ router.get("/config", requireAuth, async (req, res) => {
     notif_mensagem_agendar_cancelar: params["notif_mensagem_agendar_cancelar"] || "Habilitado",
     notif_nao_enviar_confirmacao: params["notif_nao_enviar_confirmacao"] || "Não",
     notif_tempo_lembrete: params["notif_tempo_lembrete"] || "24",
-    notif_lembrete_sms: params["notif_lembrete_sms"] || "Não",
-    notif_lembrete_whatsapp: params["notif_lembrete_whatsapp"] || "Não",
     notif_link_confirmacao: params["notif_link_confirmacao"] || "Sim",
     notif_mensagem_gestores: params["notif_mensagem_gestores"] || "Habilitado",
     notif_aniversario_app: params["notif_aniversario_app"] || "Não",
     notif_aniversario_email: params["notif_aniversario_email"] || "Não",
-    notif_aniversario_sms: params["notif_aniversario_sms"] || "Não",
-    notif_aniversario_whatsapp: params["notif_aniversario_whatsapp"] || "Não",
-    notif_retorno_sms: params["notif_retorno_sms"] || "Não",
-    notif_retorno_whatsapp: params["notif_retorno_whatsapp"] || "Não",
-    notif_avaliacao_whatsapp: params["notif_avaliacao_whatsapp"] || "Não",
     notif_pacote_expirando: params["notif_pacote_expirando"] || "Sim",
     fidelidade_desativar: params["fidelidade_desativar"] || "Não",
     fidelidade_expiracao_pontos: params["fidelidade_expiracao_pontos"] || "365",
@@ -72,8 +65,6 @@ router.get("/aniversariantes", requireAuth, async (req, res) => {
   const canais = {
     app: params["notif_aniversario_app"] === "Sim",
     email: params["notif_aniversario_email"] === "Sim",
-    sms: params["notif_aniversario_sms"] === "Sim",
-    whatsapp: params["notif_aniversario_whatsapp"] === "Sim",
   };
 
   return res.json({
@@ -239,20 +230,6 @@ router.post("/aniversario/enviar", requireAuth, async (req, res) => {
     return res.json({ success: true, canal: "email" });
   }
 
-  if (canal === "sms") {
-    if (params["notif_aniversario_sms"] !== "Sim") {
-      return res.status(400).json({ error: "Envio de aniversário por SMS está desabilitado" });
-    }
-    return res.json({ success: true, canal: "sms", message: "SMS preparado (serviço externo não configurado)" });
-  }
-
-  if (canal === "whatsapp") {
-    if (params["notif_aniversario_whatsapp"] !== "Sim") {
-      return res.status(400).json({ error: "Envio de aniversário por WhatsApp está desabilitado" });
-    }
-    return res.json({ success: true, canal: "whatsapp", message: "WhatsApp preparado (serviço externo não configurado)" });
-  }
-
   if (canal === "app") {
     if (params["notif_aniversario_app"] !== "Sim") {
       return res.status(400).json({ error: "Notificação de aniversário no app está desabilitada" });
@@ -260,31 +237,7 @@ router.post("/aniversario/enviar", requireAuth, async (req, res) => {
     return res.json({ success: true, canal: "app", message: "Notificação registrada" });
   }
 
-  return res.status(400).json({ error: "Canal inválido. Use: email, sms, whatsapp ou app" });
-});
-
-router.post("/retorno/enviar", requireAuth, async (req, res) => {
-  const barbeariaId = await checkAccess(req, res);
-  if (!barbeariaId) return;
-  const params = await getParametros(barbeariaId);
-  const { clienteId, canal } = req.body;
-  if (!clienteId || !canal) return res.status(400).json({ error: "clienteId e canal são obrigatórios" });
-
-  if (canal === "sms") {
-    if (params["notif_retorno_sms"] !== "Sim") {
-      return res.status(400).json({ error: "Envio de retorno por SMS está desabilitado" });
-    }
-    return res.json({ success: true, canal: "sms", message: "SMS de retorno preparado (serviço externo não configurado)" });
-  }
-
-  if (canal === "whatsapp") {
-    if (params["notif_retorno_whatsapp"] !== "Sim") {
-      return res.status(400).json({ error: "Envio de retorno por WhatsApp está desabilitado" });
-    }
-    return res.json({ success: true, canal: "whatsapp", message: "WhatsApp de retorno preparado (serviço externo não configurado)" });
-  }
-
-  return res.status(400).json({ error: "Canal inválido para retorno. Use: sms ou whatsapp" });
+  return res.status(400).json({ error: "Canal inválido. Use: email ou app" });
 });
 
 router.get("/lembretes", requireAuth, async (req, res) => {
@@ -293,8 +246,6 @@ router.get("/lembretes", requireAuth, async (req, res) => {
   const params = await getParametros(barbeariaId);
   const tempoLembreteHoras = parseInt(params["notif_tempo_lembrete"] || "24");
   const incluirLink = (params["notif_link_confirmacao"] || "Sim") === "Sim";
-  const usaSms = params["notif_lembrete_sms"] === "Sim";
-  const usaWhatsapp = params["notif_lembrete_whatsapp"] === "Sim";
 
   const agora = new Date();
   const limiteHoras = new Date(agora.getTime() + tempoLembreteHoras * 60 * 60 * 1000);
@@ -320,7 +271,7 @@ router.get("/lembretes", requireAuth, async (req, res) => {
   return res.json({
     tempoLembreteHoras,
     incluirLinkConfirmacao: incluirLink,
-    canais: { email: true, sms: usaSms, whatsapp: usaWhatsapp },
+    canais: { email: true },
     lembretes: lembretesPendentes.map(a => ({
       agendamentoId: a.id,
       clienteNome: a.clienteNome,
@@ -349,8 +300,6 @@ router.post("/lembretes/enviar", requireAuth, async (req, res) => {
   const [barb] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
   const nomeEstab = barb?.nome || "Glow Upi";
   const incluirLink = (params["notif_link_confirmacao"] || "Sim") === "Sim";
-  const usaSms = params["notif_lembrete_sms"] === "Sim";
-  const usaWhatsapp = params["notif_lembrete_whatsapp"] === "Sim";
   const resultados: { canal: string; status: string }[] = [];
 
   if (agend.clienteId) {
@@ -370,12 +319,6 @@ router.post("/lembretes/enviar", requireAuth, async (req, res) => {
     }
   }
 
-  if (usaSms && agend.clienteTelefone) {
-    resultados.push({ canal: "sms", status: "preparado" });
-  }
-  if (usaWhatsapp && agend.clienteTelefone) {
-    resultados.push({ canal: "whatsapp", status: "preparado" });
-  }
 
   return res.json({ success: true, agendamentoId: agend.id, resultados });
 });

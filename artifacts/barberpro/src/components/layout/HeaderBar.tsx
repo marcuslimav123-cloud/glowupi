@@ -197,12 +197,12 @@ export function HeaderBar() {
           <CalendarDays className={iconCls} />
         </Link>
 
-        <Link href="/financeiro" className={iconBtn} title="Financeiro">
-          <DollarSign className={iconCls} />
+        <Link href="/comandas/abertas" className={iconBtn} title="Comandas abertas">
+          <FileText className={iconCls} />
         </Link>
 
-        <Link href="/caixa" className={iconBtn} title="Comandas">
-          <FileText className={iconCls} />
+        <Link href="/financeiro/caixa" className={iconBtn} title="Caixa do dia">
+          <DollarSign className={iconCls} />
         </Link>
       </div>
 
