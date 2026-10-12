@@ -1424,7 +1424,7 @@ export default function Agenda() {
                   <Star className="h-3 w-3" /> VIP
                 </span>
               )}
-              {detailAgend.clienteId && (
+              {(detailAgend.clienteId || detailAgend.clienteTelefone) && (
                 <button
                   type="button"
                   onClick={() => setComposeAgend(detailAgend)}
@@ -1483,11 +1483,12 @@ export default function Agenda() {
           </div>
         </DialogContent>
       </Dialog>
-      {composeAgend && composeAgend.clienteId && (
+      {composeAgend && (
         <ComporMensagemDialog
           open={!!composeAgend}
           onOpenChange={(v) => { if (!v) setComposeAgend(null); }}
-          clienteId={composeAgend.clienteId}
+          clienteId={composeAgend.clienteId ?? null}
+          agendamentoId={composeAgend.id}
           clienteNome={composeAgend.clienteNome}
           clienteTelefone={composeAgend.clienteTelefone ?? null}
           categoriaSugerida={

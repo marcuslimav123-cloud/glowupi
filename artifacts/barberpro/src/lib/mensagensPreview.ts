@@ -8,6 +8,14 @@ export const SAMPLE_CONTEXT: Record<string, string> = {
   valor: "R$ 80,00",
 };
 
+const ALIASES: Record<string, string> = {
+  nome_cliente: "cliente", nome: "cliente", horario: "hora",
+  estabelecimento: "salao", nome_empresa: "salao", empresa: "salao", barbearia: "salao", preco: "valor",
+};
+
 export function renderConteudoPreview(conteudo: string, ctx: Record<string, string> = SAMPLE_CONTEXT): string {
-  return conteudo.replace(/\{(\w+)\}/g, (_m, key) => ctx[key] ?? `{${key}}`);
+  const lookup = (key: string) => ctx[ALIASES[key] ?? key];
+  return conteudo
+    .replace(/\{\{\s*(\w+)\s*\}\}/g, (m, key) => lookup(key) ?? m)
+    .replace(/\{(\w+)\}/g, (m, key) => lookup(key) ?? m);
 }

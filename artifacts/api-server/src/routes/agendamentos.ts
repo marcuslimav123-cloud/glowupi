@@ -329,12 +329,37 @@ router.post("/", requireAuth, async (req, res) => {
     }
   }
 
+  // Agendamento digitado à mão (sem escolher um cliente): localiza o cliente
+  // pelo telefone ou cadastra um novo, para ele aparecer em Clientes, nos
+  // relatórios, na fidelidade e poder consultar/cancelar pelo link.
+  let clienteIdFinal: number | null = clienteId ? Number(clienteId) : null;
+  if (!clienteIdFinal) {
+    const telefoneLimpo = String(clienteTelefone || "").replace(/\D/g, "");
+    if (telefoneLimpo.length >= 8) {
+      const [existente] = await db.select().from(clientesTable).where(
+        and(eq(clientesTable.barbeariaId, barbeariaId), eq(clientesTable.telefone, telefoneLimpo))
+      ).limit(1);
+      if (existente) {
+        clienteIdFinal = existente.id;
+      } else {
+        const [novo] = await db.insert(clientesTable).values({
+          barbeariaId,
+          nome: String(clienteNome).trim(),
+          telefone: telefoneLimpo,
+          email: null,
+          status: "aprovado",
+        }).returning();
+        clienteIdFinal = novo?.id ?? null;
+      }
+    }
+  }
+
   let pacoteClienteAssociado: number | null = null;
-  if (clienteId && params["agenda_associar_pacote_auto"] !== "Desabilitado") {
+  if (clienteIdFinal && params["agenda_associar_pacote_auto"] !== "Desabilitado") {
     const pacotesCliente = await db.select().from(pacotesClienteTable).where(
       and(
         eq(pacotesClienteTable.barbeariaId, barbeariaId),
-        eq(pacotesClienteTable.clienteId, clienteId),
+        eq(pacotesClienteTable.clienteId, clienteIdFinal),
         eq(pacotesClienteTable.status, "ativo")
       )
     );
@@ -360,7 +385,7 @@ router.post("/", requireAuth, async (req, res) => {
 
   const [agend] = await db.insert(agendamentosTable).values({
     barbeariaId,
-    clienteId: clienteId || null,
+    clienteId: clienteIdFinal,
     clienteNome,
     clienteTelefone,
     profissionalId,
@@ -384,7 +409,7 @@ router.post("/", requireAuth, async (req, res) => {
 
   if (statusInicial === "confirmado") {
     notificarAgendamento(barbeariaId, params, {
-      clienteNome, clienteTelefone, clienteId,
+      clienteNome, clienteTelefone, clienteId: clienteIdFinal,
       profissionalNome: profissional.apelido || profissional.nomeExibicao,
       servicoNome: servico.nome, data, horaInicio,
       agendamentoId: agend.id,
