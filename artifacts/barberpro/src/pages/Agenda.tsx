@@ -439,7 +439,9 @@ export default function Agenda() {
 
     if (!encaixe) {
       const servico = (servicos as any[]).find((s: any) => String(s.id) === formServId);
-      const duracao = servico?.duracaoMinutos || slotInterval;
+      const overrideDur = (profissionais as any[]).find((p: any) => String(p.id) === formProfId)
+        ?.servicosOverrides?.find((o: any) => o.servicoId === servico?.id)?.tempoOverride;
+      const duracao = overrideDur || servico?.duracaoMinutos || slotInterval;
       const startMin = timeToMinutes(formHora);
       const endMin = startMin + duracao;
       const fechamentoMin = daySchedule.aberto ? timeToMinutes(daySchedule.fechamento) : 0;
@@ -1213,6 +1215,13 @@ export default function Agenda() {
                     <p className="text-sm font-medium">{p.nomeExibicao}</p>
                     {p.especialidade && <p className="text-[11px] text-muted-foreground">{p.especialidade}</p>}
                   </div>
+                  {(() => {
+                    const servSel = (servicos as any[]).find((s: any) => String(s.id) === formServId);
+                    if (!servSel) return null;
+                    const ov = p.servicosOverrides?.find((o: any) => o.servicoId === servSel.id);
+                    const preco = ov?.precoOverride != null ? parseFloat(String(ov.precoOverride)) : Number(servSel.preco);
+                    return <span className="text-sm font-bold text-primary shrink-0">{formatCurrency(preco)}</span>;
+                  })()}
                 </button>
               ))}
             </div>
@@ -1229,6 +1238,14 @@ export default function Agenda() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Cliente</span><span className="font-medium">{formNome}</span></div>
                 {formServId && <div className="flex justify-between"><span className="text-muted-foreground">Serviço</span><span className="font-medium">{(servicos as any[]).find((s: any) => String(s.id) === formServId)?.nome}</span></div>}
                 {formProfId && <div className="flex justify-between"><span className="text-muted-foreground">Profissional</span><span className="font-medium">{(profissionais as any[]).find((p: any) => String(p.id) === formProfId)?.nomeExibicao}</span></div>}
+                {formServId && formProfId && (() => {
+                  const servSel = (servicos as any[]).find((s: any) => String(s.id) === formServId);
+                  const profSel = (profissionais as any[]).find((p: any) => String(p.id) === formProfId);
+                  if (!servSel) return null;
+                  const ov = profSel?.servicosOverrides?.find((o: any) => o.servicoId === servSel.id);
+                  const preco = ov?.precoOverride != null ? parseFloat(String(ov.precoOverride)) : Number(servSel.preco);
+                  return <div className="flex justify-between"><span className="text-muted-foreground">Valor</span><span className="font-semibold text-primary">{formatCurrency(preco)}</span></div>;
+                })()}
               </div>
 
               <div className="space-y-2">

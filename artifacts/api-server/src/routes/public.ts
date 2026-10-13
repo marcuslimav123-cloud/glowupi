@@ -1,5 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
+import { precoDoProfissional, duracaoDoProfissional } from "../lib/precoProfissional.js";
 import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable, avaliacoesTable, recompensasTable, produtosTable, profissionalServicosTable, pesquisaSatisfacaoTable, respostasPesquisaTable, categoriasServicoTable, filiaisTable, platformConfigTable, vslProgressEventsTable, bloqueiosHorarioTable } from "@workspace/db/schema";
 import { eq, and, desc, gte, inArray, sql } from "drizzle-orm";
 import { extractYoutubeVideoId } from "../lib/youtube.js";
@@ -196,9 +197,19 @@ router.get("/:slug", async (req, res) => {
   ]);
 
   const linksByProf: Record<number, number[]> = {};
+  // Preço/duração personalizados por profissional, só quando diferem do serviço.
+  const precosByProf: Record<number, { servicoId: number; preco: number; duracaoMinutos: number | null }[]> = {};
   for (const l of profServicos) {
     if (!linksByProf[l.profissionalId]) linksByProf[l.profissionalId] = [];
     linksByProf[l.profissionalId].push(l.servicoId);
+    if (l.precoOverride != null || l.tempoOverride != null) {
+      if (!precosByProf[l.profissionalId]) precosByProf[l.profissionalId] = [];
+      precosByProf[l.profissionalId].push({
+        servicoId: l.servicoId,
+        preco: l.precoOverride != null ? parseFloat(l.precoOverride as string) : NaN,
+        duracaoMinutos: l.tempoOverride ?? null,
+      });
+    }
   }
 
   const notaMedia = avaliacoes.length > 0 ? avaliacoes.reduce((sum, a) => sum + a.nota, 0) / avaliacoes.length : 0;
@@ -279,6 +290,7 @@ router.get("/:slug", async (req, res) => {
         createdAt: null,
         updatedAt: null,
         servicoIds: servicos.map(s => s.id),
+        servicosOverrides: [],
         semPreferencia: true,
       }] : []),
       ...profissionais.map(p => ({
@@ -287,6 +299,11 @@ router.get("/:slug", async (req, res) => {
         createdAt: p.createdAt?.toISOString(),
         updatedAt: p.updatedAt?.toISOString(),
         servicoIds: linksByProf[p.id] || [],
+        servicosOverrides: (precosByProf[p.id] || []).map(o => ({
+          servicoId: o.servicoId,
+          preco: Number.isNaN(o.preco) ? null : o.preco,
+          duracaoMinutos: o.duracaoMinutos,
+        })),
         semPreferencia: false,
       })),
     ],
@@ -346,13 +363,17 @@ router.get("/:slug/slots", async (req, res) => {
 
     let profissionais;
     const pId = profissionalId ? parseInt(profissionalId as string) : 0;
+    const allLinks = await db.select().from(profissionalServicosTable).where(eq(profissionalServicosTable.barbeariaId, barbearia.id));
+    // Preço/tempo personalizados deste serviço, por profissional.
+    const overrideByProf = new Map<number, (typeof allLinks)[number]>();
+    for (const l of allLinks) if (l.servicoId === sId) overrideByProf.set(l.profissionalId, l);
     if (profissionalId && pId !== 0) {
       profissionais = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, pId), eq(profissionaisTable.barbeariaId, barbearia.id), eq(profissionaisTable.ativo, true)));
       if (selectedFilialId && profissionais.length > 0) {
         profissionais = profissionais.filter(p => p.filialId === selectedFilialId || p.filialId === null);
       }
       if (profissionais.length > 0) {
-        const profLinks = await db.select().from(profissionalServicosTable).where(and(eq(profissionalServicosTable.profissionalId, pId), eq(profissionalServicosTable.barbeariaId, barbearia.id)));
+        const profLinks = allLinks.filter(l => l.profissionalId === pId);
         if (profLinks.length > 0 && !profLinks.some(l => l.servicoId === sId)) {
           return res.json([]);
         }
@@ -364,7 +385,6 @@ router.get("/:slug/slots", async (req, res) => {
         profissionais = profissionais.filter(p => p.filialId === selectedFilialId || p.filialId === null);
       }
 
-      const allLinks = await db.select().from(profissionalServicosTable).where(eq(profissionalServicosTable.barbeariaId, barbearia.id));
       const hasAnyLinks = allLinks.length > 0;
       if (hasAnyLinks) {
         const profIdsForService = new Set(allLinks.filter(l => l.servicoId === sId).map(l => l.profissionalId));
@@ -387,7 +407,8 @@ router.get("/:slug/slots", async (req, res) => {
     const limiteFuturoDias = parseInt(params["agenda_limite_futuro_dias"] || "30");
 
     const slots: any[] = [];
-    const duracao = servico.duracaoMinutos;
+    const tempoPadraoSlotsStr = params["agenda_tempo_padrao"] || "30min";
+    const tempoPadraoSlots = tempoPadraoSlotsStr === "1h" ? 60 : (parseInt(tempoPadraoSlotsStr) || 30);
 
     const localNow = getLocalNow(params);
     const todayStr = localNow.todayStr;
@@ -423,6 +444,10 @@ router.get("/:slug/slots", async (req, res) => {
     for (const prof of profissionais) {
       const schedule = getProfScheduleForDate(prof, data as string, barbSchedule);
       if (!schedule) continue;
+      // Cada profissional pode ter tempo e preço próprios para este serviço.
+      const overrideProf = overrideByProf.get(prof.id);
+      const duracao = duracaoDoProfissional(servico, overrideProf, tempoPadraoSlots);
+      const valorProf = parseFloat(precoDoProfissional(servico, overrideProf));
       const inicioTrabalho = Math.max(schedule.inicio, effectiveGlobalInicio);
       const fimTrabalho = Math.min(schedule.fim, effectiveGlobalFim);
       for (let t = inicioTrabalho; t + duracao <= fimTrabalho; t += intervalo) {
@@ -445,7 +470,7 @@ router.get("/:slug/slots", async (req, res) => {
           const af = timeToMinutes(a.horaFim);
           return !(t + duracao <= ai || t >= af);
         });
-        slots.push({ horaInicio, horaFim, profissionalId: prof.id, profissionalNome: prof.nomeExibicao, disponivel: !ocupado });
+        slots.push({ horaInicio, horaFim, profissionalId: prof.id, profissionalNome: prof.nomeExibicao, disponivel: !ocupado, valor: valorProf, duracaoMinutos: duracao });
       }
     }
     return res.json(slots);
@@ -551,7 +576,9 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       }).returning();
     }
 
-    const duracaoFinal = servico.duracaoMinutos || tempoPadrao;
+    const overrideProf = profLinks.find(l => l.servicoId === servicoId);
+    const duracaoFinal = duracaoDoProfissional(servico, overrideProf, tempoPadrao);
+    const valorFinal = precoDoProfissional(servico, overrideProf);
     const horaFim = addMinutes(horaInicio, duracaoFinal);
 
     if (paramHoraInicio && timeToMinutes(horaInicio) < timeToMinutes(paramHoraInicio)) {
@@ -608,7 +635,7 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       horaInicio,
       horaFim,
       status: statusInicialPub,
-      valor: servico.preco,
+      valor: valorFinal,
       pago: false,
       semPreferencia: semPreferencia ?? false,
       observacao: observacao || null,
@@ -776,7 +803,9 @@ router.post("/:slug/agendar-simples", async (req, res) => {
       }).returning();
     }
 
-    const duracaoFinal = servico.duracaoMinutos || tempoPadrao;
+    const overrideProf = profLinks.find(l => l.servicoId === servicoId);
+    const duracaoFinal = duracaoDoProfissional(servico, overrideProf, tempoPadrao);
+    const valorFinal = precoDoProfissional(servico, overrideProf);
     const horaFim = addMinutes(horaInicio, duracaoFinal);
 
     if (paramHoraInicio && timeToMinutes(horaInicio) < timeToMinutes(paramHoraInicio)) {
@@ -833,7 +862,7 @@ router.post("/:slug/agendar-simples", async (req, res) => {
       horaInicio,
       horaFim,
       status: statusInicialSimples,
-      valor: servico.preco,
+      valor: valorFinal,
       pago: false,
       semPreferencia: semPreferencia ?? false,
       observacao: observacao || null,

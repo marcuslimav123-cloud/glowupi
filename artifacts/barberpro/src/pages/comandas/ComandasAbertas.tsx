@@ -229,16 +229,26 @@ export default function ComandasAbertas() {
     setProdutosAdicionais(prev => prev.filter(p => p.produtoId !== produtoId));
   }
 
+  // Preço do serviço para um profissional: o valor personalizado dele
+  // (Profissionais → Serviços que atende) ou, sem personalização, o preço base.
+  function precoParaProfissional(serv: any, profId: number): number {
+    const prof = profissionais.find((p: any) => p.id === profId);
+    const override = prof?.servicosOverrides?.find((o: any) => o.servicoId === serv.id);
+    if (override?.precoOverride != null && override.precoOverride !== "") return parseFloat(String(override.precoOverride));
+    return parseFloat(serv.preco);
+  }
+  const addServicoProfIdEfetivo = addServicoProfId ? parseInt(addServicoProfId) : (selected?.profissionalId || 0);
+
   function addServico() {
     const servId = parseInt(addServicoId);
     const serv = servicos.find((s: any) => s.id === servId);
     if (!serv) return;
-    const profId = addServicoProfId ? parseInt(addServicoProfId) : (selected?.profissionalId || 0);
+    const profId = addServicoProfIdEfetivo;
     const prof = profissionais.find((p: any) => p.id === profId);
     setServicosAdicionais(prev => [...prev, {
       servicoId: servId,
       nome: serv.nome,
-      valor: parseFloat(serv.preco),
+      valor: precoParaProfissional(serv, profId),
       profissionalId: profId,
       profissionalNome: prof?.apelido || prof?.nomeExibicao || selected?.profissionalNome || "",
     }]);
@@ -626,7 +636,7 @@ export default function ComandasAbertas() {
                   >
                     <option value="">Selecione o serviço...</option>
                     {servicos.filter((s: any) => s.ativo !== false).map((s: any) => (
-                      <option key={s.id} value={s.id}>{s.nome} — {formatCurrency(parseFloat(s.preco))}</option>
+                      <option key={s.id} value={s.id}>{s.nome} — {formatCurrency(precoParaProfissional(s, addServicoProfIdEfetivo))}</option>
                     ))}
                   </select>
                   <select

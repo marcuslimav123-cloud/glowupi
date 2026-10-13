@@ -71,6 +71,7 @@ interface BarbeariaData {
   profissionais: any[];
   tipoLinkAgendamento?: "simples" | "com_login";
   permitirCancelamentoCliente?: boolean;
+  semPreferenciaHabilitado?: boolean;
   toleranciaCancelamento?: number;
   whatsappEncaixeHabilitado?: boolean;
   filiais?: FilialData[];
@@ -93,6 +94,16 @@ interface Slot {
   profissionalId: number;
   profissionalNome: string;
   disponivel: boolean;
+  valor?: number;
+  duracaoMinutos?: number;
+}
+
+// Preço do serviço para um profissional específico (valor personalizado
+// cadastrado pelo estabelecimento) ou o preço base do serviço.
+function precoServicoProfissional(servico: any, profissional: any | null | undefined): number {
+  const ov = profissional?.servicosOverrides?.find((o: any) => o.servicoId === servico?.id);
+  if (ov && ov.preco != null) return Number(ov.preco);
+  return Number(servico?.preco ?? 0);
 }
 
 type Step = "filial" | "servico" | "profissional" | "data" | "horario" | "confirmar" | "sucesso";
@@ -1006,16 +1017,21 @@ export default function PublicBooking() {
 
           {!showMeusAgendamentos && step === "profissional" && (() => {
             const hasAnyLinks = barbearia.profissionais.some((p: any) => p.servicoIds && p.servicoIds.length > 0);
+            // "Sem preferência" tem um botão próprio abaixo; a entrada sintética
+            // (id 0) que a API manda não entra na lista para não aparecer duas vezes.
+            const reais = barbearia.profissionais.filter((p: any) => !p.semPreferencia && p.id !== 0);
             let filtered = hasAnyLinks && selectedServico
-              ? barbearia.profissionais.filter((p: any) => p.servicoIds && p.servicoIds.includes(selectedServico.id))
-              : barbearia.profissionais;
+              ? reais.filter((p: any) => p.servicoIds && p.servicoIds.includes(selectedServico.id))
+              : reais;
             if (selectedFilial) {
-              filtered = filtered.filter((p: any) => p.filialId === selectedFilial.id || p.filialId === null || p.semPreferencia);
+              filtered = filtered.filter((p: any) => p.filialId === selectedFilial.id || p.filialId === null);
             }
+            const semPreferenciaOk = barbearia.semPreferenciaHabilitado !== false;
             return (
             <div>
               <h2 className="text-lg font-semibold mb-1">Escolha o profissional</h2>
               <p className="text-white/30 text-sm mb-5">Quem vai te atender?</p>
+              {semPreferenciaOk && (
               <button
                 onClick={() => handleSelectProfissional(null)}
                 className="w-full p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/20 transition-all text-left mb-2"
@@ -1023,6 +1039,7 @@ export default function PublicBooking() {
                 <p className="font-medium">Sem preferência</p>
                 <p className="text-white/30 text-xs mt-0.5">Qualquer profissional disponível</p>
               </button>
+              )}
               {filtered.map((p: any) => (
                 <button
                   key={p.id}
@@ -1036,10 +1053,15 @@ export default function PublicBooking() {
                       <User className="h-5 w-5" style={{ color: accent }} />
                     )}
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium">{p.nomeExibicao}</p>
                     {p.especialidade && <p className="text-white/30 text-xs mt-0.5">{p.especialidade}</p>}
                   </div>
+                  {selectedServico && precoServicoProfissional(selectedServico, p) !== Number(selectedServico.preco) && (
+                    <span className="font-bold text-sm shrink-0" style={{ color: accent }}>
+                      R$ {precoServicoProfissional(selectedServico, p).toFixed(2).replace(".", ",")}
+                    </span>
+                  )}
                 </button>
               ))}
               {filtered.length === 0 && (
@@ -1153,7 +1175,7 @@ export default function PublicBooking() {
                     <Scissors className="h-4 w-4" style={{ color: accent }} />
                     <span className="text-sm font-medium">{selectedServico.nome}</span>
                     <span className="ml-auto font-bold text-sm" style={{ color: accent }}>
-                      R$ {selectedServico.preco.toFixed(2).replace(".", ",")}
+                      R$ {(selectedSlot.valor ?? precoServicoProfissional(selectedServico, barbearia.profissionais.find((p: any) => p.id === selectedSlot.profissionalId))).toFixed(2).replace(".", ",")}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 mb-3">

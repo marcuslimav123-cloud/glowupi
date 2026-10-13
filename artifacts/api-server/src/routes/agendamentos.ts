@@ -13,6 +13,7 @@ import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from ".
 import { getParametros } from "../lib/parametros.js";
 import { sendEmail } from "../lib/brevo.js";
 import { formatDataBR } from "../lib/datas.js";
+import { precoDoProfissional, duracaoDoProfissional } from "../lib/precoProfissional.js";
 import { sendPushToBarbearia, sendPushToClienteUser } from "../lib/pushNotifications.js";
 import { clienteUsersTable } from "@workspace/db/schema";
 import { validateAgendamentoEmHorario, validateAgendamentoEmJornadaProf, type HorarioDia } from "../lib/horarioValidation.js";
@@ -272,9 +273,9 @@ router.post("/", requireAuth, async (req, res) => {
 
   const tempoPadraoStr = params["agenda_tempo_padrao"] || "30min";
   const tempoPadrao = tempoPadraoStr === "1h" ? 60 : (parseInt(tempoPadraoStr) || 30);
-  const duracaoFinal = profServicoOverride?.tempoOverride ?? servico.duracaoMinutos ?? tempoPadrao;
+  const duracaoFinal = duracaoDoProfissional(servico, profServicoOverride, tempoPadrao);
   const horaFim = addMinutesToTime(horaInicio, duracaoFinal);
-  const valorEfetivo = profServicoOverride?.precoOverride != null ? profServicoOverride.precoOverride : servico.preco;
+  const valorEfetivo = precoDoProfissional(servico, profServicoOverride);
   if (!encaixe) {
     const [barb] = await db.select({ horarioFuncionamento: barbeariasTable.horarioFuncionamento }).from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
     const horarioErr = validateAgendamentoEmHorario(data, horaInicio, horaFim, (barb?.horarioFuncionamento as any));
@@ -692,8 +693,13 @@ router.put("/:agendamentoId", requireAuth, async (req, res) => {
     ).limit(1);
     const tempoPadraoStr = params["agenda_tempo_padrao"] || "30min";
     const tempoPadrao = tempoPadraoStr === "1h" ? 60 : (parseInt(tempoPadraoStr) || 30);
-    const duracaoFinal = profServicoOverride?.tempoOverride ?? servico?.duracaoMinutos ?? tempoPadrao;
+    const duracaoFinal = servico ? duracaoDoProfissional(servico, profServicoOverride, tempoPadrao) : tempoPadrao;
     const nextHoraFim = addMinutesToTime(nextHoraInicio, duracaoFinal);
+    // Trocou de profissional e a comanda ainda não foi paga: o valor passa a ser
+    // o preço que esse profissional cobra pelo serviço (ou o preço base).
+    if (servico && nextProfissionalId !== existing.profissionalId && !existing.pago) {
+      updates.valor = precoDoProfissional(servico, profServicoOverride);
+    }
 
     if (!existing.encaixe) {
       const [barb] = await db.select({ horarioFuncionamento: barbeariasTable.horarioFuncionamento }).from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
@@ -1010,11 +1016,19 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
   for (const sa of servicosAdicionais) {
     const [serv] = await db.select().from(servicosTable).where(and(eq(servicosTable.id, sa.servicoId), eq(servicosTable.barbeariaId, barbeariaId))).limit(1);
     if (serv) {
-      const saValor = parseFloat(serv.preco as string);
       const saProfId = sa.profissionalId || agend.profissionalId;
       const [saProf] = await db.select().from(profissionaisTable).where(
         and(eq(profissionaisTable.id, saProfId), eq(profissionaisTable.barbeariaId, barbeariaId))
       ).limit(1);
+      // Preço do profissional que executa o serviço adicional (ou o preço base).
+      const [saOverride] = await db.select().from(profissionalServicosTable).where(
+        and(
+          eq(profissionalServicosTable.profissionalId, saProfId),
+          eq(profissionalServicosTable.servicoId, serv.id),
+          eq(profissionalServicosTable.barbeariaId, barbeariaId),
+        )
+      ).limit(1);
+      const saValor = parseFloat(precoDoProfissional(serv, saOverride));
       const saComPerc = saProf ? (parseFloat(saProf.comissaoValor as string) || 0) : 0;
       const saComissao = (saProf?.comissaoTipo === "percentual")
         ? (saValor * saComPerc) / 100

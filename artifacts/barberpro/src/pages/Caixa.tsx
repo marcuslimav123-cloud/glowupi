@@ -77,6 +77,7 @@ export default function Caixa() {
   const [pageSize, setPageSize] = useState(25);
   const [visibleCols, setVisibleCols] = useState<Set<string>>(new Set(ALL_COLUMNS.map(c => c.key)));
   const [novaComandaOpen, setNovaComandaOpen] = useState(false);
+  const [novaComandaProfId, setNovaComandaProfId] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const { data: profissionais = [] } = useQuery<any[]>({
@@ -320,7 +321,10 @@ export default function Caixa() {
       if (!agendRes.ok) throw new Error("Erro ao criar agendamento");
       const agend = await agendRes.json();
       const servico = servicos.find((s: any) => s.id === servicoId);
-      const valor = servico ? parseFloat(servico.preco) : 0;
+      // O servidor já grava o valor com o preço do profissional escolhido.
+      const valor = agend?.valor != null && !isNaN(Number(agend.valor))
+        ? Number(agend.valor)
+        : (servico ? parseFloat(servico.preco) : 0);
       const gorjetaValor = parseFloat(fd.get("gorjeta") as string) || 0;
       const gorjetaProfId = fd.get("gorjetaProfissionalId") as string;
       const tipoComanda = fd.get("tipoComanda") as string || "cliente";
@@ -861,7 +865,7 @@ export default function Caixa() {
             </div>
             <div>
               <Label>Profissional *</Label>
-              <select name="profissionalId" required className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
+              <select name="profissionalId" required value={novaComandaProfId} onChange={e => setNovaComandaProfId(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
                 <option value="">Selecione...</option>
                 {profissionais.map((p: any) => (
                   <option key={p.id} value={p.id}>{p.nomeExibicao}</option>
@@ -872,9 +876,13 @@ export default function Caixa() {
               <Label>Serviço *</Label>
               <select name="servicoId" required className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
                 <option value="">Selecione...</option>
-                {servicos.map((s: any) => (
-                  <option key={s.id} value={s.id}>{s.nome} — {formatCurrency(parseFloat(s.preco))}</option>
-                ))}
+                {servicos.map((s: any) => {
+                  // Preço personalizado do profissional escolhido, se houver.
+                  const prof = profissionais.find((p: any) => String(p.id) === novaComandaProfId);
+                  const override = prof?.servicosOverrides?.find((o: any) => o.servicoId === s.id);
+                  const preco = override?.precoOverride != null ? parseFloat(String(override.precoOverride)) : parseFloat(s.preco);
+                  return <option key={s.id} value={s.id}>{s.nome} — {formatCurrency(preco)}</option>;
+                })}
               </select>
             </div>
             <div>

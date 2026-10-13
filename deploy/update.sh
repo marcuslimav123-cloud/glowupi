@@ -17,7 +17,7 @@ ENV_FILE=/etc/glowupi.env
 SERVICE_USER=glowupi
 BACKUP_DIR=/var/backups/glowupi
 
-echo "==> [1/6] Baixando a versão mais recente"
+echo "==> [1/7] Baixando a versão mais recente"
 cd "$APP_DIR"
 # O repositório pertence ao usuário do serviço, mas o script roda como root.
 git config --global --get-all safe.directory 2>/dev/null | grep -qx "$APP_DIR" \
@@ -27,18 +27,32 @@ git fetch --quiet origin "$BRANCH"
 git reset --hard --quiet "origin/$BRANCH"
 echo "    versão: $(git log -1 --format='%h %s')"
 
-echo "==> [2/6] Dependências"
+echo "==> [2/7] Dependências"
 pnpm install --frozen-lockfile --prod=false --silent
 
-echo "==> [3/6] Schema do banco"
+echo "==> [3/7] Schema do banco"
 set -a; . "$ENV_FILE"; set +a
 pnpm --filter db run push-force >/dev/null
 
-echo "==> [4/6] Build do frontend"
+echo "==> [4/7] Correções de dados"
+# Scripts idempotentes em deploy/sql: podem rodar a cada atualização sem efeito colateral.
+for sql in "$APP_DIR"/deploy/sql/*.sql; do
+  [ -f "$sql" ] || continue
+  # O arquivo é lido pelo root e passado pela entrada padrão: o usuário postgres
+  # não precisa ter permissão de leitura em /opt/glowupi.
+  if sudo -u postgres psql -d glowupi -v ON_ERROR_STOP=1 -q < "$sql" >/dev/null; then
+    echo "    aplicado: $(basename "$sql")"
+  else
+    echo "    ERRO ao aplicar $(basename "$sql"). Atualização interrompida antes de reiniciar a API."
+    exit 1
+  fi
+done
+
+echo "==> [5/7] Build do frontend"
 pnpm --filter @workspace/barberpro build >/dev/null
 chown -R "$SERVICE_USER":"$SERVICE_USER" "$APP_DIR"
 
-echo "==> [5/6] Reiniciando a API"
+echo "==> [6/7] Reiniciando a API"
 systemctl restart glowupi-api
 API_OK=0
 for _ in $(seq 1 30); do
@@ -54,7 +68,7 @@ else
   exit 1
 fi
 
-echo "==> [6/6] Backup diário do banco (cron 03:00, mantém 14 dias)"
+echo "==> [7/7] Backup diário do banco (cron 03:00, mantém 14 dias)"
 mkdir -p "$BACKUP_DIR"
 chown postgres:postgres "$BACKUP_DIR"
 cat > /etc/cron.d/glowupi-backup <<'EOF'
