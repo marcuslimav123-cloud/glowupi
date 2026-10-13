@@ -135,17 +135,23 @@ router.get("/tema-layout", requireAuth, async (req, res) => {
   return res.json({ chave: "tema_layout", valor: valorDe("tema_layout", "Claro") });
 });
 
-router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+// Chaves que um profissional (não gestor) pode ler: só o que a agenda e o visual usam.
+const CHAVES_LEITURA_EQUIPE = (chave: string) =>
+  chave.startsWith("agenda_") || chave.startsWith("whatsapp_template_") || chave === "tema_layout";
+
+router.get("/", requireAuth, async (req, res) => {
   const barbeariaId = parseInt(req.params.barbeariaId);
   if (isNaN(barbeariaId)) return res.status(400).json({ error: "ID inválido" });
 
   const user = (req as any).user;
   const userBarbId = await resolveUserBarbeariaId(user);
   if (userBarbId !== barbeariaId) return res.status(403).json({ error: "Sem permissão" });
+  const isManager = user?.role === "dono" || user?.role === "gerente";
 
   await ensureDefaults(barbeariaId);
 
-  const params = await db.select().from(parametrosConfigTable).where(eq(parametrosConfigTable.barbeariaId, barbeariaId));
+  const todos = await db.select().from(parametrosConfigTable).where(eq(parametrosConfigTable.barbeariaId, barbeariaId));
+  const params = isManager ? todos : todos.filter(p => CHAVES_LEITURA_EQUIPE(p.chave));
 
   const result = params.map(p => {
     const def = PARAMETROS_DEFAULTS.find(d => d.chave === p.chave);

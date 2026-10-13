@@ -10,7 +10,7 @@ function fmt(r: any) {
   return { ...r, createdAt: r.createdAt?.toISOString?.() ?? r.createdAt };
 }
 
-router.get("/", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
+router.get("/", requireAuth, async (req: any, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
   const rows = await db.select().from(tiposTable).where(eq(tiposTable.barbeariaId, barbeariaId));

@@ -82,11 +82,17 @@ async function syncServicos(
   return validatedIds;
 }
 
-router.get("/", requireAuth, requireRole("dono", "gerente"), async (req, res) => {
+router.get("/", requireAuth, async (req, res) => {
   const barbeariaId = await checkAccess(req, res);
   if (!barbeariaId) return;
+  const user = (req as any).user;
+  // Profissional (não gestor) enxerga só o próprio cadastro: é o que a agenda dele precisa.
+  if (user.role === "colaborador" && !user.profissionalId) return res.json([]);
   const profs = await db.select().from(profissionaisTable)
-    .where(eq(profissionaisTable.barbeariaId, barbeariaId))
+    .where(and(
+      eq(profissionaisTable.barbeariaId, barbeariaId),
+      user.role === "colaborador" ? eq(profissionaisTable.id, user.profissionalId) : undefined,
+    ))
     .orderBy(profissionaisTable.ordem, profissionaisTable.id);
 
   const links = await db.select().from(profissionalServicosTable).where(eq(profissionalServicosTable.barbeariaId, barbeariaId));

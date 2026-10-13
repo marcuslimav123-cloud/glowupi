@@ -101,7 +101,11 @@ router.post("/", requireAuth, requireRole("dono"), async (req, res) => {
 router.get("/me", requireAuth, async (req, res) => {
   try {
     const user = (req as any).user;
-    const [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
+    // Dono: pela posse. Gerente/profissional: pelo vínculo do usuário.
+    let [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.donoId, user.id)).limit(1);
+    if (!barbearia && user.barbeariaId) {
+      [barbearia] = await db.select().from(barbeariasTable).where(eq(barbeariasTable.id, user.barbeariaId)).limit(1);
+    }
     if (!barbearia) return res.status(404).json({ error: "Barbearia não encontrada" });
     return res.json(formatBarbearia(barbearia));
   } catch (e) {
