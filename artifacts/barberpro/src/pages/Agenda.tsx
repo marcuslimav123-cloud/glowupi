@@ -176,7 +176,10 @@ function useCurrentTime() {
 }
 
 export default function Agenda() {
-  const { barbeariaId } = useAuth();
+  const { barbeariaId, user, isColaborador } = useAuth();
+  // Profissional (não gestor) só mexe na própria agenda ao bloquear horários.
+  const meuProfissionalId: number | null = (user as any)?.profissionalId ?? null;
+  const podeGerirBloqueio = (profId: number) => !isColaborador || profId === meuProfissionalId;
   const { toast } = useToast();
   const qc = useQueryClient();
   const [, navigate] = useLocation();
@@ -534,6 +537,10 @@ export default function Agenda() {
     }
   };
 
+  useEffect(() => {
+    if (isBlockOpen && isColaborador && meuProfissionalId) setBlockProfId(String(meuProfissionalId));
+  }, [isBlockOpen, isColaborador, meuProfissionalId]);
+
   const handleCreateBlock = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!blockProfId || !blockHoraInicio || !blockHoraFim) {
@@ -553,8 +560,11 @@ export default function Agenda() {
           motivo: blockMotivo || null,
         }),
       });
-      if (!res.ok) throw new Error("Erro ao bloquear horário");
-      toast({ title: "Horário bloqueado!" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Erro ao bloquear horário");
+      }
+      toast({ title: "Horário bloqueado", description: "Esse período não aparece mais no link de agendamento." });
       setIsBlockOpen(false);
       setBlockProfId(""); setBlockHoraInicio(""); setBlockHoraFim(""); setBlockMotivo("");
       fetchBloqueios(date);
@@ -797,7 +807,7 @@ export default function Agenda() {
                         key={`block-${b.id}`}
                         className="absolute left-0.5 right-0.5 rounded-md bg-gray-200/60 border border-gray-300/60 flex items-center justify-center z-5 cursor-pointer group"
                         style={{ top: `${offsetSlots * 56 + 1}px`, height: `${slots * 56 - 2}px` }}
-                        onClick={() => handleDeleteBlock(b.id)}
+                        onClick={() => { if (podeGerirBloqueio(b.profissionalId)) handleDeleteBlock(b.id); }}
                         title={b.motivo || "Bloqueado — clique para remover"}
                       >
                         <div className="flex items-center gap-1 text-[10px] text-gray-500">
@@ -1655,9 +1665,11 @@ export default function Agenda() {
                       <span className="font-medium text-foreground">{profName}</span>
                       <span className="ml-1">{b.horaInicio} - {b.horaFim}</span>
                     </div>
-                    <button onClick={() => handleDeleteBlock(b.id)} className="text-destructive hover:text-destructive/80">
-                      <XCircle className="h-3 w-3" />
-                    </button>
+                    {podeGerirBloqueio(b.profissionalId) && (
+                      <button onClick={() => handleDeleteBlock(b.id)} className="text-destructive hover:text-destructive/80" title="Remover bloqueio">
+                        <XCircle className="h-3 w-3" />
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -1720,12 +1732,18 @@ export default function Agenda() {
           <form onSubmit={handleCreateBlock} className="space-y-3 mt-2">
             <div className="space-y-1.5">
               <Label className="text-xs">Profissional *</Label>
-              <Select value={blockProfId} onValueChange={setBlockProfId}>
-                <SelectTrigger className="bg-background h-9 text-sm"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>
-                  {(profissionais as any[]).map((p: any) => <SelectItem key={p.id} value={String(p.id)}>{p.nomeExibicao}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              {isColaborador ? (
+                <div className="h-9 px-3 rounded-md border border-border bg-muted/40 text-sm flex items-center" data-testid="block-prof-fixo">
+                  {(profissionais as any[]).find((p: any) => p.id === meuProfissionalId)?.nomeExibicao || (user as any)?.nome || "Sua agenda"}
+                </div>
+              ) : (
+                <Select value={blockProfId} onValueChange={setBlockProfId}>
+                  <SelectTrigger className="bg-background h-9 text-sm"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                  <SelectContent>
+                    {(profissionais as any[]).map((p: any) => <SelectItem key={p.id} value={String(p.id)}>{p.nomeExibicao}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">

@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
-import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable, avaliacoesTable, recompensasTable, produtosTable, profissionalServicosTable, pesquisaSatisfacaoTable, respostasPesquisaTable, categoriasServicoTable, filiaisTable, platformConfigTable, vslProgressEventsTable } from "@workspace/db/schema";
+import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable, avaliacoesTable, recompensasTable, produtosTable, profissionalServicosTable, pesquisaSatisfacaoTable, respostasPesquisaTable, categoriasServicoTable, filiaisTable, platformConfigTable, vslProgressEventsTable, bloqueiosHorarioTable } from "@workspace/db/schema";
 import { eq, and, desc, gte, inArray, sql } from "drizzle-orm";
 import { extractYoutubeVideoId } from "../lib/youtube.js";
 import { sendPushToBarbearia } from "../lib/pushNotifications.js";
@@ -405,6 +405,11 @@ router.get("/:slug/slots", async (req, res) => {
       return res.json([]);
     }
 
+    // Horários bloqueados pela equipe (almoço, folga, compromisso) não são oferecidos ao cliente.
+    const bloqueiosDia = await db.select().from(bloqueiosHorarioTable).where(
+      and(eq(bloqueiosHorarioTable.barbeariaId, barbearia.id), eq(bloqueiosHorarioTable.data, data as string))
+    );
+
     const paramInicio = params["agenda_horario_inicio"];
     const paramFim = params["agenda_horario_fim"];
     const paramInicioMin = paramInicio ? timeToMinutes(paramInicio) : null;
@@ -427,6 +432,13 @@ router.get("/:slug/slots", async (req, res) => {
         }
         const horaInicio = minutesToTime(t);
         const horaFim = minutesToTime(t + duracao);
+        const bloqueado = bloqueiosDia.some(b => {
+          if (b.profissionalId !== prof.id) return false;
+          const bi = timeToMinutes(b.horaInicio);
+          const bf = timeToMinutes(b.horaFim);
+          return !(t + duracao <= bi || t >= bf);
+        });
+        if (bloqueado) continue;
         const ocupado = agendamentos.some(a => {
           if (a.profissionalId !== prof.id) return false;
           const ai = timeToMinutes(a.horaInicio);
@@ -566,6 +578,16 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
     );
     if (existingAppts.some(a => horaInicio < a.horaFim && horaFim > a.horaInicio)) {
       return res.status(409).json({ error: "Este horário já está ocupado para o profissional selecionado" });
+    }
+    const bloqueiosProf = await db.select().from(bloqueiosHorarioTable).where(
+      and(
+        eq(bloqueiosHorarioTable.barbeariaId, barbearia.id),
+        eq(bloqueiosHorarioTable.profissionalId, profissionalId),
+        eq(bloqueiosHorarioTable.data, data),
+      )
+    );
+    if (bloqueiosProf.some(b => horaInicio < b.horaFim && horaFim > b.horaInicio)) {
+      return res.status(409).json({ error: "Este horário está bloqueado na agenda do profissional. Escolha outro horário." });
     }
 
     const modoConfirmacao = (params || {})["agenda_modo_confirmacao"] || "Automatica";
@@ -781,6 +803,16 @@ router.post("/:slug/agendar-simples", async (req, res) => {
     );
     if (existingApptsSimples.some(a => horaInicio < a.horaFim && horaFim > a.horaInicio)) {
       return res.status(409).json({ error: "Este horário já está ocupado para o profissional selecionado" });
+    }
+    const bloqueiosProf = await db.select().from(bloqueiosHorarioTable).where(
+      and(
+        eq(bloqueiosHorarioTable.barbeariaId, barbearia.id),
+        eq(bloqueiosHorarioTable.profissionalId, profissionalId),
+        eq(bloqueiosHorarioTable.data, data),
+      )
+    );
+    if (bloqueiosProf.some(b => horaInicio < b.horaFim && horaFim > b.horaInicio)) {
+      return res.status(409).json({ error: "Este horário está bloqueado na agenda do profissional. Escolha outro horário." });
     }
 
     const modoConfirmacaoSimples = (paramsSimples || {})["agenda_modo_confirmacao"] || "Automatica";
