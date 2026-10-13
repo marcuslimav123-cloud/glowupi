@@ -70,6 +70,7 @@ interface BarbeariaData {
   servicos: any[];
   profissionais: any[];
   tipoLinkAgendamento?: "simples" | "com_login";
+  ordemEscolha?: "profissional" | "servico";
   permitirCancelamentoCliente?: boolean;
   semPreferenciaHabilitado?: boolean;
   toleranciaCancelamento?: number;
@@ -105,6 +106,30 @@ function precoServicoProfissional(servico: any, profissional: any | null | undef
   if (ov && ov.preco != null) return Number(ov.preco);
   return Number(servico?.preco ?? 0);
 }
+
+function duracaoServicoProfissional(servico: any, profissional: any | null | undefined): number {
+  const ov = profissional?.servicosOverrides?.find((o: any) => o.servicoId === servico?.id);
+  if (ov && ov.duracaoMinutos != null) return Number(ov.duracaoMinutos);
+  return Number(servico?.duracaoMinutos ?? 0);
+}
+
+// Quem atende este serviço (profissionais reais, sem a entrada "Sem preferência").
+function profissionaisDoServico(servico: any, profissionais: any[]): any[] {
+  const reais = profissionais.filter((p: any) => !p.semPreferencia && p.id !== 0);
+  const hasAnyLinks = reais.some((p: any) => p.servicoIds && p.servicoIds.length > 0);
+  return hasAnyLinks ? reais.filter((p: any) => p.servicoIds && p.servicoIds.includes(servico.id)) : reais;
+}
+
+// Sem preferência de profissional: o preço pode variar conforme quem atender.
+// Devolve o menor valor e se há variação ("a partir de").
+function faixaPrecoServico(servico: any, profissionais: any[]): { min: number; varia: boolean } {
+  const precos = profissionaisDoServico(servico, profissionais).map((p: any) => precoServicoProfissional(servico, p));
+  if (precos.length === 0) return { min: Number(servico.preco ?? 0), varia: false };
+  const min = Math.min(...precos);
+  return { min, varia: precos.some(v => v !== min) };
+}
+
+const fmtBRL = (v: number) => `R$ ${v.toFixed(2).replace(".", ",")}`;
 
 type Step = "filial" | "servico" | "profissional" | "data" | "horario" | "confirmar" | "sucesso";
 
@@ -197,6 +222,8 @@ export default function PublicBooking() {
       setBarbearia(data);
       if (data.filiais && data.filiais.length > 0) {
         setStep("filial");
+      } else {
+        setStep(data.ordemEscolha === "servico" ? "servico" : "profissional");
       }
     } catch (e: any) {
       setError(e.message);
@@ -238,7 +265,13 @@ export default function PublicBooking() {
       const res = await fetch(`${API_BASE}/public/${slug}/slots?${params}`, { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
-        setSlots(data.filter((s: Slot) => s.disponivel));
+        // Por hora e, no mesmo horário, por profissional: com "Sem preferência"
+        // os horários de todos ficam intercalados em vez de agrupados por pessoa.
+        setSlots(
+          data
+            .filter((s: Slot) => s.disponivel)
+            .sort((a: Slot, b: Slot) => a.horaInicio.localeCompare(b.horaInicio) || a.profissionalNome.localeCompare(b.profissionalNome)),
+        );
       }
     } catch {} finally {
       setSlotsLoading(false);
@@ -324,15 +357,21 @@ export default function PublicBooking() {
     fetchSlots(date);
   }
 
+  // Ordem dos passos: por padrão o cliente escolhe o profissional antes do
+  // serviço (parâmetro "O que o cliente escolhe primeiro" em Configurações).
+  const profissionalPrimeiro = barbearia?.ordemEscolha !== "servico";
+  const primeiroPasso: Step = profissionalPrimeiro ? "profissional" : "servico";
+
   function handleSelectServico(s: any) {
     setSelectedServico(s);
     setSelectedSlot(null);
-    setStep("profissional");
+    setStep(profissionalPrimeiro ? "data" : "profissional");
   }
 
   function handleSelectProfissional(p: any | null) {
     setSelectedProfissional(p);
-    setStep("data");
+    setSelectedSlot(null);
+    setStep(profissionalPrimeiro ? "servico" : "data");
   }
 
   const isSimpleMode = barbearia?.tipoLinkAgendamento === "simples";
@@ -504,17 +543,13 @@ export default function PublicBooking() {
   if (!barbearia) return null;
 
   const hasFiliais = barbearia?.filiais && barbearia.filiais.length > 0;
-  const stepOrder: Step[] = hasFiliais
-    ? ["filial", "servico", "profissional", "data", "horario", "confirmar"]
-    : ["servico", "profissional", "data", "horario", "confirmar"];
+  const escolhas: Step[] = profissionalPrimeiro ? ["profissional", "servico"] : ["servico", "profissional"];
+  const stepOrder: Step[] = [...(hasFiliais ? ["filial" as Step] : []), ...escolhas, "data", "horario", "confirmar"];
   const currentStepIdx = stepOrder.indexOf(step === "sucesso" ? "confirmar" : step);
 
   function goBack() {
-    if (step === "servico" && hasFiliais) setStep("filial");
-    else if (step === "profissional") setStep("servico");
-    else if (step === "data") setStep("profissional");
-    else if (step === "horario") setStep("data");
-    else if (step === "confirmar") setStep("horario");
+    const idx = stepOrder.indexOf(step);
+    if (idx > 0) setStep(stepOrder[idx - 1]);
   }
 
   return (
@@ -522,8 +557,8 @@ export default function PublicBooking() {
       <div className="max-w-lg mx-auto">
         <div className="sticky top-0 z-40 bg-[#111]/95 backdrop-blur-lg border-b border-white/5 px-4 py-4">
           <div className="flex items-center gap-3">
-            {step !== "filial" && step !== "servico" && step !== "sucesso" && !showMeusAgendamentos && (
-              <button onClick={goBack} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition">
+            {currentStepIdx > 0 && step !== "sucesso" && !showMeusAgendamentos && (
+              <button onClick={goBack} aria-label="Voltar" className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition">
                 <ChevronLeft className="h-5 w-5" />
               </button>
             )}
@@ -933,7 +968,7 @@ export default function PublicBooking() {
             </div>
           )}
 
-          {!showMeusAgendamentos && step === "servico" && clientUser && barbearia.permitirCancelamentoCliente && (
+          {!showMeusAgendamentos && step === primeiroPasso && clientUser && barbearia.permitirCancelamentoCliente && (
             <button
               onClick={handleOpenMeusAgendamentos}
               className="mb-4 w-full p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/20 transition-all flex items-center gap-3 text-left"
@@ -958,7 +993,7 @@ export default function PublicBooking() {
                   return (
                     <button
                       key={f.id}
-                      onClick={() => { setSelectedFilial(f); setStep("servico"); }}
+                      onClick={() => { setSelectedFilial(f); setStep(primeiroPasso); }}
                       className="w-full p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/20 transition-all text-left group"
                     >
                       <div className="flex items-center gap-3">
@@ -983,46 +1018,68 @@ export default function PublicBooking() {
           {!showMeusAgendamentos && step === "servico" && (
             <div>
               <h2 className="text-lg font-semibold mb-1">Escolha o serviço</h2>
-              <p className="text-white/30 text-sm mb-5">Selecione o que deseja agendar</p>
+              <p className="text-white/30 text-sm mb-5">
+                {profissionalPrimeiro && selectedProfissional
+                  ? <>Serviços e valores de <span className="text-white/60">{selectedProfissional.nomeExibicao}</span></>
+                  : "Selecione o que deseja agendar"}
+              </p>
               <div className="space-y-2">
                 {(() => {
                   let servicosFiltrados = barbearia.servicos;
                   if (selectedFilial) {
                     servicosFiltrados = servicosFiltrados.filter((s: any) => s.filialId === selectedFilial.id || s.filialId === null);
                   }
-                  return servicosFiltrados.map((s: any) => (
+                  // Profissional escolhido antes: só os serviços que ele atende.
+                  if (profissionalPrimeiro && selectedProfissional) {
+                    servicosFiltrados = servicosFiltrados.filter((s: any) => profissionaisDoServico(s, barbearia.profissionais).some((p: any) => p.id === selectedProfissional.id));
+                  }
+                  if (servicosFiltrados.length === 0) {
+                    return <p className="text-center py-8 text-white/30 text-sm">Nenhum serviço disponível para este profissional</p>;
+                  }
+                  return servicosFiltrados.map((s: any) => {
+                    // Preço exibido: do profissional escolhido; sem preferência, o menor
+                    // entre quem atende ("a partir de" quando varia); senão o preço base.
+                    let precoTxt = fmtBRL(Number(s.preco));
+                    let duracao = Number(s.duracaoMinutos || 0);
+                    if (profissionalPrimeiro && selectedProfissional) {
+                      precoTxt = fmtBRL(precoServicoProfissional(s, selectedProfissional));
+                      duracao = duracaoServicoProfissional(s, selectedProfissional);
+                    } else if (profissionalPrimeiro) {
+                      const faixa = faixaPrecoServico(s, barbearia.profissionais);
+                      precoTxt = faixa.varia ? `a partir de ${fmtBRL(faixa.min)}` : fmtBRL(faixa.min);
+                    }
+                    return (
                     <button
                       key={s.id}
                       onClick={() => handleSelectServico(s)}
                       className="w-full p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/20 transition-all text-left group"
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
                           <p className="font-medium text-[15px]">{s.nome}</p>
-                          <p className="text-white/30 text-xs mt-0.5">{s.duracaoMinutos} min</p>
+                          <p className="text-white/30 text-xs mt-0.5">{duracao} min</p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right shrink-0">
                           <p className="font-bold" style={{ color: accent }}>
-                            R$ {s.preco.toFixed(2).replace(".", ",")}
+                            {precoTxt}
                           </p>
                           <ChevronRight className="h-4 w-4 text-white/20 group-hover:text-white/50 ml-auto mt-1" />
                         </div>
                       </div>
                     </button>
-                  ));
+                    );
+                  });
                 })()}
               </div>
             </div>
           )}
 
           {!showMeusAgendamentos && step === "profissional" && (() => {
-            const hasAnyLinks = barbearia.profissionais.some((p: any) => p.servicoIds && p.servicoIds.length > 0);
             // "Sem preferência" tem um botão próprio abaixo; a entrada sintética
             // (id 0) que a API manda não entra na lista para não aparecer duas vezes.
             const reais = barbearia.profissionais.filter((p: any) => !p.semPreferencia && p.id !== 0);
-            let filtered = hasAnyLinks && selectedServico
-              ? reais.filter((p: any) => p.servicoIds && p.servicoIds.includes(selectedServico.id))
-              : reais;
+            // Serviço escolhido antes: só quem atende aquele serviço.
+            let filtered = !profissionalPrimeiro && selectedServico ? profissionaisDoServico(selectedServico, barbearia.profissionais) : reais;
             if (selectedFilial) {
               filtered = filtered.filter((p: any) => p.filialId === selectedFilial.id || p.filialId === null);
             }
@@ -1030,7 +1087,7 @@ export default function PublicBooking() {
             return (
             <div>
               <h2 className="text-lg font-semibold mb-1">Escolha o profissional</h2>
-              <p className="text-white/30 text-sm mb-5">Quem vai te atender?</p>
+              <p className="text-white/30 text-sm mb-5">{profissionalPrimeiro ? "Cada profissional tem seus próprios serviços e valores" : "Quem vai te atender?"}</p>
               {semPreferenciaOk && (
               <button
                 onClick={() => handleSelectProfissional(null)}
@@ -1057,7 +1114,7 @@ export default function PublicBooking() {
                     <p className="font-medium">{p.nomeExibicao}</p>
                     {p.especialidade && <p className="text-white/30 text-xs mt-0.5">{p.especialidade}</p>}
                   </div>
-                  {selectedServico && precoServicoProfissional(selectedServico, p) !== Number(selectedServico.preco) && (
+                  {!profissionalPrimeiro && selectedServico && precoServicoProfissional(selectedServico, p) !== Number(selectedServico.preco) && (
                     <span className="font-bold text-sm shrink-0" style={{ color: accent }}>
                       R$ {precoServicoProfissional(selectedServico, p).toFixed(2).replace(".", ",")}
                     </span>
@@ -1130,7 +1187,12 @@ export default function PublicBooking() {
                     >
                       <p className="font-medium text-sm">{slot.horaInicio}</p>
                       {!selectedProfissional && (
-                        <p className="text-[10px] text-white/30 mt-0.5 truncate">{slot.profissionalNome}</p>
+                        <p className="text-[10px] text-white/30 mt-0.5 truncate">
+                          {slot.profissionalNome}
+                          {slot.valor != null && selectedServico && faixaPrecoServico(selectedServico, barbearia.profissionais).varia && (
+                            <span className="block text-[10px] font-semibold" style={{ color: accent }}>{fmtBRL(slot.valor)}</span>
+                          )}
+                        </p>
                       )}
                     </button>
                   ))}
@@ -1333,7 +1395,7 @@ export default function PublicBooking() {
               )}
               <button
                 onClick={() => {
-                  setStep(hasFiliais ? "filial" : "servico");
+                  setStep(hasFiliais ? "filial" : primeiroPasso);
                   setSelectedFilial(null);
                   setSelectedServico(null);
                   setSelectedProfissional(null);

@@ -63,6 +63,9 @@ const SECOES: Secao[] = [
       { kind: "select", chave: "agenda_tipo_link", titulo: "Como o cliente agenda", descricao: "Sem cadastro é mais rápido: só nome e WhatsApp. Com cadastro o cliente entra com e-mail ou Google e acompanha tudo pelo app.", opcoes: [
         { value: "Sem login (simples)", label: "Sem cadastro: nome e WhatsApp" }, { value: "Com login", label: "Com cadastro (e-mail ou Google)" },
       ] },
+      { kind: "select", chave: "agenda_ordem_escolha", titulo: "O que o cliente escolhe primeiro", descricao: "Profissional primeiro: os serviços já aparecem com o preço e o tempo daquele profissional. Serviço primeiro: mostra o preço padrão e só depois quem atende.", opcoes: [
+        { value: "Profissional primeiro", label: "Profissional, depois o serviço (recomendado)" }, { value: "Serviço primeiro", label: "Serviço, depois o profissional" },
+      ] },
       { kind: "toggle", chave: "cancel_permitir_cliente_link_publico", titulo: "Cliente pode cancelar pelo link" },
       { kind: "number", chave: "cancel_tolerancia_cliente", titulo: "Até quantas horas antes o cliente pode cancelar", sufixo: "horas", min: 0, max: 168 },
       { kind: "toggle", chave: "agenda_whatsapp_encaixe", titulo: "Botão \"Tentar encaixe pelo WhatsApp\"", descricao: "Aparece quando não há horário livre." },

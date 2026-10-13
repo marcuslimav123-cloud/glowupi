@@ -86,6 +86,7 @@ export const PARAMETROS_DEFAULTS: ParamDef[] = [
   { chave: "app_nao_quero_conversar", label: "Não mostrar opção de 'Não quero conversar...' no app", categoria: "Outros", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "avaliacao_individual", label: "Mostrar avaliação individual dos profissionais", categoria: "Outros", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "agenda_tipo_link", label: "Tipo de link de agendamento", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Com login", "Sem login (simples)"], valorPadrao: "Com login" },
+  { chave: "agenda_ordem_escolha", label: "O que o cliente escolhe primeiro no link de agendamento", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Profissional primeiro", "Serviço primeiro"], valorPadrao: "Profissional primeiro" },
   { chave: "agenda_whatsapp_encaixe", label: "Mostrar botão 'Tentar encaixe via WhatsApp' no link público de agendamento", categoria: "Agenda & Agendamentos", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Não" },
   { chave: "notif_push_agenda", label: "Receber push de Agenda (novos agendamentos, cancelamentos, lembretes)", categoria: "Notificações Push (Equipe)", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Sim" },
   { chave: "notif_push_financeiro", label: "Receber push de Financeiro (comandas, contas, sangrias, vales, comissões)", categoria: "Notificações Push (Equipe)", tipo: "select", opcoes: ["Sim", "Não"], valorPadrao: "Sim" },

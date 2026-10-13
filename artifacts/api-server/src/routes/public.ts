@@ -189,7 +189,7 @@ router.get("/:slug", async (req, res) => {
 
   const [servicos, profissionais, avaliacoes, recompensas, produtos, profServicos] = await Promise.all([
     db.select().from(servicosTable).where(and(eq(servicosTable.barbeariaId, barbearia.id), eq(servicosTable.ativo, true))),
-    db.select().from(profissionaisTable).where(and(eq(profissionaisTable.barbeariaId, barbearia.id), eq(profissionaisTable.ativo, true))),
+    db.select().from(profissionaisTable).where(and(eq(profissionaisTable.barbeariaId, barbearia.id), eq(profissionaisTable.ativo, true))).orderBy(profissionaisTable.ordem, profissionaisTable.id),
     db.select().from(avaliacoesTable).where(eq(avaliacoesTable.barbeariaId, barbearia.id)).orderBy(desc(avaliacoesTable.createdAt)).limit(20),
     db.select().from(recompensasTable).where(and(eq(recompensasTable.barbeariaId, barbearia.id), eq(recompensasTable.ativo, true))),
     db.select().from(produtosTable).where(and(eq(produtosTable.barbeariaId, barbearia.id), eq(produtosTable.ativo, true))),
@@ -228,6 +228,9 @@ router.get("/:slug", async (req, res) => {
   const mostrarProdutos = pubParams["outros_mostrar_produtos_app"] !== "Não";
   const esconderNaoQueroConversar = pubParams["app_nao_quero_conversar"] === "Sim";
   const tipoLinkAgendamento = pubParams["agenda_tipo_link"] === "Sem login (simples)" ? "simples" : "com_login";
+  // Por padrão o cliente escolhe o profissional antes do serviço: assim os
+  // serviços já aparecem com o preço que aquele profissional cobra.
+  const ordemEscolha = pubParams["agenda_ordem_escolha"] === "Serviço primeiro" ? "servico" : "profissional";
 
   const permitirCancelamentoCliente = (pubParams["cancel_permitir_cliente_link_publico"] ?? "Sim") !== "Não";
   const toleranciaCancelamento = parseInt(pubParams["cancel_tolerancia_cliente"] || "2");
@@ -257,6 +260,7 @@ router.get("/:slug", async (req, res) => {
     semPreferenciaHabilitado: showSemPreferencia,
     naoQueroConversarOculto: esconderNaoQueroConversar,
     tipoLinkAgendamento,
+    ordemEscolha,
     permitirCancelamentoCliente,
     toleranciaCancelamento,
     whatsappEncaixeHabilitado,
