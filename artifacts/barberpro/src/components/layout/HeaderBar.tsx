@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiUrl } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { ComporMensagemDialog } from "@/components/mensagens/ComporMensagemDialog";
-import { useNotifications, requestNotificationPermission } from "@/hooks/useNotifications";
+import { useNotifications, enablePushNotifications, getPushStatus, type PushStatus } from "@/hooks/useNotifications";
 import {
   CalendarDays, DollarSign, FileText, Cake, Mail, UserPlus,
   User, LogOut, Palette, Shield, Settings, X, Check, Bell, CheckCheck, Loader2,
@@ -81,6 +81,32 @@ export function HeaderBar() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [activePopup, setActivePopup] = useState<string | null>(null);
+  const [pushStatus, setPushStatus] = useState<PushStatus | "loading">("loading");
+  const [pushHint, setPushHint] = useState<string | null>(null);
+  useEffect(() => {
+    getPushStatus().then(setPushStatus);
+  }, []);
+  const [pushEnabling, setPushEnabling] = useState(false);
+  const handleEnablePush = async () => {
+    setPushEnabling(true);
+    setPushHint(null);
+    try {
+      const perm = await enablePushNotifications(barbeariaId);
+      const status = await getPushStatus();
+      setPushStatus(status);
+      if (status === "ativo") {
+        toast({ title: "Avisos ativados!", description: "Você vai receber os novos agendamentos neste aparelho." });
+      } else if (perm === "denied") {
+        setPushHint("O navegador bloqueou: toque no cadeado ao lado do endereço → Permissões → Notificações → Permitir, e tente de novo.");
+      } else if (perm === "granted") {
+        setPushHint("A permissão foi dada, mas não consegui registrar este aparelho no servidor. Tente de novo em alguns segundos.");
+      } else {
+        setPushHint("O navegador mostrou um aviso pequeno e ele sumiu. Toque em Ativar de novo e, quando o aviso aparecer, toque nele e escolha Permitir.");
+      }
+    } finally {
+      setPushEnabling(false);
+    }
+  };
   const [themeOpen, setThemeOpen] = useState(false);
   const [solTab, setSolTab] = useState("todos");
   const { notificacoes, unreadCount, loading: notifLoading, fetchNotificacoes, markAsRead, markAllAsRead } = useNotifications();
@@ -171,12 +197,12 @@ export function HeaderBar() {
           <CalendarDays className={iconCls} />
         </Link>
 
-        <Link href="/financeiro" className={iconBtn} title="Financeiro">
-          <DollarSign className={iconCls} />
+        <Link href="/comandas/abertas" className={iconBtn} title="Comandas abertas">
+          <FileText className={iconCls} />
         </Link>
 
-        <Link href="/caixa" className={iconBtn} title="Comandas">
-          <FileText className={iconCls} />
+        <Link href="/financeiro/caixa" className={iconBtn} title="Caixa do dia">
+          <DollarSign className={iconCls} />
         </Link>
       </div>
 
@@ -327,7 +353,6 @@ export function HeaderBar() {
             if (activePopup === "notificacoes") {
               setActivePopup(null);
             } else {
-              requestNotificationPermission();
               fetchNotificacoes();
               toggle("notificacoes");
             }
@@ -356,6 +381,27 @@ export function HeaderBar() {
                 </button>
               )}
             </div>
+            {pushStatus === "inativo" && (
+              <div className="mb-3 p-3 rounded-lg bg-primary/5 border border-primary/15">
+                <p className="text-[12px] font-medium text-foreground leading-snug">Receber avisos neste aparelho</p>
+                <p className="text-[11px] text-foreground/50 mt-0.5 leading-snug">Novos agendamentos e mensagens chegam como notificação, mesmo com o painel fechado.</p>
+                <button
+                  onClick={handleEnablePush}
+                  disabled={pushEnabling}
+                  className="mt-2 w-full h-8 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold hover:opacity-90 transition-opacity disabled:opacity-60"
+                >
+                  {pushEnabling ? "Aguardando o navegador..." : "Ativar avisos"}
+                </button>
+                {pushHint && (
+                  <p className="mt-2 text-[11px] leading-snug text-amber-700 dark:text-amber-300">{pushHint}</p>
+                )}
+              </div>
+            )}
+            {pushStatus === "bloqueado" && (
+              <p className="mb-3 text-[11px] text-foreground/50 leading-snug">
+                Avisos bloqueados pelo navegador. Toque no cadeado ao lado do endereço → Permissões → Notificações → Permitir.
+              </p>
+            )}
             {notifLoading ? (
               <div className="flex justify-center py-6">
                 <Loader2 className="h-5 w-5 animate-spin text-foreground/30" />

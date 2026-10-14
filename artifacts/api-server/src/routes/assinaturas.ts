@@ -3,7 +3,6 @@ import { db } from "@workspace/db";
 import { planosAssinaturaTable, assinantesTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
-import { getParametros } from "../lib/parametros.js";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -25,15 +24,6 @@ router.get("/planos", requireAuth, requireRole("dono", "gerente"), async (req: a
   if (!barbeariaId) return;
   const rows = await db.select().from(planosAssinaturaTable).where(eq(planosAssinaturaTable.barbeariaId, barbeariaId));
   res.json(rows.map(fmtPlano));
-});
-
-router.get("/config", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {
-  const barbeariaId = await checkAccess(req, res);
-  if (!barbeariaId) return;
-  const params = await getParametros(barbeariaId);
-  res.json({
-    diasSemanaHabilitado: params["assinatura_dias_semana"] === "Sim",
-  });
 });
 
 router.post("/planos", requireAuth, requireRole("dono", "gerente"), async (req: any, res) => {

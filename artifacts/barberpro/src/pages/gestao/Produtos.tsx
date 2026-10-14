@@ -328,13 +328,13 @@ export default function Produtos() {
 
   return (
     <AppLayout>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Produtos & Estoque</h1>
-          <p className="text-muted-foreground mt-1">Gerencie seu inventário</p>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Produtos e estoque</h1>
+          <p className="text-muted-foreground mt-1">Itens à venda na comanda e controle de estoque</p>
         </div>
         <Button onClick={() => { setEditing(null); setModalOpen(true); }}>
-          <Plus className="h-4 w-4 mr-2" /> Novo Produto
+          <Plus className="h-4 w-4 mr-2" /> Novo produto
         </Button>
       </div>
 

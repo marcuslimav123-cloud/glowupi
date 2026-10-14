@@ -5,9 +5,11 @@ import { barbeariasTable, platformConfigTable } from "@workspace/db/schema";
 import { stripeService } from "../stripeService.js";
 import { stripeStorage } from "../stripeStorage.js";
 import { getUncachableStripeClient, getStripePublishableKey } from "../stripeClient.js";
+import { getAppBaseUrl } from "../lib/appUrl.js";
 import { requireAuth, requireBarbearia } from "../lib/auth.js";
 import { sendCapiEvent, purchaseEventId } from "../lib/fbCapi.js";
 import { buildVerifyDirectSessionPurchaseEvent } from "../lib/purchaseEvent.js";
+import { TIERS, isTier, valorEsperado, periodoDoPreco, escolherPrecos, pontuarProduto } from "../lib/planos.js";
 
 const router = Router();
 
@@ -32,40 +34,46 @@ router.get("/pricing-config", async (_req, res) => {
         name: product.name,
         description: product.description,
         metadata: product.metadata,
+        created: product.created,
         prices: prices.data.map(p => ({
           id: p.id,
           unit_amount: p.unit_amount,
           currency: p.currency,
           recurring: p.recurring,
           metadata: p.metadata,
+          active: p.active,
         })),
       });
     }
 
-    const VALID_TIERS = ["1_pro", "2_5_pro", "6_15_pro", "15_plus_pro"];
+    const VALID_TIERS: string[] = [...TIERS];
 
     if (pricingMode === "single_price") {
       filteredProducts = filteredProducts.filter((p: any) => p.metadata?.tier === "single");
     } else if (pricingMode === "hidden") {
       filteredProducts = [];
     } else {
-      const glowUpiProducts = filteredProducts.filter((p: any) => {
-        const tier = p.metadata?.tier;
-        return tier && VALID_TIERS.includes(tier) && p.name?.startsWith("Glow Upi");
-      });
-
-      if (glowUpiProducts.length >= 4) {
-        filteredProducts = glowUpiProducts;
-      } else {
-        const seenTiers = new Set<string>();
-        filteredProducts = filteredProducts.filter((p: any) => {
-          const tier = p.metadata?.tier;
-          if (!tier || !VALID_TIERS.includes(tier)) return false;
-          if (seenTiers.has(tier)) return false;
-          seenTiers.add(tier);
-          return true;
-        });
+      // Um produto por plano: o que mais bate com o catálogo oficial (valores e
+      // nome), e dele só um preço por período. Produtos antigos com a mesma
+      // marcação de plano deixam de ser escolhidos por acaso.
+      const porPlano: any[] = [];
+      for (const tier of VALID_TIERS) {
+        const candidatos = filteredProducts
+          .filter((p: any) => p.metadata?.tier === tier)
+          .map((p: any) => ({ p, pontos: pontuarProduto(tier as any, p, p.prices) }))
+          .sort((a, b) => b.pontos - a.pontos || (b.p.created || 0) - (a.p.created || 0));
+        const melhor = candidatos[0]?.p;
+        if (!melhor) continue;
+        const prices = escolherPrecos(tier as any, melhor.prices).map((pr: any) => ({
+          ...pr,
+          metadata: { ...(pr.metadata || {}), period: periodoDoPreco(pr) },
+        }));
+        if (candidatos.length > 1) {
+          console.warn(`[pricing-config] ${candidatos.length} produtos com tier=${tier}; usando "${melhor.name}" (${melhor.id})`);
+        }
+        porPlano.push({ ...melhor, prices });
       }
+      filteredProducts = porPlano;
     }
 
     console.log(`[pricing-config] Returning ${filteredProducts.length} products, mode=${pricingMode}`);
@@ -92,6 +100,31 @@ router.get("/pricing-config", async (_req, res) => {
   }
 });
 
+// Confere no Stripe que o preço pertence a um plano do catálogo e que o valor
+// é o anunciado; evita abrir um checkout com produto/valor errado.
+async function validarPrecoDoCatalogo(priceId: string): Promise<{ ok: true; periodo: string } | { ok: false; status: number; error: string }> {
+  const sc = await getUncachableStripeClient();
+  let price: any;
+  try {
+    price = await sc.prices.retrieve(priceId, { expand: ["product"] });
+  } catch {
+    return { ok: false, status: 400, error: "Plano não encontrado. Recarregue a página e tente de novo." };
+  }
+  const product = price.product as any;
+  const tier = product?.metadata?.tier;
+  if (!price.active || !product?.active || !isTier(tier)) {
+    return { ok: false, status: 400, error: "Este plano não está disponível no momento." };
+  }
+  const periodo = periodoDoPreco(price);
+  if (!periodo) return { ok: false, status: 400, error: "Este plano não está disponível no momento." };
+  const esperado = valorEsperado(tier, periodo);
+  if (esperado !== undefined && price.unit_amount !== esperado) {
+    console.error(`[checkout] preço ${priceId} (${product.name}) vale ${price.unit_amount}, catálogo espera ${esperado} para ${tier}/${periodo}`);
+    return { ok: false, status: 409, error: "O valor deste plano está desatualizado. Recarregue a página e tente de novo." };
+  }
+  return { ok: true, periodo };
+}
+
 router.post("/create-checkout-session", requireAuth, requireBarbearia, async (req: any, res) => {
   try {
     const { priceId, billingPeriod } = req.body;
@@ -106,6 +139,9 @@ router.post("/create-checkout-session", requireAuth, requireBarbearia, async (re
     if (pricingMode === "hidden") {
       return res.status(403).json({ error: "Assinaturas estão desativadas no momento" });
     }
+
+    const validacao = await validarPrecoDoCatalogo(priceId);
+    if (!validacao.ok) return res.status(validacao.status).json({ error: validacao.error });
 
     if (pricingMode === "single_price") {
       try {
@@ -154,7 +190,7 @@ router.post("/create-checkout-session", requireAuth, requireBarbearia, async (re
       }
     }
 
-    const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+    const baseUrl = getAppBaseUrl();
 
     const session = await stripeService.createCheckoutSession(
       customerId,
@@ -210,7 +246,7 @@ router.post("/create-portal-session", requireAuth, requireBarbearia, async (req:
       return res.status(400).json({ error: "No Stripe customer found" });
     }
 
-    const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+    const baseUrl = getAppBaseUrl();
     const session = await stripeService.createCustomerPortalSession(
       barbearia.stripeCustomerId,
       `${baseUrl}/empresa`
@@ -285,6 +321,9 @@ router.post("/create-direct-session", requireAuth, async (req: any, res) => {
       return res.status(403).json({ error: "Assinaturas estão desativadas no momento" });
     }
 
+    const validacao = await validarPrecoDoCatalogo(priceId);
+    if (!validacao.ok) return res.status(validacao.status).json({ error: validacao.error });
+
     if (pricingMode === "single_price") {
       try {
         const allProductsCheck = await stripeStorage.listProductsWithPrices(true, 50, 0);
@@ -343,7 +382,7 @@ router.post("/create-direct-session", requireAuth, async (req: any, res) => {
       }
     }
 
-    const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+    const baseUrl = getAppBaseUrl();
 
     const session = await stripeClient.checkout.sessions.create({
       customer: customerId,

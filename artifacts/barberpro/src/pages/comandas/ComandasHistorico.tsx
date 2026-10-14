@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useLiveRefresh } from "@/lib/liveRefresh";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ export default function ComandasHistorico() {
     if (!barbeariaId) return;
     fetchComandas();
   }, [barbeariaId, dataInicio, dataFim]);
+  useLiveRefresh(() => { if (barbeariaId) fetchComandas(); }, !!barbeariaId);
 
   const fetchComandas = async () => {
     setLoading(true);
@@ -43,36 +45,38 @@ export default function ComandasHistorico() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="text-[24px] font-bold text-foreground">Histórico de Comandas</h1>
+        <h1 className="text-[24px] font-bold text-foreground">Histórico de comandas</h1>
         <p className="text-foreground/40 text-[14px] mt-0.5">Todas as comandas fechadas</p>
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-4">
-        <div className="relative max-w-xs flex-1">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 mb-4">
+        <div className="relative sm:max-w-xs flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/30" />
-          <Input placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9 h-10 rounded-xl border-border bg-card" />
+          <Input placeholder="Buscar por cliente ou profissional" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9 h-10 rounded-xl border-border bg-card" />
         </div>
-        <Input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} className="h-10 w-40 rounded-xl border-border bg-card" />
-        <Input type="date" value={dataFim} onChange={e => setDataFim(e.target.value)} className="h-10 w-40 rounded-xl border-border bg-card" />
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
+          <Input type="date" aria-label="Data inicial" value={dataInicio} onChange={e => setDataInicio(e.target.value)} className="h-10 w-full sm:w-40 rounded-xl border-border bg-card" />
+          <Input type="date" aria-label="Data final" value={dataFim} onChange={e => setDataFim(e.target.value)} className="h-10 w-full sm:w-40 rounded-xl border-border bg-card" />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
         <Card className="bg-card border-border shadow-none">
-          <CardContent className="p-4">
-            <p className="text-[12px] text-foreground/40 mb-1">Total Comandas</p>
-            <p className="text-[22px] font-bold">{filtered.length}</p>
+          <CardContent className="p-3 sm:p-4">
+            <p className="text-[11px] sm:text-[12px] text-foreground/40 mb-1">Comandas</p>
+            <p className="text-[18px] sm:text-[22px] font-bold">{filtered.length}</p>
           </CardContent>
         </Card>
         <Card className="bg-card border-border shadow-none">
-          <CardContent className="p-4">
-            <p className="text-[12px] text-foreground/40 mb-1">Faturamento</p>
-            <p className="text-[22px] font-bold text-primary">{formatCurrency(totalFaturamento)}</p>
+          <CardContent className="p-3 sm:p-4">
+            <p className="text-[11px] sm:text-[12px] text-foreground/40 mb-1">Faturamento</p>
+            <p className="text-[18px] sm:text-[22px] font-bold text-primary truncate">{formatCurrency(totalFaturamento)}</p>
           </CardContent>
         </Card>
         <Card className="bg-card border-border shadow-none">
-          <CardContent className="p-4">
-            <p className="text-[12px] text-foreground/40 mb-1">Ticket Médio</p>
-            <p className="text-[22px] font-bold">{filtered.length > 0 ? formatCurrency(totalFaturamento / filtered.length) : formatCurrency(0)}</p>
+          <CardContent className="p-3 sm:p-4">
+            <p className="text-[11px] sm:text-[12px] text-foreground/40 mb-1">Ticket médio</p>
+            <p className="text-[18px] sm:text-[22px] font-bold truncate">{filtered.length > 0 ? formatCurrency(totalFaturamento / filtered.length) : formatCurrency(0)}</p>
           </CardContent>
         </Card>
       </div>
@@ -89,7 +93,27 @@ export default function ComandasHistorico() {
       ) : (
         <Card className="bg-card border-border shadow-none">
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {/* Celular: um cartão por comanda, sem tabela para rolar de lado. */}
+            <ul className="md:hidden divide-y divide-border">
+              {filtered.map(c => (
+                <li key={c.id} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[14px] font-semibold truncate">{c.clienteNome}</p>
+                      <p className="text-[12px] text-muted-foreground truncate">{c.profissionalNome}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{c.dataFechamento ? new Date(c.dataFechamento).toLocaleDateString("pt-BR") : "—"} · comissão {formatCurrency(parseFloat(c.comissaoTotal) || 0)}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-[15px] font-bold text-primary">{formatCurrency(parseFloat(c.valorTotal) || 0)}</p>
+                      <span className={`inline-block mt-1 text-[11px] px-2 py-0.5 rounded-full font-medium ${c.status === "paga" ? "bg-green-50 text-green-600" : c.status === "cancelada" ? "bg-red-50 text-red-500" : "bg-amber-50 text-amber-600"}`}>
+                        {c.status}
+                      </span>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-[13px]">
                 <thead>
                   <tr className="border-b border-border">

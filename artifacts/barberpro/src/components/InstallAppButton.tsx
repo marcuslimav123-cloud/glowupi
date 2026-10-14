@@ -7,6 +7,8 @@ import { SafeLogoImage } from "@/components/SafeLogoImage";
 interface InstallAppButtonProps {
   nome?: string;
   logoUrl?: string | null;
+  /** Logo padrão do sistema, mostrada quando o estabelecimento não tem logo própria. */
+  logoPadrao?: string;
   accentColor?: string;
   className?: string;
   variant?: "default" | "outline" | "ghost";
@@ -34,7 +36,7 @@ function AddToHomeIcon({ className }: { className?: string }) {
   );
 }
 
-export function InstallAppButton({ nome, logoUrl, accentColor, className = "", variant = "default", size = "default", iconOnly = false }: InstallAppButtonProps) {
+export function InstallAppButton({ nome, logoUrl, logoPadrao, accentColor, className = "", variant = "default", size = "default", iconOnly = false }: InstallAppButtonProps) {
   const { canInstall, isInstalled, install, showIOSInstructions, isAndroid } = useInstallPWA();
   const [showIOSModal, setShowIOSModal] = useState(false);
 
@@ -82,11 +84,11 @@ export function InstallAppButton({ nome, logoUrl, accentColor, className = "", v
               <div className="relative px-5 pt-4 sm:pt-5 pb-2">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3 min-w-0">
-                    {logoUrl ? (
+                    {logoUrl || logoPadrao ? (
                       <SafeLogoImage
-                        src={logoUrl}
+                        src={logoUrl || logoPadrao!}
                         alt={nome || "App"}
-                        className="h-11 w-11 rounded-2xl object-cover border-2 shadow-lg shrink-0"
+                        className={logoUrl ? "h-11 w-11 rounded-2xl object-cover border-2 shadow-lg shrink-0" : "h-11 w-11 rounded-2xl object-contain p-1 border-2 shadow-lg shrink-0"}
                       />
                     ) : (
                       <div
@@ -240,8 +242,8 @@ export function InstallAppButton({ nome, logoUrl, accentColor, className = "", v
                 )}
 
                 <div className="mt-4 flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
-                  {logoUrl ? (
-                    <SafeLogoImage src={logoUrl} alt="" className="h-9 w-9 rounded-xl object-cover border border-white/10 shrink-0" />
+                  {logoUrl || logoPadrao ? (
+                    <SafeLogoImage src={logoUrl || logoPadrao!} alt="" className={logoUrl ? "h-9 w-9 rounded-xl object-cover border border-white/10 shrink-0" : "h-9 w-9 rounded-xl object-contain p-1 border border-white/10 shrink-0"} />
                   ) : (
                     <div className="h-9 w-9 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shrink-0">
                       <Download className="h-4 w-4 text-white/30" />

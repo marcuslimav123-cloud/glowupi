@@ -12,10 +12,13 @@ import { eq, and, gte, lte, inArray, sql } from "drizzle-orm";
 import { requireAuth, checkBarbeariaAccess as checkAccess, requireRole } from "../lib/auth.js";
 import { getParametros } from "../lib/parametros.js";
 import { sendEmail } from "../lib/brevo.js";
+import { formatDataBR } from "../lib/datas.js";
+import { precoDoProfissional, duracaoDoProfissional } from "../lib/precoProfissional.js";
 import { sendPushToBarbearia, sendPushToClienteUser } from "../lib/pushNotifications.js";
 import { clienteUsersTable } from "@workspace/db/schema";
 import { validateAgendamentoEmHorario, validateAgendamentoEmJornadaProf, type HorarioDia } from "../lib/horarioValidation.js";
 import { buildWhatsappUrl, renderWhatsappTemplate, formatDateBR } from "../lib/whatsappLink.js";
+import { getAppBaseUrl } from "../lib/appUrl.js";
 
 async function notificarAgendamento(barbeariaId: number, params: Record<string, string>, agendData: { clienteNome: string; clienteTelefone?: string; profissionalNome: string; servicoNome: string; data: string; horaInicio: string; clienteId?: number | null; agendamentoId?: number }, tipo: "criado" | "cancelado") {
   try {
@@ -25,8 +28,8 @@ async function notificarAgendamento(barbeariaId: number, params: Record<string, 
       ? `${nomeEstab} — Agendamento Confirmado`
       : `${nomeEstab} — Agendamento Cancelado`;
     const mensagem = tipo === "criado"
-      ? `Seu agendamento de <strong>${agendData.servicoNome}</strong> com <strong>${agendData.profissionalNome}</strong> em ${agendData.data} às ${agendData.horaInicio} foi confirmado.`
-      : `Seu agendamento de <strong>${agendData.servicoNome}</strong> com <strong>${agendData.profissionalNome}</strong> em ${agendData.data} às ${agendData.horaInicio} foi cancelado.`;
+      ? `Seu agendamento de <strong>${agendData.servicoNome}</strong> com <strong>${agendData.profissionalNome}</strong> em ${formatDataBR(agendData.data)} às ${agendData.horaInicio} foi confirmado.`
+      : `Seu agendamento de <strong>${agendData.servicoNome}</strong> com <strong>${agendData.profissionalNome}</strong> em ${formatDataBR(agendData.data)} às ${agendData.horaInicio} foi cancelado.`;
 
     const modoHumano = !!barb?.modoHumano;
     const clienteNotifHabilitada = (params["notif_mensagem_agendar_cancelar"] || "Habilitado") === "Habilitado";
@@ -41,9 +44,9 @@ async function notificarAgendamento(barbeariaId: number, params: Record<string, 
           tipo: "confirmacao",
           agendamentoId: agendData.agendamentoId,
           clienteId: agendData.clienteId ?? null,
-          contexto: { servico: agendData.servicoNome, profissional: agendData.profissionalNome, data: agendData.data, hora: agendData.horaInicio },
+          contexto: { servico: agendData.servicoNome, profissional: agendData.profissionalNome, data: formatDataBR(agendData.data), hora: agendData.horaInicio },
           dedupeKey: `confirm:${barbeariaId}:${agendData.agendamentoId}`,
-          fallbackTexto: `Olá ${agendData.clienteNome}! Seu horário de ${agendData.servicoNome} com ${agendData.profissionalNome} em ${agendData.data} às ${agendData.horaInicio} está confirmado. ${nomeEstab}`,
+          fallbackTexto: `Olá ${agendData.clienteNome}! Seu horário de ${agendData.servicoNome} com ${agendData.profissionalNome} em ${formatDataBR(agendData.data)} às ${agendData.horaInicio} está confirmado. ${nomeEstab}`,
           categoriaPreferida: "confirmacao",
         });
       } catch (e) {
@@ -270,9 +273,9 @@ router.post("/", requireAuth, async (req, res) => {
 
   const tempoPadraoStr = params["agenda_tempo_padrao"] || "30min";
   const tempoPadrao = tempoPadraoStr === "1h" ? 60 : (parseInt(tempoPadraoStr) || 30);
-  const duracaoFinal = profServicoOverride?.tempoOverride ?? servico.duracaoMinutos ?? tempoPadrao;
+  const duracaoFinal = duracaoDoProfissional(servico, profServicoOverride, tempoPadrao);
   const horaFim = addMinutesToTime(horaInicio, duracaoFinal);
-  const valorEfetivo = profServicoOverride?.precoOverride != null ? profServicoOverride.precoOverride : servico.preco;
+  const valorEfetivo = precoDoProfissional(servico, profServicoOverride);
   if (!encaixe) {
     const [barb] = await db.select({ horarioFuncionamento: barbeariasTable.horarioFuncionamento }).from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
     const horarioErr = validateAgendamentoEmHorario(data, horaInicio, horaFim, (barb?.horarioFuncionamento as any));
@@ -327,12 +330,37 @@ router.post("/", requireAuth, async (req, res) => {
     }
   }
 
+  // Agendamento digitado à mão (sem escolher um cliente): localiza o cliente
+  // pelo telefone ou cadastra um novo, para ele aparecer em Clientes, nos
+  // relatórios, na fidelidade e poder consultar/cancelar pelo link.
+  let clienteIdFinal: number | null = clienteId ? Number(clienteId) : null;
+  if (!clienteIdFinal) {
+    const telefoneLimpo = String(clienteTelefone || "").replace(/\D/g, "");
+    if (telefoneLimpo.length >= 8) {
+      const [existente] = await db.select().from(clientesTable).where(
+        and(eq(clientesTable.barbeariaId, barbeariaId), eq(clientesTable.telefone, telefoneLimpo))
+      ).limit(1);
+      if (existente) {
+        clienteIdFinal = existente.id;
+      } else {
+        const [novo] = await db.insert(clientesTable).values({
+          barbeariaId,
+          nome: String(clienteNome).trim(),
+          telefone: telefoneLimpo,
+          email: null,
+          status: "aprovado",
+        }).returning();
+        clienteIdFinal = novo?.id ?? null;
+      }
+    }
+  }
+
   let pacoteClienteAssociado: number | null = null;
-  if (clienteId && params["agenda_associar_pacote_auto"] !== "Desabilitado") {
+  if (clienteIdFinal && params["agenda_associar_pacote_auto"] !== "Desabilitado") {
     const pacotesCliente = await db.select().from(pacotesClienteTable).where(
       and(
         eq(pacotesClienteTable.barbeariaId, barbeariaId),
-        eq(pacotesClienteTable.clienteId, clienteId),
+        eq(pacotesClienteTable.clienteId, clienteIdFinal),
         eq(pacotesClienteTable.status, "ativo")
       )
     );
@@ -358,7 +386,7 @@ router.post("/", requireAuth, async (req, res) => {
 
   const [agend] = await db.insert(agendamentosTable).values({
     barbeariaId,
-    clienteId: clienteId || null,
+    clienteId: clienteIdFinal,
     clienteNome,
     clienteTelefone,
     profissionalId,
@@ -382,7 +410,7 @@ router.post("/", requireAuth, async (req, res) => {
 
   if (statusInicial === "confirmado") {
     notificarAgendamento(barbeariaId, params, {
-      clienteNome, clienteTelefone, clienteId,
+      clienteNome, clienteTelefone, clienteId: clienteIdFinal,
       profissionalNome: profissional.apelido || profissional.nomeExibicao,
       servicoNome: servico.nome, data, horaInicio,
       agendamentoId: agend.id,
@@ -392,8 +420,8 @@ router.post("/", requireAuth, async (req, res) => {
   sendPushToBarbearia(barbeariaId, {
     title: statusInicial === "pendente_aprovacao" ? "Aguardando confirmação" : "Novo Agendamento",
     body: statusInicial === "pendente_aprovacao"
-      ? `${clienteNome} solicitou ${servico.nome} com ${profissional.apelido || profissional.nomeExibicao} em ${data} às ${horaInicio}. Confirme ou recuse.`
-      : `${clienteNome} agendou ${servico.nome} com ${profissional.apelido || profissional.nomeExibicao} em ${data} às ${horaInicio}`,
+      ? `${clienteNome} solicitou ${servico.nome} com ${profissional.apelido || profissional.nomeExibicao} em ${formatDataBR(data)} às ${horaInicio}. Confirme ou recuse.`
+      : `${clienteNome} agendou ${servico.nome} com ${profissional.apelido || profissional.nomeExibicao} em ${formatDataBR(data)} às ${horaInicio}`,
     data: { agendamentoId: agend.id, type: statusInicial === "pendente_aprovacao" ? "pending_appointment" : "new_appointment", url: "/agenda" },
   }).catch(err => console.error("[Push] Error on new appointment:", err));
 
@@ -665,8 +693,13 @@ router.put("/:agendamentoId", requireAuth, async (req, res) => {
     ).limit(1);
     const tempoPadraoStr = params["agenda_tempo_padrao"] || "30min";
     const tempoPadrao = tempoPadraoStr === "1h" ? 60 : (parseInt(tempoPadraoStr) || 30);
-    const duracaoFinal = profServicoOverride?.tempoOverride ?? servico?.duracaoMinutos ?? tempoPadrao;
+    const duracaoFinal = servico ? duracaoDoProfissional(servico, profServicoOverride, tempoPadrao) : tempoPadrao;
     const nextHoraFim = addMinutesToTime(nextHoraInicio, duracaoFinal);
+    // Trocou de profissional e a comanda ainda não foi paga: o valor passa a ser
+    // o preço que esse profissional cobra pelo serviço (ou o preço base).
+    if (servico && nextProfissionalId !== existing.profissionalId && !existing.pago) {
+      updates.valor = precoDoProfissional(servico, profServicoOverride);
+    }
 
     if (!existing.encaixe) {
       const [barb] = await db.select({ horarioFuncionamento: barbeariasTable.horarioFuncionamento }).from(barbeariasTable).where(eq(barbeariasTable.id, barbeariaId)).limit(1);
@@ -745,7 +778,7 @@ router.delete("/:agendamentoId", requireAuth, async (req, res) => {
   }
 
   await db.transaction(async (tx) => {
-    await tx.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId)));
+    await tx.update(agendamentosTable).set({ status: "cancelado", canceladoPor: "equipe", updatedAt: new Date() }).where(and(eq(agendamentosTable.id, id), eq(agendamentosTable.barbeariaId, barbeariaId)));
 
     // Refund pacote session if applicable (idempotent: only when leaving an active state)
     if (agend.pacoteClienteId && (agend.status === "confirmado" || agend.status === "pendente_aprovacao" || agend.status === "pago")) {
@@ -772,8 +805,8 @@ router.delete("/:agendamentoId", requireAuth, async (req, res) => {
   }, "cancelado");
 
   sendPushToBarbearia(barbeariaId, {
-    title: "Agendamento Cancelado",
-    body: `${agend.clienteNome} cancelou ${agend.servicoNome} com ${agend.profissionalNome} em ${agend.data} às ${agend.horaInicio}`,
+    title: "Agendamento cancelado",
+    body: `${agend.clienteNome} cancelou ${agend.servicoNome} com ${agend.profissionalNome} em ${formatDataBR(agend.data)} às ${agend.horaInicio}`,
     data: { agendamentoId: agend.id, type: "cancelled_appointment", url: "/agenda" },
   }).catch(err => console.error("[Push] Error on cancelled appointment:", err));
 
@@ -914,8 +947,13 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
 
   const hasComissaoOverride = profServicoLink?.comissaoOverride != null;
   const comissaoPerc = hasComissaoOverride
-    ? parseFloat(profServicoLink!.comissaoOverride!)
-    : (profissional ? parseFloat(profissional.comissaoValor as string) : 40);
+    ? (parseFloat(profServicoLink!.comissaoOverride!) || 0)
+    : (profissional ? (parseFloat(profissional.comissaoValor as string) || 0) : 0);
+
+  // Comissão sobre produtos: desligada por padrão. Só existe quando o
+  // estabelecimento define a porcentagem no parâmetro "comissao_produtos_percentual".
+  const comissaoProdutosParam = String(params["comissao_produtos_percentual"] ?? "").trim().replace(",", ".");
+  const comissaoProdutosPerc = Math.max(0, Number(comissaoProdutosParam) || 0);
   let comissaoServico = (hasComissaoOverride || profissional?.comissaoTipo === "percentual")
     ? (valorServico * comissaoPerc) / 100
     : comissaoPerc;
@@ -965,7 +1003,7 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
     const [prod] = await db.select().from(produtosTable).where(and(eq(produtosTable.id, p.produtoId), eq(produtosTable.barbeariaId, barbeariaId))).limit(1);
     if (prod) {
       valorProdutos += p.valor * p.quantidade;
-      const comProd = (p.valor * p.quantidade * 10) / 100;
+      const comProd = (p.valor * p.quantidade * comissaoProdutosPerc) / 100;
       comissaoProdutos += comProd;
       prodItems.push({ id: prod.id, nome: prod.nome, valor: p.valor, quantidade: p.quantidade, comissao: comProd });
       await db.update(produtosTable).set({ quantidade: prod.quantidade - p.quantidade, updatedAt: new Date() }).where(eq(produtosTable.id, prod.id));
@@ -978,12 +1016,20 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
   for (const sa of servicosAdicionais) {
     const [serv] = await db.select().from(servicosTable).where(and(eq(servicosTable.id, sa.servicoId), eq(servicosTable.barbeariaId, barbeariaId))).limit(1);
     if (serv) {
-      const saValor = parseFloat(serv.preco as string);
       const saProfId = sa.profissionalId || agend.profissionalId;
       const [saProf] = await db.select().from(profissionaisTable).where(
         and(eq(profissionaisTable.id, saProfId), eq(profissionaisTable.barbeariaId, barbeariaId))
       ).limit(1);
-      const saComPerc = saProf ? parseFloat(saProf.comissaoValor as string) : 40;
+      // Preço do profissional que executa o serviço adicional (ou o preço base).
+      const [saOverride] = await db.select().from(profissionalServicosTable).where(
+        and(
+          eq(profissionalServicosTable.profissionalId, saProfId),
+          eq(profissionalServicosTable.servicoId, serv.id),
+          eq(profissionalServicosTable.barbeariaId, barbeariaId),
+        )
+      ).limit(1);
+      const saValor = parseFloat(precoDoProfissional(serv, saOverride));
+      const saComPerc = saProf ? (parseFloat(saProf.comissaoValor as string) || 0) : 0;
       const saComissao = (saProf?.comissaoTipo === "percentual")
         ? (saValor * saComPerc) / 100
         : saComPerc;
@@ -1183,8 +1229,7 @@ router.post("/:agendamentoId/checkout", requireAuth, async (req, res) => {
       const pesquisa = pesquisasAtivas[0];
       const [cliente] = await db.select().from(clientesTable)
         .where(eq(clientesTable.id, agend.clienteId)).limit(1);
-      const domain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(",")[0] || "";
-      const surveyUrl = `https://${domain}/pesquisa/${pesquisa.id}?cliente=${agend.clienteId}&prof=${agend.profissionalId}`;
+      const surveyUrl = `${getAppBaseUrl()}/pesquisa/${pesquisa.id}?cliente=${agend.clienteId}&prof=${agend.profissionalId}`;
       const [barb] = await db.select().from(barbeariasTable)
         .where(eq(barbeariasTable.id, barbeariaId)).limit(1);
       const nomeEstab = barb?.nome || "Glow Upi";

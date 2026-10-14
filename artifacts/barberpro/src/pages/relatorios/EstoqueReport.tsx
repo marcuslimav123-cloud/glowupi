@@ -36,7 +36,7 @@ export default function EstoqueReport() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="text-[24px] font-bold text-foreground">Relatório de Estoque</h1>
+        <h1 className="text-[24px] font-bold text-foreground">Estoque</h1>
         <p className="text-foreground/40 text-[14px] mt-0.5">Visão geral do estoque de produtos</p>
       </div>
       <ReportTemplate

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { useWhatsappTemplates, renderWhatsappTemplate, buildWhatsappLink } from "@/lib/waTemplates";
+import { useLiveRefresh, triggerLiveRefresh } from "@/lib/liveRefresh";
 
 const METODO_LABEL: Record<string, string> = { pix: "PIX", dinheiro: "Dinheiro", credito: "Crédito", debito: "Débito" };
 const METODO_ICON: Record<string, React.ReactNode> = {
@@ -89,69 +90,41 @@ export default function ComandasAbertas() {
   const [addServicoProfId, setAddServicoProfId] = useState("");
   const [editandoTotal, setEditandoTotal] = useState(false);
 
-  const [asaasOpen, setAsaasOpen] = useState(false);
-  const [asaasAg, setAsaasAg] = useState<any>(null);
-  const [asaasLoading, setAsaasLoading] = useState(false);
-  const [asaasPagamento, setAsaasPagamento] = useState<any>(null);
-  const [asaasError, setAsaasError] = useState("");
-  const [asaasCopied, setAsaasCopied] = useState(false);
-  const [asaasPaid, setAsaasPaid] = useState(false);
-  const [asaasComandaId, setAsaasComandaId] = useState<number | null>(null);
-  const [asaasBillingType, setAsaasBillingType] = useState<"PIX" | "BOLETO" | "CREDIT_CARD">("PIX");
-
-  async function abrirCobrancaAsaas(ag: any, billing: "PIX" | "BOLETO" | "CREDIT_CARD" = "PIX") {
-    setAsaasAg(ag);
-    setAsaasOpen(true);
-    setAsaasLoading(true);
-    setAsaasError("");
-    setAsaasPagamento(null);
-    setAsaasPaid(false);
-    setAsaasComandaId(null);
-    setAsaasBillingType(billing);
-    try {
-      const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/asaas-comanda/agendamento/${ag.id}/cobrar`), {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ valor: Number(ag.valor), billingType: billing }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Erro ao gerar cobrança");
-      setAsaasPagamento(data.pagamento || data);
-      setAsaasComandaId(data.comandaId || null);
-    } catch (e: any) {
-      setAsaasError(e.message);
-    } finally {
-      setAsaasLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (!asaasOpen || !asaasPagamento?.asaasPaymentId || asaasPaid) return;
-    let stop = false;
-    const tick = async () => {
-      try {
-        const res = await fetch(apiUrl(`/barbearias/${barbeariaId}/asaas-comanda/pagamento/${asaasPagamento.asaasPaymentId}/status`), { credentials: "include" });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!stop && data?.paid) {
-          setAsaasPaid(true);
-          fetchAgendamentos();
-          fetchComandasFechadas();
-          toast({ title: "Pagamento confirmado", description: "Comanda paga via Pix Asaas." });
-        }
-      } catch {}
-    };
-    const id = setInterval(tick, 3000);
-    tick();
-    return () => { stop = true; clearInterval(id); };
-  }, [asaasOpen, asaasPagamento, asaasPaid, barbeariaId]);
-
   useEffect(() => {
     if (!barbeariaId) return;
     fetchAgendamentos();
     fetchExtras();
   }, [barbeariaId]);
+
+  // Push, volta para a aba ou tique de 1 minuto: recarrega sem precisar de F5.
+  useLiveRefresh(() => {
+    if (!barbeariaId) return;
+    fetchAgendamentos();
+    if (tab === "historico") fetchComandasFechadas();
+  }, !!barbeariaId);
+
+  // Vindo da Agenda com ?agendamento=ID: abre direto o checkout completo
+  // (serviços, produtos, pagamento) daquele agendamento.
+  const deepLinkHandled = useRef(false);
+  useEffect(() => {
+    if (deepLinkHandled.current || !barbeariaId || loading) return;
+    const id = Number(new URLSearchParams(window.location.search).get("agendamento"));
+    if (!id) return;
+    deepLinkHandled.current = true;
+    const local = agendamentos.find((a: any) => a.id === id);
+    if (local) { openCheckout(local); return; }
+    fetch(apiUrl(`/barbearias/${barbeariaId}/agendamentos/${id}`), { credentials: "include" })
+      .then(r => (r.ok ? r.json() : null))
+      .then(a => {
+        if (a && a.status === "confirmado" && !a.pago) {
+          setAgendamentos(prev => (prev.some((x: any) => x.id === a.id) ? prev : [a, ...prev]));
+          openCheckout(a);
+        } else {
+          toast({ title: "Este agendamento não está disponível para checkout", description: a?.pago ? "Ele já foi pago." : undefined });
+        }
+      })
+      .catch(() => {});
+  }, [agendamentos, loading, barbeariaId]);
 
   useEffect(() => {
     if (!barbeariaId || tab !== "historico") return;
@@ -256,16 +229,26 @@ export default function ComandasAbertas() {
     setProdutosAdicionais(prev => prev.filter(p => p.produtoId !== produtoId));
   }
 
+  // Preço do serviço para um profissional: o valor personalizado dele
+  // (Profissionais → Serviços que atende) ou, sem personalização, o preço base.
+  function precoParaProfissional(serv: any, profId: number): number {
+    const prof = profissionais.find((p: any) => p.id === profId);
+    const override = prof?.servicosOverrides?.find((o: any) => o.servicoId === serv.id);
+    if (override?.precoOverride != null && override.precoOverride !== "") return parseFloat(String(override.precoOverride));
+    return parseFloat(serv.preco);
+  }
+  const addServicoProfIdEfetivo = addServicoProfId ? parseInt(addServicoProfId) : (selected?.profissionalId || 0);
+
   function addServico() {
     const servId = parseInt(addServicoId);
     const serv = servicos.find((s: any) => s.id === servId);
     if (!serv) return;
-    const profId = addServicoProfId ? parseInt(addServicoProfId) : (selected?.profissionalId || 0);
+    const profId = addServicoProfIdEfetivo;
     const prof = profissionais.find((p: any) => p.id === profId);
     setServicosAdicionais(prev => [...prev, {
       servicoId: servId,
       nome: serv.nome,
-      valor: parseFloat(serv.preco),
+      valor: precoParaProfissional(serv, profId),
       profissionalId: profId,
       profissionalNome: prof?.apelido || prof?.nomeExibicao || selected?.profissionalNome || "",
     }]);
@@ -349,6 +332,7 @@ export default function ComandasAbertas() {
         setCheckoutOpen(false);
         setSelected(null);
         fetchAgendamentos();
+        triggerLiveRefresh("local");
       } else {
         const err = await res.json().catch(() => ({}));
         toast({ title: err.error || "Erro ao fechar comanda", variant: "destructive" });
@@ -370,6 +354,7 @@ export default function ComandasAbertas() {
         toast({ title: "Comanda reaberta com sucesso!" });
         fetchComandasFechadas();
         fetchAgendamentos();
+        triggerLiveRefresh("local");
       } else {
         const err = await res.json().catch(() => ({}));
         toast({ title: err.error || "Erro ao reabrir comanda", variant: "destructive" });
@@ -396,7 +381,7 @@ export default function ComandasAbertas() {
     <AppLayout>
       <div className="mb-6">
         <h1 className="text-[24px] font-bold text-foreground">Comandas</h1>
-        <p className="text-foreground/40 text-[14px] mt-0.5">Gerencie comandas abertas e histórico</p>
+        <p className="text-foreground/40 text-[14px] mt-0.5">Atendimentos de hoje para fechar e as comandas já pagas</p>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
@@ -466,11 +451,8 @@ export default function ComandasAbertas() {
                     <div className="flex items-center justify-between pt-3 border-t border-border gap-2">
                       <span className="text-[18px] font-bold text-primary">{formatCurrency(ag.valor)}</span>
                       <div className="flex gap-1.5">
-                        <Button size="sm" variant="outline" className="rounded-xl h-9 text-[12px] px-2.5" onClick={() => abrirCobrancaAsaas(ag)} title="Cobrar via Pix Asaas">
-                          <QrCode className="h-3.5 w-3.5 mr-1" /> Pix
-                        </Button>
                         <Button size="sm" className="rounded-xl h-9 text-[13px]" onClick={() => openCheckout(ag)}>
-                          <Check className="h-3.5 w-3.5 mr-1.5" /> Finalizar
+                          <Check className="h-3.5 w-3.5 mr-1.5" /> Fechar comanda
                         </Button>
                       </div>
                     </div>
@@ -576,7 +558,7 @@ export default function ComandasAbertas() {
 
       <Dialog open={checkoutOpen} onOpenChange={v => { setCheckoutOpen(v); if (!v) setSelected(null); }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Fechar Comanda</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Fechar comanda</DialogTitle></DialogHeader>
           {selected && (
             <form onSubmit={fecharComanda} className="space-y-4">
               <div className="p-3 rounded-lg bg-muted/30 space-y-2">
@@ -654,7 +636,7 @@ export default function ComandasAbertas() {
                   >
                     <option value="">Selecione o serviço...</option>
                     {servicos.filter((s: any) => s.ativo !== false).map((s: any) => (
-                      <option key={s.id} value={s.id}>{s.nome} — {formatCurrency(parseFloat(s.preco))}</option>
+                      <option key={s.id} value={s.id}>{s.nome} — {formatCurrency(precoParaProfissional(s, addServicoProfIdEfetivo))}</option>
                     ))}
                   </select>
                   <select
@@ -1030,89 +1012,6 @@ export default function ComandasAbertas() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={asaasOpen} onOpenChange={(v) => { setAsaasOpen(v); if (!v) { setAsaasAg(null); setAsaasPagamento(null); setAsaasError(""); setAsaasPaid(false); } }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><QrCode className="h-4 w-4" /> Cobrar via Asaas</DialogTitle>
-          </DialogHeader>
-          {asaasAg && (
-            <div className="space-y-4">
-              <div className="p-3 rounded-lg bg-muted/30">
-                <p className="font-semibold text-[14px]">{asaasAg.clienteNome}</p>
-                <p className="text-[12px] text-foreground/50">{asaasAg.servicoNome} · {asaasAg.profissionalNome}</p>
-                <p className="text-[18px] font-bold text-primary mt-1">{formatCurrency(asaasAg.valor)}</p>
-              </div>
-
-              <div className="flex gap-1.5">
-                {(["PIX", "BOLETO", "CREDIT_CARD"] as const).map(b => (
-                  <Button
-                    key={b} type="button" size="sm"
-                    variant={asaasBillingType === b ? "default" : "outline"}
-                    className="flex-1 h-9 text-[12px]"
-                    disabled={asaasLoading}
-                    onClick={() => abrirCobrancaAsaas(asaasAg, b)}
-                  >
-                    {b === "PIX" ? "Pix" : b === "BOLETO" ? "Boleto" : "Cartão"}
-                  </Button>
-                ))}
-              </div>
-
-              {asaasLoading && (
-                <div className="flex items-center justify-center py-10 text-foreground/50 gap-2 text-sm">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Gerando cobrança…
-                </div>
-              )}
-
-              {asaasError && (
-                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50">
-                  {asaasError}
-                </div>
-              )}
-
-              {asaasPaid && (
-                <div className="text-center py-6">
-                  <div className="h-14 w-14 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-3">
-                    <Check className="h-7 w-7 text-green-600 dark:text-green-400" />
-                  </div>
-                  <p className="font-semibold text-green-600 dark:text-green-400">Pagamento confirmado</p>
-                  <p className="text-[12px] text-foreground/50 mt-1">A comanda foi marcada como paga.</p>
-                </div>
-              )}
-
-              {!asaasPaid && asaasPagamento && (
-                <div className="space-y-3">
-                  {asaasPagamento.pixQrCodeBase64 && (
-                    <div className="bg-white p-3 rounded-lg border flex items-center justify-center">
-                      <img src={`data:image/png;base64,${asaasPagamento.pixQrCodeBase64}`} alt="QR Pix" className="w-56 h-56 object-contain" />
-                    </div>
-                  )}
-                  {asaasPagamento.pixCopyPaste && (
-                    <div className="space-y-1.5">
-                      <Label className="text-[11px] uppercase tracking-wide text-foreground/50">Pix copia e cola</Label>
-                      <div className="flex gap-1.5">
-                        <Input readOnly value={asaasPagamento.pixCopyPaste} className="text-[11px] h-9 truncate" />
-                        <Button type="button" size="sm" className="h-9 px-3" onClick={async () => {
-                          try { await navigator.clipboard.writeText(asaasPagamento.pixCopyPaste); setAsaasCopied(true); setTimeout(() => setAsaasCopied(false), 1500); } catch {}
-                        }}>
-                          {asaasCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                  {asaasPagamento.invoiceUrl && (
-                    <a href={asaasPagamento.invoiceUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-xs text-foreground/70 hover:bg-muted/30">
-                      <ExternalLink className="h-3.5 w-3.5" /> Abrir página de pagamento
-                    </a>
-                  )}
-                  <div className="flex items-center justify-center gap-1.5 text-[11px] text-foreground/50">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Aguardando pagamento…
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </AppLayout>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useLiveRefresh } from "@/lib/liveRefresh";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ export default function HistoricoCaixa() {
   const BASE = import.meta.env.BASE_URL;
 
   useEffect(() => { if (barbeariaId) fetchHistorico(); }, [barbeariaId]);
+  useLiveRefresh(() => { if (barbeariaId) fetchHistorico(); }, !!barbeariaId);
 
   const fetchHistorico = async () => {
     setLoading(true);
@@ -29,8 +31,8 @@ export default function HistoricoCaixa() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="text-[24px] font-bold text-foreground">Histórico de Caixa</h1>
-        <p className="text-foreground/40 text-[14px] mt-0.5">Visualize caixas anteriores</p>
+        <h1 className="text-[24px] font-bold text-foreground">Histórico de caixas</h1>
+        <p className="text-foreground/40 text-[14px] mt-0.5">Fechamentos anteriores, com totais e diferenças</p>
       </div>
       <div className="flex flex-wrap gap-3 mb-6">
         <Input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} className="w-40 rounded-xl" />

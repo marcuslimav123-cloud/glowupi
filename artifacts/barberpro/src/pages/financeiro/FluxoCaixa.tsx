@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useLiveRefresh } from "@/lib/liveRefresh";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ export default function FluxoCaixa() {
   const [dataFim, setDataFim] = useState(() => new Date().toISOString().slice(0, 10));
 
   useEffect(() => { if (barbeariaId) fetchData(); }, [barbeariaId]);
+  useLiveRefresh(() => { if (barbeariaId) fetchData(); }, !!barbeariaId);
 
   const fetchData = async () => {
     setLoading(true);
@@ -96,8 +98,8 @@ export default function FluxoCaixa() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="text-[24px] font-bold text-foreground">Fluxo de Caixa</h1>
-        <p className="text-foreground/40 text-[14px] mt-0.5">Visão consolidada das finanças</p>
+        <h1 className="text-[24px] font-bold text-foreground">Fluxo de caixa</h1>
+        <p className="text-foreground/40 text-[14px] mt-0.5">Entradas e saídas por período</p>
       </div>
       <div className="flex flex-wrap gap-3 mb-6">
         <Input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} className="w-40 rounded-xl" />
@@ -105,9 +107,9 @@ export default function FluxoCaixa() {
         <Button onClick={fetchData} className="rounded-xl"><Search className="h-4 w-4 mr-2" />Filtrar</Button>
       </div>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
         {TABS.map(t => (
-          <Button key={t.key} variant={tab === t.key ? "default" : "outline"} size="sm" onClick={() => setTab(t.key)} className="rounded-xl">
+          <Button key={t.key} variant={tab === t.key ? "default" : "outline"} size="sm" onClick={() => setTab(t.key)} className="rounded-xl shrink-0">
             {t.label}
           </Button>
         ))}

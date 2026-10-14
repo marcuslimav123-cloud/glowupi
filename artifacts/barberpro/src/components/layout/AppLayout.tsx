@@ -6,53 +6,7 @@ import { cn } from "@/lib/utils";
 import { getGetCurrentUserQueryKey } from "@workspace/api-client-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiUrl } from "@/lib/utils";
-import { 
-  LayoutDashboard, 
-  CalendarDays, 
-  Settings, 
-  BarChart3, 
-  DollarSign, 
-  TrendingUp, 
-  Building2, 
-  Award,
-  LogOut,
-  Sparkles,
-  Users,
-  UsersRound,
-  Package,
-  Menu,
-  X,
-  Heart,
-  MessageSquare,
-  ClipboardList,
-  Star,
-  Gift,
-  Boxes,
-  AlertTriangle,
-  Tag,
-  Ticket,
-  Newspaper,
-  Bell,
-  Crown,
-  ShoppingCart,
-  ChevronDown,
-  ChevronRight,
-  Shield,
-  Mail,
-  Receipt,
-  History,
-  ArrowUpDown,
-  Percent,
-  Wallet,
-  FileText,
-  Clock,
-  ShieldAlert,
-  Search,
-  Inbox,
-  MessageCircle,
-  Plug,
-  CreditCard,
-} from "lucide-react";
+import { LogOut, Sparkles, Menu, X, AlertTriangle, Crown, ChevronDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SafeLogoImage } from "@/components/SafeLogoImage";
 import { APP_NAME, getRoleLabel } from "@/lib/utils";
@@ -61,431 +15,20 @@ import { MobileBottomBar } from "./MobileBottomBar";
 import { usePWA } from "@/hooks/usePWA";
 import { TutorialOverlay } from "@/components/TutorialOverlay";
 import LgpdConsentDialog from "@/components/LgpdConsentDialog";
+import { NAV_ITEMS, HREF_TO_TUTORIAL, NAV_GROUP_TUTORIAL_IDS, filterNav, isGroupActive, isItemActive, type NavItem } from "@/lib/navigation";
 
-function AsaasGlobalBanner() {
-  const { barbeariaId } = useAuth();
-  const { data } = useQuery<any>({
-    queryKey: ["asaas-conta-banner", barbeariaId],
-    queryFn: async () => {
-      const r = await fetch(apiUrl(`/barbearias/${barbeariaId}/asaas`), { credentials: "include" });
-      if (!r.ok) return null;
-      return r.json();
-    },
-    enabled: !!barbeariaId,
-    staleTime: 60_000,
-    refetchOnWindowFocus: false,
-  });
-  if (!data?.conectado || !data?.conta) return null;
-  const status = (data.conta.status || "").toLowerCase();
-  const pending = ["pending", "awaiting_documents", "rejected", "blocked"].includes(status);
-  if (!pending) return null;
-  const msg = status === "rejected" || status === "blocked"
-    ? "Sua conta Asaas está bloqueada. Verifique pendências em Configurações > Assinatura."
-    : "Sua conta Asaas tem pendências de documentação. Conclua para receber pagamentos.";
-  return (
-    <Link href="/configuracoes/assinatura" className="border-b border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 sm:px-4 flex items-center justify-center gap-2 text-xs sm:text-sm text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors z-20 shrink-0">
-      <AlertTriangle className="h-3.5 w-3.5" />
-      <span>{msg}</span>
-    </Link>
-  );
-}
-
-type NavItem = {
-  name: string;
-  href?: string;
-  icon: any;
-  roles?: string[];
-  children?: NavItem[];
-  subgroups?: { label: string; items: NavItem[] }[];
-};
-
-const NAV_ITEMS: NavItem[] = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { 
-    name: "Agenda",
-    href: "/agenda",
-    icon: CalendarDays,
-  },
-  { 
-    name: "Cadastros", 
-    icon: Settings,
-    roles: ["dono", "gerente"],
-    children: [
-      { name: "Clientes", href: "/gestao/clientes", icon: Users },
-      { name: "Profissionais", href: "/gestao/profissionais", icon: Users },
-      { name: "Serviços", href: "/gestao/servicos", icon: Heart },
-    ],
-    subgroups: [
-      {
-        label: "Pacotes",
-        items: [
-          { name: "Meus Pacotes", href: "/pacotes", icon: Boxes },
-          { name: "Venda de Pacotes", href: "/pacotes/vendas", icon: ShoppingCart },
-        ],
-      },
-      {
-        label: "Tipos",
-        items: [
-          { name: "Cat. Serviço", href: "/cadastros/tipos", icon: Tag },
-          { name: "Cat. Profissional", href: "/cadastros/tipos?cat=profissional", icon: Tag },
-          { name: "Cat. Produto", href: "/cadastros/tipos?cat=produto", icon: Tag },
-          { name: "Tipo Pagamentos", href: "/cadastros/tipos?cat=pagamento", icon: CreditCardIcon },
-          { name: "Despesas", href: "/cadastros/tipos?cat=despesa", icon: TrendingUp },
-          { name: "Receitas", href: "/cadastros/tipos?cat=receita", icon: DollarSign },
-          { name: "Subcontas", href: "/cadastros/tipos?cat=subconta", icon: ClipboardList },
-          { name: "Equipamentos", href: "/cadastros/tipos?cat=equipamento", icon: Settings },
-          { name: "Fornecedores", href: "/cadastros/tipos?cat=fornecedor", icon: Package },
-          { name: "Tipo Anamnese", href: "/cadastros/tipos?cat=anamnese", icon: FileText },
-          { name: "Bandeiras", href: "/cadastros/tipos?cat=bandeira", icon: Tag },
-          { name: "Remunerações", href: "/cadastros/tipos?cat=remuneracao", icon: DollarSign },
-          { name: "Deduções", href: "/cadastros/tipos?cat=deducao", icon: Percent },
-        ],
-      },
-      {
-        label: "Comunicação",
-        items: [
-          { name: "Mensagens", href: "/mensagens", icon: MessageSquare },
-          { name: "Inbox Agendamentos", href: "/comunicacao/inbox", icon: Inbox },
-          { name: "E-mail Marketing", href: "/comunicacao/email-marketing", icon: Mail, roles: ["dono", "gerente"] },
-          { name: "Notícias", href: "/cadastros/noticias", icon: Newspaper },
-          { name: "Grupos de Clientes", href: "/cadastros/grupos", icon: UsersRound },
-          { name: "Pesquisa Satisfação", href: "/cadastros/pesquisa", icon: ClipboardList },
-        ],
-      },
-      {
-        label: "Fidelização",
-        items: [
-          { name: "Lembretes", href: "/cadastros/lembretes", icon: Bell },
-          { name: "Produtos / Estoque", href: "/gestao/produtos", icon: Package },
-          { name: "Clube de Vantagens", href: "/cadastros/clube-vantagens", icon: Gift },
-          { name: "Cupom de Desconto", href: "/cadastros/cupons", icon: Ticket },
-          { name: "Clube de Fidelidade", href: "/clube", icon: Award },
-        ],
-      },
-      {
-        label: "Assinaturas",
-        items: [
-          { name: "Planos de Assinatura", href: "/cadastros/clubes", icon: Crown },
-          { name: "Assinantes", href: "/cadastros/assinantes", icon: Users },
-        ],
-      },
-    ],
-  },
-  {
-    name: "Comandas",
-    icon: Receipt,
-    roles: ["dono", "gerente"],
-    children: [
-      { name: "Comandas Abertas", href: "/comandas/abertas", icon: Receipt },
-      { name: "Histórico", href: "/comandas/historico", icon: History },
-    ],
-  },
-  { 
-    name: "Financeiro", 
-    icon: DollarSign,
-    roles: ["dono", "gerente"],
-    children: [
-      { name: "Caixa", href: "/financeiro/caixa", icon: DollarSign },
-      { name: "Histórico Caixa", href: "/financeiro/historico", icon: History },
-      { name: "Entrada/Saída", href: "/financeiro/movimentacoes", icon: ArrowUpDown },
-      { name: "Comissões", href: "/financeiro/comissoes", icon: Percent },
-      { name: "Conta do Cliente", href: "/financeiro/conta-cliente", icon: Users },
-      { name: "Fluxo de Caixa", href: "/financeiro/fluxo", icon: TrendingUp },
-      { name: "Conta Profissional", href: "/financeiro/conta-profissional", icon: UsersRound },
-      { name: "Caixinha", href: "/financeiro/caixinha", icon: Wallet },
-      { name: "Recebimentos Asaas", href: "/financeiro/recebimentos-asaas", icon: Receipt },
-      { name: "Mensalidade", href: "/financeiro/mensalidade", icon: CreditCard, roles: ["dono"] },
-    ],
-  },
-  {
-    name: "Relatórios",
-    icon: BarChart3,
-    roles: ["dono", "gerente"],
-    subgroups: [
-      {
-        label: "Agendamentos",
-        items: [
-          { name: "Geral", href: "/relatorios/agendamentos", icon: CalendarDays },
-          { name: "Clientes", href: "/relatorios/perfil-cliente", icon: Users },
-          { name: "Profissionais", href: "/relatorios/rankings", icon: Star },
-          { name: "Informações", href: "/relatorios/resumo", icon: LayoutDashboard },
-          { name: "Aniversariantes", href: "/relatorios/aniversariantes", icon: Gift },
-        ],
-      },
-      {
-        label: "Gerencial",
-        items: [
-          { name: "Faturamento", href: "/relatorios", icon: DollarSign },
-          { name: "Financeiro", href: "/relatorios/financeiro", icon: TrendingUp },
-          { name: "Dias sem Vir", href: "/relatorios/dias-sem-vir", icon: Clock },
-          { name: "Lucro Produtos", href: "/relatorios/lucro-produtos", icon: Package },
-          { name: "Comandas Canceladas", href: "/relatorios/canceladas", icon: ClipboardList },
-          { name: "Cupons", href: "/relatorios/cupons", icon: Ticket },
-          { name: "Comandas Itens", href: "/relatorios/comandas-itens", icon: Newspaper },
-          { name: "Estoque", href: "/relatorios/estoque", icon: Package },
-          { name: "Pacotes", href: "/relatorios/pacotes", icon: Boxes },
-          { name: "Rankings", href: "/relatorios/rankings-gerencial", icon: Star },
-        ],
-      },
-    ],
-  },
-  {
-    name: "Configurações",
-    icon: Settings,
-    roles: ["dono", "gerente"],
-    children: [
-      { name: "Parâmetros", href: "/configuracoes/parametros", icon: Settings },
-      { name: "Rodízio", href: "/configuracoes/rodizio", icon: UsersRound },
-      { name: "Perfis de Acesso", href: "/configuracoes/acessos", icon: Shield, roles: ["dono"] },
-      { name: "Templates E-mail", href: "/configuracoes/templates", icon: Mail, roles: ["dono"] },
-      { name: "Conexão Asaas", href: "/configuracoes/asaas", icon: Plug, roles: ["dono", "gerente"] },
-    ],
-    subgroups: [
-      {
-        label: "Fila de Espera",
-        items: [
-          { name: "Ordem de Chegada", href: "/configuracoes/ordem-chegada", icon: ClipboardList },
-          { name: "Lista de Espera", href: "/lista-espera", icon: Users },
-        ],
-      },
-      {
-        label: "Anamnese",
-        items: [
-          { name: "Formulários", href: "/configuracoes/anamnese-formularios", icon: FileText },
-          { name: "Clientes", href: "/configuracoes/anamnese-clientes", icon: Users },
-        ],
-      },
-      {
-        label: "Documentos",
-        items: [
-          { name: "Meus Documentos", href: "/configuracoes/documentos", icon: FileText },
-          { name: "Clientes", href: "/configuracoes/documentos-clientes", icon: Users },
-          { name: "Profissionais", href: "/configuracoes/documentos-profissionais", icon: UsersRound },
-        ],
-      },
-      {
-        label: "Outros",
-        items: [
-          { name: "Avaliações", href: "/avaliacoes", icon: Star },
-          { name: "Lista de Restrições", href: "/configuracoes/restricoes", icon: ShieldAlert },
-          { name: "Funcionamento", href: "/configuracoes/funcionamento", icon: Clock },
-          { name: "Comunicação", href: "/configuracoes/comunicacao", icon: MessageCircle },
-          { name: "Alertas", href: "/configuracoes/alertas", icon: Bell },
-        ],
-      },
-    ],
-  },
-  { name: "Meu Estúdio", href: "/empresa", icon: Building2, roles: ["dono"] },
-  { name: "Equipe", href: "/equipe", icon: UsersRound, roles: ["dono"] },
-];
-
-function CreditCardIcon(props: any) { return <DollarSign {...props} />; }
-
-const HREF_TO_TUTORIAL: Record<string, string> = {
-  "/dashboard": "dashboard",
-  "/agenda": "agenda",
-  "/gestao/servicos": "servicos",
-  "/gestao/profissionais": "profissionais",
-  "/gestao/clientes": "clientes",
-  "/comandas/abertas": "comandas",
-  "/empresa": "empresa",
-  "/configuracoes/parametros": "parametros",
-};
-
-const NAV_GROUP_TUTORIAL_IDS: Record<string, string> = {
-  "Cadastros": "cadastros-group",
-  "Comandas": "comandas-group",
-  "Configurações": "configuracoes-group",
-  "Financeiro": "financeiro-group",
-  "Relatórios": "relatorios-group",
-};
-
-const HREF_TO_PERMISSION: Record<string, string> = {
-  "/dashboard": "dashboard",
-  "/agenda": "agenda",
-  "/agenda/picos": "agenda_picos",
-  "/gestao/clientes": "clientes",
-  "/gestao/profissionais": "profissionais",
-  "/gestao/servicos": "servicos",
-  "/gestao/produtos": "produtos",
-  "/cadastros/tipos": "tipos",
-  "/cadastros/cupons": "cupons",
-  "/mensagens": "mensagens",
-  "/cadastros/lembretes": "lembretes",
-  "/avaliacoes": "avaliacoes",
-  "/clube": "clube",
-  "/cadastros/clubes": "clubes_assinatura",
-  "/cadastros/assinantes": "clubes_assinatura",
-  "/cadastros/noticias": "noticias",
-  "/cadastros/grupos": "noticias",
-  "/cadastros/pesquisa": "pesquisa",
-  "/cadastros/clube-vantagens": "clube",
-  "/pacotes": "pacotes",
-  "/pacotes/vendas": "venda_pacotes",
-  "/comandas/abertas": "comandas",
-  "/comandas/historico": "comandas",
-  "/financeiro/caixa": "caixa",
-  "/financeiro/historico": "caixa",
-  "/financeiro/movimentacoes": "caixa",
-  "/financeiro/comissoes": "financeiro",
-  "/financeiro/conta-cliente": "financeiro",
-  "/financeiro/fluxo": "financeiro",
-  "/financeiro/conta-profissional": "financeiro",
-  "/financeiro/caixinha": "financeiro",
-  "/relatorios": "relatorios",
-  "/relatorios/resumo": "relatorios",
-  "/relatorios/aniversariantes": "relatorios",
-  "/relatorios/agendamentos": "relatorios",
-  "/relatorios/financeiro": "relatorios",
-  "/relatorios/canceladas": "relatorios",
-  "/relatorios/rankings": "relatorios",
-  "/relatorios/rankings-gerencial": "relatorios",
-  "/relatorios/perfil-cliente": "relatorios",
-  "/relatorios/estoque": "relatorios",
-  "/relatorios/pacotes": "relatorios",
-  "/relatorios/comandas-itens": "relatorios",
-  "/caixa": "caixa",
-  "/financeiro": "financeiro",
-  "/lista-espera": "lista_espera",
-  "/configuracoes/parametros": "configuracoes",
-  "/configuracoes/acessos": "configuracoes",
-  "/configuracoes/templates": "configuracoes",
-  "/configuracoes/rodizio": "configuracoes",
-  "/configuracoes/ordem-chegada": "configuracoes",
-  "/configuracoes/anamnese-formularios": "configuracoes",
-  "/configuracoes/anamnese-clientes": "configuracoes",
-  "/configuracoes/documentos": "configuracoes",
-  "/configuracoes/documentos-clientes": "configuracoes",
-  "/configuracoes/documentos-profissionais": "configuracoes",
-  "/configuracoes/restricoes": "configuracoes",
-  "/configuracoes/funcionamento": "configuracoes",
-  "/configuracoes/alertas": "configuracoes",
-  "/empresa": "empresa",
-  "/equipe": "equipe",
-  "/relatorios/dias-sem-vir": "relatorios",
-  "/relatorios/lucro-produtos": "relatorios",
-  "/comunicacao/email-marketing": "mensagens",
-  "/comunicacao/email-marketing/nova": "mensagens",
-};
-
-function hasPermission(href: string | undefined, perms: string[] | null): boolean {
-  if (!perms) return true;
-  if (!href) return true;
-  const cleanHref = href.split("?")[0];
-  const key = HREF_TO_PERMISSION[cleanHref];
-  if (!key) return true;
-  return perms.includes(key);
-}
-
-function filterNavByRole(items: NavItem[], role: string, perfilPermissoes?: string[] | null): NavItem[] {
-  return items.reduce<NavItem[]>((acc, item) => {
-    if (item.roles && !item.roles.includes(role)) return acc;
-    if (item.children || item.subgroups) {
-      const filteredChildren = (item.children || []).filter(
-        child => (!child.roles || child.roles.includes(role)) && hasPermission(child.href, perfilPermissoes ?? null)
-      );
-      const filteredSubgroups = item.subgroups?.map(sg => ({
-        ...sg,
-        items: sg.items.filter(sub => hasPermission(sub.href, perfilPermissoes ?? null)),
-      })).filter(sg => sg.items.length > 0);
-      if (filteredChildren.length > 0 || (filteredSubgroups && filteredSubgroups.length > 0)) {
-        acc.push({ ...item, children: filteredChildren, subgroups: filteredSubgroups });
-      }
-    } else {
-      if (hasPermission(item.href, perfilPermissoes ?? null)) {
-        acc.push(item);
-      }
-    }
-    return acc;
-  }, []);
-}
-
-function isGroupActive(item: NavItem, location: string): boolean {
-  const loc = location.split("?")[0];
-  if (item.children?.some(c => c.href && (loc === c.href.split("?")[0] || loc.startsWith(c.href.split("?")[0] + '/')))) return true;
-  if (item.subgroups?.some(sg => sg.items.some(s => s.href && (loc === s.href.split("?")[0] || loc.startsWith(s.href.split("?")[0] + '/'))))) return true;
-  return false;
-}
-
-function isSubgroupActive(sg: { label: string; items: NavItem[] }, location: string): boolean {
-  const loc = location.split("?")[0];
-  return sg.items.some(s => s.href && (loc === s.href.split("?")[0] || loc.startsWith(s.href.split("?")[0] + '/')));
-}
-
-const CollapsibleSubgroup = React.memo(function CollapsibleSubgroup({ sg, location, onLinkClick, badgeCounts }: { sg: { label: string; items: NavItem[] }; location: string; onLinkClick: () => void; badgeCounts?: Record<string, number> }) {
-  const active = isSubgroupActive(sg, location);
+const CollapsibleGroup = React.memo(function CollapsibleGroup({ item, location, onNavigate, mainRef, badgeCounts }: { item: NavItem; location: string; onNavigate: () => void; mainRef: React.RefObject<HTMLDivElement | null>; badgeCounts?: Record<string, number> }) {
+  const active = isGroupActive(item, location);
   const [open, setOpen] = React.useState(active);
-  const loc = location.split("?")[0];
 
   React.useEffect(() => {
     if (active) setOpen(true);
   }, [active]);
 
-  return (
-    <div className="mt-1.5">
-      <button
-        onClick={() => setOpen(!open)}
-        className={cn(
-          "w-full flex items-center gap-1.5 px-3 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider cursor-pointer",
-          active
-            ? "text-primary/60 hover:text-primary/80"
-            : "text-foreground/25 hover:text-foreground/40 hover:bg-muted/50"
-        )}
-      >
-        <ChevronDown className={cn(
-          "h-2.5 w-2.5 shrink-0",
-          open ? "rotate-0" : "-rotate-90"
-        )} />
-        <span className="flex-1 text-left">{sg.label}</span>
-      </button>
-      {open && (
-        <div className="space-y-0.5 mt-0.5">
-          {sg.items.map(sub => {
-            const badgeCount = sub.href && badgeCounts ? badgeCounts[sub.href] : 0;
-            return (
-            <Link key={sub.name + (sub.href || '')} href={sub.href!} className={cn(
-              "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium",
-              loc === sub.href?.split("?")[0]
-                ? "bg-foreground text-background"
-                : "text-foreground/45 hover:text-foreground hover:bg-muted/50"
-            )} onClick={onLinkClick} {...(sub.href && HREF_TO_TUTORIAL[sub.href.split("?")[0]] ? { "data-tutorial": HREF_TO_TUTORIAL[sub.href.split("?")[0]] } : {})}>
-              <sub.icon className="h-[14px] w-[14px]" />
-              <span className="flex-1">{sub.name}</span>
-              {badgeCount > 0 && (
-                <span className="bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] text-center leading-none">
-                  {badgeCount}
-                </span>
-              )}
-            </Link>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-});
-
-const CollapsibleGroup = React.memo(function CollapsibleGroup({ item, location, onNavigate, mainRef, badgeCounts }: { item: NavItem; location: string; onNavigate: () => void; mainRef: React.RefObject<HTMLDivElement | null>; badgeCounts?: Record<string, number> }) {
-  const active = isGroupActive(item, location);
-  const [open, setOpen] = React.useState(active);
-  const clickedRef = React.useRef(false);
-
-  React.useEffect(() => {
-    if (clickedRef.current && active) {
-      setOpen(true);
-      clickedRef.current = false;
-    }
-  }, [location, active]);
-
   const handleLinkClick = React.useCallback(() => {
-    clickedRef.current = true;
     onNavigate();
-    if (mainRef.current) {
-      mainRef.current.scrollTo({ top: 0 });
-    }
+    if (mainRef.current) mainRef.current.scrollTo({ top: 0 });
   }, [onNavigate, mainRef]);
-
-  const loc = location.split("?")[0];
 
   return (
     <div>
@@ -494,42 +37,32 @@ const CollapsibleGroup = React.memo(function CollapsibleGroup({ item, location, 
         {...(NAV_GROUP_TUTORIAL_IDS[item.name] ? { "data-tutorial": NAV_GROUP_TUTORIAL_IDS[item.name] } : {})}
         className={cn(
           "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium",
-          active
-            ? "text-primary bg-primary/[0.06]"
-            : "text-foreground/50 hover:text-foreground hover:bg-muted/50"
+          active ? "text-primary bg-primary/[0.06]" : "text-foreground/50 hover:text-foreground hover:bg-muted/50"
         )}
       >
         <item.icon className="h-[16px] w-[16px]" />
         <span className="flex-1 text-left">{item.name}</span>
-        <ChevronDown className={cn(
-          "h-3.5 w-3.5",
-          open ? "rotate-0" : "-rotate-90"
-        )} />
+        <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open ? "rotate-0" : "-rotate-90")} />
       </button>
 
       {open && (
         <div className="ml-2 pl-3 border-l border-border mt-0.5 space-y-0.5">
-          {(item.children || []).map(child => (
-            <Link key={child.name + (child.href || '')} href={child.href!} className={cn(
-              "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium",
-              loc === child.href?.split("?")[0]
-                ? "bg-foreground text-background"
-                : "text-foreground/45 hover:text-foreground hover:bg-muted/50"
-            )} onClick={handleLinkClick} {...(child.href && HREF_TO_TUTORIAL[child.href.split("?")[0]] ? { "data-tutorial": HREF_TO_TUTORIAL[child.href.split("?")[0]] } : {})}>
-              <child.icon className="h-[14px] w-[14px]" />
-              {child.name}
-            </Link>
-          ))}
-
-          {item.subgroups?.map(sg => (
-            <CollapsibleSubgroup
-              key={sg.label}
-              sg={sg}
-              location={location}
-              onLinkClick={handleLinkClick}
-              badgeCounts={badgeCounts}
-            />
-          ))}
+          {(item.children || []).map(child => {
+            const badgeCount = child.href && badgeCounts ? (badgeCounts[child.href] || 0) : 0;
+            const tutorial = child.href ? HREF_TO_TUTORIAL[child.href.split("?")[0]] : undefined;
+            return (
+              <Link key={child.href} href={child.href!} className={cn(
+                "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium",
+                isItemActive(child.href, location) ? "bg-foreground text-background" : "text-foreground/45 hover:text-foreground hover:bg-muted/50"
+              )} onClick={handleLinkClick} {...(tutorial ? { "data-tutorial": tutorial } : {})}>
+                <child.icon className="h-[14px] w-[14px]" />
+                <span className="flex-1">{child.name}</span>
+                {badgeCount > 0 && (
+                  <span className="bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] text-center leading-none">{badgeCount}</span>
+                )}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
@@ -538,7 +71,7 @@ const CollapsibleGroup = React.memo(function CollapsibleGroup({ item, location, 
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { user, logout, isLoading, barbeariaId, role, perfilPermissoes, logoUrl, barbeariaNome, barbeariaSlug } = useAuth();
+  const { user, logout, isLoading, barbeariaId, role, perfilPermissoes, logoUrl, barbeariaNome, barbeariaSlug, tipoEstabelecimento, logoPadrao } = useAuth();
   const { canAccess, status, shouldShowUpgrade, trialDaysLeft } = useSubscriptionGuard();
 
   const basePath = import.meta.env.BASE_URL || "/";
@@ -548,6 +81,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     logoUrl: logoUrl || null,
     corPrimaria: undefined,
     startUrl: `${basePath}agenda`,
+    tipoEstabelecimento,
   });
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [showTutorial, setShowTutorial] = React.useState(false);
@@ -623,7 +157,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     if (current > prev && prev !== 0 || (current > 0 && prev === 0 && document.visibilityState === "visible" && performance.now() > 5000)) {
       try {
         type AudioContextCtor = typeof AudioContext;
-        const w = window as Window & { webkitAudioContext?: AudioContextCtor };
+        const w = window as unknown as { AudioContext?: AudioContextCtor; webkitAudioContext?: AudioContextCtor };
         const AC: AudioContextCtor | undefined = w.AudioContext || w.webkitAudioContext;
         if (AC) {
           const ctx = new AC();
@@ -687,33 +221,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       mq.addEventListener("change", listener);
       return () => mq.removeEventListener("change", listener);
     }
+    return undefined;
   }, [layoutParams]);
 
-  React.useEffect(() => {
-    if (!layoutParams) return;
-    const fonte = layoutParams["fonte_webadmin"] || "Inter";
-    const FONT_MAP: Record<string, string> = {
-      "Inter": "'Inter'",
-      "Quicksand": "'Quicksand'",
-      "Mulish": "'Mulish'",
-      "Dosis": "'Dosis'",
-      "Didact Gothic": "'Didact Gothic'",
-    };
-    const fontFamily = FONT_MAP[fonte] || "'Inter'";
-    if (fonte !== "Inter") {
-      const id = "dynamic-font-link";
-      let link = document.getElementById(id) as HTMLLinkElement | null;
-      if (!link) {
-        link = document.createElement("link");
-        link.id = id;
-        link.rel = "stylesheet";
-        document.head.appendChild(link);
-      }
-      link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fonte)}:wght@300;400;500;600;700&display=swap`;
-    }
-    document.documentElement.style.setProperty("--font-sans", `${fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`);
-    document.documentElement.style.setProperty("--font-display", `${fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`);
-  }, [layoutParams]);
 
   React.useEffect(() => {
     if (!user || isLoading) return;
@@ -738,10 +248,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const filteredNav = React.useMemo(
-    () => filterNavByRole(NAV_ITEMS, role, perfilPermissoes),
-    [role, perfilPermissoes]
-  );
+  const filteredNav = React.useMemo(() => filterNav(NAV_ITEMS, role, perfilPermissoes), [role, perfilPermissoes]);
 
   const searchResults = React.useMemo(() => {
     const q = sidebarSearch.trim().toLowerCase();
@@ -753,11 +260,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           results.push({ name: item.name, href: item.href, icon: item.icon, parent: parentName });
         }
         if (item.children) collect(item.children, item.name);
-        if (item.subgroups) {
-          for (const sg of item.subgroups) {
-            collect(sg.items, item.name);
-          }
-        }
       }
     };
     collect(filteredNav);
@@ -820,7 +322,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </Button>
           <div className="font-semibold text-[14px] text-foreground tracking-tight flex items-center gap-1.5 min-w-0">
             <SafeLogoImage
-              src={logoUrl || `${basePath}logo-icon.png`.replace(/\/+/g, "/")}
+              src={logoUrl || logoPadrao}
               alt={barbeariaNome || APP_NAME}
               className={logoUrl ? "h-[24px] w-[24px] object-contain rounded-full shrink-0" : "h-[24px] w-[24px] object-contain shrink-0"}
             />
@@ -840,19 +342,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="px-4 pt-4 pb-2 text-center font-semibold text-[14px] text-foreground tracking-tight truncate">
             {barbeariaNome || APP_NAME}
           </div>
-          <div className="px-4 pb-4">
-            <div
-              className="w-full rounded-lg overflow-hidden bg-muted border border-border"
-              style={{ aspectRatio: "16/9" }}
-            >
-              {logoUrl ? (
-                <SafeLogoImage src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <SafeLogoImage src={`${basePath}logo-icon.png`.replace(/\/+/g, "/")} alt={APP_NAME} className="h-14 w-14 object-contain opacity-60" />
-                </div>
-              )}
-            </div>
+          <div className="px-4 pb-3 flex justify-center">
+            <SafeLogoImage
+              src={logoUrl || logoPadrao}
+              alt={barbeariaNome || APP_NAME}
+              className={logoUrl ? "h-16 w-16 rounded-2xl object-cover border border-border" : "h-12 w-12 object-contain opacity-70"}
+            />
           </div>
         </div>
 
@@ -902,7 +397,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           ) : (
             filteredNav.map((item) => (
               <div key={item.name}>
-                {(item.children || item.subgroups) ? (
+                {item.children ? (
                   <CollapsibleGroup
                     item={item}
                     location={location}
@@ -913,7 +408,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 ) : (
                   <Link href={item.href!} className={cn(
                     "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150",
-                    location === item.href || location.startsWith(item.href + '/')
+                    isItemActive(item.href, location)
                       ? "bg-foreground text-background" 
                       : "text-foreground/50 hover:text-foreground hover:bg-muted/50"
                   )} onClick={handleNavClick} {...(HREF_TO_TUTORIAL[item.href!] ? { "data-tutorial": HREF_TO_TUTORIAL[item.href!] } : {})}>
@@ -955,7 +450,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="hidden md:flex items-center justify-end px-6 py-2.5 border-b border-border bg-card shrink-0">
           <HeaderBar />
         </div>
-        <AsaasGlobalBanner />
         {shouldShowUpgrade && (
           <div className={`border-b px-3 py-1.5 sm:px-4 sm:py-2 flex items-center justify-center gap-2 sm:gap-3 z-20 shrink-0 ${
             trialDaysLeft >= 0 && trialDaysLeft <= 5

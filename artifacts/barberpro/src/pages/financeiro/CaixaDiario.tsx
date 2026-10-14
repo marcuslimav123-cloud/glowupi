@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useLiveRefresh } from "@/lib/liveRefresh";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ export default function CaixaDiario() {
   useEffect(() => {
     if (barbeariaId) { fetchCaixa(); fetchProfissionais(); fetchBandeiras(); }
   }, [barbeariaId]);
+  useLiveRefresh(() => { if (barbeariaId) fetchCaixa(); }, !!barbeariaId);
 
   const fetchCaixa = async () => {
     try {
@@ -162,8 +164,8 @@ export default function CaixaDiario() {
     <AppLayout>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-[24px] font-bold text-foreground">Caixa do Dia</h1>
-          <p className="text-foreground/40 text-[14px] mt-0.5">Controle de abertura e fechamento do caixa diário</p>
+          <h1 className="text-[24px] font-bold text-foreground">Caixa do dia</h1>
+          <p className="text-foreground/40 text-[14px] mt-0.5">Abra o caixa, lance entradas e saídas e feche no fim do dia</p>
         </div>
         {!caixa ? (
           <Button onClick={() => setShowAbrir(true)} className="rounded-xl"><Unlock className="h-4 w-4 mr-2" />Abrir Caixa</Button>

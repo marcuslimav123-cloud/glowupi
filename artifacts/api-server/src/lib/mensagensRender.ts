@@ -1,6 +1,6 @@
 import { db } from "@workspace/db";
 import { agendamentosTable, clientesTable, barbeariasTable } from "@workspace/db/schema";
-import { eq } from "drizzle-orm";
+import { and, asc, eq, gte, inArray } from "drizzle-orm";
 
 export const VARIAVEIS_DISPONIVEIS = [
   "cliente", "servico", "data", "hora", "profissional", "salao", "valor",
@@ -63,6 +63,24 @@ export async function buildContexto(
   } else if (opts.clienteId) {
     const [cli] = await db.select().from(clientesTable).where(eq(clientesTable.id, opts.clienteId)).limit(1);
     if (cli) ctx.cliente = cli.nome || "";
+    // Sem agendamento informado: usa o próximo horário marcado do cliente,
+    // para {data}, {hora}, {profissional} e {servico} não ficarem em branco.
+    const hoje = new Date().toISOString().slice(0, 10);
+    const [prox] = await db.select().from(agendamentosTable).where(
+      and(
+        eq(agendamentosTable.barbeariaId, barbeariaId),
+        eq(agendamentosTable.clienteId, opts.clienteId),
+        inArray(agendamentosTable.status, ["confirmado", "pendente_aprovacao"]),
+        gte(agendamentosTable.data, hoje),
+      )
+    ).orderBy(asc(agendamentosTable.data), asc(agendamentosTable.horaInicio)).limit(1);
+    if (prox) {
+      ctx.servico = prox.servicoNome || "";
+      ctx.data = fmtData(prox.data);
+      ctx.hora = prox.horaInicio || "";
+      ctx.profissional = prox.profissionalNome || "";
+      ctx.valor = fmtValor(prox.valor);
+    }
   }
 
   if (opts.overrides) {
@@ -74,11 +92,24 @@ export async function buildContexto(
   return ctx;
 }
 
+// Nomes alternativos aceitos nos modelos (ex.: {estabelecimento} = {salao}).
+const ALIASES: Record<string, keyof RenderContexto> = {
+  nome_cliente: "cliente", nome: "cliente",
+  horario: "hora",
+  salao: "salao", estabelecimento: "salao", nome_empresa: "salao", empresa: "salao", barbearia: "salao",
+  preco: "valor",
+};
+
 export function renderConteudo(template: string, ctx: RenderContexto): string {
-  return template.replace(/\{(\w+)\}/g, (m, key) => {
-    const v = (ctx as any)[key];
-    return v !== undefined && v !== null && v !== "" ? String(v) : m;
-  });
+  const lookup = (key: string): string | undefined => {
+    const k = (ALIASES[key] ?? key) as string;
+    const v = (ctx as any)[k];
+    return v !== undefined && v !== null && v !== "" ? String(v) : undefined;
+  };
+  // Aceita {variavel} e também {{variavel}} (formato dos modelos de WhatsApp das Configurações).
+  return template
+    .replace(/\{\{\s*(\w+)\s*\}\}/g, (m, key) => lookup(key) ?? m)
+    .replace(/\{(\w+)\}/g, (m, key) => lookup(key) ?? m);
 }
 
 export function renderExemplo(template: string): string {

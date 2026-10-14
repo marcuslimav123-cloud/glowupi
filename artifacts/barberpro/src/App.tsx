@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import NotFound from "@/pages/not-found";
 import LgpdPopup from "@/components/LgpdPopup";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
+import { LiveRefreshBridge } from "@/components/LiveRefreshBridge";
 
 import DirectSales from "@/pages/DirectSales";
 import Landing from "@/pages/Landing";
@@ -43,15 +44,11 @@ const Suporte = React.lazy(() => import("@/pages/Suporte"));
 
 const Tipos = React.lazy(() => import("@/pages/cadastros/Tipos"));
 const Cupons = React.lazy(() => import("@/pages/cadastros/Cupons"));
-const Lembretes = React.lazy(() => import("@/pages/cadastros/Lembretes"));
 const ClubesAssinatura = React.lazy(() => import("@/pages/cadastros/Clubes"));
-const Noticias = React.lazy(() => import("@/pages/cadastros/Noticias"));
 const GruposClientes = React.lazy(() => import("@/pages/cadastros/GruposClientes"));
 const Pesquisa = React.lazy(() => import("@/pages/cadastros/Pesquisa"));
-const ClubeVantagens = React.lazy(() => import("@/pages/cadastros/ClubeVantagens"));
 const VendaPacotes = React.lazy(() => import("@/pages/VendaPacotes"));
 const PublicBooking = React.lazy(() => import("@/pages/PublicBooking"));
-const PublicStorefront = React.lazy(() => import("@/pages/PublicStorefront"));
 const PublicPesquisa = React.lazy(() => import("@/pages/PublicPesquisa"));
 
 const DirectSalesSuccess = React.lazy(() => import("@/pages/DirectSalesSuccess"));
@@ -66,7 +63,6 @@ const CaixaDiario = React.lazy(() => import("@/pages/financeiro/CaixaDiario"));
 const HistoricoCaixa = React.lazy(() => import("@/pages/financeiro/HistoricoCaixa"));
 const MovCaixa = React.lazy(() => import("@/pages/financeiro/MovCaixa"));
 const ComissoesPage = React.lazy(() => import("@/pages/financeiro/Comissoes"));
-const ContaCliente = React.lazy(() => import("@/pages/financeiro/ContaCliente"));
 const FluxoCaixa = React.lazy(() => import("@/pages/financeiro/FluxoCaixa"));
 const ContaProfissional = React.lazy(() => import("@/pages/financeiro/ContaProfissional"));
 const CaixinhaPage = React.lazy(() => import("@/pages/financeiro/Caixinha"));
@@ -85,29 +81,14 @@ const DiasSemVir = React.lazy(() => import("@/pages/relatorios/DiasSemVir"));
 const LucroProdutos = React.lazy(() => import("@/pages/relatorios/LucroProdutos"));
 const RelatorioCupons = React.lazy(() => import("@/pages/relatorios/RelatorioCupons"));
 const ClienteDetalhe = React.lazy(() => import("@/pages/gestao/ClienteDetalhe"));
-const Filiais = React.lazy(() => import("@/pages/gestao/Filiais"));
 
-const Parametros = React.lazy(() => import("@/pages/configuracoes/Parametros"));
+const Configuracoes = React.lazy(() => import("@/pages/configuracoes/Configuracoes"));
 const InboxMensagens = React.lazy(() => import("@/pages/comunicacao/InboxMensagens"));
 const EmailMarketing = React.lazy(() => import("@/pages/comunicacao/EmailMarketing"));
 const NovaCampanha = React.lazy(() => import("@/pages/comunicacao/NovaCampanha"));
 const PerfisAcesso = React.lazy(() => import("@/pages/configuracoes/PerfisAcesso"));
-const RodizioPage = React.lazy(() => import("@/pages/configuracoes/PlaceholderConfig").then(m => ({ default: m.RodizioPage })));
-const OrdemChegadaPage = React.lazy(() => import("@/pages/configuracoes/PlaceholderConfig").then(m => ({ default: m.OrdemChegadaPage })));
-const ListaEsperaConfigPage = React.lazy(() => import("@/pages/configuracoes/PlaceholderConfig").then(m => ({ default: m.ListaEsperaConfigPage })));
-const AlertasPage = React.lazy(() => import("@/pages/configuracoes/PlaceholderConfig").then(m => ({ default: m.AlertasPage })));
 const EmailTemplates = React.lazy(() => import("@/pages/configuracoes/EmailTemplates"));
-const AnamneseFormularios = React.lazy(() => import("@/pages/configuracoes/Anamnese").then(m => ({ default: m.AnamneseFormularios })));
-const AnamneseClientes = React.lazy(() => import("@/pages/configuracoes/Anamnese").then(m => ({ default: m.AnamneseClientes })));
-const DocumentosPage = React.lazy(() => import("@/pages/configuracoes/Documentos").then(m => ({ default: m.DocumentosPage })));
-const DocumentosClientePage = React.lazy(() => import("@/pages/configuracoes/Documentos").then(m => ({ default: m.DocumentosClientePage })));
-const DocumentosProfissionalPage = React.lazy(() => import("@/pages/configuracoes/Documentos").then(m => ({ default: m.DocumentosProfissionalPage })));
-const RestricaoCliente = React.lazy(() => import("@/pages/configuracoes/RestricaoCliente"));
-const ConexaoAsaas = React.lazy(() => import("@/pages/configuracoes/ConexaoAsaas"));
-const RecebimentosAsaas = React.lazy(() => import("@/pages/financeiro/RecebimentosAsaas"));
-const MensalidadeSaaS = React.lazy(() => import("@/pages/financeiro/MensalidadeSaaS"));
 const Funcionamento = React.lazy(() => import("@/pages/configuracoes/Funcionamento"));
-const ConfiguracoesComunicacao = React.lazy(() => import("@/pages/configuracoes/Comunicacao"));
 
 const AdminLogin = React.lazy(() => import("@/pages/admin/AdminLogin"));
 const AdminDashboard = React.lazy(() => import("@/pages/admin/AdminDashboard"));
@@ -127,7 +108,8 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 30_000,
       gcTime: 5 * 60_000,
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
       retry: 1,
     },
   },
@@ -170,7 +152,6 @@ function Router() {
       <Route path="/gestao/produtos" component={Produtos} />
       <Route path="/gestao/clientes/:clienteId" component={ClienteDetalhe} />
       <Route path="/gestao/clientes" component={Clientes} />
-      <Route path="/gestao/filiais" component={Filiais} />
 
       <Route path="/comandas/abertas" component={ComandasAbertas} />
       <Route path="/comandas/historico" component={ComandasHistorico} />
@@ -179,7 +160,6 @@ function Router() {
       <Route path="/financeiro/historico" component={HistoricoCaixa} />
       <Route path="/financeiro/movimentacoes" component={MovCaixa} />
       <Route path="/financeiro/comissoes" component={ComissoesPage} />
-      <Route path="/financeiro/conta-cliente" component={ContaCliente} />
       <Route path="/financeiro/fluxo" component={FluxoCaixa} />
       <Route path="/financeiro/conta-profissional" component={ContaProfissional} />
       <Route path="/financeiro/caixinha" component={CaixinhaPage} />
@@ -207,13 +187,10 @@ function Router() {
 
       <Route path="/cadastros/tipos" component={Tipos} />
       <Route path="/cadastros/cupons" component={Cupons} />
-      <Route path="/cadastros/lembretes" component={Lembretes} />
       <Route path="/cadastros/clubes" component={ClubesAssinatura} />
       <Route path="/cadastros/assinantes" component={ClubesAssinatura} />
-      <Route path="/cadastros/noticias" component={Noticias} />
       <Route path="/cadastros/grupos" component={GruposClientes} />
       <Route path="/cadastros/pesquisa" component={Pesquisa} />
-      <Route path="/cadastros/clube-vantagens" component={ClubeVantagens} />
 
       <Route path="/lista-espera" component={ListaEspera} />
       <Route path="/avaliacoes" component={Avaliacoes} />
@@ -224,31 +201,19 @@ function Router() {
       <Route path="/equipe" component={Equipe} />
       <Route path="/convite/:token" component={AcceptInvite} />
 
-      <Route path="/configuracoes/parametros" component={Parametros} />
-      <Route path="/configuracoes/rodizio" component={RodizioPage} />
-      <Route path="/configuracoes/ordem-chegada" component={OrdemChegadaPage} />
-      <Route path="/configuracoes/lista-espera" component={ListaEsperaConfigPage} />
-      <Route path="/configuracoes/alertas" component={AlertasPage} />
+      <Route path="/configuracoes" component={Configuracoes} />
+      <Route path="/configuracoes">{() => <Redirect to="/configuracoes" />}</Route>
       <Route path="/configuracoes/acessos" component={PerfisAcesso} />
       <Route path="/configuracoes/templates" component={EmailTemplates} />
-      <Route path="/configuracoes/anamnese-formularios" component={AnamneseFormularios} />
-      <Route path="/configuracoes/anamnese-clientes" component={AnamneseClientes} />
-      <Route path="/configuracoes/documentos" component={DocumentosPage} />
-      <Route path="/configuracoes/documentos-clientes" component={DocumentosClientePage} />
-      <Route path="/configuracoes/documentos-profissionais" component={DocumentosProfissionalPage} />
-      <Route path="/configuracoes/restricoes" component={RestricaoCliente} />
-      <Route path="/configuracoes/asaas" component={ConexaoAsaas} />
-      <Route path="/financeiro/recebimentos-asaas" component={RecebimentosAsaas} />
-      <Route path="/financeiro/mensalidade" component={MensalidadeSaaS} />
       <Route path="/configuracoes/funcionamento" component={Funcionamento} />
-      <Route path="/configuracoes/comunicacao" component={ConfiguracoesComunicacao} />
+      <Route path="/configuracoes?secao=notificacoes">{() => <Redirect to="/configuracoes?secao=notificacoes" />}</Route>
 
       <Route path="/menu" component={MenuPage} />
       <Route path="/empresa" component={Empresa} />
       <Route path="/clube" component={Clube} />
 
       <Route path="/pesquisa/:barbeariaId/:pesquisaId" component={PublicPesquisa} />
-      <Route path="/s/:slug" component={PublicStorefront} />
+      <Route path="/s/:slug" component={PublicBooking} />
       <Route path="/agendar/:slug" component={PublicBooking} />
       <Route path="/politica-de-privacidade" component={PoliticaPrivacidade} />
       <Route path="/termos-de-uso" component={TermosDeUso} />
@@ -281,6 +246,7 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <LiveRefreshBridge />
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <AuthProvider>

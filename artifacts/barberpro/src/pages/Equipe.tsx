@@ -310,10 +310,10 @@ export default function Equipe() {
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-[22px] font-bold text-foreground tracking-tight">Equipe</h1>
-            <p className="text-foreground/45 text-[14px] mt-1">Gerencie os profissionais e membros do seu estúdio</p>
+            <p className="text-foreground/45 text-[14px] mt-1">Quem tem acesso ao painel e o que cada pessoa pode fazer</p>
           </div>
           {hasTeamPlan && !isOnePro && (
             <Button
@@ -321,7 +321,7 @@ export default function Equipe() {
               className="rounded-xl h-10 text-[13px] gap-2"
               variant="outline"
             >
-              <Plus className="h-4 w-4" /> Convidar Gerente
+              <Plus className="h-4 w-4" /> Convidar gerente
             </Button>
           )}
         </div>
@@ -373,7 +373,7 @@ export default function Equipe() {
         {profsReadyToInvite.length > 0 && (
           <div className="space-y-3">
             <h2 className="text-[14px] font-semibold text-foreground/60 flex items-center gap-2">
-              <UserPlus className="h-4 w-4" /> Prontos para Convidar
+              <UserPlus className="h-4 w-4" /> Prontos para convidar
             </h2>
             <div className="bg-card rounded-2xl border border-border divide-y divide-black/[0.04]">
               {profsReadyToInvite.map(prof => (
@@ -408,7 +408,7 @@ export default function Equipe() {
         {profsMissingPerfil.length > 0 && (
           <div className="space-y-3">
             <h2 className="text-[14px] font-semibold text-foreground/60 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500" /> Falta Vincular Perfil de Acesso
+              <AlertTriangle className="h-4 w-4 text-amber-500" /> Profissionais sem perfil de acesso
             </h2>
             <div className="bg-card rounded-2xl border border-amber-200 divide-y divide-black/[0.04]">
               {profsMissingPerfil.map(prof => (
@@ -495,7 +495,7 @@ export default function Equipe() {
                           : "border-border text-foreground/50 hover:border-black/[0.12]"
                       )}
                     >
-                      Colaborador(a)
+                      Profissional
                       <span className="block text-[11px] font-normal mt-0.5 opacity-60">Acesso definido pelo perfil</span>
                     </button>
                     <button
@@ -698,7 +698,7 @@ export default function Equipe() {
         {members.length > 0 && (
           <div className="space-y-3">
             <h2 className="text-[14px] font-semibold text-foreground/60 flex items-center gap-2">
-              <UserCheck className="h-4 w-4 text-green-500" /> Membros Ativos
+              <UserCheck className="h-4 w-4 text-green-500" /> Quem já tem acesso
             </h2>
             <div className="bg-card rounded-2xl border border-border divide-y divide-black/[0.04]">
               {members.map(member => (
@@ -711,22 +711,28 @@ export default function Equipe() {
                     <p className="text-[12px] text-foreground/40 truncate">{member.email}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <select
-                      value={member.role}
-                      onChange={e => handleUpdateRole(member.id, e.target.value)}
-                      className="text-[12px] bg-muted/50 border-0 rounded-lg px-2.5 py-1.5 text-foreground/60 font-medium cursor-pointer"
-                    >
-                      <option value="colaborador">Colaborador(a)</option>
-                      <option value="gerente">Gerente</option>
-                    </select>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-foreground/30 hover:text-red-500 hover:bg-red-50"
-                      onClick={() => handleRemoveMember(member.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    {member.role === "dono" ? (
+                      <span className="text-[12px] bg-primary/10 text-primary rounded-lg px-2.5 py-1.5 font-medium">Responsável</span>
+                    ) : (
+                      <>
+                        <select
+                          value={member.role}
+                          onChange={e => handleUpdateRole(member.id, e.target.value)}
+                          className="text-[12px] bg-muted/50 border-0 rounded-lg px-2.5 py-1.5 text-foreground/60 font-medium cursor-pointer"
+                        >
+                          <option value="colaborador">Profissional</option>
+                          <option value="gerente">Gerente</option>
+                        </select>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-foreground/30 hover:text-red-500 hover:bg-red-50"
+                          onClick={() => handleRemoveMember(member.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}

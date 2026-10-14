@@ -6,15 +6,8 @@ import { getRoleLabel, apiUrl } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { applyTheme, THEMES } from "@/components/layout/HeaderBar";
-import { requestNotificationPermission } from "@/hooks/useNotifications";
-import type { LucideProps } from "lucide-react";
+import { enablePushNotifications, disablePushNotifications, getPushStatus, type PushStatus } from "@/hooks/useNotifications";
 import {
-  Users,
-  Heart,
-  Package,
-  Boxes,
-  BarChart3,
-  Clock,
   Building2,
   LogOut,
   ChevronRight,
@@ -22,12 +15,7 @@ import {
   Sun,
   Moon,
   Monitor,
-  Shield,
-  Settings,
-  Star,
-  UsersRound,
   Check,
-  GitBranch,
   GraduationCap,
   Bell,
   BellOff,
@@ -36,167 +24,72 @@ import {
   AlertCircle,
   ChevronDown,
 } from "lucide-react";
+import { NAV_ITEMS, filterNav, type NavItem } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
 import { InstallAppButton } from "@/components/InstallAppButton";
 import { SafeLogoImage } from "@/components/SafeLogoImage";
 
-type LucideIcon = React.ForwardRefExoticComponent<LucideProps & React.RefAttributes<SVGSVGElement>>;
-
-type MenuItem = {
-  name: string;
-  href: string;
-  icon: LucideIcon;
-  description?: string;
-  roles?: string[];
-};
-
-type MenuSection = {
-  label: string;
-  roles?: string[];
-  items: MenuItem[];
-};
-
-const MENU_SECTIONS: MenuSection[] = [
-  {
-    label: "Gestão",
-    roles: ["dono", "gerente"],
-    items: [
-      { name: "Profissionais", href: "/gestao/profissionais", icon: UsersRound, description: "Equipe e comissões" },
-      { name: "Serviços", href: "/gestao/servicos", icon: Heart, description: "Catálogo e preços" },
-      { name: "Produtos / Estoque", href: "/gestao/produtos", icon: Package, description: "Estoque e controle" },
-      { name: "Pacotes", href: "/pacotes", icon: Boxes, description: "Pacotes de serviços" },
-      { name: "Filiais", href: "/gestao/filiais", icon: GitBranch, description: "Múltiplas unidades", roles: ["dono"] },
-    ],
-  },
-  {
-    label: "Relatórios",
-    roles: ["dono", "gerente"],
-    items: [
-      { name: "Faturamento", href: "/relatorios", icon: BarChart3, description: "Receita por período" },
-      { name: "Rankings", href: "/relatorios/rankings", icon: Star, description: "Profissionais e serviços" },
-      { name: "Resumo", href: "/relatorios/resumo", icon: BarChart3, description: "Visão geral" },
-    ],
-  },
-  {
-    label: "Configurações",
-    roles: ["dono", "gerente"],
-    items: [
-      { name: "Meu Estúdio", href: "/empresa", icon: Building2, description: "Dados do estabelecimento" },
-      { name: "Funcionamento", href: "/configuracoes/funcionamento", icon: Clock, description: "Horários e regras" },
-      { name: "Parâmetros", href: "/configuracoes/parametros", icon: Settings, description: "Configurações gerais" },
-      { name: "Perfis de Acesso", href: "/configuracoes/acessos", icon: Shield, description: "Permissões", roles: ["dono"] },
-    ],
-  },
-];
-
-const HREF_TO_PERMISSION: Record<string, string> = {
-  "/gestao/profissionais": "profissionais",
-  "/gestao/servicos": "servicos",
-  "/gestao/produtos": "produtos",
-  "/pacotes": "pacotes",
-  "/relatorios": "relatorios",
-  "/relatorios/rankings": "relatorios",
-  "/relatorios/resumo": "relatorios",
-  "/empresa": "empresa",
-  "/configuracoes/funcionamento": "configuracoes",
-  "/configuracoes/parametros": "configuracoes",
-  "/configuracoes/acessos": "configuracoes",
-};
-
-function hasPermission(href: string, perms: string[] | null): boolean {
-  if (!perms) return true;
-  const key = HREF_TO_PERMISSION[href];
-  if (!key) return true;
-  return perms.includes(key);
-}
+// Rotas já presentes na barra inferior do celular: não repetir no menu.
+const BOTTOM_BAR = new Set(["/dashboard", "/agenda", "/gestao/clientes", "/financeiro/caixa"]);
 
 export default function MenuPage() {
   const { user, logout, role, barbeariaNome, logoUrl, isDono, isGerente, barbeariaId, perfilPermissoes } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [themeOpen, setThemeOpen] = useState(false);
-  const [notifStatus, setNotifStatus] = useState<"loading" | "granted" | "denied" | "default">("loading");
+  const [notifStatus, setNotifStatus] = useState<"loading" | PushStatus>("loading");
+  const [notifHint, setNotifHint] = useState<string | null>(null);
   const [notifLoading, setNotifLoading] = useState(false);
   const [testingNotif, setTestingNotif] = useState(false);
   const [batteryHelpOpen, setBatteryHelpOpen] = useState(false);
 
   useEffect(() => {
-    if ("Notification" in window) {
-      setNotifStatus(Notification.permission as any);
-    } else {
-      setNotifStatus("denied");
-    }
+    getPushStatus().then(setNotifStatus);
   }, []);
 
-  const urlBase64ToUint8Array = (publicKey: string): Uint8Array => {
-    const padding = "=".repeat((4 - (publicKey.length % 4)) % 4);
-    const base64 = (publicKey + padding).replace(/-/g, "+").replace(/_/g, "/");
-    const rawData = window.atob(base64);
-    const arr = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; i++) arr[i] = rawData.charCodeAt(i);
-    return arr;
-  };
-
-  const uint8ToBase64Url = (bytes: Uint8Array): string => {
-    let s = "";
-    for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
-    return window.btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  };
+  const CAMINHO_CADEADO = "toque no cadeado ao lado do endereço → Permissões → Notificações → Permitir, e tente de novo.";
 
   const handleToggleNotifications = async () => {
-    if (notifStatus === "granted") {
-      toast({ title: "Notificações já ativas", description: "Para desativar, use as configurações do seu navegador." });
-      return;
-    }
+    if (notifLoading) return;
     setNotifLoading(true);
+    setNotifHint(null);
     try {
-      const perm = await requestNotificationPermission();
-      setNotifStatus(perm as any);
-      if (perm === "granted") {
-        toast({ title: "Notificações ativadas!" });
-        if ("serviceWorker" in navigator && barbeariaId) {
-          const registration = await navigator.serviceWorker.ready;
-          const vapidResp = await fetch(apiUrl("/push/vapid-public-key"), { credentials: "include" });
-          if (vapidResp.ok) {
-            const { publicKey } = await vapidResp.json();
-            if (publicKey) {
-              let sub: PushSubscription | null = await registration.pushManager.getSubscription();
-              if (sub) {
-                const buf = sub.options.applicationServerKey;
-                const subKey = buf ? uint8ToBase64Url(new Uint8Array(buf)) : "";
-                if (subKey !== publicKey.replace(/=+$/, "")) {
-                  try { await sub.unsubscribe(); } catch {}
-                  sub = null;
-                }
-              }
-              if (!sub) {
-                sub = await registration.pushManager.subscribe({
-                  userVisibleOnly: true,
-                  applicationServerKey: urlBase64ToUint8Array(publicKey),
-                });
-              }
-              await fetch(apiUrl(`/barbearias/${barbeariaId}/push-tokens/register`), {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ token: JSON.stringify(sub.toJSON()), platform: "web" }),
-              });
-            }
-          }
-        }
+      if (notifStatus === "ativo") {
+        await disablePushNotifications(barbeariaId);
+        setNotifStatus(await getPushStatus());
+        toast({ title: "Avisos desativados neste aparelho" });
+        return;
+      }
+      if (notifStatus === "indisponivel") {
+        setNotifHint("Este navegador não suporta avisos. No celular, use o Chrome.");
+        return;
+      }
+      if (notifStatus === "bloqueado") {
+        setNotifHint(`O navegador está bloqueando este site: ${CAMINHO_CADEADO}`);
+        return;
+      }
+      const perm = await enablePushNotifications(barbeariaId);
+      const status = await getPushStatus();
+      setNotifStatus(status);
+      if (status === "ativo") {
+        toast({ title: "Avisos ativados!", description: "Você vai receber os novos agendamentos neste aparelho." });
       } else if (perm === "denied") {
-        toast({ title: "Notificações bloqueadas", description: "Permita nas configurações do navegador.", variant: "destructive" });
+        setNotifHint(`O navegador bloqueou os avisos: ${CAMINHO_CADEADO}`);
+      } else if (perm === "granted") {
+        setNotifHint("A permissão foi dada, mas não consegui registrar este aparelho no servidor. Tente de novo em alguns segundos.");
+      } else {
+        setNotifHint(`O navegador mostrou um aviso pequeno (normalmente na parte de baixo da tela) e ele sumiu antes de você responder. Toque em "Ativar avisos" de novo e, quando o aviso aparecer, toque nele e escolha Permitir. Se sumir de novo, ${CAMINHO_CADEADO}`);
       }
     } catch (err) {
       console.error("Notification error:", err);
-      toast({ title: "Erro ao ativar notificações", variant: "destructive" });
+      toast({ title: "Erro ao ativar avisos", variant: "destructive" });
     } finally {
       setNotifLoading(false);
     }
   };
 
   const handleTestNotification = async () => {
-    if (notifStatus !== "granted") {
+    if (notifStatus !== "ativo") {
       toast({ title: "Ative as notificações primeiro", variant: "destructive" });
       return;
     }
@@ -285,16 +178,14 @@ export default function MenuPage() {
 
   if (!user) return null;
 
-  const filteredSections = MENU_SECTIONS.filter(
-    (s) => !s.roles || s.roles.includes(role)
-  ).map((s) => ({
-    ...s,
-    items: s.items.filter(
-      (item) =>
-        (!item.roles || item.roles.includes(role)) &&
-        hasPermission(item.href, perfilPermissoes)
-    ),
-  })).filter((s) => s.items.length > 0);
+  const nav = filterNav(NAV_ITEMS, role, perfilPermissoes);
+  const grupos: { label: string; items: NavItem[] }[] = [];
+  const soltos: NavItem[] = [];
+  for (const item of nav) {
+    if (item.children) grupos.push({ label: item.name, items: item.children });
+    else if (item.href && !BOTTOM_BAR.has(item.href)) soltos.push(item);
+  }
+  const [aberto, setAberto] = useState<string | null>(null);
 
   return (
     <AppLayout>
@@ -329,35 +220,54 @@ export default function MenuPage() {
           />
         </div>
 
-        {filteredSections.map((section) => (
-          <div key={section.label} className="mb-5">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
-              {section.label}
-            </h3>
+        {grupos.map((g) => {
+          const open = aberto === g.label;
+          return (
+            <div key={g.label} className="mb-3">
+              <div className="bg-card border border-border rounded-2xl overflow-hidden">
+                <button onClick={() => setAberto(open ? null : g.label)} className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-muted/30 transition-colors">
+                  <span className="text-sm font-semibold text-foreground">{g.label}</span>
+                  <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {g.items.length} {g.items.length === 1 ? "item" : "itens"}
+                    <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+                  </span>
+                </button>
+                {open && g.items.map((item) => (
+                  <Link key={item.href} href={item.href!} className="flex items-center gap-3 px-4 py-3 border-t border-border hover:bg-muted/30 transition-colors">
+                    <div className="h-9 w-9 rounded-xl bg-primary/8 flex items-center justify-center shrink-0">
+                      <item.icon className="h-4.5 w-4.5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">{item.name}</p>
+                      {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+
+        {soltos.length > 0 && (
+          <div className="mb-5 mt-5">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">Conta</h3>
             <div className="bg-card border border-border rounded-2xl overflow-hidden">
-              {section.items.map((item, i) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors ${
-                    i !== 0 ? "border-t border-border" : ""
-                  }`}
-                >
+              {soltos.map((item, i) => (
+                <Link key={item.href} href={item.href!} className={`flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors ${i !== 0 ? "border-t border-border" : ""}`}>
                   <div className="h-9 w-9 rounded-xl bg-primary/8 flex items-center justify-center shrink-0">
                     <item.icon className="h-4.5 w-4.5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground">{item.name}</p>
-                    {item.description && (
-                      <p className="text-xs text-muted-foreground">{item.description}</p>
-                    )}
+                    {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
                   </div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                 </Link>
               ))}
             </div>
           </div>
-        ))}
+        )}
 
         <div className="mb-5">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
@@ -370,37 +280,42 @@ export default function MenuPage() {
               className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors"
             >
               <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
-                notifStatus === "granted" ? "bg-green-500/10" : "bg-primary/8"
+                notifStatus === "ativo" ? "bg-green-500/10" : "bg-primary/8"
               }`}>
                 {notifLoading
                   ? <Loader2 className="h-4.5 w-4.5 text-primary animate-spin" />
-                  : notifStatus === "granted"
+                  : notifStatus === "ativo"
                     ? <Bell className="h-4.5 w-4.5 text-green-600" />
                     : <BellOff className="h-4.5 w-4.5 text-muted-foreground" />
                 }
               </div>
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-sm font-medium text-foreground">
-                  {notifStatus === "granted" ? "Notificações Ativas" : "Ativar Notificações"}
+                  {notifStatus === "ativo" ? "Avisos ativos neste aparelho" : "Ativar avisos"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {notifStatus === "granted"
-                    ? "Você receberá alertas de agendamentos"
-                    : notifStatus === "denied"
-                      ? "Bloqueadas — permita nas configurações do navegador"
+                  {notifStatus === "ativo"
+                    ? "Novos agendamentos chegam aqui. Toque para desativar."
+                    : notifStatus === "bloqueado"
+                      ? "Bloqueados pelo navegador — toque para ver como liberar"
                       : "Receba alertas de novos agendamentos"}
                 </p>
               </div>
               <div className={`h-7 w-12 rounded-full p-0.5 transition-colors ${
-                notifStatus === "granted" ? "bg-green-500" : "bg-muted-foreground/20"
+                notifStatus === "ativo" ? "bg-green-500" : "bg-muted-foreground/20"
               }`}>
                 <div className={`h-6 w-6 rounded-full bg-white shadow-sm transition-transform ${
-                  notifStatus === "granted" ? "translate-x-5" : "translate-x-0"
+                  notifStatus === "ativo" ? "translate-x-5" : "translate-x-0"
                 }`} />
               </div>
             </button>
+            {notifHint && (
+              <div className="px-4 pb-3 -mt-1">
+                <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">{notifHint}</p>
+              </div>
+            )}
 
-            {notifStatus === "granted" && (
+            {notifStatus === "ativo" && (
               <button
                 onClick={handleTestNotification}
                 disabled={testingNotif}

@@ -15,6 +15,7 @@ export default function LgpdBanner() {
       const timer = setTimeout(() => setVisible(true), 800);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, []);
 
   const handleAccept = (level: "all" | "essential") => {

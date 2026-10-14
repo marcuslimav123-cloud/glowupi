@@ -65,8 +65,8 @@ export default function DiasSemVir() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="text-[24px] font-bold text-foreground">Dias sem Vir</h1>
-        <p className="text-foreground/40 text-[14px] mt-0.5">Clientes que não agendaram nos últimos X dias</p>
+        <h1 className="text-[24px] font-bold text-foreground">Dias sem vir</h1>
+        <p className="text-foreground/40 text-[14px] mt-0.5">Clientes que não voltam há um tempo: hora de chamar de volta</p>
       </div>
 
       <Card className="mb-6">

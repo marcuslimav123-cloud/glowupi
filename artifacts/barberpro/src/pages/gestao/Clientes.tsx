@@ -193,7 +193,7 @@ export default function Clientes() {
     <AppLayout>
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Clientes</h1>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Clientes</h1>
           <p className="text-muted-foreground mt-1">Cadastro e histórico de clientes</p>
         </div>
         <div className="flex items-center gap-2">
@@ -289,15 +289,15 @@ export default function Clientes() {
                       <Eye className="h-4 w-4" />
                     </Button>
                   </Link>
-                  <Button variant="ghost" size="icon" className={`h-7 w-7 sm:h-8 sm:w-8 ${c.vip ? "text-amber-500" : "text-muted-foreground hover:text-amber-500"}`} title={c.vip ? "Remover VIP" : "Marcar VIP"} onClick={() => handleToggleVip(c)}>
+                  <Button variant="ghost" size="icon" className={`h-9 w-9 sm:h-8 sm:w-8 ${c.vip ? "text-amber-500" : "text-muted-foreground hover:text-amber-500"}`} title={c.vip ? "Remover VIP" : "Marcar VIP"} onClick={() => handleToggleVip(c)}>
                     <Crown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </Button>
                   {c.email && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground hover:text-primary hidden sm:inline-flex" title="Enviar e-mail" onClick={() => { setEmailTo(c); setEmailAssunto(""); setEmailCorpo(""); }}>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-8 sm:w-8 text-muted-foreground hover:text-primary hidden sm:inline-flex" title="Enviar e-mail" onClick={() => { setEmailTo(c); setEmailAssunto(""); setEmailCorpo(""); }}>
                       <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </Button>
                   )}
-                  <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground hover:text-primary" onClick={() => { setEditing(c); setModalOpen(true); }}>
+                  <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-8 sm:w-8 text-muted-foreground hover:text-primary" onClick={() => { setEditing(c); setModalOpen(true); }}>
                     <Edit2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </Button>
                 </div>

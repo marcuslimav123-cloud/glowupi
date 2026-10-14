@@ -1,9 +1,8 @@
 import crypto from "node:crypto";
 import { sendEmail, renderTemplate } from "./brevo.js";
+import { getAppBaseUrl } from "./appUrl.js";
 
-const PUBLIC_BASE = process.env.REPLIT_DOMAINS
-  ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
-  : (process.env.PUBLIC_APP_URL || "");
+const PUBLIC_BASE = getAppBaseUrl();
 
 export function generateUnsubscribeToken(): string {
   return crypto.randomBytes(24).toString("hex");
@@ -17,7 +16,7 @@ export function buildUnsubscribeUrl(token: string): string {
 export function buildAgendamentoUrl(barbeariaSlug: string | null | undefined): string {
   const base = PUBLIC_BASE || "";
   if (!barbeariaSlug) return base + "/barberpro/";
-  return `${base}/barberpro/agendar/${barbeariaSlug}`;
+  return `${base}/s/${barbeariaSlug}`;
 }
 
 export function buildUnsubscribeFooter(nomeEstabelecimento: string, unsubscribeUrl: string): string {

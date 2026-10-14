@@ -57,7 +57,6 @@ Os dados pessoais poderão ser compartilhados com:
 - Stripe Inc. — para processamento de pagamentos
 - Google LLC — para serviços de autenticação (quando o usuário opta por login com Google)
 - Apple Inc. — para autenticação Sign in with Apple e processamento de assinaturas in-app na App Store
-- RevenueCat Inc. — para gestão e reconciliação de assinaturas in-app (apenas no app móvel)
 - Provedores de notificação push (Apple Push Notification Service e Firebase Cloud Messaging) — para envio de notificações ao app móvel
 - Prestadores de serviços essenciais à operação da plataforma
 

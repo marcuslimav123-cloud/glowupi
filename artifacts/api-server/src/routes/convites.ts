@@ -8,6 +8,7 @@ import { sendEmail, renderTemplate } from "../lib/brevo.js";
 import { getTemplateForType } from "./emailTemplates.js";
 import { OAuth2Client } from "google-auth-library";
 import { sendPushToBarbearia } from "../lib/pushNotifications.js";
+import { getAppBaseUrl } from "../lib/appUrl.js";
 
 const router: IRouter = Router();
 
@@ -105,7 +106,7 @@ router.post("/", requireAuth, async (req, res) => {
     console.log(`[Convite] Created invite for ${email}, role=${role}, enviarEmail=${enviarEmail}, perfilAcessoId=${perfilAcessoId || 'none'}`);
     if (enviarEmail) {
       try {
-        const baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN || req.get("host")}`;
+        const baseUrl = getAppBaseUrl(req.get("host"));
         const link = `${baseUrl}/convite/${token}`;
         const cargoLabel = role === "gerente" ? "Gerente" : "Colaborador(a)";
         console.log(`[Convite] Sending invite email to ${email}, link=${link}`);
@@ -179,7 +180,7 @@ router.post("/:id/resend", requireAuth, async (req, res) => {
     if (!convite) return res.status(404).json({ error: "Convite não encontrado" });
     if (convite.status !== "pendente") return res.status(400).json({ error: "Este convite já foi aceito" });
 
-    const baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN || req.get("host")}`;
+    const baseUrl = getAppBaseUrl(req.get("host"));
     const link = `${baseUrl}/convite/${convite.token}`;
     console.log(`[Convite] Resending invite email to ${convite.email}`);
 

@@ -45,7 +45,7 @@ export default function FinanceiroReport() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="text-[24px] font-bold text-foreground">Relatório Financeiro</h1>
+        <h1 className="text-[24px] font-bold text-foreground">Relatório financeiro</h1>
         <p className="text-foreground/40 text-[14px] mt-0.5">Receitas e despesas do período</p>
       </div>
       <ReportTemplate

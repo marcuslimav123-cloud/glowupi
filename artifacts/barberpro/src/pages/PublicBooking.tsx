@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams } from "wouter";
-import { Calendar, Clock, Scissors, User, ChevronLeft, ChevronRight, Check, MapPin, Phone, Loader2, LogOut, MessageCircle, XCircle, CalendarDays, AlertTriangle, Download, Share, X, Copy, ExternalLink } from "lucide-react";
+import { Calendar, Clock, Scissors, User, ChevronLeft, ChevronRight, Check, MapPin, Phone, Loader2, LogOut, MessageCircle, XCircle, CalendarDays, AlertTriangle, Download, Share, X, Info } from "lucide-react";
 import ClientAuthModal from "@/components/ClientAuthModal";
 import { usePWA } from "@/hooks/usePWA";
+import { defaultLogoUrl } from "@/lib/branding";
 import { useInstallPWA } from "@/hooks/useInstallPWA";
 import { InstallAppButton } from "@/components/InstallAppButton";
-import { useClientNotifications } from "@/hooks/useClientNotifications";
+import { useClientNotifications, enableClientNotifications } from "@/hooks/useClientNotifications";
+import { SafeLogoImage } from "@/components/SafeLogoImage";
+import { PublicProfileSheet } from "@/components/public/PublicProfileSheet";
 
 const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/+/g, "/");
 
@@ -47,16 +50,29 @@ interface BarbeariaData {
   telefone: string;
   corPrimaria: string;
   logoUrl: string | null;
+  tipoEstabelecimento?: string | null;
+  logoPadraoUrl?: string;
   descricaoPublica: string | null;
   cidade: string;
   uf: string;
   logradouro: string;
   bairro: string;
   horarioFuncionamento: any;
+  numero?: string | null;
+  fotos?: string[];
+  formasPagamento?: string[];
+  redesSociais?: Record<string, string>;
+  avaliacoes?: any[];
+  notaMedia?: number;
+  totalAvaliacoes?: number;
+  recompensas?: any[];
+  produtos?: any[];
   servicos: any[];
   profissionais: any[];
   tipoLinkAgendamento?: "simples" | "com_login";
+  ordemEscolha?: "profissional" | "servico";
   permitirCancelamentoCliente?: boolean;
+  semPreferenciaHabilitado?: boolean;
   toleranciaCancelamento?: number;
   whatsappEncaixeHabilitado?: boolean;
   filiais?: FilialData[];
@@ -79,7 +95,41 @@ interface Slot {
   profissionalId: number;
   profissionalNome: string;
   disponivel: boolean;
+  valor?: number;
+  duracaoMinutos?: number;
 }
+
+// Preço do serviço para um profissional específico (valor personalizado
+// cadastrado pelo estabelecimento) ou o preço base do serviço.
+function precoServicoProfissional(servico: any, profissional: any | null | undefined): number {
+  const ov = profissional?.servicosOverrides?.find((o: any) => o.servicoId === servico?.id);
+  if (ov && ov.preco != null) return Number(ov.preco);
+  return Number(servico?.preco ?? 0);
+}
+
+function duracaoServicoProfissional(servico: any, profissional: any | null | undefined): number {
+  const ov = profissional?.servicosOverrides?.find((o: any) => o.servicoId === servico?.id);
+  if (ov && ov.duracaoMinutos != null) return Number(ov.duracaoMinutos);
+  return Number(servico?.duracaoMinutos ?? 0);
+}
+
+// Quem atende este serviço (profissionais reais, sem a entrada "Sem preferência").
+function profissionaisDoServico(servico: any, profissionais: any[]): any[] {
+  const reais = profissionais.filter((p: any) => !p.semPreferencia && p.id !== 0);
+  const hasAnyLinks = reais.some((p: any) => p.servicoIds && p.servicoIds.length > 0);
+  return hasAnyLinks ? reais.filter((p: any) => p.servicoIds && p.servicoIds.includes(servico.id)) : reais;
+}
+
+// Sem preferência de profissional: o preço pode variar conforme quem atender.
+// Devolve o menor valor e se há variação ("a partir de").
+function faixaPrecoServico(servico: any, profissionais: any[]): { min: number; varia: boolean } {
+  const precos = profissionaisDoServico(servico, profissionais).map((p: any) => precoServicoProfissional(servico, p));
+  if (precos.length === 0) return { min: Number(servico.preco ?? 0), varia: false };
+  const min = Math.min(...precos);
+  return { min, varia: precos.some(v => v !== min) };
+}
+
+const fmtBRL = (v: number) => `R$ ${v.toFixed(2).replace(".", ",")}`;
 
 type Step = "filial" | "servico" | "profissional" | "data" | "horario" | "confirmar" | "sucesso";
 
@@ -99,20 +149,15 @@ export default function PublicBooking() {
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [clientUser, setClientUser] = useState<ClientUser | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingStatus, setBookingStatus] = useState<string>("confirmado");
-  const [sinalPagamento, setSinalPagamento] = useState<any>(null);
-  const [agendamentoCriadoId, setAgendamentoCriadoId] = useState<number | null>(null);
-  const [agendamentoCriadoTel, setAgendamentoCriadoTel] = useState<string | null>(null);
-  const [sinalConsultaToken, setSinalConsultaToken] = useState<string | null>(null);
   const [observacao, setObservacao] = useState("");
   const [simplesNome, setSimplesNome] = useState("");
   const [simplesWhatsapp, setSimplesWhatsapp] = useState("");
   const [comLoginWhatsapp, setComLoginWhatsapp] = useState("");
-  const [sinalBillingType, setSinalBillingType] = useState<"PIX" | "BOLETO" | "CREDIT_CARD">("PIX");
-  const [payerCpfCnpj, setPayerCpfCnpj] = useState("");
   const [showMeusAgendamentos, setShowMeusAgendamentos] = useState(() => {
     const sp = new URLSearchParams(window.location.search);
     return sp.has("agendamentoId") || sp.has("mensagem");
@@ -145,6 +190,7 @@ export default function PublicBooking() {
     nome: barbearia?.nome,
     logoUrl: barbearia?.logoUrl,
     corPrimaria: barbearia?.corPrimaria,
+    tipoEstabelecimento: barbearia?.tipoEstabelecimento,
   });
 
   const { isInstalled } = useInstallPWA();
@@ -176,6 +222,8 @@ export default function PublicBooking() {
       setBarbearia(data);
       if (data.filiais && data.filiais.length > 0) {
         setStep("filial");
+      } else {
+        setStep(data.ordemEscolha === "servico" ? "servico" : "profissional");
       }
     } catch (e: any) {
       setError(e.message);
@@ -217,7 +265,13 @@ export default function PublicBooking() {
       const res = await fetch(`${API_BASE}/public/${slug}/slots?${params}`, { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
-        setSlots(data.filter((s: Slot) => s.disponivel));
+        // Por hora e, no mesmo horário, por profissional: com "Sem preferência"
+        // os horários de todos ficam intercalados em vez de agrupados por pessoa.
+        setSlots(
+          data
+            .filter((s: Slot) => s.disponivel)
+            .sort((a: Slot, b: Slot) => a.horaInicio.localeCompare(b.horaInicio) || a.profissionalNome.localeCompare(b.profissionalNome)),
+        );
       }
     } catch {} finally {
       setSlotsLoading(false);
@@ -245,8 +299,6 @@ export default function PublicBooking() {
             observacao: observacao || null,
             clienteNome: simplesNome.trim(),
             clienteWhatsapp: simplesWhatsapp.trim(),
-            billingType: sinalBillingType,
-            payerCpfCnpj: payerCpfCnpj || undefined,
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -254,10 +306,6 @@ export default function PublicBooking() {
           throw new Error(data.error || "Erro ao agendar");
         }
         setBookingStatus(data?.status || "confirmado");
-        setSinalPagamento(data?.sinalPagamento || null);
-        setAgendamentoCriadoId(data?.id || null);
-        setAgendamentoCriadoTel(simplesWhatsapp.replace(/\D/g, "").slice(-10));
-        setSinalConsultaToken(data?.sinalPagamento?.consultaToken || null);
         setStep("sucesso");
       } catch (e: any) {
         setError(e.message);
@@ -287,8 +335,6 @@ export default function PublicBooking() {
           observacao: observacao || null,
           filialId: selectedFilial?.id || null,
           clienteWhatsapp: rawWa,
-          billingType: sinalBillingType,
-          payerCpfCnpj: payerCpfCnpj || undefined,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -296,11 +342,8 @@ export default function PublicBooking() {
         throw new Error(data.error || "Erro ao agendar");
       }
       setBookingStatus(data?.status || "confirmado");
-      setSinalPagamento(data?.sinalPagamento || null);
-      setAgendamentoCriadoId(data?.id || null);
-      setAgendamentoCriadoTel(rawWa.slice(-10));
-      setSinalConsultaToken(data?.sinalPagamento?.consultaToken || null);
       setStep("sucesso");
+      if (clientUser) enableClientNotifications().catch(() => {});
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -314,15 +357,21 @@ export default function PublicBooking() {
     fetchSlots(date);
   }
 
+  // Ordem dos passos: por padrão o cliente escolhe o profissional antes do
+  // serviço (parâmetro "O que o cliente escolhe primeiro" em Configurações).
+  const profissionalPrimeiro = barbearia?.ordemEscolha !== "servico";
+  const primeiroPasso: Step = profissionalPrimeiro ? "profissional" : "servico";
+
   function handleSelectServico(s: any) {
     setSelectedServico(s);
     setSelectedSlot(null);
-    setStep("profissional");
+    setStep(profissionalPrimeiro ? "data" : "profissional");
   }
 
   function handleSelectProfissional(p: any | null) {
     setSelectedProfissional(p);
-    setStep("data");
+    setSelectedSlot(null);
+    setStep(profissionalPrimeiro ? "servico" : "data");
   }
 
   const isSimpleMode = barbearia?.tipoLinkAgendamento === "simples";
@@ -494,17 +543,13 @@ export default function PublicBooking() {
   if (!barbearia) return null;
 
   const hasFiliais = barbearia?.filiais && barbearia.filiais.length > 0;
-  const stepOrder: Step[] = hasFiliais
-    ? ["filial", "servico", "profissional", "data", "horario", "confirmar"]
-    : ["servico", "profissional", "data", "horario", "confirmar"];
+  const escolhas: Step[] = profissionalPrimeiro ? ["profissional", "servico"] : ["servico", "profissional"];
+  const stepOrder: Step[] = [...(hasFiliais ? ["filial" as Step] : []), ...escolhas, "data", "horario", "confirmar"];
   const currentStepIdx = stepOrder.indexOf(step === "sucesso" ? "confirmar" : step);
 
   function goBack() {
-    if (step === "servico" && hasFiliais) setStep("filial");
-    else if (step === "profissional") setStep("servico");
-    else if (step === "data") setStep("profissional");
-    else if (step === "horario") setStep("data");
-    else if (step === "confirmar") setStep("horario");
+    const idx = stepOrder.indexOf(step);
+    if (idx > 0) setStep(stepOrder[idx - 1]);
   }
 
   return (
@@ -512,11 +557,19 @@ export default function PublicBooking() {
       <div className="max-w-lg mx-auto">
         <div className="sticky top-0 z-40 bg-[#111]/95 backdrop-blur-lg border-b border-white/5 px-4 py-4">
           <div className="flex items-center gap-3">
-            {step !== "filial" && step !== "servico" && step !== "sucesso" && !showMeusAgendamentos && (
-              <button onClick={goBack} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition">
+            {currentStepIdx > 0 && step !== "sucesso" && !showMeusAgendamentos && (
+              <button onClick={goBack} aria-label="Voltar" className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition">
                 <ChevronLeft className="h-5 w-5" />
               </button>
             )}
+            <button onClick={() => setShowProfile(true)} className="shrink-0 rounded-xl overflow-hidden border border-white/10" title="Sobre o estabelecimento" aria-label="Sobre o estabelecimento">
+              <SafeLogoImage
+                src={barbearia.logoUrl || defaultLogoUrl(barbearia.tipoEstabelecimento)}
+                alt={barbearia.nome}
+                className={barbearia.logoUrl ? "h-10 w-10 object-cover" : "h-10 w-10 object-contain p-1.5"}
+                style={barbearia.logoUrl ? undefined : { background: `${accent}25` }}
+              />
+            </button>
             <div className="flex-1 min-w-0">
               <h1 className="font-bold text-lg truncate">{barbearia.nome}</h1>
               {barbearia.cidade && (
@@ -525,10 +578,14 @@ export default function PublicBooking() {
                 </p>
               )}
             </div>
+            <button onClick={() => setShowProfile(true)} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition" title="Sobre" aria-label="Sobre">
+              <Info className="h-4 w-4 text-white/40" />
+            </button>
             {!isInstalled && (
               <InstallAppButton
                 nome={barbearia?.nome}
                 logoUrl={barbearia?.logoUrl}
+                logoPadrao={defaultLogoUrl(barbearia?.tipoEstabelecimento)}
                 accentColor={accent}
                 variant="ghost"
                 size="sm"
@@ -551,11 +608,12 @@ export default function PublicBooking() {
                       handleOpenMeusAgendamentos();
                     }
                   }}
-                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition"
-                  title="Meus Agendamentos"
-                  style={showMeusAgendamentos ? { backgroundColor: `${accent}20`, borderColor: accent } : {}}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition text-xs font-medium"
+                  title="Meus agendamentos"
+                  style={showMeusAgendamentos ? { backgroundColor: `${accent}20`, color: accent } : { color: "rgba(255,255,255,0.7)" }}
                 >
-                  <CalendarDays className="h-4 w-4" style={showMeusAgendamentos ? { color: accent } : { color: "rgba(255,255,255,0.4)" }} />
+                  <CalendarDays className="h-4 w-4" />
+                  <span>{showMeusAgendamentos ? "Voltar" : "Meus horários"}</span>
                 </button>
                 {!isSimpleMode && clientUser && (
                   <>
@@ -910,7 +968,7 @@ export default function PublicBooking() {
             </div>
           )}
 
-          {!showMeusAgendamentos && step === "servico" && clientUser && barbearia.permitirCancelamentoCliente && (
+          {!showMeusAgendamentos && step === primeiroPasso && clientUser && barbearia.permitirCancelamentoCliente && (
             <button
               onClick={handleOpenMeusAgendamentos}
               className="mb-4 w-full p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/20 transition-all flex items-center gap-3 text-left"
@@ -935,7 +993,7 @@ export default function PublicBooking() {
                   return (
                     <button
                       key={f.id}
-                      onClick={() => { setSelectedFilial(f); setStep("servico"); }}
+                      onClick={() => { setSelectedFilial(f); setStep(primeiroPasso); }}
                       className="w-full p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/20 transition-all text-left group"
                     >
                       <div className="flex items-center gap-3">
@@ -960,50 +1018,77 @@ export default function PublicBooking() {
           {!showMeusAgendamentos && step === "servico" && (
             <div>
               <h2 className="text-lg font-semibold mb-1">Escolha o serviço</h2>
-              <p className="text-white/30 text-sm mb-5">Selecione o que deseja agendar</p>
+              <p className="text-white/30 text-sm mb-5">
+                {profissionalPrimeiro && selectedProfissional
+                  ? <>Serviços e valores de <span className="text-white/60">{selectedProfissional.nomeExibicao}</span></>
+                  : "Selecione o que deseja agendar"}
+              </p>
               <div className="space-y-2">
                 {(() => {
                   let servicosFiltrados = barbearia.servicos;
                   if (selectedFilial) {
                     servicosFiltrados = servicosFiltrados.filter((s: any) => s.filialId === selectedFilial.id || s.filialId === null);
                   }
-                  return servicosFiltrados.map((s: any) => (
+                  // Profissional escolhido antes: só os serviços que ele atende.
+                  if (profissionalPrimeiro && selectedProfissional) {
+                    servicosFiltrados = servicosFiltrados.filter((s: any) => profissionaisDoServico(s, barbearia.profissionais).some((p: any) => p.id === selectedProfissional.id));
+                  }
+                  if (servicosFiltrados.length === 0) {
+                    return <p className="text-center py-8 text-white/30 text-sm">Nenhum serviço disponível para este profissional</p>;
+                  }
+                  return servicosFiltrados.map((s: any) => {
+                    // Preço exibido: do profissional escolhido; sem preferência, o menor
+                    // entre quem atende ("a partir de" quando varia); senão o preço base.
+                    let precoTxt = fmtBRL(Number(s.preco));
+                    let duracao = Number(s.duracaoMinutos || 0);
+                    if (profissionalPrimeiro && selectedProfissional) {
+                      precoTxt = fmtBRL(precoServicoProfissional(s, selectedProfissional));
+                      duracao = duracaoServicoProfissional(s, selectedProfissional);
+                    } else if (profissionalPrimeiro) {
+                      const faixa = faixaPrecoServico(s, barbearia.profissionais);
+                      precoTxt = faixa.varia ? `a partir de ${fmtBRL(faixa.min)}` : fmtBRL(faixa.min);
+                    }
+                    return (
                     <button
                       key={s.id}
                       onClick={() => handleSelectServico(s)}
                       className="w-full p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/20 transition-all text-left group"
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
                           <p className="font-medium text-[15px]">{s.nome}</p>
-                          <p className="text-white/30 text-xs mt-0.5">{s.duracaoMinutos} min</p>
+                          <p className="text-white/30 text-xs mt-0.5">{duracao} min</p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right shrink-0">
                           <p className="font-bold" style={{ color: accent }}>
-                            R$ {s.preco.toFixed(2).replace(".", ",")}
+                            {precoTxt}
                           </p>
                           <ChevronRight className="h-4 w-4 text-white/20 group-hover:text-white/50 ml-auto mt-1" />
                         </div>
                       </div>
                     </button>
-                  ));
+                    );
+                  });
                 })()}
               </div>
             </div>
           )}
 
           {!showMeusAgendamentos && step === "profissional" && (() => {
-            const hasAnyLinks = barbearia.profissionais.some((p: any) => p.servicoIds && p.servicoIds.length > 0);
-            let filtered = hasAnyLinks && selectedServico
-              ? barbearia.profissionais.filter((p: any) => p.servicoIds && p.servicoIds.includes(selectedServico.id))
-              : barbearia.profissionais;
+            // "Sem preferência" tem um botão próprio abaixo; a entrada sintética
+            // (id 0) que a API manda não entra na lista para não aparecer duas vezes.
+            const reais = barbearia.profissionais.filter((p: any) => !p.semPreferencia && p.id !== 0);
+            // Serviço escolhido antes: só quem atende aquele serviço.
+            let filtered = !profissionalPrimeiro && selectedServico ? profissionaisDoServico(selectedServico, barbearia.profissionais) : reais;
             if (selectedFilial) {
-              filtered = filtered.filter((p: any) => p.filialId === selectedFilial.id || p.filialId === null || p.semPreferencia);
+              filtered = filtered.filter((p: any) => p.filialId === selectedFilial.id || p.filialId === null);
             }
+            const semPreferenciaOk = barbearia.semPreferenciaHabilitado !== false;
             return (
             <div>
               <h2 className="text-lg font-semibold mb-1">Escolha o profissional</h2>
-              <p className="text-white/30 text-sm mb-5">Quem vai te atender?</p>
+              <p className="text-white/30 text-sm mb-5">{profissionalPrimeiro ? "Cada profissional tem seus próprios serviços e valores" : "Quem vai te atender?"}</p>
+              {semPreferenciaOk && (
               <button
                 onClick={() => handleSelectProfissional(null)}
                 className="w-full p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/20 transition-all text-left mb-2"
@@ -1011,6 +1096,7 @@ export default function PublicBooking() {
                 <p className="font-medium">Sem preferência</p>
                 <p className="text-white/30 text-xs mt-0.5">Qualquer profissional disponível</p>
               </button>
+              )}
               {filtered.map((p: any) => (
                 <button
                   key={p.id}
@@ -1024,10 +1110,15 @@ export default function PublicBooking() {
                       <User className="h-5 w-5" style={{ color: accent }} />
                     )}
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium">{p.nomeExibicao}</p>
                     {p.especialidade && <p className="text-white/30 text-xs mt-0.5">{p.especialidade}</p>}
                   </div>
+                  {!profissionalPrimeiro && selectedServico && precoServicoProfissional(selectedServico, p) !== Number(selectedServico.preco) && (
+                    <span className="font-bold text-sm shrink-0" style={{ color: accent }}>
+                      R$ {precoServicoProfissional(selectedServico, p).toFixed(2).replace(".", ",")}
+                    </span>
+                  )}
                 </button>
               ))}
               {filtered.length === 0 && (
@@ -1096,7 +1187,12 @@ export default function PublicBooking() {
                     >
                       <p className="font-medium text-sm">{slot.horaInicio}</p>
                       {!selectedProfissional && (
-                        <p className="text-[10px] text-white/30 mt-0.5 truncate">{slot.profissionalNome}</p>
+                        <p className="text-[10px] text-white/30 mt-0.5 truncate">
+                          {slot.profissionalNome}
+                          {slot.valor != null && selectedServico && faixaPrecoServico(selectedServico, barbearia.profissionais).varia && (
+                            <span className="block text-[10px] font-semibold" style={{ color: accent }}>{fmtBRL(slot.valor)}</span>
+                          )}
+                        </p>
                       )}
                     </button>
                   ))}
@@ -1141,7 +1237,7 @@ export default function PublicBooking() {
                     <Scissors className="h-4 w-4" style={{ color: accent }} />
                     <span className="text-sm font-medium">{selectedServico.nome}</span>
                     <span className="ml-auto font-bold text-sm" style={{ color: accent }}>
-                      R$ {selectedServico.preco.toFixed(2).replace(".", ",")}
+                      R$ {(selectedSlot.valor ?? precoServicoProfissional(selectedServico, barbearia.profissionais.find((p: any) => p.id === selectedSlot.profissionalId))).toFixed(2).replace(".", ",")}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 mb-3">
@@ -1246,36 +1342,6 @@ export default function PublicBooking() {
                 />
               </div>
 
-              {(selectedServico as any)?.exigeSinal === true && (
-                <div className="mb-6 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-3">
-                  <p className="text-xs font-medium text-white/60">Forma de pagamento do sinal</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { v: "PIX", label: "PIX" },
-                      { v: "BOLETO", label: "Boleto" },
-                      { v: "CREDIT_CARD", label: "Cartão" },
-                    ].map(opt => (
-                      <button
-                        key={opt.v} type="button"
-                        onClick={() => setSinalBillingType(opt.v as any)}
-                        className={`py-2 rounded-lg text-xs font-medium transition-all ${
-                          sinalBillingType === opt.v ? "ring-2 text-white" : "bg-white/5 text-white/60 hover:bg-white/10"
-                        }`}
-                        style={sinalBillingType === opt.v ? { backgroundColor: accent, color: accentText } : {}}
-                      >{opt.label}</button>
-                    ))}
-                  </div>
-                  {(sinalBillingType === "BOLETO" || sinalBillingType === "CREDIT_CARD") && (
-                    <input
-                      type="text" value={payerCpfCnpj}
-                      onChange={e => setPayerCpfCnpj(e.target.value.replace(/\D/g, "").slice(0, 14))}
-                      maxLength={14} placeholder="CPF ou CNPJ (apenas números)"
-                      className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:border-white/30"
-                    />
-                  )}
-                </div>
-              )}
-
               <button
                 onClick={handleBooking}
                 disabled={bookingLoading}
@@ -1315,24 +1381,12 @@ export default function PublicBooking() {
                 {selectedDate && new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })} às {selectedSlot?.horaInicio}
               </p>
 
-              {sinalPagamento && (
-                <div className="text-left bg-white/5 rounded-xl p-4 mb-6">
-                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-white">
-                    <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-                    Pague o sinal para confirmar
-                  </h3>
-                  <SinalBox
-                    pagamento={sinalPagamento}
-                    statusUrl={agendamentoCriadoId && sinalConsultaToken ? `${API_BASE}/asaas-sinal/agendamento/${agendamentoCriadoId}/status?token=${encodeURIComponent(sinalConsultaToken)}` : undefined}
-                    accentColor={accent}
-                  />
-                </div>
-              )}
               {!isInstalled && (
                 <div className="mb-4">
                   <InstallAppButton
                     nome={barbearia?.nome}
                     logoUrl={barbearia?.logoUrl}
+                logoPadrao={defaultLogoUrl(barbearia?.tipoEstabelecimento)}
                     accentColor={accent}
                     variant="default"
                     className="px-6 py-2.5 rounded-xl text-sm font-medium"
@@ -1341,7 +1395,7 @@ export default function PublicBooking() {
               )}
               <button
                 onClick={() => {
-                  setStep(hasFiliais ? "filial" : "servico");
+                  setStep(hasFiliais ? "filial" : primeiroPasso);
                   setSelectedFilial(null);
                   setSelectedServico(null);
                   setSelectedProfissional(null);
@@ -1362,6 +1416,8 @@ export default function PublicBooking() {
         </div>
       </div>
 
+      {showProfile && barbearia && <PublicProfileSheet barbearia={barbearia as any} accent={accent} onClose={() => setShowProfile(false)} />}
+
       {!isSimpleMode && (
         <ClientAuthModal
           open={showAuthModal}
@@ -1371,84 +1427,6 @@ export default function PublicBooking() {
         />
       )}
 
-    </div>
-  );
-}
-
-function SinalBox({ pagamento, statusUrl, accentColor }: { pagamento: any; statusUrl?: string; accentColor: string }) {
-  const [copied, setCopied] = useState(false);
-  const [paid, setPaid] = useState(false);
-
-  useEffect(() => {
-    if (!statusUrl || paid) return;
-    let stop = false;
-    const tick = async () => {
-      try {
-        const res = await fetch(statusUrl);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!stop && data?.paid) setPaid(true);
-      } catch {}
-    };
-    tick();
-    const id = setInterval(tick, 3000);
-    return () => { stop = true; clearInterval(id); };
-  }, [statusUrl, paid]);
-
-  if (paid) {
-    return (
-      <div className="text-center py-4">
-        <div className="h-12 w-12 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-2">
-          <Check className="h-6 w-6 text-green-400" />
-        </div>
-        <p className="text-green-400 font-medium text-sm">Sinal recebido — agendamento garantido!</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-baseline justify-between">
-        <span className="text-xs text-white/60">Valor do sinal · {pagamento.billingType === "BOLETO" ? "Boleto" : pagamento.billingType === "CREDIT_CARD" ? "Cartão" : "Pix"}</span>
-        <span className="text-lg font-bold text-white">R$ {Number(pagamento.valor).toFixed(2).replace(".", ",")}</span>
-      </div>
-      {pagamento.bankSlipUrl && (
-        <a href={pagamento.bankSlipUrl} target="_blank" rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-semibold"
-          style={{ backgroundColor: accentColor, color: "#000" }}>
-          <ExternalLink className="h-3.5 w-3.5" /> Abrir boleto
-        </a>
-      )}
-      {pagamento.pixQrCodeBase64 && (
-        <div className="bg-white rounded-lg p-3 flex items-center justify-center">
-          <img src={`data:image/png;base64,${pagamento.pixQrCodeBase64}`} alt="QR Pix" className="w-48 h-48 object-contain" />
-        </div>
-      )}
-      {pagamento.pixCopyPaste && (
-        <div className="space-y-1.5">
-          <p className="text-[10px] uppercase tracking-wide text-white/50">Pix copia e cola</p>
-          <div className="flex gap-1.5">
-            <input readOnly value={pagamento.pixCopyPaste}
-              className="flex-1 text-[11px] px-2 py-1.5 rounded bg-black/30 border border-white/10 text-white/80 truncate" />
-            <button
-              onClick={async () => { try { await navigator.clipboard.writeText(pagamento.pixCopyPaste); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {} }}
-              className="px-2.5 py-1.5 rounded text-[11px] font-semibold flex items-center gap-1"
-              style={{ backgroundColor: accentColor, color: "#000" }}>
-              {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-              {copied ? "Copiado" : "Copiar"}
-            </button>
-          </div>
-        </div>
-      )}
-      {pagamento.invoiceUrl && (
-        <a href={pagamento.invoiceUrl} target="_blank" rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-white/10 text-xs text-white/80">
-          <ExternalLink className="h-3.5 w-3.5" /> Abrir página de pagamento
-        </a>
-      )}
-      <div className="flex items-center justify-center gap-1.5 text-[11px] text-white/50">
-        <Loader2 className="h-3 w-3 animate-spin" /> Aguardando pagamento…
-      </div>
     </div>
   );
 }

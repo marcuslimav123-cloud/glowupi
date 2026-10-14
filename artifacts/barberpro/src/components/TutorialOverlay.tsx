@@ -63,7 +63,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     title: "Link Público",
-    description: "Em Meu Estúdio você encontra seu link de agendamento online para compartilhar com clientes agendarem diretamente pelo celular.",
+    description: "Em Meu estabelecimento você encontra seu link de agendamento online para compartilhar com clientes agendarem diretamente pelo celular.",
     icon: Link2,
     menuSelector: "[data-tutorial='empresa']",
   },

@@ -58,7 +58,6 @@ const WEB_PERMISSION_GROUPS = [
       { key: "tipos", label: "Tipos / Categorias" },
       { key: "cupons", label: "Cupons de Desconto" },
       { key: "mensagens", label: "Mensagens" },
-      { key: "lembretes", label: "Lembretes" },
       { key: "avaliacoes", label: "Avaliações" },
       { key: "clube", label: "Clube de Fidelidade" },
       { key: "clubes_assinatura", label: "Clubes de Assinatura" },
@@ -378,8 +377,8 @@ export default function PerfisAcesso() {
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-[22px] font-bold text-foreground tracking-tight">Perfis de Acesso</h1>
-            <p className="text-[13px] text-foreground/45 mt-1">Controle granular de permissões por menu para gerentes e colaboradores</p>
+            <h1 className="text-[22px] font-bold text-foreground tracking-tight">Perfis de acesso</h1>
+            <p className="text-[13px] text-foreground/45 mt-1">O que gerentes e profissionais podem ver e fazer no painel</p>
           </div>
           {role === "dono" && !showForm && !isOnePro && (
             <div className="flex items-center gap-3">

@@ -95,10 +95,10 @@ export default function Cupons() {
 
   return (
     <AppLayout>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Cupons de Desconto</h1>
-          <p className="text-muted-foreground mt-1">Crie e gerencie cupons promocionais</p>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Cupons de desconto</h1>
+          <p className="text-muted-foreground mt-1">Códigos promocionais usados na comanda e no link de agendamento</p>
         </div>
         <div className="flex gap-2">
           <Link href="/relatorios/cupons">

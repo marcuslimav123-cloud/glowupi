@@ -67,6 +67,58 @@ export function requestNotificationPermission(): Promise<NotificationPermission>
   return Notification.requestPermission();
 }
 
+// Pede a permissão (deve ser chamado a partir de um clique do usuário — o
+// Chrome bloqueia sites que pedem sozinhos ao carregar a página) e, se
+// concedida, registra o push desta barbearia.
+export async function enablePushNotifications(barbeariaId?: number | null): Promise<NotificationPermission> {
+  const perm = await requestNotificationPermission();
+  if (perm === "granted" && barbeariaId) {
+    await subscribeToPush(barbeariaId);
+  }
+  return perm;
+}
+
+// Situação dos avisos NESTE aparelho: "ativo" só quando o navegador permitiu
+// e existe uma assinatura de push registrada.
+export type PushStatus = "ativo" | "inativo" | "bloqueado" | "indisponivel";
+
+export async function getPushStatus(): Promise<PushStatus> {
+  if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) return "indisponivel";
+  if (Notification.permission === "denied") return "bloqueado";
+  if (Notification.permission !== "granted") return "inativo";
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    const sub = await registration?.pushManager.getSubscription();
+    return sub ? "ativo" : "inativo";
+  } catch {
+    return "inativo";
+  }
+}
+
+// Desliga os avisos neste aparelho sem mexer na permissão do navegador:
+// cancela a assinatura de push e avisa o servidor para parar de enviar.
+export async function disablePushNotifications(barbeariaId?: number | null): Promise<boolean> {
+  try {
+    if (!("serviceWorker" in navigator)) return false;
+    const registration = await navigator.serviceWorker.getRegistration();
+    const sub = await registration?.pushManager.getSubscription();
+    if (!sub) return true;
+    if (barbeariaId) {
+      await fetch(apiUrl(`/barbearias/${barbeariaId}/push-tokens/unregister`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ token: JSON.stringify(sub.toJSON()) }),
+      }).catch(() => {});
+    }
+    await sub.unsubscribe();
+    return true;
+  } catch (err) {
+    console.error("[Push] Erro ao desativar:", err);
+    return false;
+  }
+}
+
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -114,7 +166,7 @@ async function createFreshSubscription(
   try {
     return await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey),
+      applicationServerKey: urlBase64ToUint8Array(publicKey) as unknown as BufferSource,
     });
   } catch (err) {
     console.error("[Push] subscribe() failed:", err);
@@ -212,16 +264,12 @@ export function useNotifications() {
   useEffect(() => {
     if (!barbeariaId || !isAuthenticated) return;
     if (pushSubscribingRef.current) return;
+    // Sem pedir permissão aqui: só mantém a assinatura de quem já permitiu.
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
     pushSubscribingRef.current = true;
 
-    requestNotificationPermission().then((perm) => {
-      if (perm === "granted") {
-        subscribeToPush(barbeariaId).then((success) => {
-          if (!success) {
-            pushSubscribingRef.current = false;
-          }
-        });
-      } else {
+    subscribeToPush(barbeariaId).then((success) => {
+      if (!success) {
         pushSubscribingRef.current = false;
       }
     });

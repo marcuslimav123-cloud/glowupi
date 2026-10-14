@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useLiveRefresh } from "@/lib/liveRefresh";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ export default function Comissoes() {
   const BASE = import.meta.env.BASE_URL;
 
   useEffect(() => { if (barbeariaId) { fetchComissoes(); fetchProfissionais(); } }, [barbeariaId]);
+  useLiveRefresh(() => { if (barbeariaId) fetchComissoes(); }, !!barbeariaId);
 
   const fetchProfissionais = async () => {
     try {
@@ -73,9 +75,9 @@ export default function Comissoes() {
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-[24px] font-bold text-foreground">Comissões</h1>
-          <p className="text-foreground/40 text-[14px] mt-0.5">Gerencie comissões dos profissionais</p>
+          <p className="text-foreground/40 text-[14px] mt-0.5">O que cada profissional tem a receber no mês, gerado ao fechar as comandas</p>
         </div>
-        <Button onClick={() => setShowForm(true)} className="rounded-xl"><Plus className="h-4 w-4 mr-2" />Nova Comissão</Button>
+        <Button onClick={() => setShowForm(true)} className="rounded-xl"><Plus className="h-4 w-4 mr-2" />Lançar comissão</Button>
       </div>
 
       <div className="flex flex-wrap gap-3 mb-6">
@@ -87,7 +89,7 @@ export default function Comissoes() {
 
       {showForm && (
         <Card className="mb-6 bg-card border-border shadow-none">
-          <CardHeader><CardTitle className="text-[16px]">Nova Comissão</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-[16px]">Lançar comissão</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div><Label>Profissional</Label>
               <Select value={form.profissionalId} onValueChange={v => setForm(f => ({ ...f, profissionalId: v }))}><SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
@@ -117,7 +119,7 @@ export default function Comissoes() {
       {loading ? <div className="animate-pulse h-48 bg-card rounded-2xl" /> : comissoes.length === 0 ? (
         <Card className="bg-card border-border shadow-none"><CardContent className="py-16 text-center">
           <Percent className="h-12 w-12 text-foreground/15 mx-auto mb-4" />
-          <p className="text-foreground/40 text-[14px]">Nenhuma comissão encontrada</p>
+          <p className="text-foreground/40 text-[14px]">Nenhuma comissão neste período</p>
         </CardContent></Card>
       ) : (
         <div className="space-y-2">

@@ -7,6 +7,7 @@ import { OAuth2Client } from "google-auth-library";
 import { randomBytes } from "crypto";
 import { sendEmail } from "../lib/brevo.js";
 import { verifyAppleIdentityToken } from "../lib/appleAuth.js";
+import { getAppBaseUrl } from "../lib/appUrl.js";
 
 const router: IRouter = Router();
 
@@ -655,9 +656,7 @@ router.post("/forgot-password", async (req, res) => {
       expiresAt,
     });
 
-    const baseUrl = process.env.REPLIT_DEV_DOMAIN
-      ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-      : "https://glowupi.com.br";
+    const baseUrl = getAppBaseUrl();
     const resetLink = `${baseUrl}/redefinir-senha?token=${token}`;
 
     await sendEmail({

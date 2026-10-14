@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useLiveRefresh } from "@/lib/liveRefresh";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ export default function MovCaixa() {
   const BASE = import.meta.env.BASE_URL;
 
   useEffect(() => { if (barbeariaId) fetchContas(); }, [barbeariaId]);
+  useLiveRefresh(() => { if (barbeariaId) fetchContas(); }, !!barbeariaId);
 
   const fetchContas = async () => {
     try {
@@ -55,8 +57,8 @@ export default function MovCaixa() {
     <AppLayout>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-[24px] font-bold text-foreground">Movimentações Financeiras</h1>
-          <p className="text-foreground/40 text-[14px] mt-0.5">Contas a pagar e receber</p>
+          <h1 className="text-[24px] font-bold text-foreground">Entradas e saídas</h1>
+          <p className="text-foreground/40 text-[14px] mt-0.5">Lançamentos avulsos de dinheiro que não passam pela comanda</p>
         </div>
         <Button onClick={() => { setShowForm(true); setEditId(null); setForm({ tipo: "pagar", categoria: "", descricao: "", valor: "", dataVencimento: "", status: "pendente" }); }} className="rounded-xl"><Plus className="h-4 w-4 mr-2" />Nova Conta</Button>
       </div>

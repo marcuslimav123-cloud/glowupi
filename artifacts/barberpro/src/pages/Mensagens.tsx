@@ -136,10 +136,10 @@ export default function Mensagens() {
 
   return (
     <AppLayout>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Mensagens</h1>
-          <p className="text-muted-foreground mt-1">Modelos, campanhas e modo humano</p>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Mensagens WhatsApp</h1>
+          <p className="text-muted-foreground mt-1">Promoções e retornos enviados pelo WhatsApp, com modelos prontos</p>
         </div>
       </div>
 
@@ -155,7 +155,7 @@ export default function Mensagens() {
             </div>
             <p className="text-xs text-muted-foreground">
               Confirmações, lembretes e aniversários estão indo para a <strong>Inbox → Sugeridas</strong> para envio manual.{" "}
-              <Link href="/configuracoes/comunicacao" className="text-primary underline inline-flex items-center gap-1">
+              <Link href="/configuracoes?secao=notificacoes" className="text-primary underline inline-flex items-center gap-1">
                 <Settings className="h-3 w-3" /> Configurar
               </Link>
             </p>

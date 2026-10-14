@@ -619,8 +619,13 @@ export default function DirectSales() {
 
                 <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-[1050px] mx-auto">
                   {TIERS_STATIC.map((tier, idx) => {
-                    const priceValue = tier.prices[period];
-                    const originalPrice = tier.prices.mensal;
+                    const stripeProduct = stripeProducts.find(p => p.metadata?.tier === tier.tier);
+                    const stripePrice = stripeProduct?.prices.find(p => p.metadata?.period === period);
+                    const stripeMensal = stripeProduct?.prices.find(p => p.metadata?.period === "mensal");
+                    const meses = period === "anual" ? 12 : period === "semestral" ? 6 : 1;
+                    const totalValue = stripePrice?.unit_amount ?? (period === "mensal" ? tier.prices.mensal : tier.totals[period as "semestral" | "anual"]);
+                    const priceValue = stripePrice?.unit_amount != null ? Math.round(stripePrice.unit_amount / meses) : tier.prices[period];
+                    const originalPrice = stripeMensal?.unit_amount ?? tier.prices.mensal;
                     const isPopular = tier.popular;
                     const loadingKey = `${tier.tier}-${period}`;
 
@@ -662,7 +667,7 @@ export default function DirectSales() {
 
                           {period !== "mensal" && (
                             <p className="text-xs text-white/40 mb-4">
-                              Total: R$ {formatBRL(tier.totals[period as "semestral" | "anual"])}
+                              Total: R$ {formatBRL(totalValue)}
                             </p>
                           )}
 

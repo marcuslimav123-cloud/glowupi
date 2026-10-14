@@ -36,7 +36,7 @@ export default function ComandasItensReport() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="text-[24px] font-bold text-foreground">Comandas — Itens</h1>
+        <h1 className="text-[24px] font-bold text-foreground">Itens de comandas</h1>
         <p className="text-foreground/40 text-[14px] mt-0.5">Detalhamento de serviços por comanda</p>
       </div>
       <ReportTemplate

@@ -10,6 +10,8 @@ import { getEmailStats } from "../lib/brevo.js";
 import { extractYoutubeVideoId } from "../lib/youtube.js";
 import { ObjectStorageService } from "../lib/objectStorage.js";
 
+import { getAppBaseUrl } from "../lib/appUrl.js";
+
 const adminObjectStorage = new ObjectStorageService();
 
 const importUpload = multer({
@@ -749,8 +751,7 @@ router.post("/trial-links", requireAdmin, async (req, res) => {
 
     await logAdminAction(admin.id, "trial_link_created", undefined, { token, expiresAt: expiresAt.toISOString() });
 
-    const domain = process.env.REPLIT_DEV_DOMAIN || process.env.REPL_SLUG + ".repl.co";
-    const baseUrl = `https://${domain}`;
+    const baseUrl = getAppBaseUrl();
     return res.status(201).json({
       ...link,
       url: `${baseUrl}/trial/${token}`,
@@ -782,8 +783,7 @@ router.get("/trial-links", requireAdmin, async (req, res) => {
     .leftJoin(superAdminsTable, eq(trialLinksTable.createdByAdminId, superAdminsTable.id))
     .orderBy(desc(trialLinksTable.createdAt));
 
-    const domain = process.env.REPLIT_DEV_DOMAIN || process.env.REPL_SLUG + ".repl.co";
-    const baseUrl = `https://${domain}`;
+    const baseUrl = getAppBaseUrl();
     return res.json(links.map(l => ({
       ...l,
       url: `${baseUrl}/trial/${l.token}`,

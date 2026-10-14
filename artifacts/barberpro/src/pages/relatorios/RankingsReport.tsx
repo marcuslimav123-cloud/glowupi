@@ -45,8 +45,8 @@ export default function RankingsReport() {
   return (
     <AppLayout>
       <div className="mb-4">
-        <h1 className="text-[24px] font-bold text-foreground">Rankings</h1>
-        <p className="text-foreground/40 text-[14px] mt-0.5">Profissionais e serviços mais populares</p>
+        <h1 className="text-[24px] font-bold text-foreground">Ranking de profissionais</h1>
+        <p className="text-foreground/40 text-[14px] mt-0.5">Quem mais atendeu e quais serviços mais saíram</p>
       </div>
       <div className="flex gap-2 mb-4">
         <button

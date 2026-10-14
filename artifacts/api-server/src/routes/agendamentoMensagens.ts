@@ -125,7 +125,7 @@ clientRouter.get("/:agendamentoId", requireClient, async (req, res) => {
   }
 });
 
-const staffRouter: IRouter = Router();
+const staffRouter: IRouter = Router({ mergeParams: true });
 
 staffRouter.get("/inbox", requireAuth, async (req, res) => {
   try {

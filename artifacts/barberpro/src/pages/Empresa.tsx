@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ImageUpload } from "@/components/ImageUpload";
 import { formatPhone, stripPhone, apiUrl } from "@/lib/utils";
+import { TIPOS_ESTABELECIMENTO } from "@/lib/branding";
 import { useToast } from "@/hooks/use-toast";
 import { Building2, MapPin, Clock, Palette, Save, Link2, Copy, Check, ExternalLink, ImageIcon, XCircle, AlertTriangle, Loader2, CreditCard, ArrowUpRight, Settings } from "lucide-react";
 import { Link as WouterLink } from "wouter";
@@ -62,6 +63,7 @@ export default function Empresa() {
   const [horarios, setHorarios] = useState<any>(DEFAULT_HORARIOS);
   const [loadingCep, setLoadingCep] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [tipoEstabelecimento, setTipoEstabelecimento] = useState("");
   const [cancellingPlan, setCancellingPlan] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [openingPortal, setOpeningPortal] = useState(false);
@@ -81,6 +83,7 @@ export default function Empresa() {
       setCorPrimaria(barbearia.corPrimaria || "#3b82f6");
       setHorarios(normalizeHorarios(barbearia.horarioFuncionamento));
       setLogoUrl((barbearia as any).logoUrl || null);
+      setTipoEstabelecimento((barbearia as any).segmentacao?.tipoEstabelecimento || "");
     }
   }, [barbearia]);
 
@@ -160,7 +163,7 @@ export default function Empresa() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateMutation.mutateAsync({ data: { nome, telefone: stripPhone(telefone), email: email || null, cnpj: cnpj || null, cep: cep || null, logradouro: logradouro || null, numero: numero || null, bairro: bairro || null, cidade: cidade || null, uf: uf || null, corPrimaria, logoUrl } as any });
+      await updateMutation.mutateAsync({ data: { nome, telefone: stripPhone(telefone), email: email || null, cnpj: cnpj || null, cep: cep || null, logradouro: logradouro || null, numero: numero || null, bairro: bairro || null, cidade: cidade || null, uf: uf || null, corPrimaria, logoUrl, segmentacao: { ...(((barbearia as any)?.segmentacao) || {}), tipoEstabelecimento: tipoEstabelecimento || null } } as any });
       qc.invalidateQueries();
       try {
         if ("serviceWorker" in navigator) {
@@ -175,8 +178,8 @@ export default function Empresa() {
   return (
     <AppLayout>
       <div className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-foreground">Meu Estúdio</h1>
-        <p className="text-muted-foreground mt-1">Configurações do seu espaço</p>
+        <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Meu estabelecimento</h1>
+        <p className="text-muted-foreground mt-1">Dados, logo, plano e link de agendamento</p>
       </div>
 
       {barbearia && (
@@ -204,9 +207,9 @@ export default function Empresa() {
 
       {barbearia?.slug && (
         <Card className="mb-6">
-          <CardHeader><CardTitle className="flex items-center gap-2"><Link2 className="h-5 w-5 text-primary" /> Página Pública</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Link2 className="h-5 w-5 text-primary" /> Link de agendamento</CardTitle></CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-3">Compartilhe este link com seus clientes para agendamento online:</p>
+            <p className="text-sm text-muted-foreground mb-3">É por este link que seus clientes agendam. Coloque no Instagram, no WhatsApp e no Google.</p>
             <div className="flex items-center gap-2">
               <div className="flex-1 px-3 py-2 rounded-lg bg-muted text-sm font-mono truncate">
                 {window.location.origin}{import.meta.env.BASE_URL}s/{barbearia.slug}
@@ -272,10 +275,10 @@ export default function Empresa() {
       ) : (
         <form onSubmit={handleSave} className="space-y-6">
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5 text-primary" /> Logo do Estúdio</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5 text-primary" /> Logo</CardTitle></CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Essa imagem aparecerá na sua página pública de agendamento. Recomendamos uma imagem quadrada (ex: 500x500px).
+                Aparece na página de agendamento, no ícone do aplicativo e no painel. Use uma imagem quadrada.
               </p>
               <ImageUpload
                 value={logoUrl}
@@ -288,11 +291,23 @@ export default function Empresa() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5 text-primary" /> Dados do Estúdio</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5 text-primary" /> Dados do estabelecimento</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2 md:col-span-2">
-                <Label>Nome do Salão / Estúdio</Label>
+                <Label>Nome do estabelecimento</Label>
                 <Input value={nome} onChange={e => setNome(e.target.value)} required />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Tipo de estabelecimento</Label>
+                <select
+                  value={tipoEstabelecimento}
+                  onChange={e => setTipoEstabelecimento(e.target.value)}
+                  className="flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1"
+                >
+                  <option value="">Selecione</option>
+                  {TIPOS_ESTABELECIMENTO.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <p className="text-xs text-muted-foreground">Ajusta sugestões e a marca padrão enquanto você não envia sua logo.</p>
               </div>
               <div className="space-y-2">
                 <Label>Telefone / WhatsApp</Label>
@@ -300,7 +315,7 @@ export default function Empresa() {
               </div>
               <div className="space-y-2">
                 <Label>E-mail</Label>
-                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="contato@seusalao.com" />
+                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="contato@seunegocio.com.br" />
               </div>
               <div className="space-y-2">
                 <Label>CNPJ</Label>
@@ -368,11 +383,11 @@ export default function Empresa() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><Palette className="h-5 w-5 text-primary" /> Personalização</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2"><Palette className="h-5 w-5 text-primary" /> Cor da página de agendamento</CardTitle></CardHeader>
             <CardContent>
               <div className="flex items-center gap-4">
                 <div className="space-y-2">
-                  <Label>Cor Principal</Label>
+                  <Label>Cor principal</Label>
                   <div className="flex items-center gap-3">
                     <input type="color" value={corPrimaria} onChange={e => setCorPrimaria(e.target.value)} className="h-10 w-16 rounded-lg border border-border cursor-pointer" />
                     <Input value={corPrimaria} onChange={e => setCorPrimaria(e.target.value)} className="w-32 font-mono" />
@@ -396,7 +411,7 @@ export default function Empresa() {
                     Ao cancelar, as cobranças param imediatamente, mas você mantém acesso até o final do período já pago.
                   </p>
                   <Button variant="outline" className="border-red-500/30 text-red-500 hover:bg-red-500/10" onClick={() => setShowCancelConfirm(true)}>
-                    Cancelar Meu Plano
+                    Cancelar meu plano
                   </Button>
                 </div>
               ) : (

@@ -45,7 +45,7 @@ export default function Clubes() {
   const [clienteEmail, setClienteEmail] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const { data: servicos = [] } = useListServicos(barbeariaId!, { query: { enabled: !!barbeariaId } });
   const servicosArr = servicos as any[];
@@ -256,10 +256,10 @@ export default function Clubes() {
 
   return (
     <AppLayout>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Clubes de Assinatura</h1>
-          <p className="text-muted-foreground mt-1">Gerencie planos e assinantes</p>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Planos de assinatura</h1>
+          <p className="text-muted-foreground mt-1">Planos mensais para clientes, com serviços inclusos</p>
         </div>
         {tab === "planos" ? (
           <Button onClick={() => { setEditingPlano(null); setPlanoDialogOpen(true); }}><Plus className="h-4 w-4 mr-2" /> Novo Plano</Button>

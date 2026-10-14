@@ -134,8 +134,8 @@ export default function Funcionamento() {
     <AppLayout>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-[24px] font-bold text-foreground">Horários de Funcionamento</h1>
-          <p className="text-foreground/40 text-[14px] mt-0.5">Configure os horários de funcionamento do estúdio</p>
+          <h1 className="text-[24px] font-bold text-foreground">Horários de funcionamento</h1>
+          <p className="text-foreground/40 text-[14px] mt-0.5">Dias e horários em que o estabelecimento atende. A agenda e o link de agendamento seguem isso.</p>
         </div>
         <Button onClick={save} className="rounded-xl"><Save className="h-4 w-4 mr-2" />Salvar</Button>
       </div>

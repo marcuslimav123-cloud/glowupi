@@ -48,7 +48,7 @@ export default function AgendamentosReport() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="text-[24px] font-bold text-foreground">Relatório de Agendamentos</h1>
+        <h1 className="text-[24px] font-bold text-foreground">Agendamentos</h1>
         <p className="text-foreground/40 text-[14px] mt-0.5">Todos os agendamentos no período</p>
       </div>
       <ReportTemplate

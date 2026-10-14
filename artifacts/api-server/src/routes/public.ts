@@ -1,13 +1,50 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
-import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable, avaliacoesTable, recompensasTable, produtosTable, profissionalServicosTable, pesquisaSatisfacaoTable, respostasPesquisaTable, categoriasServicoTable, filiaisTable, platformConfigTable, vslProgressEventsTable } from "@workspace/db/schema";
+import { precoDoProfissional, duracaoDoProfissional } from "../lib/precoProfissional.js";
+import { barbeariasTable, servicosTable, profissionaisTable, agendamentosTable, clientesTable, avaliacoesTable, recompensasTable, produtosTable, profissionalServicosTable, pesquisaSatisfacaoTable, respostasPesquisaTable, categoriasServicoTable, filiaisTable, platformConfigTable, vslProgressEventsTable, bloqueiosHorarioTable } from "@workspace/db/schema";
 import { eq, and, desc, gte, inArray, sql } from "drizzle-orm";
 import { extractYoutubeVideoId } from "../lib/youtube.js";
 import { sendPushToBarbearia } from "../lib/pushNotifications.js";
+import { formatDataBR } from "../lib/datas.js";
 import { requireClient } from "../lib/auth.js";
 import { validateAgendamentoEmHorario, validateAgendamentoEmJornadaProf } from "../lib/horarioValidation.js";
+import { verifyConfirmToken } from "../lib/confirmToken.js";
+import { defaultIconPath, defaultLogoPath, tipoEstabelecimentoDe } from "../lib/branding.js";
+import crypto from "node:crypto";
 
 const router: IRouter = Router();
+
+// Link "Confirmar Presença" enviado nos lembretes por e-mail. Sem login: o
+// token assinado no link é o que autoriza a confirmação daquele agendamento.
+router.get("/confirmar/:agendamentoId", async (req, res) => {
+  const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+  const page = (titulo: string, texto: string, ok: boolean) =>
+    `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${titulo}</title></head>` +
+    `<body style="margin:0;font-family:Inter,Arial,sans-serif;background:#0a0a0a;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;">` +
+    `<div style="max-width:420px;text-align:center;background:#161616;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:40px 32px;">` +
+    `<div style="font-size:48px;margin-bottom:12px;">${ok ? "✅" : "⚠️"}</div><h1 style="font-size:22px;margin:0 0 8px;">${titulo}</h1>` +
+    `<p style="color:rgba(255,255,255,.6);margin:0;line-height:1.5;">${texto}</p></div></body></html>`;
+
+  const id = parseInt(req.params.agendamentoId);
+  const token = String(req.query.t || "");
+  if (!Number.isFinite(id) || !verifyConfirmToken(id, token)) {
+    return res.status(403).send(page("Link inválido", "Este link de confirmação não é válido.", false));
+  }
+  const [agend] = await db.select().from(agendamentosTable).where(eq(agendamentosTable.id, id)).limit(1);
+  if (!agend || agend.status === "cancelado") {
+    return res.status(404).send(page("Agendamento não encontrado", "Esse agendamento não existe mais ou foi cancelado.", false));
+  }
+  if (!agend.presencaConfirmadaEm) {
+    await db.update(agendamentosTable).set({ presencaConfirmadaEm: new Date(), updatedAt: new Date() }).where(eq(agendamentosTable.id, id));
+  }
+  const [barb] = await db.select({ nome: barbeariasTable.nome }).from(barbeariasTable).where(eq(barbeariasTable.id, agend.barbeariaId)).limit(1);
+  const [y, m, d] = agend.data.split("-");
+  return res.send(page(
+    "Presença confirmada!",
+    `${esc(agend.clienteNome)}, te esperamos em <b>${esc(barb?.nome || "nosso espaço")}</b> no dia <b>${d}/${m}/${y}</b> às <b>${esc(agend.horaInicio.slice(0, 5))}</b> — ${esc(agend.servicoNome)} com ${esc(agend.profissionalNome)}.`,
+    true,
+  ));
+});
 
 router.post("/vsl-progress", async (req, res) => {
   try {
@@ -152,7 +189,7 @@ router.get("/:slug", async (req, res) => {
 
   const [servicos, profissionais, avaliacoes, recompensas, produtos, profServicos] = await Promise.all([
     db.select().from(servicosTable).where(and(eq(servicosTable.barbeariaId, barbearia.id), eq(servicosTable.ativo, true))),
-    db.select().from(profissionaisTable).where(and(eq(profissionaisTable.barbeariaId, barbearia.id), eq(profissionaisTable.ativo, true))),
+    db.select().from(profissionaisTable).where(and(eq(profissionaisTable.barbeariaId, barbearia.id), eq(profissionaisTable.ativo, true))).orderBy(profissionaisTable.ordem, profissionaisTable.id),
     db.select().from(avaliacoesTable).where(eq(avaliacoesTable.barbeariaId, barbearia.id)).orderBy(desc(avaliacoesTable.createdAt)).limit(20),
     db.select().from(recompensasTable).where(and(eq(recompensasTable.barbeariaId, barbearia.id), eq(recompensasTable.ativo, true))),
     db.select().from(produtosTable).where(and(eq(produtosTable.barbeariaId, barbearia.id), eq(produtosTable.ativo, true))),
@@ -160,9 +197,19 @@ router.get("/:slug", async (req, res) => {
   ]);
 
   const linksByProf: Record<number, number[]> = {};
+  // Preço/duração personalizados por profissional, só quando diferem do serviço.
+  const precosByProf: Record<number, { servicoId: number; preco: number; duracaoMinutos: number | null }[]> = {};
   for (const l of profServicos) {
     if (!linksByProf[l.profissionalId]) linksByProf[l.profissionalId] = [];
     linksByProf[l.profissionalId].push(l.servicoId);
+    if (l.precoOverride != null || l.tempoOverride != null) {
+      if (!precosByProf[l.profissionalId]) precosByProf[l.profissionalId] = [];
+      precosByProf[l.profissionalId].push({
+        servicoId: l.servicoId,
+        preco: l.precoOverride != null ? parseFloat(l.precoOverride as string) : NaN,
+        duracaoMinutos: l.tempoOverride ?? null,
+      });
+    }
   }
 
   const notaMedia = avaliacoes.length > 0 ? avaliacoes.reduce((sum, a) => sum + a.nota, 0) / avaliacoes.length : 0;
@@ -181,6 +228,9 @@ router.get("/:slug", async (req, res) => {
   const mostrarProdutos = pubParams["outros_mostrar_produtos_app"] !== "Não";
   const esconderNaoQueroConversar = pubParams["app_nao_quero_conversar"] === "Sim";
   const tipoLinkAgendamento = pubParams["agenda_tipo_link"] === "Sem login (simples)" ? "simples" : "com_login";
+  // Por padrão o cliente escolhe o profissional antes do serviço: assim os
+  // serviços já aparecem com o preço que aquele profissional cobra.
+  const ordemEscolha = pubParams["agenda_ordem_escolha"] === "Serviço primeiro" ? "servico" : "profissional";
 
   const permitirCancelamentoCliente = (pubParams["cancel_permitir_cliente_link_publico"] ?? "Sim") !== "Não";
   const toleranciaCancelamento = parseInt(pubParams["cancel_tolerancia_cliente"] || "2");
@@ -200,6 +250,8 @@ router.get("/:slug", async (req, res) => {
     cep: barbearia.cep,
     corPrimaria: barbearia.corPrimaria,
     logoUrl: barbearia.logoUrl,
+    tipoEstabelecimento: tipoEstabelecimentoDe(barbearia.segmentacao),
+    logoPadraoUrl: defaultLogoPath(barbearia.segmentacao, process.env.BASE_PATH || "/"),
     descricaoPublica: barbearia.descricaoPublica,
     horarioFuncionamento: barbearia.horarioFuncionamento,
     fotos: barbearia.fotos || [],
@@ -208,6 +260,7 @@ router.get("/:slug", async (req, res) => {
     semPreferenciaHabilitado: showSemPreferencia,
     naoQueroConversarOculto: esconderNaoQueroConversar,
     tipoLinkAgendamento,
+    ordemEscolha,
     permitirCancelamentoCliente,
     toleranciaCancelamento,
     whatsappEncaixeHabilitado,
@@ -241,6 +294,7 @@ router.get("/:slug", async (req, res) => {
         createdAt: null,
         updatedAt: null,
         servicoIds: servicos.map(s => s.id),
+        servicosOverrides: [],
         semPreferencia: true,
       }] : []),
       ...profissionais.map(p => ({
@@ -249,6 +303,11 @@ router.get("/:slug", async (req, res) => {
         createdAt: p.createdAt?.toISOString(),
         updatedAt: p.updatedAt?.toISOString(),
         servicoIds: linksByProf[p.id] || [],
+        servicosOverrides: (precosByProf[p.id] || []).map(o => ({
+          servicoId: o.servicoId,
+          preco: Number.isNaN(o.preco) ? null : o.preco,
+          duracaoMinutos: o.duracaoMinutos,
+        })),
         semPreferencia: false,
       })),
     ],
@@ -308,13 +367,17 @@ router.get("/:slug/slots", async (req, res) => {
 
     let profissionais;
     const pId = profissionalId ? parseInt(profissionalId as string) : 0;
+    const allLinks = await db.select().from(profissionalServicosTable).where(eq(profissionalServicosTable.barbeariaId, barbearia.id));
+    // Preço/tempo personalizados deste serviço, por profissional.
+    const overrideByProf = new Map<number, (typeof allLinks)[number]>();
+    for (const l of allLinks) if (l.servicoId === sId) overrideByProf.set(l.profissionalId, l);
     if (profissionalId && pId !== 0) {
       profissionais = await db.select().from(profissionaisTable).where(and(eq(profissionaisTable.id, pId), eq(profissionaisTable.barbeariaId, barbearia.id), eq(profissionaisTable.ativo, true)));
       if (selectedFilialId && profissionais.length > 0) {
         profissionais = profissionais.filter(p => p.filialId === selectedFilialId || p.filialId === null);
       }
       if (profissionais.length > 0) {
-        const profLinks = await db.select().from(profissionalServicosTable).where(and(eq(profissionalServicosTable.profissionalId, pId), eq(profissionalServicosTable.barbeariaId, barbearia.id)));
+        const profLinks = allLinks.filter(l => l.profissionalId === pId);
         if (profLinks.length > 0 && !profLinks.some(l => l.servicoId === sId)) {
           return res.json([]);
         }
@@ -326,7 +389,6 @@ router.get("/:slug/slots", async (req, res) => {
         profissionais = profissionais.filter(p => p.filialId === selectedFilialId || p.filialId === null);
       }
 
-      const allLinks = await db.select().from(profissionalServicosTable).where(eq(profissionalServicosTable.barbeariaId, barbearia.id));
       const hasAnyLinks = allLinks.length > 0;
       if (hasAnyLinks) {
         const profIdsForService = new Set(allLinks.filter(l => l.servicoId === sId).map(l => l.profissionalId));
@@ -349,7 +411,8 @@ router.get("/:slug/slots", async (req, res) => {
     const limiteFuturoDias = parseInt(params["agenda_limite_futuro_dias"] || "30");
 
     const slots: any[] = [];
-    const duracao = servico.duracaoMinutos;
+    const tempoPadraoSlotsStr = params["agenda_tempo_padrao"] || "30min";
+    const tempoPadraoSlots = tempoPadraoSlotsStr === "1h" ? 60 : (parseInt(tempoPadraoSlotsStr) || 30);
 
     const localNow = getLocalNow(params);
     const todayStr = localNow.todayStr;
@@ -367,6 +430,11 @@ router.get("/:slug/slots", async (req, res) => {
       return res.json([]);
     }
 
+    // Horários bloqueados pela equipe (almoço, folga, compromisso) não são oferecidos ao cliente.
+    const bloqueiosDia = await db.select().from(bloqueiosHorarioTable).where(
+      and(eq(bloqueiosHorarioTable.barbeariaId, barbearia.id), eq(bloqueiosHorarioTable.data, data as string))
+    );
+
     const paramInicio = params["agenda_horario_inicio"];
     const paramFim = params["agenda_horario_fim"];
     const paramInicioMin = paramInicio ? timeToMinutes(paramInicio) : null;
@@ -380,6 +448,10 @@ router.get("/:slug/slots", async (req, res) => {
     for (const prof of profissionais) {
       const schedule = getProfScheduleForDate(prof, data as string, barbSchedule);
       if (!schedule) continue;
+      // Cada profissional pode ter tempo e preço próprios para este serviço.
+      const overrideProf = overrideByProf.get(prof.id);
+      const duracao = duracaoDoProfissional(servico, overrideProf, tempoPadraoSlots);
+      const valorProf = parseFloat(precoDoProfissional(servico, overrideProf));
       const inicioTrabalho = Math.max(schedule.inicio, effectiveGlobalInicio);
       const fimTrabalho = Math.min(schedule.fim, effectiveGlobalFim);
       for (let t = inicioTrabalho; t + duracao <= fimTrabalho; t += intervalo) {
@@ -389,13 +461,20 @@ router.get("/:slug/slots", async (req, res) => {
         }
         const horaInicio = minutesToTime(t);
         const horaFim = minutesToTime(t + duracao);
+        const bloqueado = bloqueiosDia.some(b => {
+          if (b.profissionalId !== prof.id) return false;
+          const bi = timeToMinutes(b.horaInicio);
+          const bf = timeToMinutes(b.horaFim);
+          return !(t + duracao <= bi || t >= bf);
+        });
+        if (bloqueado) continue;
         const ocupado = agendamentos.some(a => {
           if (a.profissionalId !== prof.id) return false;
           const ai = timeToMinutes(a.horaInicio);
           const af = timeToMinutes(a.horaFim);
           return !(t + duracao <= ai || t >= af);
         });
-        slots.push({ horaInicio, horaFim, profissionalId: prof.id, profissionalNome: prof.nomeExibicao, disponivel: !ocupado });
+        slots.push({ horaInicio, horaFim, profissionalId: prof.id, profissionalNome: prof.nomeExibicao, disponivel: !ocupado, valor: valorProf, duracaoMinutos: duracao });
       }
     }
     return res.json(slots);
@@ -501,7 +580,9 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       }).returning();
     }
 
-    const duracaoFinal = servico.duracaoMinutos || tempoPadrao;
+    const overrideProf = profLinks.find(l => l.servicoId === servicoId);
+    const duracaoFinal = duracaoDoProfissional(servico, overrideProf, tempoPadrao);
+    const valorFinal = precoDoProfissional(servico, overrideProf);
     const horaFim = addMinutes(horaInicio, duracaoFinal);
 
     if (paramHoraInicio && timeToMinutes(horaInicio) < timeToMinutes(paramHoraInicio)) {
@@ -529,6 +610,16 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
     if (existingAppts.some(a => horaInicio < a.horaFim && horaFim > a.horaInicio)) {
       return res.status(409).json({ error: "Este horário já está ocupado para o profissional selecionado" });
     }
+    const bloqueiosProf = await db.select().from(bloqueiosHorarioTable).where(
+      and(
+        eq(bloqueiosHorarioTable.barbeariaId, barbearia.id),
+        eq(bloqueiosHorarioTable.profissionalId, profissionalId),
+        eq(bloqueiosHorarioTable.data, data),
+      )
+    );
+    if (bloqueiosProf.some(b => horaInicio < b.horaFim && horaFim > b.horaInicio)) {
+      return res.status(409).json({ error: "Este horário está bloqueado na agenda do profissional. Escolha outro horário." });
+    }
 
     const modoConfirmacao = (params || {})["agenda_modo_confirmacao"] || "Automatica";
     const isManualMode = modoConfirmacao === "Manual_dono" || modoConfirmacao === "Manual_profissional";
@@ -548,7 +639,7 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       horaInicio,
       horaFim,
       status: statusInicialPub,
-      valor: servico.preco,
+      valor: valorFinal,
       pago: false,
       semPreferencia: semPreferencia ?? false,
       observacao: observacao || null,
@@ -563,7 +654,7 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
       sendEmail({
         to: [{ email: cliente.email, name: clienteUser.nome }],
         subject: `${nomeEstab} — Agendamento Confirmado`,
-        htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>Olá <strong>${clienteUser.nome}</strong>, seu agendamento de <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${data}</strong> às <strong>${horaInicio}</strong> foi confirmado com sucesso!</p></div>`,
+        htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>Olá <strong>${clienteUser.nome}</strong>, seu agendamento de <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${formatDataBR(data)}</strong> às <strong>${horaInicio}</strong> foi confirmado com sucesso!</p></div>`,
       }).catch(err => console.error("[Notif] Error sending booking email to client:", err));
     }
 
@@ -586,7 +677,7 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
           sendEmail({
             to: [{ email: g.email, name: g.nome || "Gestor" }],
             subject: `${nomeEstab} — Novo agendamento pelo site: ${clienteUser.nome}`,
-            htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>O cliente <strong>${clienteUser.nome}</strong> agendou <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${data}</strong> às <strong>${horaInicio}</strong> pelo link público.</p></div>`,
+            htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>O cliente <strong>${clienteUser.nome}</strong> agendou <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${formatDataBR(data)}</strong> às <strong>${horaInicio}</strong> pelo link público.</p></div>`,
           }).catch(err => console.error("[Notif] Error sending booking email to manager:", err));
         }
       }
@@ -595,85 +686,16 @@ router.post("/:slug/agendar", requireClient, async (req, res) => {
     sendPushToBarbearia(barbearia.id, {
       title: statusInicialPub === "pendente_aprovacao" ? "Aguardando confirmação" : "Novo Agendamento pelo Site",
       body: statusInicialPub === "pendente_aprovacao"
-        ? `${clienteUser.nome} solicitou ${servico.nome} com ${profissional.nomeExibicao} em ${data} às ${horaInicio}. Confirme ou recuse.`
-        : `${clienteUser.nome} agendou ${servico.nome} com ${profissional.nomeExibicao} em ${data} às ${horaInicio}`,
+        ? `${clienteUser.nome} solicitou ${servico.nome} com ${profissional.nomeExibicao} em ${formatDataBR(data)} às ${horaInicio}. Confirme ou recuse.`
+        : `${clienteUser.nome} agendou ${servico.nome} com ${profissional.nomeExibicao} em ${formatDataBR(data)} às ${horaInicio}`,
       data: { agendamentoId: agend.id, type: statusInicialPub === "pendente_aprovacao" ? "pending_appointment" : "new_appointment", url: "/agenda" },
     }).catch(err => console.error("[Push] Error on client booking:", err));
-
-    let sinalPagamento: any = null;
-    if (barbearia.prePagamentoAtivo) {
-      const { getContaByBarbearia, createPaymentForBarbearia } = await import("../lib/asaasService.js");
-      const conta = await getContaByBarbearia(barbearia.id);
-      if (!conta || conta.status !== "ativo") {
-        console.warn(`[public/agendar] barbearia ${barbearia.id} tem prePagamentoAtivo mas sem conta Asaas — agendamento confirmado em modo manual`);
-        return res.status(201).json({
-          ...agend,
-          valor: parseFloat(agend.valor as string),
-          createdAt: agend.createdAt?.toISOString(),
-          updatedAt: agend.updatedAt?.toISOString(),
-          sinalPagamento: null,
-          sinalManual: true,
-        });
-      }
-      const valorServico = parseFloat(String(servico.preco || "0"));
-      const sinalModo = barbearia.sinalModo || "percentual";
-      const sinalValorBase = parseFloat(String(barbearia.sinalValor || "0"));
-      const sinalValor = sinalModo === "valor"
-        ? Math.max(0.5, sinalValorBase)
-        : Math.max(0.5, Number(((valorServico * sinalValorBase) / 100).toFixed(2)));
-      const due = new Date(); due.setDate(due.getDate() + 1);
-      const billingTypeReq = (req.body?.billingType === "BOLETO" || req.body?.billingType === "CREDIT_CARD") ? req.body.billingType : "PIX";
-      const { generateSinalConsultaToken } = await import("./asaasSinal.js");
-      const consultaToken = generateSinalConsultaToken();
-      try {
-        const result = await createPaymentForBarbearia({
-          barbeariaId: barbearia.id,
-          tipo: "agendamento",
-          refType: "agendamento",
-          refId: agend.id,
-          profissionalId: profissional.id,
-          billingType: billingTypeReq as any,
-          value: sinalValor,
-          dueDate: due.toISOString().slice(0, 10),
-          description: `Sinal — ${servico.nome} com ${profissional.nomeExibicao} (${data} ${horaInicio})`,
-          payer: { nome: clienteUser.nome, telefone: clienteWhatsapp, email: clienteUser.email, cpfCnpj: req.body?.payerCpfCnpj },
-          externalReference: `agend-${agend.id}`,
-        });
-        await db.update(agendamentosTable).set({
-          status: "pendente_pagamento",
-          sinalStatus: "aguardando",
-          sinalValorDevido: String(sinalValor),
-          sinalAsaasPaymentId: result.pagamento.asaasPaymentId,
-          sinalConsultaToken: consultaToken,
-          sinalInformadoEm: new Date(),
-          sinalExpiraEm: result.pixData?.expirationDate ? new Date(result.pixData.expirationDate) : null,
-          updatedAt: new Date(),
-        }).where(eq(agendamentosTable.id, agend.id));
-        sinalPagamento = {
-          asaasPaymentId: result.pagamento.asaasPaymentId,
-          valor: sinalValor,
-          billingType: billingTypeReq,
-          pixQrCodeBase64: result.pixData?.encodedImage || null,
-          pixCopyPaste: result.pixData?.payload || null,
-          bankSlipUrl: result.asaasPayment?.bankSlipUrl || null,
-          invoiceUrl: result.asaasPayment?.invoiceUrl || null,
-          expiraEm: result.pixData?.expirationDate || null,
-          consultaToken,
-        };
-        agend.status = "pendente_pagamento";
-      } catch (sinalErr: unknown) {
-        console.error("[public/agendar] erro gerando sinal Asaas:", sinalErr);
-        await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(eq(agendamentosTable.id, agend.id));
-        return res.status(402).json({ error: "Falha ao gerar cobrança do sinal. Tente novamente." });
-      }
-    }
 
     return res.status(201).json({
       ...agend,
       valor: parseFloat(agend.valor as string),
       createdAt: agend.createdAt?.toISOString(),
       updatedAt: agend.updatedAt?.toISOString(),
-      sinalPagamento,
     });
   } catch (e) {
     console.error("public agendar error:", e);
@@ -785,7 +807,9 @@ router.post("/:slug/agendar-simples", async (req, res) => {
       }).returning();
     }
 
-    const duracaoFinal = servico.duracaoMinutos || tempoPadrao;
+    const overrideProf = profLinks.find(l => l.servicoId === servicoId);
+    const duracaoFinal = duracaoDoProfissional(servico, overrideProf, tempoPadrao);
+    const valorFinal = precoDoProfissional(servico, overrideProf);
     const horaFim = addMinutes(horaInicio, duracaoFinal);
 
     if (paramHoraInicio && timeToMinutes(horaInicio) < timeToMinutes(paramHoraInicio)) {
@@ -813,6 +837,16 @@ router.post("/:slug/agendar-simples", async (req, res) => {
     if (existingApptsSimples.some(a => horaInicio < a.horaFim && horaFim > a.horaInicio)) {
       return res.status(409).json({ error: "Este horário já está ocupado para o profissional selecionado" });
     }
+    const bloqueiosProf = await db.select().from(bloqueiosHorarioTable).where(
+      and(
+        eq(bloqueiosHorarioTable.barbeariaId, barbearia.id),
+        eq(bloqueiosHorarioTable.profissionalId, profissionalId),
+        eq(bloqueiosHorarioTable.data, data),
+      )
+    );
+    if (bloqueiosProf.some(b => horaInicio < b.horaFim && horaFim > b.horaInicio)) {
+      return res.status(409).json({ error: "Este horário está bloqueado na agenda do profissional. Escolha outro horário." });
+    }
 
     const modoConfirmacaoSimples = (paramsSimples || {})["agenda_modo_confirmacao"] || "Automatica";
     const isManualModeSimples = modoConfirmacaoSimples === "Manual_dono" || modoConfirmacaoSimples === "Manual_profissional";
@@ -832,7 +866,7 @@ router.post("/:slug/agendar-simples", async (req, res) => {
       horaInicio,
       horaFim,
       status: statusInicialSimples,
-      valor: servico.preco,
+      valor: valorFinal,
       pago: false,
       semPreferencia: semPreferencia ?? false,
       observacao: observacao || null,
@@ -847,7 +881,7 @@ router.post("/:slug/agendar-simples", async (req, res) => {
       sendEmail({
         to: [{ email: cliente.email, name: clienteNome }],
         subject: `${nomeEstab} — Agendamento Confirmado`,
-        htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>Olá <strong>${clienteNome}</strong>, seu agendamento de <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${data}</strong> às <strong>${horaInicio}</strong> foi confirmado com sucesso!</p></div>`,
+        htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>Olá <strong>${clienteNome}</strong>, seu agendamento de <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${formatDataBR(data)}</strong> às <strong>${horaInicio}</strong> foi confirmado com sucesso!</p></div>`,
       }).catch(err => console.error("[Notif] Error sending booking email to client:", err));
     }
 
@@ -870,7 +904,7 @@ router.post("/:slug/agendar-simples", async (req, res) => {
           sendEmail({
             to: [{ email: g.email, name: g.nome || "Gestor" }],
             subject: `${nomeEstab} — Novo agendamento pelo site: ${clienteNome}`,
-            htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>O cliente <strong>${clienteNome}</strong> agendou <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${data}</strong> às <strong>${horaInicio}</strong> pelo link público.</p></div>`,
+            htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>O cliente <strong>${clienteNome}</strong> agendou <strong>${servico.nome}</strong> com <strong>${profissional.nomeExibicao}</strong> para o dia <strong>${formatDataBR(data)}</strong> às <strong>${horaInicio}</strong> pelo link público.</p></div>`,
           }).catch(err => console.error("[Notif] Error sending booking email to manager:", err));
         }
       }
@@ -879,85 +913,16 @@ router.post("/:slug/agendar-simples", async (req, res) => {
     sendPushToBarbearia(barbearia.id, {
       title: statusInicialSimples === "pendente_aprovacao" ? "Aguardando confirmação" : "Novo Agendamento pelo Site",
       body: statusInicialSimples === "pendente_aprovacao"
-        ? `${clienteNome} solicitou ${servico.nome} com ${profissional.nomeExibicao} em ${data} às ${horaInicio}. Confirme ou recuse.`
-        : `${clienteNome} agendou ${servico.nome} com ${profissional.nomeExibicao} em ${data} às ${horaInicio}`,
+        ? `${clienteNome} solicitou ${servico.nome} com ${profissional.nomeExibicao} em ${formatDataBR(data)} às ${horaInicio}. Confirme ou recuse.`
+        : `${clienteNome} agendou ${servico.nome} com ${profissional.nomeExibicao} em ${formatDataBR(data)} às ${horaInicio}`,
       data: { agendamentoId: agend.id, type: statusInicialSimples === "pendente_aprovacao" ? "pending_appointment" : "new_appointment", url: "/agenda" },
     }).catch(err => console.error("[Push] Error on client booking:", err));
-
-    let sinalPagamentoSimples: any = null;
-    if (barbearia.prePagamentoAtivo) {
-      const { getContaByBarbearia, createPaymentForBarbearia } = await import("../lib/asaasService.js");
-      const conta = await getContaByBarbearia(barbearia.id);
-      if (!conta || conta.status !== "ativo") {
-        console.warn(`[public/agendar-simples] barbearia ${barbearia.id} tem prePagamentoAtivo mas sem conta Asaas — agendamento confirmado em modo manual`);
-        return res.status(201).json({
-          ...agend,
-          valor: parseFloat(agend.valor as string),
-          createdAt: agend.createdAt?.toISOString(),
-          updatedAt: agend.updatedAt?.toISOString(),
-          sinalPagamento: null,
-          sinalManual: true,
-        });
-      }
-      const valorServicoS = parseFloat(String(servico.preco || "0"));
-      const sinalModoS = barbearia.sinalModo || "percentual";
-      const sinalValorBaseS = parseFloat(String(barbearia.sinalValor || "0"));
-      const sinalValorS = sinalModoS === "valor"
-        ? Math.max(0.5, sinalValorBaseS)
-        : Math.max(0.5, Number(((valorServicoS * sinalValorBaseS) / 100).toFixed(2)));
-      const dueS = new Date(); dueS.setDate(dueS.getDate() + 1);
-      const billingTypeS = (req.body?.billingType === "BOLETO" || req.body?.billingType === "CREDIT_CARD") ? req.body.billingType : "PIX";
-      const { generateSinalConsultaToken: genTokenSimples } = await import("./asaasSinal.js");
-      const consultaTokenSimples = genTokenSimples();
-      try {
-        const resultS = await createPaymentForBarbearia({
-          barbeariaId: barbearia.id,
-          tipo: "agendamento",
-          refType: "agendamento",
-          refId: agend.id,
-          profissionalId: profissional.id,
-          billingType: billingTypeS as any,
-          value: sinalValorS,
-          dueDate: dueS.toISOString().slice(0, 10),
-          description: `Sinal — ${servico.nome} com ${profissional.nomeExibicao} (${data} ${horaInicio})`,
-          payer: { nome: clienteNome, telefone: whatsappLimpo, cpfCnpj: req.body?.payerCpfCnpj },
-          externalReference: `agend-${agend.id}`,
-        });
-        await db.update(agendamentosTable).set({
-          status: "pendente_pagamento",
-          sinalStatus: "aguardando",
-          sinalValorDevido: String(sinalValorS),
-          sinalAsaasPaymentId: resultS.pagamento.asaasPaymentId,
-          sinalConsultaToken: consultaTokenSimples,
-          sinalInformadoEm: new Date(),
-          sinalExpiraEm: resultS.pixData?.expirationDate ? new Date(resultS.pixData.expirationDate) : null,
-          updatedAt: new Date(),
-        }).where(eq(agendamentosTable.id, agend.id));
-        sinalPagamentoSimples = {
-          asaasPaymentId: resultS.pagamento.asaasPaymentId,
-          valor: sinalValorS,
-          billingType: billingTypeS,
-          pixQrCodeBase64: resultS.pixData?.encodedImage || null,
-          pixCopyPaste: resultS.pixData?.payload || null,
-          bankSlipUrl: resultS.asaasPayment?.bankSlipUrl || null,
-          invoiceUrl: resultS.asaasPayment?.invoiceUrl || null,
-          expiraEm: resultS.pixData?.expirationDate || null,
-          consultaToken: consultaTokenSimples,
-        };
-        agend.status = "pendente_pagamento";
-      } catch (sinalErrS: unknown) {
-        console.error("[public/agendar-simples] erro gerando sinal Asaas:", sinalErrS);
-        await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(eq(agendamentosTable.id, agend.id));
-        return res.status(402).json({ error: "Falha ao gerar cobrança do sinal. Tente novamente." });
-      }
-    }
 
     return res.status(201).json({
       ...agend,
       valor: parseFloat(agend.valor as string),
       createdAt: agend.createdAt?.toISOString(),
       updatedAt: agend.updatedAt?.toISOString(),
-      sinalPagamento: sinalPagamentoSimples,
     });
   } catch (e) {
     console.error("public agendar-simples error:", e);
@@ -965,6 +930,28 @@ router.post("/:slug/agendar-simples", async (req, res) => {
 
   }
 });
+
+type BarbeariaBrand = { slug: string; logoUrl: string | null; segmentacao: unknown };
+
+function logoVersion(logoUrl: string): string {
+  return crypto.createHash("sha1").update(logoUrl).digest("hex").slice(0, 8);
+}
+
+// Ícones do manifest: sempre PNG quadrado (exigência do Chrome/Android para
+// instalar o app). Com logo própria, apontam para o ícone gerado pelo servidor;
+// sem logo, para a marca padrão do segmento.
+function brandIcons(barbearia: BarbeariaBrand, basePath: string) {
+  const src = (size: 192 | 512) =>
+    barbearia.logoUrl
+      ? `${basePath}/api/public/${barbearia.slug}/icon-${size}.png?v=${logoVersion(barbearia.logoUrl)}`.replace(/\/+/g, "/")
+      : defaultIconPath(barbearia.segmentacao, size, basePath);
+  const icons: { src: string; sizes: string; type: string; purpose: string }[] = [];
+  for (const size of [192, 512] as const) {
+    icons.push({ src: src(size), sizes: `${size}x${size}`, type: "image/png", purpose: "any" });
+    icons.push({ src: src(size), sizes: `${size}x${size}`, type: "image/png", purpose: "maskable" });
+  }
+  return icons;
+}
 
 router.get("/:slug/manifest.json", async (req, res) => {
   try {
@@ -978,38 +965,112 @@ router.get("/:slug/manifest.json", async (req, res) => {
       return res.status(404).json({ error: "Barbearia não encontrada" });
 
     const basePath = process.env.BASE_PATH || "/";
-    const icons: { src: string; sizes: string; type?: string; purpose: string }[] = [];
-    if (barbearia.logoUrl) {
-      icons.push(
-        { src: barbearia.logoUrl, sizes: "192x192", purpose: "any" },
-        { src: barbearia.logoUrl, sizes: "512x512", purpose: "any" },
-        { src: barbearia.logoUrl, sizes: "192x192", purpose: "maskable" },
-        { src: barbearia.logoUrl, sizes: "512x512", purpose: "maskable" },
-      );
-    } else {
-      icons.push(
-        { src: `${basePath}logo-icon.png`, sizes: "192x192", type: "image/png", purpose: "any" },
-      );
-    }
+    const painel = req.query.modo === "painel";
+    const startUrl = painel ? `${basePath}agenda` : `${basePath}agendar/${slug}`;
     const manifest = {
+      id: startUrl,
       name: barbearia.nome,
       short_name: barbearia.nome.length > 12 ? barbearia.nome.slice(0, 12) : barbearia.nome,
-      description: barbearia.descricaoPublica || `Agende com ${barbearia.nome}`,
-      start_url: `${basePath}agendar/${slug}`,
+      description: painel
+        ? `Painel - ${barbearia.nome}`
+        : barbearia.descricaoPublica || `Agende com ${barbearia.nome}`,
+      start_url: startUrl,
       scope: basePath,
       display: "standalone",
       background_color: "#111111",
       theme_color: barbearia.corPrimaria || "#C4943C",
-      icons,
+      icons: brandIcons(barbearia, basePath),
     };
 
     res.setHeader("Content-Type", "application/manifest+json");
+    res.setHeader("Cache-Control", "no-cache");
     res.json(manifest);
   } catch (e) {
     console.error("manifest.json error:", e);
     res.status(500).json({ error: "Erro ao gerar manifest" });
   }
 });
+
+async function fetchLogoBytes(logoUrl: string): Promise<Buffer> {
+  const url = /^https?:\/\//i.test(logoUrl)
+    ? logoUrl
+    : `http://127.0.0.1:${process.env.PORT || 5000}${logoUrl.startsWith("/") ? "" : "/"}${logoUrl}`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const r = await fetch(url, { signal: ctrl.signal });
+    if (!r.ok) throw new Error(`HTTP ${r.status} ao buscar a logo`);
+    const bytes = await r.arrayBuffer();
+    if (bytes.byteLength > 15 * 1024 * 1024) throw new Error("logo acima de 15MB");
+    return Buffer.from(bytes);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Converte a logo enviada pelo dono (qualquer formato/proporção) em um ícone
+// PNG quadrado, com a logo dentro da zona segura dos ícones "maskable".
+async function renderIcon(logoUrl: string, size: number): Promise<Buffer> {
+  const { default: sharp } = await import("sharp");
+  const src = await fetchLogoBytes(logoUrl);
+  const inner = Math.round(size * 0.8);
+  const { data, info } = await sharp(src)
+    .rotate()
+    .resize(inner, inner, { fit: "inside" })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  // Fundo: a própria cor de canto da logo quando ela é opaca; branco quando é transparente.
+  const opaqueCorner = data[3] > 250;
+  const background = opaqueCorner
+    ? { r: data[0], g: data[1], b: data[2], alpha: 1 }
+    : { r: 255, g: 255, b: 255, alpha: 1 };
+  return sharp({ create: { width: size, height: size, channels: 4, background } })
+    .composite([{ input: data, raw: { width: info.width, height: info.height, channels: 4 }, gravity: "centre" }])
+    .png()
+    .toBuffer();
+}
+
+const iconCache = new Map<string, Buffer>();
+const ICON_CACHE_MAX = 300;
+
+function iconHandler(size: 192 | 512) {
+  return async (req: Request, res: Response) => {
+    try {
+      const [barbearia] = await db
+        .select({ slug: barbeariasTable.slug, logoUrl: barbeariasTable.logoUrl, segmentacao: barbeariasTable.segmentacao })
+        .from(barbeariasTable)
+        .where(eq(barbeariasTable.slug, req.params.slug))
+        .limit(1);
+      if (!barbearia) return res.status(404).end();
+      const basePath = process.env.BASE_PATH || "/";
+      const fallback = () => res.redirect(302, defaultIconPath(barbearia.segmentacao, size, basePath));
+      if (!barbearia.logoUrl) return fallback();
+
+      const key = `${barbearia.logoUrl}|${size}`;
+      let png = iconCache.get(key);
+      if (!png) {
+        try {
+          png = await renderIcon(barbearia.logoUrl, size);
+        } catch (e: any) {
+          console.warn(`[icon] falha ao gerar ícone de ${barbearia.slug}: ${e?.message || e}`);
+          return fallback();
+        }
+        if (iconCache.size >= ICON_CACHE_MAX) iconCache.delete(iconCache.keys().next().value as string);
+        iconCache.set(key, png);
+      }
+      res.setHeader("Content-Type", "image/png");
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      return res.send(png);
+    } catch (e) {
+      console.error("icon error:", e);
+      return res.status(500).end();
+    }
+  };
+}
+
+router.get("/:slug/icon-192.png", iconHandler(192));
+router.get("/:slug/icon-512.png", iconHandler(512));
 
 router.get("/:slug/config", async (req, res) => {
   try {
@@ -1121,7 +1182,7 @@ router.post("/:slug/agendamentos/:id/cancelar", requireClient, async (req, res) 
       }
     }
 
-    await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(
+    await db.update(agendamentosTable).set({ status: "cancelado", canceladoPor: "cliente", updatedAt: new Date() }).where(
       and(eq(agendamentosTable.id, agendamentoId), eq(agendamentosTable.barbeariaId, barbearia.id))
     );
 
@@ -1134,7 +1195,7 @@ router.post("/:slug/agendamentos/:id/cancelar", requireClient, async (req, res) 
       sendEmail({
         to: [{ email: cliente.email, name: agend.clienteNome }],
         subject: `${nomeEstab} — Agendamento Cancelado`,
-        htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>Seu agendamento de <strong>${agend.servicoNome}</strong> com <strong>${agend.profissionalNome}</strong> em ${agend.data} às ${agend.horaInicio} foi cancelado.</p></div>`,
+        htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>Seu agendamento de <strong>${agend.servicoNome}</strong> com <strong>${agend.profissionalNome}</strong> em ${formatDataBR(agend.data)} às ${agend.horaInicio} foi cancelado.</p></div>`,
       }).catch(err => console.error("[Notif] Error sending cancel email to client:", err));
     }
 
@@ -1155,15 +1216,15 @@ router.post("/:slug/agendamentos/:id/cancelar", requireClient, async (req, res) 
           sendEmail({
             to: [{ email: g.email, name: g.nome || "Gestor" }],
             subject: `${nomeEstab} — Agendamento cancelado pelo cliente: ${agend.clienteNome}`,
-            htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>O cliente <strong>${agend.clienteNome}</strong> cancelou o agendamento de <strong>${agend.servicoNome}</strong> com <strong>${agend.profissionalNome}</strong> em ${agend.data} às ${agend.horaInicio} pelo link público.</p></div>`,
+            htmlContent: `<div style="font-family:Inter,sans-serif;max-width:520px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);"><h2 style="color:#1a1a1a;">${nomeEstab}</h2><p>O cliente <strong>${agend.clienteNome}</strong> cancelou o agendamento de <strong>${agend.servicoNome}</strong> com <strong>${agend.profissionalNome}</strong> em ${formatDataBR(agend.data)} às ${agend.horaInicio} pelo link público.</p></div>`,
           }).catch(err => console.error("[Notif] Error sending cancel email to manager:", err));
         }
       }
     }
 
     sendPushToBarbearia(barbearia.id, {
-      title: "Agendamento Cancelado pelo Cliente",
-      body: `${agend.clienteNome} cancelou ${agend.servicoNome} com ${agend.profissionalNome} em ${agend.data} às ${agend.horaInicio}`,
+      title: "Cancelado pelo cliente",
+      body: `${agend.clienteNome} cancelou ${agend.servicoNome} com ${agend.profissionalNome} em ${formatDataBR(agend.data)} às ${agend.horaInicio}`,
       data: { agendamentoId: agend.id, type: "cancelled_appointment", url: "/agenda" },
     }).catch(err => console.error("[Push] Error on client cancelled appointment:", err));
 
@@ -1267,13 +1328,13 @@ router.post("/:slug/agendamentos/:id/cancelar-simples", async (req, res) => {
       }
     }
 
-    await db.update(agendamentosTable).set({ status: "cancelado", updatedAt: new Date() }).where(
+    await db.update(agendamentosTable).set({ status: "cancelado", canceladoPor: "cliente", updatedAt: new Date() }).where(
       and(eq(agendamentosTable.id, agendamentoId), eq(agendamentosTable.barbeariaId, barbearia.id))
     );
 
     sendPushToBarbearia(barbearia.id, {
-      title: "Agendamento Cancelado pelo Cliente",
-      body: `${agend.clienteNome} cancelou ${agend.servicoNome} com ${agend.profissionalNome} em ${agend.data} às ${agend.horaInicio}`,
+      title: "Cancelado pelo cliente",
+      body: `${agend.clienteNome} cancelou ${agend.servicoNome} com ${agend.profissionalNome} em ${formatDataBR(agend.data)} às ${agend.horaInicio}`,
       data: { agendamentoId: agend.id, type: "cancelled_appointment", url: "/agenda" },
     }).catch(err => console.error("[Push] Error on simple cancel:", err));
 

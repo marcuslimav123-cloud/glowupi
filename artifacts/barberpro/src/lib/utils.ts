@@ -2,12 +2,12 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 export const APP_NAME = "Glow Upi";
-export const APP_TAGLINE = "Organize sua agenda e fidelize suas clientes";
+export const APP_TAGLINE = "Organize sua agenda e fidelize seus clientes";
 
 const ROLE_LABELS: Record<string, string> = {
-  dono: "proprietária",
+  dono: "responsável",
   gerente: "gerente",
-  colaborador: "colaboradora",
+  colaborador: "profissional",
   barbeiro: "profissional",
   cliente: "cliente",
 };

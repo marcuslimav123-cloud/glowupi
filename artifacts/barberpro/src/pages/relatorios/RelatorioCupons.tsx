@@ -109,8 +109,8 @@ export default function RelatorioCupons() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="text-[24px] font-bold text-foreground">Relatório de Cupons</h1>
-        <p className="text-foreground/40 text-[14px] mt-0.5">Performance de vendas por código de cupom (efeito indicação)</p>
+        <h1 className="text-[24px] font-bold text-foreground">Cupons</h1>
+        <p className="text-foreground/40 text-[14px] mt-0.5">Vendas geradas por cada cupom</p>
       </div>
 
       <Card className="mb-6">
