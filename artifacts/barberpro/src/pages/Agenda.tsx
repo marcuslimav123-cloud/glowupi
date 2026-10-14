@@ -180,6 +180,7 @@ export default function Agenda() {
   // Profissional (não gestor) só mexe na própria agenda ao bloquear horários.
   const meuProfissionalId: number | null = (user as any)?.profissionalId ?? null;
   const podeGerirBloqueio = (profId: number) => !isColaborador || profId === meuProfissionalId;
+
   const { toast } = useToast();
   const qc = useQueryClient();
   const [, navigate] = useLocation();
@@ -218,6 +219,11 @@ export default function Agenda() {
   const [bloqueios, setBloqueios] = useState<Bloqueio[]>([]);
   const [barbHorarioFunc, setBarbHorarioFunc] = useState<any[] | null>(null);
   const [slotInterval, setSlotInterval] = useState<number>(30);
+  // Configurações → Equipe → "Bloquear horários na própria agenda" (Não = proibido).
+  const [bloqueioProibidoColab, setBloqueioProibidoColab] = useState(false);
+  // Gestor sempre pode bloquear; profissional só se o estabelecimento permitir.
+  const podeBloquearHorario = !isColaborador || !bloqueioProibidoColab;
+  const rotuloBloquear = isColaborador ? "Bloquear meu horário" : "Bloquear";
   const [encaixeConfirm, setEncaixeConfirm] = useState<{ open: boolean; reason: string } | null>(null);
 
   const calendarRef = useRef<HTMLDivElement>(null);
@@ -264,6 +270,8 @@ export default function Agenda() {
         const raw = p?.valor || p?.valorPadrao || "30 minutos";
         const n = parseInt(String(raw), 10);
         if (!Number.isNaN(n) && n > 0 && n <= 60) setSlotInterval(n);
+        const pb = params.find((x: any) => x.chave === "agenda_nao_bloquear_profissional");
+        setBloqueioProibidoColab((pb?.valor || pb?.valorPadrao) === "Sim");
       })
       .catch(() => {});
   }, [barbeariaId]);
@@ -1604,9 +1612,9 @@ export default function Agenda() {
             <Button size="sm" variant="outline" className="h-8 text-xs border-amber-400/50 text-amber-600 hover:bg-amber-50" onClick={() => { resetForm(); setIsEncaixeOpen(true); }}>
               <Zap className="mr-1 h-3.5 w-3.5"/> Encaixe
             </Button>
-            {viewMode === "dia" && (
-              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setIsBlockOpen(true)}>
-                <Lock className="mr-1 h-3.5 w-3.5"/> Bloquear
+            {viewMode === "dia" && podeBloquearHorario && (
+              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setIsBlockOpen(true)} data-testid="btn-bloquear-desktop">
+                <Lock className="mr-1 h-3.5 w-3.5"/> {rotuloBloquear}
               </Button>
             )}
             <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={goToToday}>
@@ -1655,20 +1663,24 @@ export default function Agenda() {
             <button onClick={() => { resetForm(); setIsEncaixeOpen(true); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
               <Zap className="h-3.5 w-3.5 text-amber-500" /> Encaixe
             </button>
-            {viewMode === "dia" && (
+            {viewMode === "dia" && podeBloquearHorario && (
               <button onClick={() => setIsBlockOpen(true)} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
-                <Lock className="h-3.5 w-3.5 text-gray-500" /> Bloquear Horário
+                <Lock className="h-3.5 w-3.5 text-gray-500" /> {isColaborador ? "Bloquear meu horário" : "Bloquear Horário"}
               </button>
             )}
             <button onClick={() => navigate("/lista-espera")} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
               <ClipboardList className="h-3.5 w-3.5 text-muted-foreground" /> Lista de Espera
             </button>
-            <button onClick={() => navigate("/gestao/servicos")} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
-              <Scissors className="h-3.5 w-3.5 text-muted-foreground" /> Serviços
-            </button>
-            <button onClick={() => navigate("/gestao/profissionais")} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
-              <UserCheck className="h-3.5 w-3.5 text-muted-foreground" /> Profissionais
-            </button>
+            {!isColaborador && (
+              <>
+                <button onClick={() => navigate("/gestao/servicos")} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
+                  <Scissors className="h-3.5 w-3.5 text-muted-foreground" /> Serviços
+                </button>
+                <button onClick={() => navigate("/gestao/profissionais")} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors">
+                  <UserCheck className="h-3.5 w-3.5 text-muted-foreground" /> Profissionais
+                </button>
+              </>
+            )}
           </div>
 
           {viewMode === "dia" && bloqueios.length > 0 && (
@@ -1695,9 +1707,20 @@ export default function Agenda() {
         </div>
       </div>
 
-      <div className="fixed bottom-[100px] right-4 z-40 sm:hidden flex flex-col gap-2">
+      <div className="fixed bottom-[100px] right-4 z-40 sm:hidden flex flex-col items-end gap-2">
+        {/* No celular o botão de bloquear fica sempre à mão, acima do "+". */}
+        {viewMode === "dia" && podeBloquearHorario && (
+          <button
+            onClick={() => setIsBlockOpen(true)}
+            data-testid="btn-bloquear-mobile"
+            className="h-11 pl-3 pr-4 rounded-full bg-card border border-border text-foreground shadow-lg flex items-center gap-2 text-sm font-medium active:scale-95 transition-transform"
+          >
+            <Lock className="h-4 w-4 text-gray-500" /> {rotuloBloquear}
+          </button>
+        )}
         <button
           onClick={() => { resetForm(); setIsNewOpen(true); }}
+          aria-label="Novo agendamento"
           className="h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-xl shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform"
         >
           <Plus className="h-6 w-6" />
@@ -1782,10 +1805,28 @@ export default function Agenda() {
                 </Select>
               </div>
             </div>
+            {timeSlots.length > 1 && (() => {
+              const abre = timeSlots[0];
+              const fecha = timeSlots[timeSlots.length - 1];
+              const temAlmoco = timeSlots.includes("12:00") && timeSlots.includes("13:00");
+              const chip = "px-2.5 py-1 rounded-full border border-border text-[11px] text-foreground hover:bg-muted transition-colors";
+              return (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[11px] text-muted-foreground">Atalhos:</span>
+                  <button type="button" className={chip} data-testid="chip-dia-inteiro" onClick={() => { setBlockHoraInicio(abre); setBlockHoraFim(fecha); if (!blockMotivo) setBlockMotivo("Folga"); }}>Dia inteiro</button>
+                  {temAlmoco && (
+                    <button type="button" className={chip} onClick={() => { setBlockHoraInicio("12:00"); setBlockHoraFim("13:00"); if (!blockMotivo) setBlockMotivo("Almoço"); }}>Almoço 12h–13h</button>
+                  )}
+                </div>
+              );
+            })()}
             <div className="space-y-1.5">
               <Label className="text-xs">Motivo <span className="text-muted-foreground">(opcional)</span></Label>
               <Input value={blockMotivo} onChange={e => setBlockMotivo(e.target.value)} placeholder="Ex: Almoço" className="bg-background h-9 text-sm" />
             </div>
+            {isColaborador && (
+              <p className="text-[11px] text-muted-foreground">Só a sua agenda fica bloqueada. Os clientes não verão esses horários no link de agendamento.</p>
+            )}
             <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
               <CalendarIcon className="h-3.5 w-3.5 text-primary shrink-0" />
               <span>Data: <strong className="text-foreground">{new Date(date + "T12:00:00").toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</strong></span>
