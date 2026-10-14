@@ -391,7 +391,7 @@ export default function Caixa() {
     <AppLayout>
       <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Venda avulsa e busca</h1>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Venda avulsa e busca</h1>
           <p className="text-muted-foreground mt-1">Venda sem agendamento ou encontre comandas por período para reabrir e imprimir</p>
         </div>
         <Button onClick={() => setNovaComandaOpen(true)} className="bg-green-600 hover:bg-green-700 gap-1.5">
@@ -577,6 +577,7 @@ export default function Caixa() {
             </div>
           ) : (
             <>
+              <p className="sm:hidden text-[11px] text-muted-foreground mb-2">Deslize a tabela para o lado para ver todas as colunas.</p>
               <div className="overflow-x-auto mobile-table-wrap">
                 <table className="w-full text-sm">
                   <thead>

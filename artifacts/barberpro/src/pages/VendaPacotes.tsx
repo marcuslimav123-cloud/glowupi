@@ -170,9 +170,9 @@ export default function VendaPacotes() {
 
   return (
     <AppLayout>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Venda de pacotes</h1>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Venda de pacotes</h1>
           <p className="text-muted-foreground mt-1">Pacotes vendidos e sessões restantes de cada cliente</p>
         </div>
         <Button onClick={() => setVendaOpen(true)} disabled={pacotesArr.length === 0}>

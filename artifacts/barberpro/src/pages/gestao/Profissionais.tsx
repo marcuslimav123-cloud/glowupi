@@ -563,9 +563,9 @@ export default function Profissionais() {
 
   return (
     <AppLayout>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Profissionais</h1>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Profissionais</h1>
           <p className="text-muted-foreground mt-1">Quem atende, em quais horários e com qual comissão</p>
         </div>
         <Button className="shadow-lg shadow-primary/25" onClick={() => { setEditing(null); setModalOpen(true); }}>
@@ -636,7 +636,7 @@ export default function Profissionais() {
                   )}
                   {countOverrides(p) > 0 && (
                     <Badge variant="outline" className="text-[10px] h-5 bg-amber-500/10 border-amber-500/20 text-amber-500">
-                      {countOverrides(p)} override(s)
+                      {countOverrides(p)} {countOverrides(p) === 1 ? "serviço personalizado" : "serviços personalizados"}
                     </Badge>
                   )}
                   {p.celular && (

@@ -310,7 +310,7 @@ export default function Equipe() {
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-[22px] font-bold text-foreground tracking-tight">Equipe</h1>
             <p className="text-foreground/45 text-[14px] mt-1">Quem tem acesso ao painel e o que cada pessoa pode fazer</p>

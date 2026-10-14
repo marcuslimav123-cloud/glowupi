@@ -99,7 +99,7 @@ export default function Clube() {
   return (
     <AppLayout>
       <div className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-foreground">Fidelidade</h1>
+        <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Fidelidade</h1>
         <p className="text-muted-foreground mt-1">Pontos a cada atendimento e recompensas para resgatar</p>
       </div>
 

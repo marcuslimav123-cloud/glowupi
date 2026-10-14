@@ -213,6 +213,7 @@ export default function ReportTemplate({
             <div className="space-y-3">{[1,2,3,4].map(i => <div key={i} className="h-12 bg-muted/30 rounded-lg animate-pulse" />)}</div>
           ) : (
             <>
+              <p className="sm:hidden text-[11px] text-muted-foreground mb-2">Deslize a tabela para o lado para ver todas as colunas.</p>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>

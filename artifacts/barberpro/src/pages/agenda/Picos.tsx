@@ -70,7 +70,7 @@ export default function Picos() {
   return (
     <AppLayout>
       <div className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-foreground">Horários de pico</h1>
+        <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Horários de pico</h1>
         <p className="text-muted-foreground mt-1">Análise de ocupação por dia e horário (últimos {days} dias)</p>
       </div>
 

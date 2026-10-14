@@ -107,9 +107,9 @@ export default function FluxoCaixa() {
         <Button onClick={fetchData} className="rounded-xl"><Search className="h-4 w-4 mr-2" />Filtrar</Button>
       </div>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
         {TABS.map(t => (
-          <Button key={t.key} variant={tab === t.key ? "default" : "outline"} size="sm" onClick={() => setTab(t.key)} className="rounded-xl">
+          <Button key={t.key} variant={tab === t.key ? "default" : "outline"} size="sm" onClick={() => setTab(t.key)} className="rounded-xl shrink-0">
             {t.label}
           </Button>
         ))}

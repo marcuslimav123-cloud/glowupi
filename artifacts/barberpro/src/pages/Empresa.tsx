@@ -178,7 +178,7 @@ export default function Empresa() {
   return (
     <AppLayout>
       <div className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-foreground">Meu estabelecimento</h1>
+        <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Meu estabelecimento</h1>
         <p className="text-muted-foreground mt-1">Dados, logo, plano e link de agendamento</p>
       </div>
 

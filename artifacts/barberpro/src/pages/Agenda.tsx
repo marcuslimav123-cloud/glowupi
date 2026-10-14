@@ -1079,18 +1079,18 @@ export default function Agenda() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex items-center gap-1 mb-3">
+          <div className="flex items-center gap-1 mb-3 min-w-0 overflow-x-auto scrollbar-hide">
             {(["client", "service", "professional", "time"] as const).map((step, idx) => (
               <React.Fragment key={step}>
                 <button
                   onClick={() => setNewStep(step)}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] sm:text-[10px] font-medium transition-all shrink-0 whitespace-nowrap
                     ${newStep === step ? "bg-primary text-primary-foreground" :
                       idx < ["client", "service", "professional", "time"].indexOf(newStep) ? "bg-primary/20 text-primary" :
                       "bg-muted text-muted-foreground"}`}
                 >
                   <span className="font-bold">{idx + 1}</span>
-                  <span className="hidden sm:inline">{step === "client" ? "Cliente" : step === "service" ? "Serviço" : step === "professional" ? "Profissional" : "Horário"}</span>
+                  <span className={newStep === step ? "inline" : "hidden sm:inline"}>{step === "client" ? "Cliente" : step === "service" ? "Serviço" : step === "professional" ? "Profissional" : "Horário"}</span>
                 </button>
                 {idx < 3 && <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />}
               </React.Fragment>
@@ -1543,10 +1543,12 @@ export default function Agenda() {
     <AppLayout>
       <div className="flex flex-col lg:flex-row gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-            <div>
-              <h1 className="text-2xl font-display font-bold text-foreground">Agenda</h1>
-              <p className="text-muted-foreground text-sm">Gerencie seus horários</p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 mb-3">
+            <div className="flex items-end justify-between gap-2">
+              <div>
+                <h1 className="text-2xl font-display font-bold text-foreground">Agenda</h1>
+                <p className="text-muted-foreground text-sm hidden sm:block">Gerencie seus horários</p>
+              </div>
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
@@ -1564,7 +1566,7 @@ export default function Agenda() {
 
               <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-0.5">
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handlePrev}><ChevronLeft className="h-4 w-4"/></Button>
-                <button onClick={goToToday} className="px-2 py-1 text-xs font-medium text-foreground min-w-[100px] text-center hover:text-primary transition-colors">
+                <button onClick={goToToday} className="px-2 py-1 text-xs font-medium text-foreground min-w-[96px] text-center hover:text-primary transition-colors" title="Ir para hoje">
                   {dateDisplay}
                 </button>
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleNext}><ChevronRight className="h-4 w-4"/></Button>

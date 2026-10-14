@@ -386,13 +386,13 @@ function Linha({ item, p, status, googleOk, icon: Icon, onChange, onReset }: {
   const bloqueado = item.kind === "toggle" && item.requerGoogle && !googleOk;
 
   return (
-    <div className={`flex items-center gap-3 px-4 sm:px-5 py-3 ${bloqueado ? "opacity-50" : ""}`}>
+    <div className={`flex gap-3 px-4 sm:px-5 py-3 ${item.kind === "toggle" ? "items-center" : "flex-col sm:flex-row sm:items-center"} ${bloqueado ? "opacity-50" : ""}`}>
       {Icon && <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center shrink-0"><Icon className="h-4 w-4 text-foreground/60" /></div>}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium leading-snug">{item.titulo}</p>
         {item.descricao && <p className="text-xs text-muted-foreground mt-0.5">{item.descricao}</p>}
       </div>
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className={`flex items-center gap-1.5 shrink-0 ${item.kind === "toggle" ? "" : "w-full sm:w-auto"}`}>
         <span className="w-4 flex justify-center">
           {status === "salvando" && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
           {status === "ok" && <Check className="h-3.5 w-3.5 text-emerald-500" />}
@@ -408,7 +408,7 @@ function Linha({ item, p, status, googleOk, icon: Icon, onChange, onReset }: {
           <select
             value={p.valor}
             onChange={(e) => onChange(e.target.value)}
-            className="h-9 max-w-[200px] sm:max-w-[260px] rounded-lg border border-border bg-background px-2 text-[13px] text-foreground"
+            className="h-10 sm:h-9 flex-1 sm:flex-none min-w-0 sm:max-w-[260px] rounded-lg border border-border bg-background px-2 text-[13px] text-foreground"
           >
             {(item.opcoes ?? p.opcoes.map(o => ({ value: o, label: o }))).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             {!(item.opcoes ?? p.opcoes.map(o => ({ value: o }))).some(o => o.value === p.valor) && <option value={p.valor}>{p.valor}</option>}

@@ -139,7 +139,7 @@ export default function Dashboard() {
               ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.faturamentoPorDia} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <XAxis dataKey="data" stroke="hsl(var(--foreground) / 0.25)" fontSize={11} tickLine={false} axisLine={false} />
+                  <XAxis dataKey="data" stroke="hsl(var(--foreground) / 0.25)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v: string) => (/^\d{4}-\d{2}-\d{2}/.test(String(v)) ? `${String(v).slice(8, 10)}/${String(v).slice(5, 7)}` : String(v))} />
                   <YAxis stroke="hsl(var(--foreground) / 0.25)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(val) => `R$${val}`} />
                   <RechartsTooltip 
                     cursor={{fill: 'hsl(var(--foreground) / 0.03)'}}

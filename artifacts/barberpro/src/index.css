@@ -228,14 +228,30 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  input, select, textarea, button {
+  /* 16px em campos evita o zoom automático do iOS ao focar. Botões ficam
+     com o tamanho desenhado em cada tela. */
+  input, select, textarea {
     font-size: 16px !important;
+  }
+
+  .scrollbar-hide {
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 
   input[type="date"],
   input[type="time"],
   input[type="datetime-local"] {
     min-height: 44px;
+  }
+
+  /* Campos de texto e seletores com altura mínima de toque. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select,
+  [role="combobox"] {
+    min-height: 42px;
   }
 
   .mobile-table-wrap {

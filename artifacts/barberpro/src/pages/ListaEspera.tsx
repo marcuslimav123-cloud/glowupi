@@ -72,9 +72,9 @@ export default function ListaEspera() {
 
   return (
     <AppLayout>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Lista de espera</h1>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Lista de espera</h1>
           <p className="text-muted-foreground mt-1">Clientes esperando uma vaga abrir</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

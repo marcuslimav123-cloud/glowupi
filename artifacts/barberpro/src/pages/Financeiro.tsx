@@ -168,9 +168,9 @@ export default function Financeiro() {
 
   return (
     <AppLayout>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Contas a pagar e receber</h1>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Contas a pagar e receber</h1>
           <p className="text-muted-foreground mt-1">Aluguel, fornecedores, boletos e valores a receber</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
