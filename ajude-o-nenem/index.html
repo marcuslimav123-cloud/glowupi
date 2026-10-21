@@ -53,10 +53,19 @@ p{margin:0}
 .in.d1{animation-delay:.06s}.in.d2{animation-delay:.12s}.in.d3{animation-delay:.18s}
 @keyframes in{to{opacity:1;transform:none}}
 
-/* ---------- home ---------- */
-.home{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;flex:1}
-.hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;min-width:0}
-.orb{position:relative;width:min(70vw,340px);aspect-ratio:1;max-width:100%;display:grid;place-items:center;--s1:#fff1e8;--s2:#ffd7bf;--s3:#f2a67a;--s4:#d97a5b;--gl:var(--accent)}
+/* ---------- home: só o convite, grande, pra ser visto do banco de trás ---------- */
+.home{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:56px;align-items:center;flex:1}
+.hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;min-width:0;cursor:pointer}
+.pitch{display:flex;flex-direction:column;align-items:flex-start;gap:20px;min-width:0}
+.eyebrow{font-size:clamp(17px,1.8vw,20px);font-weight:700;color:var(--accent)}
+.t-hero{font-size:clamp(42px,5.6vw,72px);font-weight:800;line-height:1.02;letter-spacing:-.035em}
+.story{font-size:clamp(19px,2vw,24px);line-height:1.5;color:var(--fg-2);max-width:40ch}
+.story b{color:var(--fg);font-weight:700}
+.cta{display:flex;flex-direction:column;align-items:stretch;gap:10px;width:100%;max-width:480px;margin-top:4px}
+.cta .t-meta{text-align:center;font-size:14px}
+.btn.huge{font-size:clamp(22px,2.4vw,28px);font-weight:800;padding:22px 32px;border-radius:18px;min-height:78px;animation:call 2.6s var(--ease) infinite}
+@keyframes call{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 45%,transparent)}70%,100%{box-shadow:0 0 0 20px transparent}}
+.orb{position:relative;width:min(70vw,420px,50vh);aspect-ratio:1;max-width:100%;display:grid;place-items:center;--s1:#fff1e8;--s2:#ffd7bf;--s3:#f2a67a;--s4:#d97a5b;--gl:var(--accent)}
 .orb.boy{--s1:#f1f7ff;--s2:#cfe2f7;--s3:#8db7e8;--s4:#5a86bf;--gl:var(--boy)}
 .orb.girl{--s1:#fff1f6;--s2:#f7d3e1;--s3:#e89ab6;--s4:#c2688a;--gl:var(--girl)}
 .orb .halo{position:absolute;inset:-14%;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--gl) 22%,transparent),transparent 62%);animation:halo 6s ease-in-out infinite}
@@ -76,18 +85,18 @@ p{margin:0}
 .orb .fruit{position:absolute;right:3%;bottom:4%;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-size:28px;background:var(--surface);border:1px solid var(--line-strong)}
 .orb .ripple{position:absolute;inset:8%;border-radius:50%;border:2px solid var(--gl);opacity:0;pointer-events:none}
 
-.clock{margin-top:8px;font-variant-numeric:tabular-nums}
+.clock{margin-top:4px;font-variant-numeric:tabular-nums}
 .clock b{color:var(--fg-2);font-weight:700}
-.gest{margin-top:20px}
-.gest b{display:block;font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--fg)}
+.gest{margin-top:16px}
+.gest b{display:block;font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--fg)}
 .gest span{display:block;margin-top:4px}
-.metric{margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:8px;width:min(100%,420px)}
-.metric .num{display:flex;align-items:baseline;gap:8px;line-height:1}
-.metric .num b{font-size:clamp(36px,5vw,52px);font-weight:800;letter-spacing:-.03em;white-space:nowrap}
+.metric{display:flex;flex-direction:column;align-items:flex-start;gap:8px;width:100%;max-width:480px}
+.metric .num{display:flex;align-items:baseline;gap:8px;line-height:1;flex-wrap:wrap}
+.metric .num b{font-size:clamp(30px,3.6vw,42px);font-weight:800;letter-spacing:-.03em;white-space:nowrap}
 .metric .num span{color:var(--fg-3);font-weight:600;font-size:17px}
-.bar{width:100%;height:6px;border-radius:999px;background:var(--line);overflow:hidden}
+.bar{width:100%;height:8px;border-radius:999px;background:var(--line);overflow:hidden}
 .bar i{display:block;height:100%;width:0;border-radius:999px;background:var(--accent);transition:width 1.2s var(--ease)}
-.poll{width:min(100%,420px);margin-top:24px;padding-top:20px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.poll{width:100%;max-width:460px;margin-top:8px;padding-top:20px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
 .poll-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
 .poll-head .t-meta{text-align:right}
 .poll-bar{height:6px;border-radius:999px;background:var(--line);overflow:hidden;display:flex}
@@ -98,17 +107,25 @@ p{margin:0}
 .poll-row .b{color:var(--boy)}.poll-row .g{color:var(--girl)}
 .poll-row b{color:var(--fg)}
 
-.side{display:flex;flex-direction:column;gap:32px;min-width:0}
-.note h1{color:var(--fg)}
-.note p{margin-top:12px;max-width:48ch}
-.note p b{color:var(--fg);font-weight:700}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.amt{position:relative;border-radius:var(--radius);padding:20px 20px 18px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;
-  background:var(--surface);border:1px solid var(--line);min-height:104px;
+/* ---------- escolher o valor (segunda etapa) ---------- */
+.topbar{display:flex;align-items:center;margin-bottom:8px}
+.pick{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:56px;align-items:center;flex:1}
+.pick-head{display:flex;flex-direction:column;align-items:flex-start;gap:14px;min-width:0}
+.pick-head .t-body{font-size:19px;max-width:36ch}
+.pick-body{display:flex;flex-direction:column;gap:16px;min-width:0}
+.avatar{width:104px;height:104px;border-radius:50%;display:grid;place-items:center;--s1:#fff1e8;--s2:#ffd7bf;--s3:#f2a67a;--s4:#d97a5b;--gl:var(--accent);
+  background:radial-gradient(circle at 38% 32%,var(--s1) 0%,var(--s2) 24%,var(--s3) 60%,var(--s4) 100%);
+  box-shadow:inset -8px -12px 24px rgba(40,20,30,.22),inset 6px 8px 18px rgba(255,255,255,.6),0 0 40px color-mix(in srgb,var(--gl) 30%,transparent)}
+.avatar.boy{--s1:#f1f7ff;--s2:#cfe2f7;--s3:#8db7e8;--s4:#5a86bf;--gl:var(--boy)}
+.avatar.girl{--s1:#fff1f6;--s2:#f7d3e1;--s3:#e89ab6;--s4:#c2688a;--gl:var(--girl)}
+.avatar svg{width:80%;height:80%}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.amt{position:relative;border-radius:var(--radius);padding:24px 22px 20px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;
+  background:var(--surface);border:1px solid var(--line);min-height:132px;
   transition:transform .15s var(--ease),border-color .15s ease,background .15s ease}
-.amt .val{font-size:clamp(26px,3.2vw,34px);font-weight:800;letter-spacing:-.03em;line-height:1;color:var(--fg)}
+.amt .val{font-size:clamp(30px,3.8vw,44px);font-weight:800;letter-spacing:-.03em;line-height:1;color:var(--fg)}
 .amt .val sup{font-size:.5em;font-weight:700;vertical-align:top;margin-right:3px;color:var(--fg-3);letter-spacing:0}
-.amt small{font-weight:600;font-size:14px;color:var(--fg-2)}
+.amt small{font-weight:600;font-size:16px;color:var(--fg-2)}
 .amt:active{transform:scale(.98);background:var(--surface-2)}
 @media (hover:hover) and (pointer:fine){.amt:hover{border-color:var(--line-strong);background:var(--surface-2)}}
 .amt.hot{border-color:var(--accent);background:var(--accent-soft);padding-top:40px}
@@ -201,43 +218,47 @@ p{margin:0}
 /* ---------- tablet: paisagem com pouca altura ---------- */
 @media (min-width:861px) and (max-height:840px){
   .wrap{padding-block:14px}
-  .home{gap:32px}
-  .orb{width:min(70vw,340px,38vh)}
-  .gest{margin-top:10px}.gest b{font-size:18px}
-  .clock{margin-top:6px}
-  .metric{margin-top:10px;gap:6px}.metric .num b{font-size:clamp(30px,4.4vw,42px)}
-  .poll{margin-top:12px;padding-top:12px;gap:8px}
+  .home,.pick{gap:40px}
+  .orb{width:min(70vw,400px,52vh)}
+  .gest{margin-top:10px}.gest b{font-size:20px}
+  .pitch{gap:16px}
+  .t-hero{font-size:clamp(40px,5vw,60px)}
+  .btn.huge{min-height:70px;padding:18px 28px}
+  .poll{padding-top:14px;gap:8px}
   .foot{margin-top:10px}
-  .note p{margin-top:8px}
-  .side{gap:24px}
-  .amt{min-height:92px;padding:16px 18px 14px}
+  .amt{min-height:112px;padding:20px 20px 16px}
 }
 /* ---------- tablet: retrato ---------- */
 @media (max-width:860px){
   .wrap{padding-block:20px}
-  .home{display:flex;flex-direction:column;gap:28px;align-items:stretch;justify-content:center}
-  .side{display:contents}
-  .note{order:1}.hero{order:2}.grid{order:3}.other{order:4}.trust{order:5}
-  .hero{display:grid;grid-template-columns:auto 1fr;gap:6px 28px;align-items:center;justify-items:start;text-align:left}
-  .orb{width:min(44vw,320px);grid-row:1/span 5;align-self:center}
-  .gest b{font-size:20px}
-  .metric .num b{font-size:clamp(34px,5.6vw,48px)}
-  .amt{min-height:104px}
-  .gest,.clock,.metric,.poll{margin:0;width:100%;align-items:flex-start}
-  .gest b{font-size:18px}
-  .metric{gap:6px;margin-top:6px}.metric .num b{font-size:clamp(30px,5vw,44px)}
-  .poll{margin-top:8px;padding-top:12px;gap:8px}
-  .note p{max-width:none}
-  .amt{min-height:92px;padding:16px 18px 14px}
+  .home{display:flex;flex-direction:column;gap:28px;align-items:center;justify-content:center}
+  .orb{width:min(62vw,360px,40vh)}
+  .pitch{align-items:center;text-align:center}
+  .t-hero{font-size:clamp(38px,7.4vw,64px)}
+  .story{max-width:34em}
+  .metric{align-items:center}
+  .pick{display:flex;flex-direction:column;gap:28px;align-items:stretch;justify-content:center}
+  .pick-head{align-items:center;text-align:center}
+  .pick-head .t-body{max-width:none}
+  .poll{max-width:none}
 }
 @media (max-width:560px){
-  .hero{grid-template-columns:1fr;justify-items:center;text-align:center}
-  .orb{grid-row:auto;width:min(60vw,240px)}
-  .gest,.clock,.metric,.poll{align-items:center}
+  .wrap{padding-inline:16px}
+  .wrap{padding-block:14px}
+  .orb{width:min(50vw,200px)}
+  .gest{margin-top:8px}.gest b{font-size:18px}
+  .home,.pick{gap:18px}
+  .pitch{gap:14px}
+  .story{font-size:17px}
+  .btn.huge{min-height:68px;padding:18px 24px}
+  .avatar{width:84px;height:84px}
+  .grid{gap:10px}
+  .amt{min-height:108px;padding:18px 16px 14px}
+  .amt.hot{padding-top:38px}
 }
 @media (prefers-reduced-motion:reduce){
   .in{animation:none;opacity:1;transform:none}
-  .halo,.sphere,.baby,.qr-wrap.waiting,.dot,.thanks .orb svg.baby{animation:none!important}
+  .halo,.sphere,.baby,.qr-wrap.waiting,.dot,.thanks .orb svg.baby,.btn.huge{animation:none!important}
   #fx{display:none}
 }
 </style>
@@ -296,10 +317,10 @@ p{margin:0}
     </form>
   </section>
 
-  <!-- ========== HOME ========== -->
+  <!-- ========== HOME: o convite ========== -->
   <section class="screen" id="s-home" hidden>
     <div class="home">
-      <div class="hero">
+      <div class="hero" id="hero">
         <div class="orb in">
           <div class="halo"></div>
           <svg class="ring" viewBox="0 0 240 240" aria-hidden="true">
@@ -314,23 +335,41 @@ p{margin:0}
         </div>
         <div class="gest in d1" id="weekLabel"><b>Semana 0</b><span class="t-support">do tamanho de uma sementinha</span></div>
         <p class="t-meta clock in d1" id="clock" aria-live="off"></p>
+      </div>
+      <div class="pitch">
+        <p class="eyebrow in" id="eyebrow">Oi, eu sou o neném do papai</p>
+        <h1 class="t-hero in d1" id="title">Me ajuda a nascer?</h1>
+        <p class="story in d1" id="subLine">Sou eu, aqui da barriga da mamãe. Meu papai dirige por aplicativo e inventou este tablet pra juntar <b>R$ 15.000</b> até eu chegar. A ideia foi dele, eu só entrei com a fofura.</p>
         <div class="metric in d2">
           <div class="num"><b id="raised">R$ 0,00</b><span id="goalLabel">de R$ 15.000</span></div>
           <div class="bar"><i id="barFill"></i></div>
           <p class="t-meta" id="leftLabel">Faltam R$ 15.000 pro dia do parto</p>
         </div>
-        <div class="poll in d3" id="poll">
+        <div class="cta in d3">
+          <button class="btn huge" id="helpBtn">Quero ajudar 💛</button>
+          <p class="t-meta" id="ctaHint">Pix rapidinho, a partir de R$ 12</p>
+        </div>
+      </div>
+    </div>
+    <footer class="foot"><span>Obrigado por fazer parte da minha história</span><button class="gear" id="gearBtn" aria-label="Configurações (segure)">⚙️</button></footer>
+  </section>
+
+  <!-- ========== ESCOLHER O VALOR ========== -->
+  <section class="screen" id="s-pick" hidden>
+    <div class="topbar"><button class="btn ghost" id="pickBack">← Voltar</button></div>
+    <div class="pick">
+      <div class="pick-head">
+        <div class="avatar in"><svg id="babySvgPick" viewBox="0 0 200 200" aria-hidden="true"></svg></div>
+        <h2 class="t-title in d1">Oba! Escolhe como quer me ajudar</h2>
+        <p class="t-body in d1">Cada Pix vira fralda, consulta e o meu dia de nascer. Bora ajudar o papai a bater essa meta?</p>
+        <div class="poll in d2" id="poll">
           <div class="poll-head"><span class="t-support">Chuta o que eu sou</span><span class="t-meta" id="pollHint">Faz o Pix e dá seu palpite</span></div>
           <div class="poll-bar"><i class="b" id="pollBoy"></i><i class="g" id="pollGirl"></i></div>
           <div class="poll-row"><span class="b">Menino <b id="nBoy">0</b></span><span class="g"><b id="nGirl">0</b> Menina</span></div>
         </div>
       </div>
-      <div class="side">
-        <div class="note in d1">
-          <h1 class="t-title" id="title">Vem aí meu neném</h1>
-          <p class="t-body" id="subLine">Oi! Sou eu, aqui de dentro da barriga da mamãe. Meu papai dirige por aplicativo e inventou este tablet pra juntar <b>R$ 15.000</b> até eu chegar. Cada Pix vira fralda, consulta e o meu dia de nascer. Bora ajudar o papai a bater essa meta? A ideia foi dele, eu só entrei com a fofura.</p>
-        </div>
-        <div class="grid in d2" id="amountGrid">
+      <div class="pick-body">
+        <div class="grid in d1" id="amountGrid">
           <button class="amt" data-amt="12"><span class="val"><sup>R$</sup>12</span><small>um cafezinho pro papai</small></button>
           <button class="amt hot" data-amt="17.97"><span class="tag">mais escolhido</span><span class="val"><sup>R$</sup>17,97</span><small>uma fralda pra mim</small></button>
           <button class="amt" data-amt="19.97"><span class="val"><sup>R$</sup>19,97</span><small>meu primeiro macacãozinho</small></button>
@@ -340,10 +379,9 @@ p{margin:0}
           <input id="otherAmt" type="number" inputmode="decimal" min="1" step="0.01" placeholder="R$ 0,00">
           <button class="btn" id="otherGo">Gerar QR</button>
         </div>
-        <p class="trust in d3">Pix oficial pelo Mercado Pago. Cai na hora, direto pro meu papai.</p>
+        <p class="trust in d2">Pix oficial pelo Mercado Pago. Cai na hora, direto pro meu papai.</p>
       </div>
     </div>
-    <footer class="foot"><span>Obrigado por fazer parte da minha história</span><button class="gear" id="gearBtn" aria-label="Configurações (segure)">⚙️</button></footer>
   </section>
 
   <!-- ========== PAGAMENTO ========== -->
@@ -429,7 +467,10 @@ p{margin:0}
   const total=()=>r2(st.base+(st.server?st.serverTotal:0)+manualSum());
   const auto=()=>!!st.server;
   const charge=v=>r2(v*(1+st.fee/100));     // a taxa do Pix vai por conta de quem doa
-  function renderAmounts(){document.querySelectorAll('.amt[data-amt]').forEach(b=>{b.querySelector('.val').innerHTML=`<sup>R$</sup>${fmtN(charge(+b.dataset.amt))}`;});}
+  function renderAmounts(){
+    const vals=[...document.querySelectorAll('.amt[data-amt]')].map(b=>{const v=charge(+b.dataset.amt);b.querySelector('.val').innerHTML=`<sup>R$</sup>${fmtN(v)}`;return v;});
+    $('ctaHint').textContent=`Pix rapidinho, a partir de ${fmt(Math.min(...vals))}. Leva menos de 1 minuto.`;
+  }
 
   // ---------- Pix manual (BR Code estático com valor) ----------
   function ascii(s){return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\x20-\x7E]/g,'').toUpperCase().trim();}
@@ -512,9 +553,9 @@ p{margin:0}
     $('goalLabel').textContent='de '+fmt0(st.goal);
     $('barFill').style.width=(p*100)+'%';
     $('leftLabel').textContent=tot>=st.goal?'Meta batida. Obrigado a cada um que me ajudou.':`${pct(tot).toLocaleString('pt-BR')}% da minha meta. Faltam ${fmt(st.goal-tot)}.`;
-    $('title').textContent=st.babyName?`Vem aí ${st.babyName}`:'Vem aí meu neném';
+    $('eyebrow').textContent=st.babyName?`Oi, eu sou ${st.babyName}`:'Oi, eu sou o neném do papai';
     const pai=st.driverName?`Meu papai é o <b>${st.driverName}</b>, ele`:'Meu papai';
-    $('subLine').innerHTML=`Oi! Sou eu, aqui de dentro da barriga da mamãe. ${pai} dirige por aplicativo e inventou este tablet pra juntar <b>${fmt0(st.goal)}</b> até eu chegar${due?`, lá por <b>${fmtDate(due)}</b>`:''}. Cada Pix vira fralda, consulta e o meu dia de nascer. Bora ajudar o papai a bater essa meta? A ideia foi dele, eu só entrei com a fofura.`;
+    $('subLine').innerHTML=`Sou eu, aqui da barriga da mamãe. ${pai} dirige por aplicativo e inventou este tablet pra juntar <b>${fmt0(st.goal)}</b> até eu chegar${due?`, lá por <b>${fmtDate(due)}</b>`:''}. A ideia foi dele, eu só entrei com a fofura.`;
     const svg=$('babySvg');svg.innerHTML=babySvg(w,gender());svg.style.transform=`scale(${scaleOf(w)})`;
     renderPoll();
   }
@@ -538,7 +579,7 @@ p{margin:0}
     [['pollBoy','pollGirl'],['pollBoy2','pollGirl2']].forEach(([a,b])=>{$(a).style.width=pb+'%';$(b).style.width=(100-pb)+'%';$(a).style.opacity=$(b).style.opacity=n?1:.35;});
     $('nBoy').textContent=boy;$('nGirl').textContent=girl;
     $('pollHint').textContent=!n?'Faz o Pix e dá seu palpite':g==='boy'?`Menino na frente, ${pb}%`:g==='girl'?`Menina na frente, ${100-pb}%`:'Empate. Me desempata aí';
-    document.querySelectorAll('.orb').forEach(o=>{o.classList.toggle('boy',g==='boy');o.classList.toggle('girl',g==='girl');});
+    document.querySelectorAll('.orb,.avatar').forEach(o=>{o.classList.toggle('boy',g==='boy');o.classList.toggle('girl',g==='girl');});
   }
 
   // ---------- fundo: brilho fixo e estrelas discretas (um quadro, sem loop) ----------
@@ -588,8 +629,18 @@ p{margin:0}
   }
 
   // ---------- telas ----------
-  const screens=['s-setup','s-home','s-pay'];
-  function show(id){screens.forEach(s=>$(s).hidden=(s!==id));}
+  const screens=['s-setup','s-home','s-pick','s-pay'];
+  let idle=null;
+  function show(id){screens.forEach(s=>$(s).hidden=(s!==id));clearTimeout(idle);if(id==='s-pick')armIdle();scrollTo(0,0);}
+  // se o passageiro abriu os valores e largou, volta pro convite sozinho
+  function armIdle(){clearTimeout(idle);idle=setTimeout(goHome,60000);}
+  function goHome(){$('otherRow').hidden=true;$('otherAmt').value='';show('s-home');}
+  function openPick(){const s=$('babySvgPick');s.innerHTML=babySvg(gw(),gender());show('s-pick');}
+  $('helpBtn').onclick=openPick;
+  $('hero').onclick=openPick;
+  $('pickBack').onclick=goHome;
+  $('s-pick').addEventListener('pointerdown',armIdle);
+  $('otherAmt').addEventListener('input',armIdle);
   let current=0,payload='',poll=null;
   function stopPoll(){clearInterval(poll);poll=null;}
   function renderQr(text,base64){
@@ -635,7 +686,7 @@ p{margin:0}
   $('otherBtn').onclick=()=>{$('otherRow').hidden=false;$('otherAmt').focus();};
   $('otherGo').onclick=()=>openPay(String($('otherAmt').value).replace(',','.'));
   $('otherAmt').addEventListener('keydown',e=>{if(e.key==='Enter')$('otherGo').click();});
-  $('backBtn').onclick=()=>{stopPoll();$('otherRow').hidden=true;show('s-home');};
+  $('backBtn').onclick=()=>{stopPoll();$('otherRow').hidden=true;show('s-pick');};
   $('copyBtn').onclick=()=>{
     const done=()=>{$('copyBtn').textContent='Copiado. Cola no app do banco.';setTimeout(()=>$('copyBtn').textContent='Copiar código Pix',2500);};
     const selectText=()=>{const r=document.createRange();r.selectNodeContents($('copyText'));const s=getSelection();s.removeAllRanges();s.addRange(r);};
@@ -669,7 +720,7 @@ p{margin:0}
     if(!manual)setTimeout(syncTotal,2500);
   }
   let thanksTimer=null;
-  function closeThanks(){$('thanks').classList.remove('on');$('otherRow').hidden=true;show('s-home');}
+  function closeThanks(){$('thanks').classList.remove('on');goHome();}
   $('thanksClose').onclick=closeThanks;
   function vote(g){
     st.votes[g]=(st.votes[g]||0)+1;save();
