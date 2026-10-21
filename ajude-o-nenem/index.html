@@ -1,0 +1,723 @@
+<title>Ajude o Neném a Nascer</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
+<style>
+/* Direção (regra Toss-Style): produto quieto e confiável. Grafite escuro, cinzas construídos pro escuro, UM acento (pêssego)
+   usado na esfera, na ação principal e no progresso. Nada de degradê decorativo, nada de ornamento solto. Espaço: 8/12/16/24/32/48. */
+:root{
+  --bg:#121318;
+  --surface:#1a1b22;
+  --surface-2:#22232c;
+  --line:#2c2d38;
+  --line-strong:#3a3b48;
+  --fg:#f2f1ee;
+  --fg-2:#b9b8c2;
+  --fg-3:#7f7e8c;
+  --accent:#f2a67a;
+  --accent-ink:#1a120c;
+  --accent-soft:rgba(242,166,122,.14);
+  --ok:#7fcfa5;
+  --boy:#8db7e8;
+  --girl:#e89ab6;
+  --radius:16px;
+  --radius-lg:24px;
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 32px rgba(0,0,0,.28);
+  --font:"Manrope","Segoe UI",system-ui,sans-serif;
+  --ease:cubic-bezier(.16,1,.3,1);
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:17px;line-height:1.45;overflow-x:hidden;-webkit-user-select:none;user-select:none;font-variant-numeric:tabular-nums}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:transparent}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+input,select{font:inherit;color:var(--fg);background:var(--surface-2);border:1px solid var(--line-strong);border-radius:12px;padding:12px 14px;width:100%;min-width:0;-webkit-user-select:text;user-select:text}
+input::placeholder{color:var(--fg-3)}
+h1,h2,h3{margin:0;line-height:1.1;text-wrap:balance;letter-spacing:-.02em}
+p{margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:24px;padding-block:24px;min-height:100%;display:flex;flex-direction:column;position:relative;z-index:1}
+.screen{flex:1;display:flex;flex-direction:column}
+.screen[hidden]{display:none!important}
+
+/* fundo: só um brilho fixo atrás da esfera e um campo de estrelas discreto */
+.sky{position:fixed;inset:0;width:100%;height:100%;display:block;pointer-events:none;z-index:0}
+
+/* tipos */
+.t-title{font-size:clamp(28px,3.6vw,40px);font-weight:800}
+.t-section{font-size:22px;font-weight:700}
+.t-body{font-size:17px;color:var(--fg-2)}
+.t-support{font-size:15px;color:var(--fg-2);font-weight:600}
+.t-meta{font-size:13px;color:var(--fg-3);font-weight:600}
+
+/* entrada: uma vez, suave */
+.in{opacity:0;transform:translateY(8px);animation:in .6s var(--ease) forwards}
+.in.d1{animation-delay:.06s}.in.d2{animation-delay:.12s}.in.d3{animation-delay:.18s}
+@keyframes in{to{opacity:1;transform:none}}
+
+/* ---------- home ---------- */
+.home{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;flex:1}
+.hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;min-width:0}
+.orb{position:relative;width:min(70vw,340px);aspect-ratio:1;max-width:100%;display:grid;place-items:center;--s1:#fff1e8;--s2:#ffd7bf;--s3:#f2a67a;--s4:#d97a5b;--gl:var(--accent)}
+.orb.boy{--s1:#f1f7ff;--s2:#cfe2f7;--s3:#8db7e8;--s4:#5a86bf;--gl:var(--boy)}
+.orb.girl{--s1:#fff1f6;--s2:#f7d3e1;--s3:#e89ab6;--s4:#c2688a;--gl:var(--girl)}
+.orb .halo{position:absolute;inset:-14%;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--gl) 22%,transparent),transparent 62%);animation:halo 6s ease-in-out infinite}
+@keyframes halo{0%,100%{transform:scale(.97);opacity:.8}50%{transform:scale(1.03);opacity:1}}
+.orb .ring{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.orb .ring .track{fill:none;stroke:var(--line-strong);stroke-width:3}
+.orb .ring .fill{fill:none;stroke:var(--gl);stroke-width:3;stroke-linecap:round;transition:stroke-dashoffset 1s linear}
+.orb .ring .hand{fill:var(--gl);transform-origin:120px 120px;transition:transform 1s linear}
+.orb .sphere{position:absolute;inset:8%;border-radius:50%;
+  background:radial-gradient(circle at 38% 32%,var(--s1) 0%,var(--s2) 24%,var(--s3) 60%,var(--s4) 100%);
+  box-shadow:inset -18px -26px 50px rgba(40,20,30,.22),inset 12px 16px 36px rgba(255,255,255,.6),0 0 60px color-mix(in srgb,var(--gl) 30%,transparent),0 24px 60px rgba(0,0,0,.5);
+  animation:breathe 6s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(.99)}50%{transform:scale(1.01)}}
+.orb .shine{position:absolute;inset:8%;border-radius:50%;background:radial-gradient(circle at 30% 22%,rgba(255,255,255,.85),transparent 28%);pointer-events:none}
+.orb svg.baby{position:relative;width:66%;height:66%;transform-origin:50% 62%;transition:transform 1.2s var(--ease);animation:float 7s ease-in-out infinite}
+@keyframes float{0%,100%{translate:0 0}50%{translate:0 -6px}}
+.orb .fruit{position:absolute;right:3%;bottom:4%;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-size:28px;background:var(--surface);border:1px solid var(--line-strong)}
+.orb .ripple{position:absolute;inset:8%;border-radius:50%;border:2px solid var(--gl);opacity:0;pointer-events:none}
+
+.clock{margin-top:8px;font-variant-numeric:tabular-nums}
+.clock b{color:var(--fg-2);font-weight:700}
+.gest{margin-top:20px}
+.gest b{display:block;font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--fg)}
+.gest span{display:block;margin-top:4px}
+.metric{margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:8px;width:min(100%,420px)}
+.metric .num{display:flex;align-items:baseline;gap:8px;line-height:1}
+.metric .num b{font-size:clamp(36px,5vw,52px);font-weight:800;letter-spacing:-.03em;white-space:nowrap}
+.metric .num span{color:var(--fg-3);font-weight:600;font-size:17px}
+.bar{width:100%;height:6px;border-radius:999px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;border-radius:999px;background:var(--accent);transition:width 1.2s var(--ease)}
+.poll{width:min(100%,420px);margin-top:24px;padding-top:20px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.poll-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.poll-head .t-meta{text-align:right}
+.poll-bar{height:6px;border-radius:999px;background:var(--line);overflow:hidden;display:flex}
+.poll-bar i{display:block;height:100%;transition:width 1.1s var(--ease),opacity .4s ease}
+.poll-bar .b{background:var(--boy)}
+.poll-bar .g{background:var(--girl);margin-left:auto}
+.poll-row{display:flex;justify-content:space-between;gap:12px;font-weight:700;font-size:15px}
+.poll-row .b{color:var(--boy)}.poll-row .g{color:var(--girl)}
+.poll-row b{color:var(--fg)}
+
+.side{display:flex;flex-direction:column;gap:32px;min-width:0}
+.note h1{color:var(--fg)}
+.note p{margin-top:12px;max-width:48ch}
+.note p b{color:var(--fg);font-weight:700}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.amt{position:relative;border-radius:var(--radius);padding:20px 20px 18px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;
+  background:var(--surface);border:1px solid var(--line);min-height:104px;
+  transition:transform .15s var(--ease),border-color .15s ease,background .15s ease}
+.amt .val{font-size:clamp(26px,3.2vw,34px);font-weight:800;letter-spacing:-.03em;line-height:1;color:var(--fg)}
+.amt .val sup{font-size:.5em;font-weight:700;vertical-align:top;margin-right:3px;color:var(--fg-3);letter-spacing:0}
+.amt small{font-weight:600;font-size:14px;color:var(--fg-2)}
+.amt:active{transform:scale(.98);background:var(--surface-2)}
+@media (hover:hover) and (pointer:fine){.amt:hover{border-color:var(--line-strong);background:var(--surface-2)}}
+.amt.hot{border-color:var(--accent);background:var(--accent-soft);padding-top:40px}
+.amt.hot .tag{position:absolute;top:12px;right:14px;font-size:12px;font-weight:700;color:var(--accent-ink);background:var(--accent);padding:4px 9px;border-radius:999px;white-space:nowrap}
+.other{display:flex;gap:10px;align-items:center}
+.other[hidden]{display:none!important}
+.btn{font-weight:700;font-size:17px;padding:14px 22px;border-radius:12px;background:var(--accent);color:var(--accent-ink);transition:transform .15s var(--ease),filter .15s ease;min-height:48px}
+.btn:active{transform:scale(.98);filter:brightness(.95)}
+.btn.ghost{background:var(--surface);color:var(--fg);border:1px solid var(--line-strong)}
+.btn.big{font-size:19px;padding:16px 26px}
+.btn.ok{background:var(--ok);color:#0f1a14}
+.btn[hidden]{display:none!important}
+.trust{color:var(--fg-3);font-weight:600;font-size:14px}
+
+/* ---------- pagamento ---------- */
+.pay{display:grid;grid-template-columns:1fr 1fr;gap:48px;flex:1;align-items:center}
+@media (max-width:860px){.pay{grid-template-columns:1fr;gap:24px}.how{gap:16px}}
+@media (max-height:840px){#qrcode{width:min(62vw,240px)}.pay-amount b{font-size:clamp(34px,5vw,48px)}}
+.qrcol{display:flex;flex-direction:column;align-items:center;gap:16px}
+.pay-amount{text-align:center;line-height:1}
+.pay-amount small{display:block;color:var(--fg-2);font-weight:600;font-size:15px;margin-bottom:8px}
+.pay-amount b{font-size:clamp(40px,5.6vw,60px);font-weight:800;letter-spacing:-.03em}
+.pay-amount .fee{margin-top:10px;font-size:13px;color:var(--fg-3);font-weight:600;max-width:34ch;margin-inline:auto}
+.qr-wrap{position:relative;padding:12px;border-radius:var(--radius-lg);background:#fff;border:1px solid var(--line)}
+.qr-wrap.waiting{animation:qrpulse 2.4s var(--ease) infinite}
+@keyframes qrpulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 50%,transparent)}100%{box-shadow:0 0 0 18px transparent}}
+#qrcode{width:min(62vw,280px);aspect-ratio:1;max-width:100%;display:grid;place-items:center;color:#121318;text-align:center;font-weight:600;font-size:14px}
+#qrcode img,#qrcode canvas{max-width:100%;height:auto}
+.copy{display:flex;flex-direction:column;gap:8px;width:min(100%,340px)}
+.copy-text{font-size:12px;color:var(--fg-3);word-break:break-all;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;max-height:56px;overflow:auto;-webkit-user-select:text;user-select:text}
+.how{display:flex;flex-direction:column;gap:24px}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.steps li{display:flex;align-items:center;gap:14px;font-weight:600;font-size:17px;color:var(--fg-2)}
+.steps li b{color:var(--fg);font-weight:700}
+.steps .n{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:14px;color:var(--fg-2);border:1px solid var(--line-strong)}
+.peek{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface);color:var(--fg-2);font-weight:600;font-size:15px}
+.peek svg{width:48px;height:48px;flex:none}
+.peek b{color:var(--fg)}
+.actions{display:flex;flex-direction:column;gap:12px}
+.wait{display:flex;align-items:center;justify-content:center;gap:12px;font-weight:700;font-size:17px;padding:14px 18px;border-radius:12px;background:var(--surface);border:1px solid var(--line-strong);min-height:48px}
+.wait[hidden]{display:none!important}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--ok);animation:dot 1.4s var(--ease) infinite;flex:none}
+@keyframes dot{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 60%,transparent)}100%{box-shadow:0 0 0 10px transparent}}
+
+/* ---------- obrigado ---------- */
+.thanks{position:fixed;inset:0;z-index:20;display:grid;place-items:center;text-align:center;padding:24px;background:var(--bg);opacity:0;pointer-events:none;transition:opacity .3s var(--ease)}
+.thanks.on{opacity:1;pointer-events:auto}
+.thanks .inner{display:flex;flex-direction:column;align-items:center;gap:8px;max-width:640px;transform:scale(.97);transition:transform .5s var(--ease)}
+.thanks.on .inner{transform:none}
+.thanks h2{font-size:clamp(36px,6vw,64px);font-weight:800}
+.thanks .plus{font-size:clamp(24px,3.6vw,36px);font-weight:800;letter-spacing:-.02em;color:var(--accent)}
+.thanks .orb{width:min(50vw,260px);margin-top:8px}
+.thanks .orb svg.baby{animation:bounce 1.1s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0) scale(var(--s,1))}50%{transform:translateY(-12px) scale(calc(var(--s,1)*1.04))}}
+.thanks .grow{margin-top:8px;font-weight:700;font-size:18px;color:var(--fg-2)}
+.thanks .grow b{color:var(--fg)}
+.thanks p.t-body{max-width:44ch}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:21;overflow:hidden}
+#fx .p{position:absolute;left:0;top:0;display:block;will-change:transform,opacity}
+#fx .strip{width:8px;height:16px;border-radius:2px}
+#fx .round{width:9px;height:9px;border-radius:50%}
+.vote{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:20px;padding-top:20px;border-top:1px solid var(--line);width:min(100%,460px)}
+.vote[hidden]{display:none!important}
+.vote-q{font-size:20px;font-weight:700}
+.vote-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;width:100%}
+.vbtn{flex:1 1 160px;font-weight:700;font-size:18px;padding:16px 22px;border-radius:12px;border:1px solid var(--line-strong);background:var(--surface);color:var(--fg);transition:transform .15s var(--ease),border-color .15s ease;min-height:56px}
+.vbtn.boy{color:var(--boy)}.vbtn.girl{color:var(--girl)}
+.vbtn:active{transform:scale(.98)}
+.vote-result{width:min(100%,460px);display:flex;flex-direction:column;gap:10px;margin-top:20px;padding-top:20px;border-top:1px solid var(--line)}
+.vote-result[hidden]{display:none!important}
+.vote-result p{text-align:center}
+
+/* ---------- configuração ---------- */
+.setup{max-width:640px;margin:12px auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:28px;display:flex;flex-direction:column;gap:16px;width:100%}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-weight:700;font-size:14px;color:var(--fg-2)}
+.hint{color:var(--fg-3);font-size:14px;font-weight:600}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.row>*{flex:1 1 160px}
+.list{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto}
+.list div{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--surface-2);padding:8px 12px;border-radius:10px;font-size:15px}
+.list button{color:var(--accent);font-weight:700}
+.msg{color:var(--ok);font-weight:700;min-height:1.4em}
+.msg.err{color:#e88b8b}
+
+/* ---------- rodapé ---------- */
+.foot{display:flex;justify-content:space-between;align-items:center;margin-top:24px;color:var(--fg-3);font-size:14px;font-weight:600}
+.gear{opacity:.3;font-size:18px;padding:10px}
+
+/* ---------- tablet: paisagem com pouca altura ---------- */
+@media (min-width:861px) and (max-height:840px){
+  .wrap{padding-block:14px}
+  .home{gap:32px}
+  .orb{width:min(70vw,340px,38vh)}
+  .gest{margin-top:10px}.gest b{font-size:18px}
+  .clock{margin-top:6px}
+  .metric{margin-top:10px;gap:6px}.metric .num b{font-size:clamp(30px,4.4vw,42px)}
+  .poll{margin-top:12px;padding-top:12px;gap:8px}
+  .foot{margin-top:10px}
+  .note p{margin-top:8px}
+  .side{gap:24px}
+  .amt{min-height:92px;padding:16px 18px 14px}
+}
+/* ---------- tablet: retrato ---------- */
+@media (max-width:860px){
+  .wrap{padding-block:20px}
+  .home{display:flex;flex-direction:column;gap:28px;align-items:stretch;justify-content:center}
+  .side{display:contents}
+  .note{order:1}.hero{order:2}.grid{order:3}.other{order:4}.trust{order:5}
+  .hero{display:grid;grid-template-columns:auto 1fr;gap:6px 28px;align-items:center;justify-items:start;text-align:left}
+  .orb{width:min(44vw,320px);grid-row:1/span 5;align-self:center}
+  .gest b{font-size:20px}
+  .metric .num b{font-size:clamp(34px,5.6vw,48px)}
+  .amt{min-height:104px}
+  .gest,.clock,.metric,.poll{margin:0;width:100%;align-items:flex-start}
+  .gest b{font-size:18px}
+  .metric{gap:6px;margin-top:6px}.metric .num b{font-size:clamp(30px,5vw,44px)}
+  .poll{margin-top:8px;padding-top:12px;gap:8px}
+  .note p{max-width:none}
+  .amt{min-height:92px;padding:16px 18px 14px}
+}
+@media (max-width:560px){
+  .hero{grid-template-columns:1fr;justify-items:center;text-align:center}
+  .orb{grid-row:auto;width:min(60vw,240px)}
+  .gest,.clock,.metric,.poll{align-items:center}
+}
+@media (prefers-reduced-motion:reduce){
+  .in{animation:none;opacity:1;transform:none}
+  .halo,.sphere,.baby,.qr-wrap.waiting,.dot,.thanks .orb svg.baby{animation:none!important}
+  #fx{display:none}
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="skin" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#ffe6d4"/><stop offset="1" stop-color="#f3bd9c"/></radialGradient>
+    <linearGradient id="blanket" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff6e3"/><stop offset="1" stop-color="#ffd9a6"/></linearGradient>
+    <linearGradient id="blanket2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d6ecff"/><stop offset="1" stop-color="#9fcdff"/></linearGradient>
+    <linearGradient id="blanketGirl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe4ef"/><stop offset="1" stop-color="#ffa9c6"/></linearGradient>
+  </defs>
+</svg>
+<canvas class="sky" id="bgfx" aria-hidden="true"></canvas>
+
+<div class="wrap">
+  <!-- ========== CONFIGURAÇÃO ========== -->
+  <section class="screen" id="s-setup" hidden>
+    <form class="setup" id="setupForm">
+      <h2 class="t-section">Configurar o tablet</h2>
+      <p class="hint">Preencha uma vez. Os passageiros nunca veem esta tela.</p>
+      <div class="field">
+        <label for="server">Servidor do Pix automático (Mercado Pago)</label>
+        <input id="server" placeholder="https://ajude-o-nenem.SEU-NOME.workers.dev" autocomplete="off">
+        <p class="hint">Com o servidor, o tablet detecta o pagamento sozinho. Em branco, usa sua chave Pix e o botão “Já fiz o Pix”.</p>
+      </div>
+      <div class="row">
+        <div class="field"><label for="driverName">Seu nome</label><input id="driverName" placeholder="Ex.: Marcus"></div>
+        <div class="field"><label for="babyName">Nome do neném (se já souber)</label><input id="babyName" placeholder="Ainda em segredo?"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="gWeeks">Gestação hoje: semanas</label><input id="gWeeks" type="number" min="0" max="42" step="1" placeholder="10"></div>
+        <div class="field"><label for="gDays">e dias</label><input id="gDays" type="number" min="0" max="6" step="1" placeholder="4"></div>
+      </div>
+      <p class="hint">O tablet segue o calendário sozinho a partir daí e calcula a data prevista do parto (40 semanas).</p>
+      <div class="row">
+        <div class="field"><label for="goal">Meta (R$)</label><input id="goal" type="number" min="100" step="1" value="15000"></div>
+        <div class="field"><label for="base">Já juntado por fora (R$)</label><input id="base" type="number" min="0" step="0.01" value="0"></div>
+        <div class="field"><label for="fee">Taxa repassada ao doador (%)</label><input id="fee" type="number" min="0" max="10" step="0.01" value="1"></div>
+      </div>
+      <p class="hint">“Já juntado por fora” é o que você já tem pro parto e não passou pelo tablet. Entra na barra.</p>
+      <div class="row">
+        <div class="field"><label for="keyType">Tipo da chave Pix (modo manual)</label>
+          <select id="keyType"><option value="cpf">CPF / CNPJ</option><option value="phone">Celular</option><option value="email">E-mail</option><option value="random">Chave aleatória</option></select></div>
+        <div class="field" style="flex:2 1 220px"><label for="pixKey">Chave Pix (modo manual)</label><input id="pixKey" placeholder="Ex.: 11999998888 ou email@..." autocomplete="off"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="pixName">Nome no banco (titular)</label><input id="pixName" maxlength="25" placeholder="Como está na sua conta"></div>
+        <div class="field"><label for="pixCity">Cidade</label><input id="pixCity" maxlength="15" placeholder="Sua cidade"></div>
+      </div>
+      <div class="field"><label>Doações registradas no tablet</label><div class="list" id="donList"></div></div>
+      <p class="msg" id="setupMsg"></p>
+      <div class="row">
+        <button class="btn ok" type="submit">Salvar e abrir pro passageiro</button>
+        <button class="btn ghost" type="button" id="resetBtn">Zerar doações</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ========== HOME ========== -->
+  <section class="screen" id="s-home" hidden>
+    <div class="home">
+      <div class="hero">
+        <div class="orb in">
+          <div class="halo"></div>
+          <svg class="ring" viewBox="0 0 240 240" aria-hidden="true">
+            <circle class="track" cx="120" cy="120" r="117"/>
+            <circle class="fill" id="ringFill" cx="120" cy="120" r="117" stroke-dasharray="735.1" stroke-dashoffset="735.1"/>
+            <circle class="hand" id="ringHand" cx="237" cy="120" r="5"/>
+          </svg>
+          <div class="sphere"></div><div class="shine"></div>
+          <svg class="baby" id="babySvg" viewBox="0 0 200 200" aria-hidden="true"></svg>
+          <div class="fruit" id="fruit">🌱</div>
+          <div class="ripple" id="ripple"></div>
+        </div>
+        <div class="gest in d1" id="weekLabel"><b>Semana 0</b><span class="t-support">do tamanho de uma sementinha</span></div>
+        <p class="t-meta clock in d1" id="clock" aria-live="off"></p>
+        <div class="metric in d2">
+          <div class="num"><b id="raised">R$ 0,00</b><span id="goalLabel">de R$ 15.000</span></div>
+          <div class="bar"><i id="barFill"></i></div>
+          <p class="t-meta" id="leftLabel">Faltam R$ 15.000 pro dia do parto</p>
+        </div>
+        <div class="poll in d3" id="poll">
+          <div class="poll-head"><span class="t-support">Chuta o que eu sou</span><span class="t-meta" id="pollHint">Faz o Pix e dá seu palpite</span></div>
+          <div class="poll-bar"><i class="b" id="pollBoy"></i><i class="g" id="pollGirl"></i></div>
+          <div class="poll-row"><span class="b">Menino <b id="nBoy">0</b></span><span class="g"><b id="nGirl">0</b> Menina</span></div>
+        </div>
+      </div>
+      <div class="side">
+        <div class="note in d1">
+          <h1 class="t-title" id="title">Vem aí meu neném</h1>
+          <p class="t-body" id="subLine">Oi! Sou eu, aqui de dentro da barriga da mamãe. Meu papai dirige por aplicativo e inventou este tablet pra juntar <b>R$ 15.000</b> até eu chegar. Cada Pix vira fralda, consulta e o meu dia de nascer. Bora ajudar o papai a bater essa meta? A ideia foi dele, eu só entrei com a fofura.</p>
+        </div>
+        <div class="grid in d2" id="amountGrid">
+          <button class="amt" data-amt="12"><span class="val"><sup>R$</sup>12</span><small>um cafezinho pro papai</small></button>
+          <button class="amt hot" data-amt="17.97"><span class="tag">mais escolhido</span><span class="val"><sup>R$</sup>17,97</span><small>uma fralda pra mim</small></button>
+          <button class="amt" data-amt="19.97"><span class="val"><sup>R$</sup>19,97</span><small>meu primeiro macacãozinho</small></button>
+          <button class="amt" id="otherBtn"><span class="val">Outro</span><small>você escolhe, eu agradeço</small></button>
+        </div>
+        <div class="other" id="otherRow" hidden>
+          <input id="otherAmt" type="number" inputmode="decimal" min="1" step="0.01" placeholder="R$ 0,00">
+          <button class="btn" id="otherGo">Gerar QR</button>
+        </div>
+        <p class="trust in d3">Pix oficial pelo Mercado Pago. Cai na hora, direto pro meu papai.</p>
+      </div>
+    </div>
+    <footer class="foot"><span>Obrigado por fazer parte da minha história</span><button class="gear" id="gearBtn" aria-label="Configurações (segure)">⚙️</button></footer>
+  </section>
+
+  <!-- ========== PAGAMENTO ========== -->
+  <section class="screen" id="s-pay" hidden>
+    <div class="pay">
+      <div class="qrcol">
+        <div class="pay-amount"><small>Sua doação</small><b id="payAmount">R$ 0,00</b><p class="fee" id="feeNote"></p></div>
+        <div class="qr-wrap" id="qrWrap"><div id="qrcode"></div></div>
+        <div class="copy">
+          <button class="btn ghost" id="copyBtn">Copiar código Pix</button>
+          <div class="copy-text" id="copyText"></div>
+        </div>
+      </div>
+      <div class="how">
+        <h2 class="t-title">É rapidinho, prometo</h2>
+        <ol class="steps">
+          <li><span class="n">1</span><span>Abre o app do seu banco</span></li>
+          <li><span class="n">2</span><span>Toca em <b>Pix</b> e depois em <b>Ler QR Code</b></span></li>
+          <li><span class="n">3</span><span>Confirma o valor e paga</span></li>
+        </ol>
+        <div class="peek"><svg id="babySvgMini" viewBox="0 0 200 200" aria-hidden="true"></svg><span id="peekText">Com esse Pix a minha meta vai pra <b>1%</b></span></div>
+        <div class="actions">
+          <div class="wait" id="waitBox" hidden><span class="dot"></span><span id="waitText">Esperando seu Pix chegar…</span></div>
+          <button class="btn ok big" id="paidBtn" hidden>Já fiz o Pix</button>
+          <button class="btn ghost" id="backBtn">Voltar</button>
+        </div>
+        <p class="hint" id="payHint">Eu aviso aqui assim que entrar.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ========== OBRIGADO ========== -->
+<div class="thanks" id="thanks">
+  <div class="inner">
+    <h2 id="thanksTitle">Obrigado</h2>
+    <div class="plus" id="thanksPlus">+ R$ 12,00</div>
+    <div class="orb"><div class="halo"></div><div class="sphere"></div><div class="shine"></div><svg class="baby" id="babySvg2" viewBox="0 0 200 200" aria-hidden="true"></svg><div class="fruit" id="fruit2">🌱</div></div>
+    <div class="grow" id="thanksGrow">0% → <b>1% da meta</b></div>
+    <p class="t-body" id="thanksLine"></p>
+    <p class="t-meta" id="thanksWeek"></p>
+    <div class="vote" id="vote">
+      <p class="vote-q">E aí, o que você acha que eu sou?</p>
+      <div class="vote-btns"><button class="vbtn boy" id="voteBoy">Menino</button><button class="vbtn girl" id="voteGirl">Menina</button></div>
+    </div>
+    <div class="vote-result" id="voteResult" hidden>
+      <div class="poll-bar"><i class="b" id="pollBoy2"></i><i class="g" id="pollGirl2"></i></div>
+      <p class="t-support" id="voteText"></p>
+    </div>
+    <button class="btn ghost" id="thanksClose" style="margin-top:20px">Voltar</button>
+  </div>
+</div>
+<div id="fx" aria-hidden="true"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const KEY='ajude-nenem-v2';
+  const fmt=v=>'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fmt0=v=>'R$ '+Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0});
+  const fmtN=v=>Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const r2=v=>Math.round(Number(v)*100)/100;
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- estado ----------
+  let st={server:'',pixKey:'',keyType:'phone',name:'',city:'',goal:15000,babyName:'',driverName:'',lmp:'',base:0,serverTotal:0,donations:[],votes:{boy:0,girl:0},fee:1};
+  function load(){
+    try{
+      const s=JSON.parse(localStorage.getItem(KEY));
+      if(s){Object.assign(st,s);return;}
+      const old=JSON.parse(localStorage.getItem('ajude-nenem-v1'));
+      if(old){Object.assign(st,old);st.donations=(old.donations||[]).map(d=>({...d,manual:true}));
+        st.base=Math.max(0,r2((old.total||0)-st.donations.reduce((a,d)=>a+d.amount,0)));delete st.total;}
+    }catch(e){}
+  }
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(st));}catch(e){}}
+  load();
+  if(!st.votes)st.votes={boy:0,girl:0};
+  if(!st.lmp)st.lmp='2026-08-04';            // 10 semanas e 4 dias em 17/10/2026; ajuste na configuração se precisar
+  if(typeof st.fee!=='number')st.fee=1;
+  const manualSum=()=>st.donations.filter(d=>d.manual).reduce((a,d)=>a+d.amount,0);
+  const total=()=>r2(st.base+(st.server?st.serverTotal:0)+manualSum());
+  const auto=()=>!!st.server;
+  const charge=v=>r2(v*(1+st.fee/100));     // a taxa do Pix vai por conta de quem doa
+  function renderAmounts(){document.querySelectorAll('.amt[data-amt]').forEach(b=>{b.querySelector('.val').innerHTML=`<sup>R$</sup>${fmtN(charge(+b.dataset.amt))}`;});}
+
+  // ---------- Pix manual (BR Code estático com valor) ----------
+  function ascii(s){return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\x20-\x7E]/g,'').toUpperCase().trim();}
+  function f(id,v){const s=String(v);return id+String(s.length).padStart(2,'0')+s;}
+  function crc16(str){let c=0xFFFF;for(let i=0;i<str.length;i++){c^=str.charCodeAt(i)<<8;for(let j=0;j<8;j++){c=(c&0x8000)?((c<<1)^0x1021):(c<<1);c&=0xFFFF;}}return c.toString(16).toUpperCase().padStart(4,'0');}
+  function normKey(){
+    let k=(st.pixKey||'').trim();
+    if(st.keyType==='cpf')k=k.replace(/\D/g,'');
+    else if(st.keyType==='phone'){const d=k.replace(/\D/g,'');k=d.startsWith('55')&&d.length>=12?'+'+d:'+55'+d;}
+    else if(st.keyType==='email')k=k.toLowerCase();
+    return k;
+  }
+  function pixPayload(amount){
+    const mai=f('00','br.gov.bcb.pix')+f('01',normKey())+f('02','AJUDE O NENEM A NASCER');
+    let p=f('00','01')+f('26',mai)+f('52','0000')+f('53','986');
+    if(amount>0)p+=f('54',Number(amount).toFixed(2));
+    p+=f('58','BR')+f('59',ascii(st.name).slice(0,25)||'DOACAO')+f('60',ascii(st.city).slice(0,15)||'BRASIL');
+    p+=f('62',f('05','***'))+'6304';
+    return p+crc16(p);
+  }
+
+  // ---------- gestação real (calendário) ----------
+  const DAY=86400000;
+  const lmpDate=()=>st.lmp?new Date(st.lmp+'T00:00:00'):null;
+  function gestDays(){const l=lmpDate();if(!l)return 0;const now=new Date();now.setHours(0,0,0,0);return Math.max(0,Math.min(294,Math.round((now-l)/DAY)));}
+  const gw=()=>Math.min(40,Math.floor(gestDays()/7));
+  function gestLabel(){const d=gestDays(),w=Math.floor(d/7),r=d%7;if(!st.lmp)return 'Gestação a configurar';if(d>=280)return w>40?'Passou das 40 semanas':'40 semanas, chegou a hora';return w?`${w} ${w===1?'semana':'semanas'}${r?` e ${r} ${r===1?'dia':'dias'}`:''}`:`${r} ${r===1?'dia':'dias'}`;}
+  const dueDate=()=>{const l=lmpDate();return l?new Date(l.getTime()+280*DAY):null;};
+  const fmtDate=d=>d.toLocaleDateString('pt-BR',{day:'numeric',month:'long'});
+  const daysToBirth=()=>{const d=dueDate();if(!d)return null;const now=new Date();now.setHours(0,0,0,0);return Math.round((d-now)/DAY);};
+  const pct=v=>Math.min(100,Math.round(v/st.goal*1000)/10);
+  const gender=()=>{const {boy,girl}=st.votes;return boy===girl?'':(boy>girl?'boy':'girl');};
+
+  // ---------- neném ----------
+  const STAGES=[[0,'uma sementinha','🌱'],[4,'um feijãozinho','🫘'],[8,'uma ameixa','🍑'],[12,'um limão','🍋'],[16,'um abacate','🥑'],[20,'uma manga','🥭'],[24,'uma berinjela','🍆'],[28,'um coco','🥥'],[32,'um melão','🍈'],[36,'uma melancia','🍉']];
+  function stageOf(w){let s=STAGES[0];for(const x of STAGES)if(w>=x[0])s=x;return s;}
+  const sizeText=w=>w>=40?'pronto pra nascer':'do tamanho de '+stageOf(w)[1];
+  const fruitOf=w=>w>=40?'👶':stageOf(w)[2];
+  const scaleOf=w=>0.64+0.46*(w/40);
+  function babySvg(w,g){
+    const t=w/40,eyesOpen=w>=20,paci=w>=24,hairN=Math.round(t*5);
+    const blanket=g==='boy'?'url(#blanket2)':g==='girl'?'url(#blanketGirl)':(w>=20?'url(#blanket2)':'url(#blanket)');
+    const acc=g==='girl'
+      ?`<g transform="translate(126 56) rotate(18)"><ellipse cx="-9" cy="0" rx="9" ry="6" fill="#e89ab6"/><ellipse cx="9" cy="0" rx="9" ry="6" fill="#e89ab6"/><circle cx="0" cy="0" r="3.5" fill="#c2688a"/></g>`
+      :g==='boy'?`<path d="M62 70 q38 -42 76 0" fill="#8db7e8"/><path d="M58 70 h84" stroke="#5a86bf" stroke-width="7" stroke-linecap="round"/><circle cx="100" cy="48" r="5" fill="#5a86bf"/>`:'';
+    let hair='';for(let i=0;i<hairN;i++){const x=88+i*6-hairN*3;hair+=`<path d="M${x} 62 q3 -14 10 -8" stroke="#5a3d31" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;}
+    const eyes=eyesOpen
+      ?`<ellipse cx="87" cy="96" rx="4.5" ry="6" fill="#3a2740"/><ellipse cx="113" cy="96" rx="4.5" ry="6" fill="#3a2740"/><circle cx="85.5" cy="93.5" r="1.6" fill="#fff"/><circle cx="111.5" cy="93.5" r="1.6" fill="#fff"/>`
+      :`<path d="M81 97 q6 5 12 0" stroke="#3a2740" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M107 97 q6 5 12 0" stroke="#3a2740" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+    const mouth=paci
+      ?`<ellipse cx="100" cy="113" rx="9" ry="6" fill="#e89ab6"/><circle cx="100" cy="113" r="3.2" fill="#ffe0ea"/><rect x="97" y="106" width="6" height="4" rx="2" fill="#c2688a"/>`
+      :`<path d="M94 111 q6 6 12 0" stroke="#3a2740" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+    return `
+    <ellipse cx="100" cy="166" rx="54" ry="9" fill="rgba(120,40,60,.12)"/>
+    <path d="M58 118 q-10 50 42 54 q52 -4 42 -54 q-8 -18 -42 -18 q-34 0 -42 18z" fill="${blanket}"/>
+    <path d="M70 122 q30 18 60 0" stroke="rgba(255,255,255,.8)" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <circle cx="62" cy="150" r="11" fill="url(#skin)"/><circle cx="138" cy="150" r="11" fill="url(#skin)"/>
+    <circle cx="100" cy="90" r="42" fill="url(#skin)"/>
+    <circle cx="58" cy="92" r="8" fill="url(#skin)"/><circle cx="142" cy="92" r="8" fill="url(#skin)"/>
+    ${g==='boy'?'':hair}${acc}${eyes}
+    <circle cx="76" cy="106" r="6" fill="#e89ab6" opacity=".7"/><circle cx="124" cy="106" r="6" fill="#e89ab6" opacity=".7"/>
+    ${mouth}
+    <path d="M100 40 c-6 -9 -18 -3 -14 6 c3 6 14 12 14 12 s11 -6 14 -12 c4 -9 -8 -15 -14 -6z" fill="#d97a5b" opacity="${0.4+0.6*t}"><animate attributeName="transform" type="scale" values="1;1.16;1;1.1;1" keyTimes="0;.15;.3;.45;1" dur="1.4s" repeatCount="indefinite" additive="sum"/></path>`;
+  }
+
+  // contador que sobe suave
+  let shown=0,cntRaf=null;
+  function countTo(v,ms){
+    cancelAnimationFrame(cntRaf);const from=shown,t0=performance.now();
+    if(reduce||ms<=0){shown=v;$('raised').textContent=fmt(v);return;}
+    (function step(now){const k=Math.min(1,(now-t0)/ms),e=1-Math.pow(1-k,3);shown=from+(v-from)*e;$('raised').textContent=fmt(shown);if(k<1)cntRaf=requestAnimationFrame(step);else{shown=v;$('raised').textContent=fmt(v);}})(t0);
+  }
+  function render(animate){
+    const w=gw(),tot=total(),p=Math.min(1,tot/st.goal),due=dueDate(),left=daysToBirth();
+    const nasce=due?(left>0?`Nasço em ${fmtDate(due)}.`:left===0?'É hoje!':'Posso chegar a qualquer hora.'):'';
+    $('weekLabel').innerHTML=`<b>${gestLabel()}</b><span class="t-support">Estou ${sizeText(w)}. ${nasce}</span>`;
+    $('fruit').textContent=fruitOf(w);
+    tick();
+    countTo(tot,animate?1100:0);
+    $('goalLabel').textContent='de '+fmt0(st.goal);
+    $('barFill').style.width=(p*100)+'%';
+    $('leftLabel').textContent=tot>=st.goal?'Meta batida. Obrigado a cada um que me ajudou.':`${pct(tot).toLocaleString('pt-BR')}% da minha meta. Faltam ${fmt(st.goal-tot)}.`;
+    $('title').textContent=st.babyName?`Vem aí ${st.babyName}`:'Vem aí meu neném';
+    const pai=st.driverName?`Meu papai é o <b>${st.driverName}</b>, ele`:'Meu papai';
+    $('subLine').innerHTML=`Oi! Sou eu, aqui de dentro da barriga da mamãe. ${pai} dirige por aplicativo e inventou este tablet pra juntar <b>${fmt0(st.goal)}</b> até eu chegar${due?`, lá por <b>${fmtDate(due)}</b>`:''}. Cada Pix vira fralda, consulta e o meu dia de nascer. Bora ajudar o papai a bater essa meta? A ideia foi dele, eu só entrei com a fofura.`;
+    const svg=$('babySvg');svg.innerHTML=babySvg(w,gender());svg.style.transform=`scale(${scaleOf(w)})`;
+    renderPoll();
+  }
+  // relógio: tempo que falta até o dia do parto, segundo a segundo; o anel esvazia junto
+  const pad=n=>String(n).padStart(2,'0');
+  function tick(){
+    const due=dueDate();const clock=$('clock');
+    if(!due){clock.textContent='Configura a gestação pra eu contar os dias';return;}
+    const now=new Date(),ms=due-now;
+    if(ms<=0){clock.textContent='Chegou a hora. Papai, estou pronto!';$('ringFill').style.strokeDashoffset=735.1;$('ringHand').style.transform='rotate(0deg)';return;}
+    const d=Math.floor(ms/DAY),h=Math.floor(ms%DAY/3600000),m=Math.floor(ms%3600000/60000),s=Math.floor(ms%60000/1000);
+    const lead=d>30?'Papai está contando os segundos':d>7?'Falta pouco, papai conta os segundos':'Papai não dorme mais';
+    clock.innerHTML=`${lead}: <b>${d} ${d===1?'dia':'dias'}, ${pad(h)}:${pad(m)}:${pad(s)}</b>`;
+    const frac=Math.max(0,Math.min(1,ms/(280*DAY)));          // quanto ainda falta das 40 semanas
+    $('ringFill').style.strokeDashoffset=735.1*(1-frac);
+    $('ringHand').style.transform=`rotate(${frac*360}deg)`;     // ponteiro na ponta do arco, girando com os segundos
+  }
+  function renderPoll(){
+    const {boy,girl}=st.votes,n=boy+girl,g=gender();
+    const pb=n?Math.round(boy/n*100):50;
+    [['pollBoy','pollGirl'],['pollBoy2','pollGirl2']].forEach(([a,b])=>{$(a).style.width=pb+'%';$(b).style.width=(100-pb)+'%';$(a).style.opacity=$(b).style.opacity=n?1:.35;});
+    $('nBoy').textContent=boy;$('nGirl').textContent=girl;
+    $('pollHint').textContent=!n?'Faz o Pix e dá seu palpite':g==='boy'?`Menino na frente, ${pb}%`:g==='girl'?`Menina na frente, ${100-pb}%`:'Empate. Me desempata aí';
+    document.querySelectorAll('.orb').forEach(o=>{o.classList.toggle('boy',g==='boy');o.classList.toggle('girl',g==='girl');});
+  }
+
+  // ---------- fundo: brilho fixo e estrelas discretas (um quadro, sem loop) ----------
+  function bgfx(){
+    const c=$('bgfx'),ctx=c.getContext('2d');
+    function draw(){
+      const W=c.width=Math.floor(innerWidth/2),H=c.height=Math.floor(innerHeight/2);
+      ctx.clearRect(0,0,W,H);
+      const g=ctx.createRadialGradient(W*.28,H*.42,0,W*.28,H*.42,Math.max(W,H)*.6);
+      g.addColorStop(0,'rgba(242,166,122,.10)');g.addColorStop(1,'rgba(242,166,122,0)');
+      ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+      let seed=7;const R=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+      for(let i=0;i<70;i++){const a=.08+R()*.22;ctx.fillStyle=`rgba(242,241,238,${a})`;ctx.beginPath();ctx.arc(R()*W,R()*H,.4+R()*.9,0,6.28);ctx.fill();}
+    }
+    draw();addEventListener('resize',draw);
+  }
+
+  // ---------- celebração: papel picado com física, duas cores ----------
+  function burst(cx,cy,n){
+    if(reduce)return;
+    const layer=$('fx'),cols=['#f2a67a','#f2f1ee','#f2a67a','#d97a5b'];
+    for(let i=0;i<n;i++){
+      const el=document.createElement('i');el.className='p '+(Math.random()<.6?'strip':'round');
+      el.style.background=cols[Math.floor(Math.random()*cols.length)];el.style.scale=.7+Math.random()*.8;
+      const a=-Math.PI/2+(Math.random()-.5)*Math.PI*1.2,v=240+Math.random()*460,ux=Math.cos(a)*v,uy=Math.sin(a)*v;
+      const dur=1400+Math.random()*1000,g=850+Math.random()*450,rx=Math.random()*720-360,ry=Math.random()*720-360,rz=Math.random()*540-270,sway=(Math.random()-.5)*110;
+      layer.appendChild(el);
+      el.animate([
+        {transform:`translate(${cx}px,${cy}px) rotateX(0) rotateY(0) rotateZ(0)`,opacity:1,offset:0},
+        {transform:`translate(${cx+ux*.55}px,${cy+uy*.55}px) rotateX(${rx*.4}deg) rotateY(${ry*.4}deg) rotateZ(${rz*.4}deg)`,opacity:1,offset:.28,easing:'cubic-bezier(.16,1,.3,1)'},
+        {transform:`translate(${cx+ux*.85+sway}px,${cy+uy*.85+g*.25}px) rotateX(${rx*.7}deg) rotateY(${ry*.7}deg) rotateZ(${rz*.7}deg)`,opacity:1,offset:.6,easing:'ease-in'},
+        {transform:`translate(${cx+ux+sway*2}px,${cy+uy+g}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg)`,opacity:0,offset:1,easing:'ease-in'}
+      ],{duration:dur,fill:'forwards'}).onfinish=()=>el.remove();
+    }
+  }
+  function ripple(el){if(reduce||!el)return;el.animate([{transform:'scale(1)',opacity:.9},{transform:'scale(2.2)',opacity:0}],{duration:1000,easing:'cubic-bezier(.16,1,.3,1)'});}
+  function celebrate(){const r=$('babySvg2').getBoundingClientRect();const cx=r.left+r.width/2,cy=r.top+r.height/2;burst(cx,cy,90);setTimeout(()=>burst(cx,cy,50),280);}
+
+  // ---------- servidor (Mercado Pago) ----------
+  function api(path,opts){
+    const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),12000);
+    return fetch(st.server+path,Object.assign({signal:ctl.signal},opts||{})).then(r=>r.json()).finally(()=>clearTimeout(t));
+  }
+  function syncTotal(){
+    if(!auto())return;
+    api('/total').then(d=>{if(typeof d.total==='number'&&d.total!==st.serverTotal){st.serverTotal=d.total;save();render(true);}}).catch(()=>{});
+  }
+
+  // ---------- telas ----------
+  const screens=['s-setup','s-home','s-pay'];
+  function show(id){screens.forEach(s=>$(s).hidden=(s!==id));}
+  let current=0,payload='',poll=null;
+  function stopPoll(){clearInterval(poll);poll=null;}
+  function renderQr(text,base64){
+    const box=$('qrcode');box.innerHTML='';
+    if(base64){box.innerHTML=`<img alt="QR Code Pix" src="data:image/png;base64,${base64}">`;return;}
+    try{new QRCode(box,{text,width:256,height:256,correctLevel:QRCode.CorrectLevel.M});}
+    catch(e){box.innerHTML='<p>Sem internet pro QR. Usa o código copia e cola abaixo.</p>';}
+  }
+  function manualMode(amount,note){
+    payload=pixPayload(amount);$('copyText').textContent=payload;renderQr(payload);
+    $('qrWrap').classList.remove('waiting');
+    $('waitBox').hidden=true;$('paidBtn').hidden=false;disarm();
+    $('payHint').textContent=note||'Depois de pagar, toca em “Já fiz o Pix”.';
+  }
+  function openPay(amount){
+    amount=r2(amount);if(!(amount>0))return;
+    amount=charge(amount);current=amount;stopPoll();
+    $('feeNote').textContent=st.fee>0?`Já inclui ${fmtN(st.fee).replace(',00','')}% da taxa do Pix, pra sua ajuda chegar inteirinha pra mim.`:'';
+    const w=gw(),after=total()+amount;
+    $('payAmount').textContent=fmt(amount);
+    $('copyText').textContent='';$('qrcode').innerHTML='';
+    const mini=$('babySvgMini');mini.innerHTML=babySvg(w,gender());mini.style.transform=`scale(${scaleOf(w)})`;
+    $('peekText').innerHTML=after>=st.goal?`Com esse Pix a minha meta é <b>batida</b>. Já posso vir!`:`Com esse Pix a minha meta vai pra <b>${pct(after).toLocaleString('pt-BR')}%</b>. Faltam ${fmt(st.goal-after)}.`;
+    show('s-pay');
+    if(!auto()){manualMode(amount);return;}
+    $('paidBtn').hidden=true;$('waitBox').hidden=false;$('waitText').textContent='Gerando o QR Code…';$('qrWrap').classList.remove('waiting');
+    $('payHint').textContent='Eu aviso aqui assim que entrar.';
+    api('/pix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount})}).then(d=>{
+      if(!d||!d.qr_code)throw new Error((d&&d.error)||'sem QR');
+      payload=d.qr_code;$('copyText').textContent=payload;renderQr(payload,d.qr_code_base64);
+      $('waitText').textContent='Esperando seu Pix chegar…';$('qrWrap').classList.add('waiting');
+      const id=d.id,started=Date.now();
+      poll=setInterval(()=>{
+        if(Date.now()-started>20*60*1000){stopPoll();$('qrWrap').classList.remove('waiting');$('waitText').textContent='QR expirou. Volta e escolhe de novo.';return;}
+        api('/status?id='+id).then(s=>{if(s&&s.status==='approved'){stopPoll();donate(r2(s.amount)||amount,false);}}).catch(()=>{});
+      },3000);
+    }).catch(e=>{
+      if(st.pixKey)manualMode(amount,'Servidor fora do ar. Paga pelo QR e toca em “Já fiz o Pix”.');
+      else{$('waitText').textContent='Servidor indisponível: '+(e.message||'sem conexão');}
+    });
+  }
+  $('amountGrid').addEventListener('click',e=>{const b=e.target.closest('.amt');if(!b||b.id==='otherBtn')return;openPay(b.dataset.amt);});
+  $('otherBtn').onclick=()=>{$('otherRow').hidden=false;$('otherAmt').focus();};
+  $('otherGo').onclick=()=>openPay(String($('otherAmt').value).replace(',','.'));
+  $('otherAmt').addEventListener('keydown',e=>{if(e.key==='Enter')$('otherGo').click();});
+  $('backBtn').onclick=()=>{stopPoll();$('otherRow').hidden=true;show('s-home');};
+  $('copyBtn').onclick=()=>{
+    const done=()=>{$('copyBtn').textContent='Copiado. Cola no app do banco.';setTimeout(()=>$('copyBtn').textContent='Copiar código Pix',2500);};
+    const selectText=()=>{const r=document.createRange();r.selectNodeContents($('copyText'));const s=getSelection();s.removeAllRanges();s.addRange(r);};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(payload).then(done).catch(selectText);}else selectText();
+  };
+
+  let armed=false,armTimer=null;
+  $('paidBtn').onclick=()=>{
+    if(!armed){armed=true;$('paidBtn').textContent='Confirma? Toca de novo';armTimer=setTimeout(disarm,4000);return;}
+    disarm();donate(current,true);
+  };
+  function disarm(){armed=false;clearTimeout(armTimer);$('paidBtn').textContent='Já fiz o Pix';}
+
+  const THANKS=['Obrigado!','Senti daqui de dentro','Papai vai ficar feliz','Você é demais'];
+  function donate(amount,manual){
+    const tBefore=total();
+    if(!manual)st.serverTotal=r2(st.serverTotal+amount);
+    st.donations.push({amount,ts:Date.now(),manual:!!manual});save();
+    const w=gw(),tot=total(),done=tot>=st.goal;
+    $('thanksTitle').textContent=done?'Meta batida!':THANKS[Math.floor(Math.random()*THANKS.length)];
+    $('thanksPlus').textContent='+ '+fmt(amount);
+    $('thanksGrow').innerHTML=`${pct(tBefore).toLocaleString('pt-BR')}% → <b>${pct(tot).toLocaleString('pt-BR')}% da minha meta</b>`;
+    $('thanksLine').innerHTML=st.lmp?`Estou com <b>${gestLabel()}</b>, ${sizeText(w)}. Sua ajuda já virou um pedacinho do meu enxoval.`:'Sua ajuda vira fralda, consulta e o meu dia de chegar.';
+    $('thanksWeek').textContent=done?'Obrigado a cada passageiro que me ajudou a chegar.':`Faltam ${fmt(st.goal-tot)} pro meu dia`;
+    const s2=$('babySvg2');s2.innerHTML=babySvg(w,gender());s2.style.setProperty('--s',scaleOf(w));$('fruit2').textContent=fruitOf(w);
+    $('vote').hidden=false;$('voteResult').hidden=true;
+    $('thanks').classList.add('on');
+    setTimeout(celebrate,250);
+    render(true);ripple($('ripple'));
+    clearTimeout(thanksTimer);thanksTimer=setTimeout(closeThanks,40000);
+    if(!manual)setTimeout(syncTotal,2500);
+  }
+  let thanksTimer=null;
+  function closeThanks(){$('thanks').classList.remove('on');$('otherRow').hidden=true;show('s-home');}
+  $('thanksClose').onclick=closeThanks;
+  function vote(g){
+    st.votes[g]=(st.votes[g]||0)+1;save();
+    const before=gender();renderPoll();const now=gender();
+    const w=gw();const s2=$('babySvg2');s2.innerHTML=babySvg(w,now);
+    const {boy,girl}=st.votes,n=boy+girl,pb=Math.round(boy/n*100);
+    $('voteText').innerHTML=g==='boy'?`Você e mais <b>${boy-1}</b> acham que sou menino. Placar: <b>${pb}%</b> menino, <b>${100-pb}%</b> menina.`:`Você e mais <b>${girl-1}</b> acham que sou menina. Placar: <b>${100-pb}%</b> menina, <b>${pb}%</b> menino.`;
+    if(now&&now!==before)$('voteText').innerHTML+=now==='boy'?' Olha eu de menininho!':' Olha eu de menininha!';
+    $('vote').hidden=true;$('voteResult').hidden=false;
+    const r=s2.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,50);
+    clearTimeout(thanksTimer);thanksTimer=setTimeout(closeThanks,9000);
+  }
+  $('voteBoy').onclick=()=>vote('boy');$('voteGirl').onclick=()=>vote('girl');
+
+  // ---------- configuração ----------
+  function fillSetup(){
+    $('server').value=st.server||'';$('keyType').value=st.keyType;$('pixKey').value=st.pixKey;$('pixName').value=st.name;$('pixCity').value=st.city;
+    $('goal').value=st.goal;$('babyName').value=st.babyName;$('driverName').value=st.driverName||'';$('gWeeks').value=st.lmp?Math.floor(gestDays()/7):'';$('gDays').value=st.lmp?gestDays()%7:'';$('base').value=st.base;$('fee').value=st.fee;$('setupMsg').textContent='';
+    const l=$('donList');l.innerHTML='';
+    if(!st.donations.length)l.innerHTML='<div><span>Nenhuma ainda.</span></div>';
+    st.donations.slice().reverse().forEach((d,i)=>{const idx=st.donations.length-1-i;const div=document.createElement('div');
+      div.innerHTML=`<span>${fmt(d.amount)} · ${new Date(d.ts).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})} · ${d.manual?'manual':'Mercado Pago'}</span>`;
+      if(d.manual){const b=document.createElement('button');b.type='button';b.textContent='remover';b.onclick=()=>{st.donations.splice(idx,1);save();fillSetup();};div.appendChild(b);}
+      l.appendChild(div);});
+  }
+  $('setupForm').addEventListener('submit',e=>{
+    e.preventDefault();
+    const m=$('setupMsg');m.className='msg';
+    const server=$('server').value.trim().replace(/\/+$/,'');
+    if(server&&!/^https?:\/\//.test(server)){m.className='msg err';m.textContent='O servidor precisa começar com https://';return;}
+    if(!server&&!$('pixKey').value.trim()){m.className='msg err';m.textContent='Coloca o servidor ou a sua chave Pix.';return;}
+    if($('pixKey').value.trim()&&(!$('pixName').value.trim()||!$('pixCity').value.trim())){m.className='msg err';m.textContent='Com chave Pix, nome e cidade são obrigatórios (o banco exige).';return;}
+    st.server=server;st.keyType=$('keyType').value;st.pixKey=$('pixKey').value.trim();st.name=$('pixName').value.trim();st.city=$('pixCity').value.trim();
+    st.goal=Math.max(100,Number($('goal').value)||15000);st.babyName=$('babyName').value.trim();st.driverName=$('driverName').value.trim();
+    {const gwk=Number($('gWeeks').value),gd=Number($('gDays').value);if($('gWeeks').value!==''){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-(gwk*7+gd));st.lmp=d.toISOString().slice(0,10);}}
+    st.base=Math.max(0,r2($('base').value)||0);st.fee=Math.min(10,Math.max(0,r2($('fee').value)||0));
+    save();renderAmounts();render(false);show('s-home');syncTotal();
+  });
+  $('resetBtn').onclick=()=>{const b=$('resetBtn');if(b.dataset.sure){st.donations=[];save();fillSetup();delete b.dataset.sure;b.textContent='Zerar doações';}else{b.dataset.sure='1';b.textContent='Tem certeza? Toca de novo';setTimeout(()=>{delete b.dataset.sure;b.textContent='Zerar doações';},3000);}};
+  let hold=null;const g=$('gearBtn');
+  const start=()=>{hold=setTimeout(()=>{fillSetup();show('s-setup');},1500);};const stop=()=>clearTimeout(hold);
+  g.addEventListener('pointerdown',start);g.addEventListener('pointerup',stop);g.addEventListener('pointerleave',stop);g.addEventListener('pointercancel',stop);
+
+  // ---------- início ----------
+  bgfx();renderAmounts();render(false);
+  setInterval(tick,1000);
+  setInterval(()=>render(false),60*60*1000);
+  if(st.server||st.pixKey){show('s-home');syncTotal();}else{fillSetup();show('s-setup');}
+  if(navigator.wakeLock&&navigator.wakeLock.request){const wl=()=>navigator.wakeLock.request('screen').catch(()=>{});wl();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')wl();});}
+})();
+</script>
