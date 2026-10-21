@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Ajude o Neném a Nascer</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="skin" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#ffe6d4"/><stop offset="1" stop-color="#f3bd9c"/></radialGradient>
+    <linearGradient id="blanket" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff6e3"/><stop offset="1" stop-color="#ffd9a6"/></linearGradient>
+    <linearGradient id="blanket2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d6ecff"/><stop offset="1" stop-color="#9fcdff"/></linearGradient>
+    <linearGradient id="blanketGirl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe4ef"/><stop offset="1" stop-color="#ffa9c6"/></linearGradient>
+  </defs>
+</svg>
+<canvas class="sky" id="bgfx" aria-hidden="true"></canvas>
+
+<div class="wrap">
+  <!-- ========== PIN (porta da configuração) ========== -->
+  <section class="screen" id="s-pin" hidden>
+    <form class="setup pin" id="pinForm">
+      <h2 class="t-section">Área do papai</h2>
+      <p class="hint">Digite o PIN pra abrir a configuração.</p>
+      <input id="pinInput" type="password" inputmode="numeric" autocomplete="current-password" placeholder="PIN" aria-label="PIN">
+      <p class="msg err" id="pinMsg"></p>
+      <div class="row">
+        <button class="btn ok" type="submit">Entrar</button>
+        <button class="btn ghost" type="button" id="pinCancel">Cancelar</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ========== CONFIGURAÇÃO (fica no servidor) ========== -->
+  <section class="screen" id="s-setup" hidden>
+    <form class="setup" id="setupForm">
+      <h2 class="t-section">Configurar o tablet</h2>
+      <p class="hint" id="modeHint">Tudo fica salvo no servidor. Os passageiros nunca veem esta tela.</p>
+      <div class="row">
+        <div class="field"><label for="driverName">Seu nome</label><input id="driverName" maxlength="40" placeholder="Ex.: Marcus"></div>
+        <div class="field"><label for="babyName">Nome do neném (se já souber)</label><input id="babyName" maxlength="40" placeholder="Ainda em segredo?"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="gWeeks">Gestação hoje: semanas</label><input id="gWeeks" type="number" min="0" max="42" step="1" placeholder="10"></div>
+        <div class="field"><label for="gDays">e dias</label><input id="gDays" type="number" min="0" max="6" step="1" placeholder="4"></div>
+      </div>
+      <p class="hint">O tablet segue o calendário sozinho a partir daí e calcula a data prevista do parto (40 semanas).</p>
+      <div class="row">
+        <div class="field"><label for="goal">Meta (R$)</label><input id="goal" type="number" min="100" step="1" value="15000"></div>
+        <div class="field"><label for="base">Já juntado por fora (R$)</label><input id="base" type="number" min="0" step="0.01" value="0"></div>
+        <div class="field"><label for="fee">Taxa repassada ao doador (%)</label><input id="fee" type="number" min="0" max="10" step="0.01" value="1"></div>
+      </div>
+      <p class="hint">“Já juntado por fora” é o que você já tem pro parto e não passou por aqui. Entra na barra.</p>
+      <div class="row">
+        <div class="field"><label for="keyType">Tipo da chave Pix (reserva)</label>
+          <select id="keyType"><option value="cpf">CPF / CNPJ</option><option value="phone">Celular</option><option value="email">E-mail</option><option value="random">Chave aleatória</option></select></div>
+        <div class="field" style="flex:2 1 220px"><label for="pixKey">Chave Pix (reserva)</label><input id="pixKey" maxlength="77" placeholder="Ex.: 11999998888 ou email@..." autocomplete="off"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="pixName">Nome no banco (titular)</label><input id="pixName" maxlength="25" placeholder="Como está na sua conta"></div>
+        <div class="field"><label for="pixCity">Cidade</label><input id="pixCity" maxlength="15" placeholder="Sua cidade"></div>
+      </div>
+      <p class="hint">A chave Pix só é usada se o Mercado Pago cair (ou se ele não estiver ligado). Ela fica guardada no servidor.</p>
+      <div class="field"><label>Doações registradas</label><div class="list" id="donList"></div></div>
+      <p class="msg" id="setupMsg"></p>
+      <div class="row">
+        <button class="btn ok" type="submit">Salvar e abrir pro passageiro</button>
+        <button class="btn ghost" type="button" id="setupCancel">Sair sem salvar</button>
+      </div>
+      <div class="row">
+        <button class="btn ghost" type="button" id="resetBtn">Zerar doações</button>
+        <button class="btn ghost" type="button" id="logoutAllBtn">Desconectar todos os aparelhos</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ========== HOME: o convite ========== -->
+  <section class="screen" id="s-home" hidden>
+    <div class="home">
+      <div class="hero" id="hero">
+        <div class="orb in">
+          <div class="halo"></div>
+          <svg class="ring" viewBox="0 0 240 240" aria-hidden="true">
+            <circle class="track" cx="120" cy="120" r="117"/>
+            <circle class="fill" id="ringFill" cx="120" cy="120" r="117" stroke-dasharray="735.1" stroke-dashoffset="735.1"/>
+            <circle class="hand" id="ringHand" cx="237" cy="120" r="5"/>
+          </svg>
+          <div class="sphere"></div><div class="shine"></div>
+          <svg class="baby" id="babySvg" viewBox="0 0 200 200" aria-hidden="true"></svg>
+          <div class="fruit" id="fruit">🌱</div>
+          <div class="ripple" id="ripple"></div>
+        </div>
+        <div class="gest in d1" id="weekLabel"><b>Semana 0</b><span class="t-support">do tamanho de uma sementinha</span></div>
+        <p class="t-meta clock in d1" id="clock" aria-live="off"></p>
+      </div>
+      <div class="pitch">
+        <p class="eyebrow in" id="eyebrow">Oi, eu sou o neném do papai</p>
+        <h1 class="t-hero in d1" id="title">Me ajuda a nascer?</h1>
+        <p class="story in d1" id="subLine">Sou eu, aqui da barriga da mamãe. Meu papai dirige por aplicativo e inventou este tablet pra juntar <b>R$ 15.000</b> até eu chegar. A ideia foi dele, eu só entrei com a fofura.</p>
+        <div class="metric in d2">
+          <div class="num"><b id="raised">R$ 0,00</b><span id="goalLabel">de R$ 15.000</span></div>
+          <div class="bar"><i id="barFill"></i></div>
+          <p class="t-meta" id="leftLabel">Faltam R$ 15.000 pro dia do parto</p>
+        </div>
+        <div class="cta in d3">
+          <button class="btn huge" id="helpBtn">Quero ajudar 💛</button>
+          <p class="t-meta" id="ctaHint">Pix rapidinho, a partir de R$ 12</p>
+        </div>
+      </div>
+    </div>
+    <footer class="foot"><span>Obrigado por fazer parte da minha história</span><button class="gear" id="gearBtn" aria-label="Configurações (segure)">⚙️</button></footer>
+  </section>
+
+  <!-- ========== ESCOLHER O VALOR ========== -->
+  <section class="screen" id="s-pick" hidden>
+    <div class="topbar"><button class="btn ghost" id="pickBack">← Voltar</button></div>
+    <div class="pick">
+      <div class="pick-head">
+        <div class="avatar in"><svg id="babySvgPick" viewBox="0 0 200 200" aria-hidden="true"></svg></div>
+        <h2 class="t-title in d1">Oba! Escolhe como quer me ajudar</h2>
+        <p class="t-body in d1">Cada Pix vira fralda, consulta e o meu dia de nascer. Bora ajudar o papai a bater essa meta?</p>
+        <div class="poll in d2" id="poll">
+          <div class="poll-head"><span class="t-support">Chuta o que eu sou</span><span class="t-meta" id="pollHint">Faz o Pix e dá seu palpite</span></div>
+          <div class="poll-bar"><i class="b" id="pollBoy"></i><i class="g" id="pollGirl"></i></div>
+          <div class="poll-row"><span class="b">Menino <b id="nBoy">0</b></span><span class="g"><b id="nGirl">0</b> Menina</span></div>
+        </div>
+      </div>
+      <div class="pick-body">
+        <div class="grid in d1" id="amountGrid">
+          <button class="amt" data-amt="12"><span class="val"><sup>R$</sup>12</span><small>um cafezinho pro papai</small></button>
+          <button class="amt hot" data-amt="17.97"><span class="tag">mais escolhido</span><span class="val"><sup>R$</sup>17,97</span><small>uma fralda pra mim</small></button>
+          <button class="amt" data-amt="19.97"><span class="val"><sup>R$</sup>19,97</span><small>meu primeiro macacãozinho</small></button>
+          <button class="amt" id="otherBtn"><span class="val">Outro</span><small>você escolhe, eu agradeço</small></button>
+        </div>
+        <div class="other" id="otherRow" hidden>
+          <input id="otherAmt" type="number" inputmode="decimal" min="1" step="0.01" placeholder="R$ 0,00">
+          <button class="btn" id="otherGo">Gerar QR</button>
+        </div>
+        <p class="trust in d2">Pix oficial pelo Mercado Pago. Cai na hora, direto pro meu papai.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PAGAMENTO ========== -->
+  <section class="screen" id="s-pay" hidden>
+    <div class="pay">
+      <div class="qrcol">
+        <div class="pay-amount"><small>Sua doação</small><b id="payAmount">R$ 0,00</b><p class="fee" id="feeNote"></p></div>
+        <div class="qr-wrap" id="qrWrap"><div id="qrcode"></div></div>
+        <div class="copy">
+          <button class="btn ghost" id="copyBtn">Copiar código Pix</button>
+          <div class="copy-text" id="copyText"></div>
+        </div>
+      </div>
+      <div class="how">
+        <h2 class="t-title">É rapidinho, prometo</h2>
+        <ol class="steps">
+          <li><span class="n">1</span><span>Abre o app do seu banco</span></li>
+          <li><span class="n">2</span><span>Toca em <b>Pix</b> e depois em <b>Ler QR Code</b></span></li>
+          <li><span class="n">3</span><span>Confirma o valor e paga</span></li>
+        </ol>
+        <div class="peek"><svg id="babySvgMini" viewBox="0 0 200 200" aria-hidden="true"></svg><span id="peekText">Com esse Pix a minha meta vai pra <b>1%</b></span></div>
+        <div class="actions">
+          <div class="wait" id="waitBox" hidden><span class="dot"></span><span id="waitText">Esperando seu Pix chegar…</span></div>
+          <button class="btn ok big" id="paidBtn" hidden>Já fiz o Pix</button>
+          <button class="btn ghost" id="backBtn">Voltar</button>
+        </div>
+        <p class="hint" id="payHint">Eu aviso aqui assim que entrar.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ========== OBRIGADO ========== -->
+<div class="thanks" id="thanks">
+  <div class="inner">
+    <h2 id="thanksTitle">Obrigado</h2>
+    <div class="plus" id="thanksPlus">+ R$ 12,00</div>
+    <div class="orb"><div class="halo"></div><div class="sphere"></div><div class="shine"></div><svg class="baby" id="babySvg2" viewBox="0 0 200 200" aria-hidden="true"></svg><div class="fruit" id="fruit2">🌱</div></div>
+    <div class="grow" id="thanksGrow">0% → <b>1% da meta</b></div>
+    <p class="t-body" id="thanksLine"></p>
+    <p class="t-meta" id="thanksWeek"></p>
+    <div class="vote" id="vote">
+      <p class="vote-q">E aí, o que você acha que eu sou?</p>
+      <div class="vote-btns"><button class="vbtn boy" id="voteBoy">Menino</button><button class="vbtn girl" id="voteGirl">Menina</button></div>
+    </div>
+    <div class="vote-result" id="voteResult" hidden>
+      <div class="poll-bar"><i class="b" id="pollBoy2"></i><i class="g" id="pollGirl2"></i></div>
+      <p class="t-support" id="voteText"></p>
+    </div>
+    <button class="btn ghost" id="thanksClose" style="margin-top:20px">Voltar</button>
+  </div>
+</div>
+<div id="fx" aria-hidden="true"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

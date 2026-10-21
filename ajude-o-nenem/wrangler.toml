@@ -1,0 +1,29 @@
+# Ajude o Neném: o tablet (public/) e o servidor (src/worker.js) num Worker só.
+# Segredos NUNCA ficam aqui. Eles vão pelo terminal:
+#   npx wrangler secret put MP_ACCESS_TOKEN   (token de produção do Mercado Pago)
+#   npx wrangler secret put ADMIN_PIN         (senha pra abrir a configuração no tablet)
+name = "ajude-o-nenem"
+main = "src/worker.js"
+compatibility_date = "2025-09-01"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
+[vars]
+# E-mail que vai como "pagador" no Pix do Mercado Pago (ele exige um).
+# Use um e-mail diferente do da sua conta Mercado Pago.
+PAYER_EMAIL = "doador@ajude-o-nenem.app"
+
+# Banco de dados: doações, votos, configuração e sessões ficam aqui, no servidor.
+[[durable_objects.bindings]]
+name = "STORE"
+class_name = "Store"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Store"]
+
+[observability]
+enabled = true
