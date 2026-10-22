@@ -83,7 +83,7 @@ const mpBase = env => env.MP_API_BASE || 'https://api.mercadopago.com';
 async function mp(env, path, init = {}) {
   const res = await fetch(mpBase(env) + path, {
     ...init,
-    headers: { authorization: `Bearer ${env.MP_ACCESS_TOKEN}`, 'content-type': 'application/json', ...(init.headers || {}) },
+    headers: { authorization: `Bearer ${(env.MP_ACCESS_TOKEN || env.MP_TOKEN)}`, 'content-type': 'application/json', ...(init.headers || {}) },
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(`Mercado Pago ${res.status}: ${data.message || 'erro'}`);
@@ -139,7 +139,7 @@ function cleanConfig(c) {
 // ---------- rotas ----------
 async function api(req, env, url) {
   const path = url.pathname, method = req.method, db = store(env);
-  const hasMp = !!env.MP_ACCESS_TOKEN;
+  const hasMp = !!(env.MP_ACCESS_TOKEN || env.MP_TOKEN);
 
   if (path === '/api/state' && method === 'GET') return json(await db.publicState(hasMp));
 
