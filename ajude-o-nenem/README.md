@@ -6,7 +6,7 @@ Tablet de doação por Pix pro carro de aplicativo. O mesmo Worker da Cloudflare
 
 | Onde | O quê |
 |---|---|
-| **Segredos da Cloudflare** (ninguém vê, nem no código) | Token do Mercado Pago (`MP_ACCESS_TOKEN`), PIN da configuração (`ADMIN_PIN`) |
+| **Segredos da Cloudflare** (ninguém vê, nem no código) | Token do Mercado Pago (`MP_ACCESS_TOKEN`, ou `MP_TOKEN` do Worker antigo), PIN da configuração (`ADMIN_PIN`) |
 | **Banco no servidor** (Durable Object com SQLite) | Configuração (chave Pix, nome do titular, cidade, meta etc.), doações, votos, sessões |
 | **Navegador do tablet** | Só o que o passageiro já vê na tela (nomes, gestação, meta, total, placar) e o "pareamento" do tablet |
 
@@ -35,7 +35,7 @@ npx wrangler deploy
 
 Antes do `deploy`, troque o `PAYER_EMAIL` no `wrangler.toml` por um e-mail seu. Ele precisa ser diferente do e-mail da conta do Mercado Pago.
 
-O nome do Worker é `ajude-o-nenem`, então ele **substitui** o que está hoje em `https://ajude-o-nenem.marcuslimav123.workers.dev`. Se o Worker antigo guardava o token do Mercado Pago com outro nome, rode `npx wrangler secret list` pra ver e cadastre de novo com o nome `MP_ACCESS_TOKEN`.
+O nome do Worker é `ajude-o-nenem`, então ele **substitui** o que está hoje em `https://ajude-o-nenem.marcuslimav123.workers.dev`. Se o Worker antigo guardava o token do Mercado Pago como `MP_TOKEN`, não precisa cadastrar de novo: o servidor também lê esse nome.
 
 ## Primeira vez no tablet
 
